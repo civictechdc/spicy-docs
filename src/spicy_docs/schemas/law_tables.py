@@ -5,6 +5,14 @@ per-Congress classification lines) and ``table3_records`` (OLRC Table III record
 bulk folder and the USLM file share one key; ``law_code_sections`` keys on position because the same line can appear
 twice on one page.  ``congress_bills.statutes_at_large_cite`` stays NULL on purpose: the citation lives in the PLAW USLM
 the laws rollup acquires once per law, so the host joins ``laws`` on ``bill_id`` at merge time.
+
+Both OLRC tables append ``usc_section_key``, the printed ``usc_section`` folded by ``tables.usc_section_key``, so a
+key folded the same way (``31-5318a``) meets a row printed ``5318A``.  The citation side is not folded yet:
+``document_citations``' ``usc_section`` rule 001 keeps the printed case, so a consumer folds it through the same helper
+until B4's grammar, which lower-cases and adopts the helper, lands.  The key is last on
+purpose: spicy-regs' ``merge_contract_table`` re-reads the contract, and its ``merge_table`` selects a column a prior
+Parquet file lacks as ``CAST(NULL AS VARCHAR)`` (``test_merge_null_fills_columns_the_prior_table_lacks``), so rows
+published before the column carry NULL until their scope is captured again.
 """
 
 from __future__ import annotations
@@ -13,7 +21,7 @@ import re
 from collections.abc import Mapping
 from typing import Any
 
-from spicy_docs.schemas.tables import Row, TableContractError, natural_key, table_contract, text
+from spicy_docs.schemas.tables import Row, TableContractError, natural_key, table_contract, text, usc_section_key
 
 #: The Statutes at Large citation as the PLAW USLM ``citableAs`` spells it,
 #: the rule the legislative data map's ``plaw→statute`` edge proved.
@@ -23,6 +31,13 @@ _LAW_NUMBER = re.compile(r"(?P<congress>[1-9][0-9]{0,2})-(?P<number>[1-9][0-9]*)
 #: file in the 119th's folders; the package id is the stem.
 _PACKAGE_KINDS = {"public": "publ", "private": "pvtl"}
 USLM_OUTCOMES = ("captured", "unavailable", "not_requested")
+
+#: Both OLRC tables' appended join key, described once.
+_USC_SECTION_KEY = (
+    "usc_section as a join key: lower-cased, with every dash spelling an ASCII hyphen, as RefSpec's section oracle "
+    "keys it. Fold the other side the same way (schemas.tables.usc_section_key): document_citations' usc_section rule "
+    "001 keeps the printed case and dashes. NULL where usc_section is, and on rows published before the column existed."
+)
 
 LAWS = table_contract(
     "laws",
@@ -98,6 +113,7 @@ LAW_CODE_SECTIONS = table_contract(
         "stated_laws": "The law range the page's caption states it covers, verbatim.",
         "prepared_date": "The date the page states it was prepared.",
         "observed_at": "When the page was captured; the merge prefers the larger value.",
+        "usc_section_key": _USC_SECTION_KEY,
     },
 )
 
@@ -121,6 +137,7 @@ TABLE3_RECORDS = table_contract(
         "usc_section": "The Code section the section went to; NULL where it went nowhere.",
         "status": "The page's status column for the record (repealed, omitted, and the like).",
         "observed_at": "When the page was captured; the merge prefers the larger value.",
+        "usc_section_key": _USC_SECTION_KEY,
     },
 )
 
@@ -249,6 +266,7 @@ def shape_law_code_section(record: object, *, table: object, observed_at: str) -
         "stated_laws": text(table.stated_laws),
         "prepared_date": text(table.prepared_date),
         "observed_at": text(observed_at),
+        "usc_section_key": usc_section_key(record.usc_section),
     }
 
 
@@ -269,6 +287,7 @@ def shape_table3_record(record: object, *, page: object, seq: int, observed_at: 
         "usc_section": text(record.usc_section),
         "status": text(record.status),
         "observed_at": text(observed_at),
+        "usc_section_key": usc_section_key(record.usc_section),
     }
 
 

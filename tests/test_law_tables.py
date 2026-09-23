@@ -4,7 +4,7 @@ Pins Public Law 119-1 (S. 5) from the retained list record and
 ``plaw-119publ1.xml`` fixture: the Statutes at Large cite, volume and page come
 from the USLM meta only when it states the same law, and ``captured`` promises
 a citation. Also pins the classification-table, Table III and committee-detail
-folds.
+folds, and the U.S. Code section key both OLRC tables append.
 """
 
 from __future__ import annotations
@@ -16,14 +16,22 @@ from pathlib import Path
 import pytest
 
 from spicy_docs.schemas.law_tables import (
+    LAW_CODE_SECTIONS,
     STAT_CITE,
+    TABLE3_RECORDS,
     USLM_OUTCOMES,
     law_id,
     shape_law,
     shape_law_code_section,
     shape_table3_record,
 )
-from spicy_docs.schemas.tables import TableContractError, digest, read_json_column
+from spicy_docs.schemas.tables import (
+    DASH_SPELLINGS,
+    TableContractError,
+    digest,
+    read_json_column,
+    usc_section_key,
+)
 from spicy_docs.sources.govinfo.uslm import (
     PublicLawSelection,
     public_law_xml_locator,
@@ -164,6 +172,94 @@ def test_table3_records_rows_from_the_table_iii_page():
     assert (row["act_section"], row["usc_title"], row["usc_section"]) == ("1", "26", "1 nt")
     assert (row["record_volume"], row["record_page"]) == ("124", "2389")
     assert row["status"] is None
+
+
+def test_the_section_key_folds_case_and_dashes_and_leaves_a_plain_number_alone():
+    """``usc_section_key`` lower-cases a printed capital and folds a Unicode dash; a plain number is unchanged."""
+    table = parse_classification_table(
+        (FIXTURES / "uscode/classification-tbl119pl_2nd-head.htm").read_bytes(), congress=119, session=2
+    )
+    plain = shape_law_code_section(table.records[0], table=table, observed_at=OBSERVED_AT)
+    assert (plain["usc_section"], plain["usc_section_key"]) == ("5301", "5301")
+    lettered = next(record for record in table.records if record.usc_section == "4980D")
+    row = shape_law_code_section(lettered, table=table, observed_at=OBSERVED_AT)
+    assert (row["usc_title"], row["usc_section"], row["usc_section_key"]) == ("26", "4980D", "4980d")
+
+    page = parse_table3_page((FIXTURES / "uscode/table3-111_226-head.htm").read_bytes(), key="111-226")
+    compound = next(record for record in page.records if record.usc_section == "1396r-8")
+    assert shape_table3_record(compound, page=page, seq=2, observed_at=OBSERVED_AT)["usc_section_key"] == "1396r-8"
+    # No retained row prints a Unicode dash in its section, but the release point spells every compound section
+    # with an en dash, so the same row spelled that way must key where the printed hyphen does.
+    dashed = replace(compound, usc_section="1396r\u20138")
+    row = shape_table3_record(dashed, page=page, seq=2, observed_at=OBSERVED_AT)
+    assert (row["usc_section"], row["usc_section_key"]) == ("1396r\u20138", "1396r-8")
+    went_nowhere = replace(compound, usc_title=None, usc_section=None)
+    assert shape_table3_record(went_nowhere, page=page, seq=2, observed_at=OBSERVED_AT)["usc_section_key"] is None
+
+
+#: The nine dash code points RefSpec's ``normalize_section`` folds, spelled here
+#: rather than read from ``DASH_SPELLINGS`` so dropping one from it fails.
+NINE_DASHES = ("\u2010", "\u2011", "\u2012", "\u2013", "\u2014", "\u2015", "\u2212", "\x96", "\x97")
+
+
+def test_every_dash_spelling_folds_to_one_ascii_hyphen():
+    """Each of the nine dash spellings, and surrounding whitespace, fold away; ``None`` stays ``None``."""
+    assert set(DASH_SPELLINGS) == set(NINE_DASHES)
+    assert {usc_section_key(f" 1400Z{dash}1 ") for dash in NINE_DASHES} == {"1400z-1"}
+    assert usc_section_key(None) is None
+
+
+#: The column order each OLRC table was published in before the key existed,
+#: read from the retained Parquet (``usc-section-key-2026-09-23/measure.out``).
+PUBLISHED_LAW_CODE_SECTIONS = (
+    "congress",
+    "session",
+    "seq",
+    "law_id",
+    "law_number",
+    "law_type",
+    "number",
+    "usc_title",
+    "usc_section",
+    "action",
+    "act_section",
+    "statutes_at_large_volume",
+    "statutes_at_large_page",
+    "link_volume",
+    "link_page",
+    "table_order",
+    "stated_laws",
+    "prepared_date",
+    "observed_at",
+)
+PUBLISHED_TABLE3_RECORDS = (
+    "act_key",
+    "stated_key",
+    "seq",
+    "congress",
+    "act_date",
+    "statutes_at_large_volume",
+    "release_point",
+    "act_section",
+    "record_volume",
+    "record_page",
+    "usc_title",
+    "usc_section",
+    "status",
+    "observed_at",
+)
+
+
+def test_the_section_key_is_appended_last_so_published_files_still_merge():
+    """Both tables keep their published columns and identity, with ``usc_section_key`` appended after them.
+
+    The host NULL-fills a column a prior Parquet file lacks, so appending is a backfill; moving a published column
+    or the identity would not be.
+    """
+    assert LAW_CODE_SECTIONS.columns == (*PUBLISHED_LAW_CODE_SECTIONS, "usc_section_key")
+    assert TABLE3_RECORDS.columns == (*PUBLISHED_TABLE3_RECORDS, "usc_section_key")
+    assert LAW_CODE_SECTIONS.identity == ("congress", "session", "seq")
+    assert TABLE3_RECORDS.identity == ("act_key", "seq")
 
 
 def test_the_committee_fold_builds_one_json_row_per_detail_record():

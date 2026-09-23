@@ -78,3 +78,10 @@ per-act view keyed `(act_key, seq)`; its page proves the act, the Congress
 and the Statutes at Large volume back, which is the register's Table III
 proof. The measured captures and their whole-page counts are in
 `corpora/supply-2026-09-02/receipts/olrc-classification-2026-09-19/`.
+
+Both tables keep the section as printed (`4980D`, `1400Z-1`) and append
+`usc_section_key`, its lower-cased, dash-folded join key (`4980d`,
+`1400z-1`). Case carries no identity in the Code, and 142 of the 814 lettered
+rows in the retained 119th-Congress table (captured 2026-09-19) print a
+capital; see
+[the decision](../decisions.md#us-code-section-join-keys-are-lower-cased-on-both-sides).

@@ -1819,3 +1819,77 @@ editions:
 - **Continued authorities.** 98 records carry them, and RefSpec's grammar reads
   1,310 citations from them. They are returned beside the list, not appended to
   it, because whether a host publishes them is the host's choice.
+
+## U.S. Code section join keys are lower-cased on both sides
+
+Blind ruling 2026-09-23, recorded as decision 30 in spicy-regs'
+`docs/research/fork-delivery-decisions-2026-09-22.md`. The key is built by
+`schemas.tables.usc_section_key` and is documented in [Tables](tables.md) and
+[the classification tables](sources/uscode-classification.md#where-the-rows-land).
+The receipt is `corpora/supply-2026-09-02/receipts/usc-section-key-2026-09-23/`
+(`measure.py`, `annual_case.py`, `cut_fixture.py` and their output).
+
+**The citation grammar's `usc_section` key stays as it is**: it lower-cases the
+section letters (`31-5318a`), and its rule version does not move.
+`law_code_sections` and `table3_records` instead each append a derived
+`usc_section_key` beside the printed `usc_section`. Both identities
+(`(congress, session, seq)` and `(act_key, seq)`) and `usc_section` are
+unchanged. The key is appended last because spicy-regs' `merge_table` selects
+a column that a prior Parquet file lacks as NULL. Rows published before the
+column keep NULL until their scope is captured again.
+
+**Case carries no identity in the Code, and the publishers disagree about it.**
+The retained 119th-Congress `law_code_sections` has 3,632 rows. Of these, 814
+print a lettered section and 142 print it upper-case: 64 distinct pairs, 51 of
+them in Title 26 (`25A`, `45Q`, `199A`, `1400Z-1`). A join on the printed
+spelling misses all 142. None of the following sources has a pair of sections
+that differ only by case or dash:
+
+- that table;
+- the OLRC release point `xml_uscAll@119-102`, read as printed: 59,362
+  sections, 470 of them printed with a capital;
+- the 31 annual editions from 1994 to 2024, re-read as printed: 1,572,225
+  year, title and section rows, 8,978 of them printed with a capital.
+
+RefSpec's oracle stores lettered sections lower-cased and its
+`normalize_section` folds on lookup. The oracle's own zero cannot show such a
+pair, because it lower-cases at extraction, so the zeros above come from
+re-reading the publishers' files before any fold. Table III itself prints four
+sections both ways (28 U.S.C. 599A and 599a, 530A and 530a; 42 U.S.C. 300V and
+300v; 10 U.S.C. 2380B and 2380b) in 307,473 bulk records, so without the fold
+Table III would not join to itself.
+
+**The dash fold earns its place from the Code's side.** No retained
+classification row or Table III record prints a Unicode dash, but the release
+point spells all 5,311 of its compound sections with an en dash and none with
+a hyphen. `usc_section_key` is `normalize_section` exactly: it trims,
+lower-cases, and turns each of the same nine dash spellings into an ASCII
+hyphen. It does not strip subsection detail or zero pads, because neither
+table prints either. Table III's note and chapter spellings (`1 nt`,
+`ch. 12A`) stay in the key, lower-cased.
+
+**A derived column instead of a fold at join time.** Every consumer was left
+to fold at join time, and that is how the miss went unnoticed. A printed column
+beside a derived key is these tables' existing pattern: `stated_key` sits beside
+`act_key`, and `publisher_law_type` beside `law_type`.
+
+**The helper is in the `schemas` leaf, not in `interpretation/`.** `schemas`
+may not import `interpretation` (see [Tables](tables.md)), and
+`interpretation.citations` already imports `schemas.tables`, so a helper there
+would have made an import cycle. On this branch the lower-casing grammar does
+not exist yet. `document_citations` still keys through `citations.py` rule 001,
+which keeps the printed case and dashes (`26-199A`, `26-1400Z–1`). Until B4
+lands, a consumer must fold the citation's section through `usc_section_key`
+before joining `{usc_title}-{usc_section_key}`, or it misses every citation
+printed with a capital. The grammar that lower-cases is B4's
+`citation_grammar._usc_section`, which has its own `_DASH_SPELLINGS`. When B4
+lands, its grammar should fold through `usc_section_key` and `DASH_SPELLINGS`
+so that only one fold remains. B4's sort helper, also named
+`_usc_section_key`, is renamed then, because it returns an ordering tuple and
+not this key.
+
+**Repinning spicy-regs moves its data dictionary.** Both tables gain a
+column, so the repin regenerates `data_dictionary/catalog.json` and its
+`.sha256`, `src/spicy_regs/table_metadata.json`, and the
+`docs/tables/law_code_sections.md` and `docs/tables/table3_records.md` pages
+(`uv run spicy-regs-dict generate`).

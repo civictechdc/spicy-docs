@@ -225,7 +225,29 @@ def bill_id(identity: object) -> str:
     return natural_key(identity.congress, identity.bill_type, identity.number)
 
 
+#: Every dash a U.S. Code section is printed with: hyphen, non-breaking hyphen, figure dash, en dash, em dash,
+#: horizontal bar, minus sign, and the Windows-1252 en and em dash bytes a bad decode leaves as C1 controls.  The same
+#: nine characters RefSpec's section oracle folds (``usc_section_oracle._DASHES``).
+DASH_SPELLINGS = "‐‑‒–—―−\x96\x97"
+_DASH_TO_HYPHEN = str.maketrans(dict.fromkeys(DASH_SPELLINGS, "-"))
+
+
+def usc_section_key(section: object) -> str | None:
+    """A U.S. Code section as a join key: trimmed, lower-cased, and every dash spelling an ASCII hyphen.
+
+    Case carries no identity in the Code, but the publishers disagree on it. The classification tables print ``199A``
+    and ``1400Z-1``, where RefSpec's oracle keys ``199a`` and ``1400z-1``. The release point also spells a compound
+    section with an en dash where the tables print a hyphen. This is RefSpec's ``normalize_section``, restated in this
+    leaf so a shaper and a citation reader fold one way; B4's grammar adopts it. ``None`` stays ``None``.
+    See ``docs/decisions.md``, "U.S. Code section join keys are lower-cased on both sides".
+    """
+    if section is None:
+        return None
+    return str(section).strip().lower().translate(_DASH_TO_HYPHEN)
+
+
 __all__ = [
+    "DASH_SPELLINGS",
     "UNIT_SEPARATOR",
     "Row",
     "TableContract",
@@ -239,4 +261,5 @@ __all__ = [
     "read_json_column",
     "table_contract",
     "text",
+    "usc_section_key",
 ]
