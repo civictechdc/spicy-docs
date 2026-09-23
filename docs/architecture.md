@@ -46,7 +46,8 @@ Each native source's `profile.py` connects its rules to `SourceNativeProfile`
 in `releases/profile.py`. For Regulations.gov, use
 `sources/regulations_gov/`: `acquisition.py` fetches, `evidence.py` packs captures,
 `records.py` classifies, `scope.py` checks coverage, and `validation.py` checks
-structures. `definitions.py` and `schemas.py` declare the data shapes.
+structures. `definitions.py` and `schemas.py` declare the data shapes, and
+`dates.py` reads the publisher's Eastern calendar day.
 
 ## Releases and storage
 

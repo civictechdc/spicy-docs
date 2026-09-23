@@ -318,6 +318,7 @@ src/spicy_docs/sources/regulations_gov/__init__.py	Regulations.gov collection pr
 src/spicy_docs/sources/regulations_gov/acquisition.py	Capture a complete Mirrulations enumeration into bounded evidence pages.	src
 src/spicy_docs/sources/regulations_gov/api.py	Regulations.gov API v4 document lists and details, page by page with exact evidence.	src
 src/spicy_docs/sources/regulations_gov/attachments.py	Attachment and document-body files from ``downloads.regulations.gov``, one bounded PDF at a time.	src
+src/spicy_docs/sources/regulations_gov/dates.py	Regulations.gov states dates and instants on the Eastern clock; read their calendar day there.	src
 src/spicy_docs/sources/regulations_gov/definitions.py	Regulations.gov collection identities, accepted fields, and evidence data shapes.	src
 src/spicy_docs/sources/regulations_gov/evidence.py	Pack and decode exact Mirrulations listing metadata and captured bytes.	src
 src/spicy_docs/sources/regulations_gov/profile.py	Regulations.gov collection profiles share acquisition mechanics and retain distinct selection rules.	src
@@ -368,6 +369,7 @@ tests/govinfo_mods_oracle.py	Map MODS records without narrowing the publisher's 
 tests/json_record_ranges_oracle.py	Strict JSON parsing and exact record-coordinate helpers, frozen from DocSpec 051ce057.	test
 tests/regulations_gov/__init__.py	Regulations Gov behavior tests.	test
 tests/regulations_gov/fixtures.py	Shared fixtures for the regulations.gov tests: synthetic document and docket API payloads, file-layout objects, query…	test
+tests/regulations_gov/test_dates.py	Eastern calendar days: a deadline is the Eastern day it closes on under either offset, a bare UTC midnight keeps its…	test
 tests/regulations_gov/test_encoding.py	Encoding contract: source values round-trip byte-exact (integers in the JSON-safe range, Unicode text, nulls), while…	test
 tests/regulations_gov/test_evidence.py	Regulations.gov evidence contract: document packs capture exact listing metadata and object bytes once, out-of-scope…	test
 tests/regulations_gov/test_records.py	Record-classification contract: document and docket records preserve exact source facts and join keys without…	test

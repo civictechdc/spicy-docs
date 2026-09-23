@@ -36,6 +36,13 @@ The [CLI](../cli.md#publish) requires dates and named agencies:
 All profiles use `data.id`. Timestamps become UTC only for comparison; records
 retain source timestamps. A non-null version wins over null.
 
+Read a calendar day with `regulations_gov_day`, never the UTC prefix: the
+publisher closes a comment window at 11:59:59 PM Eastern (`03:59:59Z` or
+`04:59:59Z`), so the prefix is a day late on every deadline, while a bare
+`T00:00:00Z` is a date-only value that keeps its date. `regulations_gov_instant`
+gives the Eastern-clock instant, or None for a date-only value. The measurement
+and receipt are in `spicy_docs.sources.regulations_gov.dates`.
+
 | Collection | Repeated winning version |
 | --- | --- |
 | Documents | Identical canonical records collapse. If only `openForComment` or `withinCommentPeriod` differs, the last-listed observation wins. Other differences refuse publication. |
