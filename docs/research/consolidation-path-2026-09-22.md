@@ -161,12 +161,12 @@ republish every row once. Ruling 4 in §5 orders the two.
 9. Who normalizes Federal Register and Regulations.gov search fields:
    DocSpec's stored `normalizedMetadata` or spicysearch's preparer (D6, with
    D3). **Decided:** spicysearch for now; spicy-docs after D3.
-10. Whether DocSpec's Regulations.gov policy version moves so that `commentCloseDate` and the publication day use the Eastern rule (A13); it changes every stored deadline.
-11. Whether spicy-regs mints Federal Register document-number IRIs in RefSpec's rkaf space instead of `urn:spicy-regs:frdoc` (B20; 429,131 values).
-12. Where the IRI minters live (B20): spicy-docs as standard-library modules beside the grammar, which reaches spicy-regs at once, or Rulespec Core per REF-024, which would add `rulespec-conformance` (rdflib, pyshacl) to spicy-regs; the identifier shapes stay in spicy-docs either way.
+10. Whether DocSpec's Regulations.gov policy version moves so that `commentCloseDate` and the publication day use the Eastern rule (A13); it changes every stored deadline. **Decided:** not now; spicysearch and Engine derive their day fields through the spicy-docs helper, and DocSpec's policy moves with the Track D rebuild (decision 26).
+11. Whether spicy-regs mints Federal Register document-number IRIs in RefSpec's rkaf space instead of `urn:spicy-regs:frdoc` (B20; 429,131 values). **Decided:** the rkaf spaces; no published column carries the local prefix, so nothing moves (decision 27).
+12. Where the IRI minters live (B20): spicy-docs as standard-library modules beside the grammar, which reaches spicy-regs at once, or Rulespec Core per REF-024, which would add `rulespec-conformance` (rdflib, pyshacl) to spicy-regs; the identifier shapes stay in spicy-docs either way. **Decided:** spicy-docs; REF-024's wording is narrowed so Core owns the lexical spaces, an amendment Mike confirms (decision 28).
 
-Rulings 5–9 were decided on 2026-09-23 by delegation, with reasons, as decisions
-17–21 in the spicy-regs decisions record (`docs/research/fork-delivery-decisions-2026-09-22.md`); the owner can overturn any of them.
+Rulings 5–12 were decided on 2026-09-23 by delegation, with reasons, as decisions
+17–21 and 26–28 in the spicy-regs decisions record (`docs/research/fork-delivery-decisions-2026-09-22.md`); the owner can overturn any of them.
 
 Everything else is a reversible commit.
 
