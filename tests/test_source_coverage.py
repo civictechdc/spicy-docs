@@ -81,7 +81,7 @@ def test_mirrulations_empty_enumeration_preserves_exact_scope_and_listing_limits
     assert outcome["recordOutcome"] == "empty"
     assert outcome["sourceStateScope"] == "complete-snapshot"
     assert outcome["traversalAcceptance"] == "source-enumeration"
-    assert outcome["acquisitionPolicyVersion"] == "1.2"
+    assert outcome["acquisitionPolicyVersion"] == profile.acquisition_policy_version
     assert outcome["acquisitionPolicy"] == profile.acquisition_policy(scope)
     assert outcome["acquisitionPolicyDigest"] == published.artifact.root["spec"]["acquisitionPolicyDigest"]
     assert outcome["acquisitionPolicy"]["dateSelection"] == "after-full-agency-object-acquisition"

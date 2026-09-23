@@ -34,6 +34,10 @@ DOCUMENT_ACQUISITION_POLICY_ID: Final = "urn:spicy-regs:acquisition:mirrulations
 DOCKET_ACQUISITION_POLICY_ID: Final = "urn:spicy-regs:acquisition:mirrulations-docket-source-enumeration"
 COMMENT_ACQUISITION_POLICY_ID: Final = "urn:spicy-regs:acquisition:mirrulations-comment-source-enumeration"
 ACQUISITION_POLICY_VERSION: Final = "1.2"
+# Comments' policy moved to 1.3 on 2026-09-23 when identical same-instant re-observations began
+# to collapse (tieDisposition refuse-differing-record-digest-at-normalized-instant); a 1.2 comment
+# release replays with a reader from before that change (SpicyDocs 0.28.0 or earlier).
+COMMENT_ACQUISITION_POLICY_VERSION: Final = "1.3"
 MAX_TRAVERSALS: Final = 1
 MAX_EVIDENCE_PACK_OBJECTS: Final = 1_000
 MAX_EVIDENCE_PACK_RAW_BYTES: Final = 16 * 1024 * 1024

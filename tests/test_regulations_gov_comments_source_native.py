@@ -227,7 +227,7 @@ def test_comment_json_types_survive_publication_and_retained_replay(tmp_path: Pa
     assert rows["data.attributes.fileFormats[0]"]["mediaType"] == "application/json"
     assert rows["data.attributes.fileFormats[1]"]["mediaType"] == "application/octet-stream"
     assert rows["included[0].attributes.fileFormats[0]"]["mediaType"] == "application/json"
-    assert reader.collection_outcome["acquisitionPolicyVersion"] == "1.2"
+    assert reader.collection_outcome["acquisitionPolicyVersion"] == "1.3"
     verify_source_native_release(
         published.artifact,
         LocalMemberSource(published.root),
