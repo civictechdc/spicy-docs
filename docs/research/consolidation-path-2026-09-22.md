@@ -259,7 +259,7 @@ Update one row per event; commit each update on its own.
 | B17 | proposed | §11 |
 | B18 | proposed | [survey](parsing-survey-2026-09-23.md) §9 |
 | B19 | proposed | [survey](parsing-survey-2026-09-23.md) §9 |
-| B20 | spicy-docs on wt/iri (`d76eabf`), in review; its home is ruling 12; REF-024's wording amendment awaits Mike (decision 28) | [survey](parsing-survey-2026-09-23.md) §11 |
+| B20 | spicy-docs on wt/iri (`46aea16`, on the B4 rework): reviewed, byte-identical to RefSpec's minter on 3,966,225 paired calls except the `-RULE`-family docket suffixes B4 admits; merges with B4 into 0.31.0; its home is ruling 12; REF-024's wording amendment awaits Mike (decision 28) | [survey](parsing-survey-2026-09-23.md) §11 |
 | B21 | proposed; after RefSpec repins | [survey](parsing-survey-2026-09-23.md) §11 |
 | B22 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
 | B23 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
@@ -270,7 +270,7 @@ Update one row per event; commit each update on its own.
 | B28 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
 | B29 | proposed; after B4 | [survey](parsing-survey-2026-09-23.md) §11 |
 | B30 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
-| B31 | spicy-docs on wt/parts (`1025a9b`), in review; held out of 0.31.0 until Mike confirms the identity move | decision 29 |
+| B31 | spicy-docs on wt/parts (`2bdd428`): reviewed and fixed (a NULL part refuses, a 1..N part set is required, a budget refusal precedes any body request); held out of 0.31.0 until Mike confirms the identity move, and spicy-regs must adopt (pass `part_id`, backfill `COALESCE(part_id, package_id)`, merge `committee_reports` with `replace_parents` by package, size `BODY_BUDGET` per part) in the same release it vendors | decision 29 |
 | C1 | proposed | — |
 | C2 | proposed | — |
 | C3 | not before C1 | — |
