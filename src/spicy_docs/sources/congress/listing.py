@@ -37,6 +37,7 @@ repeats whole walks of one query and pools them by identity
 
 from __future__ import annotations
 
+import math
 import re
 from collections.abc import Callable, Hashable, Iterator, Mapping
 from dataclasses import dataclass
@@ -738,22 +739,38 @@ _OPPOSITE_SORT: dict[str, ListSort] = {"updateDate desc": "updateDate asc", "upd
 
 
 def _pass_urls(route: CongressListRoute, url: str) -> tuple[str, ...]:
-    """The requests successive pooled passes cycle through: both ``updateDate`` orders only where ``sort`` is honored.
+    """The requests successive pooled passes cycle through: page size varies, and order alternates where honored.
 
-    The two orders drop different records from a shifting list: one pass of
-    each, pooled, reached all 7,066 amendments of the 119th Congress where one
+    A walk skips records where its page boundaries fall, so a second walk with
+    the same boundaries tends to skip the same ones. Each walk therefore takes
+    the URL's page size or one of two smaller ones (250, 237, 223), and where
+    the route honors ``sort`` alternates ``updateDate`` order too: one pass of
+    each order reached all 7,066 amendments of the 119th Congress where one
     pass reached 7,013 (spicy-regs ``build_amendments``, 2026-09-23). A route
-    that ignores ``sort`` gains nothing from alternating it, so it repeats its
-    one request.
+    that ignores ``sort`` varies its page size alone. The order starts from the
+    one ``url`` names, descending when it names none.
     """
-    if not route.sort_honored:
-        return (url,)
-    first = query_value(url, "sort")
-    if first is None:
-        first, url = "updateDate desc", with_query(url, "sort", "updateDate desc")
-    if first not in _OPPOSITE_SORT:
-        raise PagedJsonSourceError("sort must be 'updateDate asc' or 'updateDate desc'")
-    return (url, with_query(url, "sort", _OPPOSITE_SORT[first]))
+    limit = query_value(url, "limit")
+    sizes = _pass_limits(int(limit)) if limit is not None and limit.isdigit() else (limit,)
+    orders: tuple[str | None, ...] = (None,)
+    if route.sort_honored:
+        first = query_value(url, "sort")
+        if first is None:
+            first, url = "updateDate desc", with_query(url, "sort", "updateDate desc")
+        if first not in _OPPOSITE_SORT:
+            raise PagedJsonSourceError("sort must be 'updateDate asc' or 'updateDate desc'")
+        orders = (first, _OPPOSITE_SORT[first])
+    passes = []
+    for index in range(math.lcm(len(orders), len(sizes))):
+        sort, size = orders[index % len(orders)], sizes[index % len(sizes)]
+        spelled = url if sort == orders[0] else with_query(url, "sort", str(sort))
+        passes.append(spelled if size == limit else with_query(spelled, "limit", str(size)))
+    return tuple(passes)
+
+
+def _pass_limits(limit: int) -> tuple[str, ...]:
+    """The URL's page size and two smaller ones that move every boundary: 250 gives 250, 237 and 223."""
+    return tuple(dict.fromkeys(str(size) for size in (limit, limit - limit // 19, limit - limit // 9)))
 
 
 class CongressListingReader(PagedJsonReader):
@@ -801,7 +818,9 @@ class CongressListingReader(PagedJsonReader):
             raise TypeError("route must be a CongressListRoute")
         urls = _pass_urls(route, url)
         return pool_walks(
-            lambda index: WalkPass.from_pages(self.records(route, urls[index % len(urls)], max_pages=max_pages)),
+            lambda index: WalkPass.from_pages(
+                self.records(route, urls[index % len(urls)], max_pages=max_pages), label=self.family.label
+            ),
             key=key,
             version=version,
             max_passes=max_passes,

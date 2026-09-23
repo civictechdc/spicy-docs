@@ -29,21 +29,36 @@ row count. ``pool_walks`` repeats whole walks of one query, keyed by a caller's
 identity, and settles on the first of two things:
 
 - **A clean walk stands alone.** A walk with no repeated identity whose
-  distinct count equals its declared total is the list: a skip needs a repeat
-  unless the population changes mid-walk, and a changed total is refused.
+  distinct count equals its declared total. A record moving in the order
+  skips one only by repeating another; a population change can skip one
+  without a repeat, and is refused only when it moves the total (see the
+  known limits).
 - **Otherwise the walks since the declared total last changed are pooled**,
   keeping each identity's newest version, until the pool holds exactly the
   declared total. A changed total starts a new pool, so a record deleted
   without replacement cannot fill a skipped record's slot, and a walk whose
   total changes mid-walk is spent and pooling restarts after it.
 
-**Known limit:** a deletion offset by an insertion leaves the total unchanged,
-so the pool keeps the deleted record. If every walk in the pool skipped one
-live record -- the inserted one or any other -- the deleted record fills its
-slot and the pool settles wrong; no comparison of identity sets against a
-count can see that, and a test pins it. When no live record is skipped by
-every walk the pool overfills instead and the query refuses. A query still
-unsettled after ``max_passes`` raises ``IncompleteWalkError``.
+**Known limits.** Both come from a deletion offset by an insertion, which
+leaves every total unchanged; no comparison of identity sets against a count
+can see either, and a test pins each.
+
+- *Within one walk.* The per-page count check proves an equal count, not an
+  unchanged population. Ascending, a deletion in the part already read and an
+  insertion in the part not yet read cancel their shifts: the walk serves the
+  deleted record, skips a live one, repeats nothing and settles clean.
+  Descending, new records land in the part already read, so what the walk
+  misses is a record created during it, which a later window reaches.
+- *Between walks.* The pool keeps the deleted record. If every pooled walk
+  skipped one live record -- the inserted one or any other -- the deleted
+  record fills its slot and the pool settles wrong; otherwise the pool
+  overfills and the query refuses. Walks whose skips are independent (the
+  Congress reader varies page size per walk) make a record every walk skipped
+  likelier: in simulation a replacement between walks settled wrong in 3 to
+  12 of 30 queries, against 0 to 10 with fixed page boundaries, and refused
+  in the rest (``docs/sources/listings.md``).
+
+A query still unsettled after ``max_passes`` raises ``IncompleteWalkError``.
 """
 
 from __future__ import annotations
@@ -119,11 +134,18 @@ class IncompleteWalkError(PagedJsonSourceError):
 
     ``declared`` is the latest total the publisher stated; ``distinct`` the
     identities pooled since it last changed; ``restarted`` the passes spent on a
-    total that changed mid-walk.
+    total that changed mid-walk. A pool larger than ``declared`` proves the
+    population changed under an unchanged total.
     """
 
     def __init__(self, label: str, *, declared: int, distinct: int, passes: int, restarted: int) -> None:
-        message = f"{label}: pooled {distinct:,} of {declared:,} declared records after {passes} passes"
+        if distinct > declared:
+            message = (
+                f"{label}: pooled {distinct:,} records, more than the {declared:,} declared, after {passes} passes;"
+                " records were replaced under an unchanged total"
+            )
+        else:
+            message = f"{label}: pooled {distinct:,} of {declared:,} declared records after {passes} passes"
         if restarted:
             message += f"; {restarted} of them saw the declared count change mid-walk"
         super().__init__(message)
@@ -614,16 +636,30 @@ class WalkPass:
             raise ValueError("declared must be a non-negative integer")
 
     @classmethod
-    def from_pages(cls, pages: Iterable[JsonPage]) -> WalkPass:
-        """Consume one walk's pages; its declared total is the one they state, which ``pages()`` holds constant."""
+    def from_pages(cls, pages: Iterable[JsonPage], *, label: str) -> WalkPass:
+        """Consume one walk's pages; two pages stating different totals raise ``DeclaredCountChanged``.
+
+        ``pages()`` already refuses that for an exact-count family; an advisory
+        family (regulations.gov) or a ``_count_is_exact`` override (CourtListener)
+        lets the total drift, and a pooled walk must not take the last page's.
+        """
         records: list[Mapping[str, Any]] = []
         declared: int | None = None
         for page in pages:
             records.extend(page.records)
-            if page.declared_count is not None:
-                declared = page.declared_count
+            if page.declared_count is None:
+                continue
+            if declared is not None and page.declared_count != declared:
+                raise DeclaredCountChanged(
+                    f"{label} declared count changed during the traversal",
+                    declared=declared,
+                    changed_to=page.declared_count,
+                )
+            declared = page.declared_count
         if declared is None:
-            raise PagedJsonSourceError("a pooled walk needs a declared total, and no page of this walk stated one")
+            raise PagedJsonSourceError(
+                f"{label} pooled walk needs a declared total, and no page of this walk stated one"
+            )
         return cls(tuple(records), declared)
 
 
@@ -654,7 +690,7 @@ def _stamp(version: Callable[[Mapping[str, Any]], Any], record: Mapping[str, Any
     """A record's version; one that cannot be read, or is ``None``, refuses rather than ranking arbitrarily."""
     try:
         value = version(record)
-    except (KeyError, TypeError) as error:
+    except (KeyError, TypeError, ValueError) as error:
         raise PagedJsonSourceError(f"{label} could not read a record's version") from error
     if value is None:
         raise PagedJsonSourceError(f"{label} served a record with no version")

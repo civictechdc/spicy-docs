@@ -11,6 +11,7 @@ known limit.
 
 import json
 from dataclasses import replace
+from datetime import date
 
 import httpx
 import pytest
@@ -734,6 +735,13 @@ def test_a_version_that_is_missing_or_does_not_compare_refuses(version, message)
         pooled(walks, version=version)
 
 
+def test_a_version_that_does_not_parse_refuses():
+    """A ``fromisoformat`` version raises ``ValueError`` on a malformed stamp; the walk refuses naming its label."""
+    walks = Walks(([{"id": 1, "v": "last Tuesday"}], 1))
+    with pytest.raises(PagedJsonSourceError, match="Example could not read a record's version"):
+        pooled(walks, version=lambda record: date.fromisoformat(record["v"]))
+
+
 def test_a_record_that_changes_between_passes_stays_one_identity_under_a_key():
     """Keyed by id, a proceeding whose filing count moves is one record; keyed by its whole JSON it never settles.
 
@@ -751,7 +759,7 @@ def test_a_record_that_changes_between_passes_stays_one_identity_under_a_key():
     result = pooled(churning())
     assert (sorted(ids(result)), result.passes) == ([1, 2, 3], 2)
     assert {r["id"]: r for r in result.records}[1]["filings"] == 2
-    with pytest.raises(IncompleteWalkError, match="pooled 5 of 3 declared"):
+    with pytest.raises(IncompleteWalkError, match="pooled 5 records, more than the 3 declared"):
         pooled(churning(), key=lambda record: json.dumps(record, sort_keys=True))
 
 
@@ -776,8 +784,12 @@ def test_a_replacement_nothing_skips_overfills_the_pool_and_refuses():
     own either (a count-less family can serve more rows than its total).
     """
     walks = Walks((["X", "A", "A"], 3), (["Z", "B", "B"], 3), (["A", "B", "Z", "Z"], 3))
-    with pytest.raises(IncompleteWalkError, match="pooled 4 of 3 declared"):
+    message = (
+        "pooled 4 records, more than the 3 declared, after 3 passes; records were replaced under an unchanged total"
+    )
+    with pytest.raises(IncompleteWalkError, match=message) as raised:
         pooled(walks)
+    assert (raised.value.distinct, raised.value.declared) == (4, 3)
 
 
 def test_known_limit_a_deletion_offset_by_an_insertion_that_later_walks_skip_settles_wrong():
@@ -864,8 +876,20 @@ def test_a_pass_bound_must_be_a_positive_integer(max_passes):
 def test_a_walk_pass_needs_a_declared_total():
     with pytest.raises(ValueError, match="non-negative"):
         WalkPass((), -1)
-    with pytest.raises(PagedJsonSourceError, match="no page of this walk stated one"):
-        WalkPass.from_pages([])
+    with pytest.raises(PagedJsonSourceError, match="Example pooled walk needs a declared total"):
+        WalkPass.from_pages([], label="Example")
+
+
+def test_a_walk_pass_refuses_a_total_an_advisory_family_let_drift():
+    """``pages()`` checks a constant total only for exact-count families; ``from_pages`` checks it for every family."""
+    transport = Transport(response(page([{"id": 1}], count=3, next_url=NEXT)), response(page([{"id": 2}], count=4)))
+    advisory = PagedJsonReader(
+        family=replace(FAMILY, count_kind="advisory"), budget=BUDGET, api_key=KEY, transport=transport
+    )
+    with advisory as source, pytest.raises(DeclaredCountChanged) as raised:
+        WalkPass.from_pages(source.pages(URL, records_key="things"), label="Example")
+    assert (raised.value.declared, raised.value.changed_to) == (3, 4)
+    assert str(raised.value) == "Example declared count changed during the traversal"
 
 
 def test_a_walk_pass_reads_a_readers_pages():
@@ -874,5 +898,5 @@ def test_a_walk_pass_reads_a_readers_pages():
         response(page([{"id": 1}, {"id": 2}], count=3, next_url=NEXT)), response(page([{"id": 3}], count=3))
     )
     with reader(transport) as source:
-        walked = WalkPass.from_pages(source.pages(URL, records_key="things"))
+        walked = WalkPass.from_pages(source.pages(URL, records_key="things"), label="Example")
     assert (walked.records, walked.declared) == (({"id": 1}, {"id": 2}, {"id": 3}), 3)
