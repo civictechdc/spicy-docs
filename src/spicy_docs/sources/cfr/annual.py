@@ -60,15 +60,23 @@ class AnnualCfrSectionNumber:
     printed part that is neither the heading part nor the enclosing subpart's
     number: publisher typos (``§ 206.253`` under ``PART 1206``) and Title 14
     Part 241's ``19-8.1``. ``citation`` is ``number`` when it cites one section
-    under a known heading part, else ``None``. Title 43 numbers sections by subpart
-    (§ 1601.0-1 in ``PART 1600``, ``Subpart 1601``); its printed number is the
-    citation while the part stays 1600.
+    under a known heading part, else ``None``. Title 43 numbers sections by
+    subpart (§ 1601.0-1 in ``PART 1600``, ``Subpart 1601``); its printed number
+    is the citation while the part stays 1600. A numbered subpart counts only at
+    the heading part's width, as Title 43 prints it; NASA's ``Subpart 1`` in
+    ``PART 1201`` never does.
+
+    ``citation_joins`` is false when ``citation`` keeps parentheses: the Federal
+    Register side's ``cfr_section`` key reads ``26 CFR 1.401(k)-1`` as
+    ``26-1.401``, so a consumer joining on that key sets ``cfr_ref`` NULL until
+    the shared citation grammar (consolidation plan B4) decides one spelling.
     """
 
     number: str
     printed_part: str | None
     section: str
     citation: str | None
+    citation_joins: bool
     range: bool
     mismatch: bool
 
@@ -79,33 +87,44 @@ def split_annual_cfr_section(number: str, part: str | None, subpart: str | None)
     printed = _PRINTED_PART.match(bare)
     printed_part = printed[1] if printed else None
     section = bare.removeprefix(f"{part}.") if part is not None else bare
+    # Measured: every Title 43 subpart citation has the part's width; none of
+    # the 271 other numbered-subpart sections (NASA, 48 CFR 719) does.
+    series = subpart if part is not None and subpart is not None and len(subpart) == len(part) else None
     # A later number restating a part prefix is a span (`§ 141.15-141.19`,
     # `1509.203-1519.204` under PART 1519); any `-N.` is not: `109-38.301-1.50`.
     rest = bare[printed.end() :] if printed else ""
-    spans = _RANGE.search(number) is not None or any(f"-{p}." in rest for p in (printed_part, part, subpart) if p)
-    mismatch = printed_part is not None and part is not None and printed_part not in (part, subpart)
-    citable = printed_part is not None and part is not None and not spans and not mismatch
-    return AnnualCfrSectionNumber(bare, printed_part, section, bare if citable else None, spans, mismatch)
+    spans = _RANGE.search(number) is not None or any(f"-{p}." in rest for p in (printed_part, part, series) if p)
+    mismatch = printed_part is not None and part is not None and printed_part not in (part, series)
+    citation = bare if printed_part is not None and part is not None and not spans and not mismatch else None
+    joins = citation is not None and "(" not in citation
+    return AnnualCfrSectionNumber(bare, printed_part, section, citation, joins, spans, mismatch)
 
 
 @dataclass(frozen=True, slots=True)
 class AnnualCfrSection:
     """One SECTION of an annual CFR volume and the PART heading that encloses it.
 
-    ``number`` is its first SECTNO's text as printed, empty when it prints none.
+    ``number`` is its first SECTNO's text as printed, which can be whitespace
+    only (two em spaces in 17 CFR vol 5), and empty when it prints none.
     ``part`` is the innermost enclosing PART's heading number (``PART
     50-201—…`` gives ``50-201``), ``None`` where that PART prints no numbered
     heading or no PART encloses the section (back-matter reprints of OMB
-    sections). The running head never substitutes:
-    some are wrong (``Pt. 1208`` over ``PART 1209``), so ``running_head`` keeps
-    that PART's EAR text for diagnostics only. ``subpart`` is the innermost
-    SUBPART heading's number when it is numbered like a part (Title 43's
-    ``Subpart 1601``). ``granule`` is GovInfo's section token for ``number``.
+    sections). The running head never substitutes: some are wrong (``Pt. 1208``
+    over ``PART 1209``), so ``running_head`` keeps that PART's EAR text for
+    diagnostics only. ``subpart`` is the number in the innermost SUBPART heading
+    inside that PART, when it prints one (Title 43's ``Subpart 1601``, NASA's
+    ``Subpart 1``). ``granule`` is GovInfo's section token for ``number``.
 
-    ``nested`` sections sit inside another SECTION; ``revised`` ones inside
-    revised text or an effective-date note; ``reserved`` ones hold a RESERVED
-    element. Where a granule token recurs, the first un-nested copy (else the
-    first copy) is ``canonical``; ``repeated`` marks every copy of a token that
+    ``nested`` sections sit inside another SECTION, ``wrapped`` ones with a
+    PART between them and it, ``revised`` ones inside revised text or an
+    effective-date note, and ``reserved`` ones hold a RESERVED element. Neither
+    ``nested`` nor ``revised`` means "not current": unclosed publisher elements
+    swallow the parts that follow (every part after 6 in 15 CFR vol 1 prints
+    inside § 6.5's revised text; one wrapper section holds 41 CFR vol 4). Look
+    sections up by ``granule`` among the ``canonical`` ones, never by filtering
+    on these flags. Per token, the copy with the lowest (nested, revised,
+    document position) is ``canonical``; an empty token (a whitespace-only
+    number) never is. ``repeated`` marks every copy of a nonempty token that
     more than one un-nested SECTION prints. Split ``number`` for citation with
     ``split_annual_cfr_section(number, part, subpart)``.
     """
@@ -116,6 +135,7 @@ class AnnualCfrSection:
     running_head: str | None
     granule: str
     nested: bool
+    wrapped: bool
     revised: bool
     reserved: bool
     canonical: bool
@@ -132,9 +152,11 @@ class _Division:
 
 @dataclass(slots=True)
 class _Section:
+    depth: int
     part: _Division | None
     subpart: _Division | None
     nested: bool
+    wrapped: bool
     revised: bool
     number: str | None = None
     reserved: bool = False
@@ -194,7 +216,8 @@ class _AncestryScan(_AnnualScan):
             parts, subparts = self.divisions["PART"], self.divisions["SUBPART"]
             part = parts[-1] if parts else None
             subpart = subparts[-1] if subparts and (part is None or subparts[-1].depth > part.depth) else None
-            section = _Section(part, subpart, bool(self.open), self.revisions > 0)
+            wrapped = bool(self.open) and part is not None and part.depth > self.open[-1].depth
+            section = _Section(len(self.stack), part, subpart, bool(self.open), wrapped, self.revisions > 0)
             self.open.append(section)
             self.found.append(section)
         elif tag in _REVISIONS:
@@ -239,18 +262,21 @@ def scan_annual_cfr_sections(xml: bytes, *, max_bytes: int = DEFAULT_MAX_BYTES) 
     Reads the heading, never the section number or granule id, for the part:
     Title 43 numbers sections by subpart, Title 41's compound parts contain a
     hyphen and Title 14 Part 241 prints ``19-8.1``. Nested and repeated copies
-    stay; ``canonical`` picks one per granule token. Identity is the
+    stay; ``canonical`` picks one per granule token. Pass ``max_bytes`` with
+    room to spare: the largest retained 2025 volume is 12 MiB against the 16 MiB
+    default (see docs/sources/cfr.md). Identity is the
     acquisition's job (``validate_annual_cfr_xml``); this refuses only a
     non-volume root, nested document roots and unsafe or oversized XML.
     """
     scan = _AncestryScan()
     scan.read(xml, max_bytes)
     tokens = [annual_cfr_granule_token(section.number or "") for section in scan.found]
-    first: dict[str, int] = {}
-    outer = Counter(token for token, section in zip(tokens, scan.found, strict=True) if not section.nested)
+    best: dict[str, int] = {}
+    outer = Counter(token for token, section in zip(tokens, scan.found, strict=True) if token and not section.nested)
     for index, (token, section) in enumerate(zip(tokens, scan.found, strict=True)):
-        if token not in first or (not section.nested and scan.found[first[token]].nested):
-            first[token] = index
+        held = scan.found[best[token]] if token in best else None
+        if token and (held is None or (section.nested, section.revised) < (held.nested, held.revised)):
+            best[token] = index
     return tuple(
         AnnualCfrSection(
             section.number or "",
@@ -259,9 +285,10 @@ def scan_annual_cfr_sections(xml: bytes, *, max_bytes: int = DEFAULT_MAX_BYTES) 
             section.part.running_head if section.part else None,
             token,
             section.nested,
+            section.wrapped,
             section.revised,
             section.reserved,
-            first[token] == index,
+            best.get(token) == index,
             outer[token] > 1,
         )
         for index, (token, section) in enumerate(zip(tokens, scan.found, strict=True))

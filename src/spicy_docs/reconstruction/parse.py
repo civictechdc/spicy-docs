@@ -25,7 +25,7 @@ from dataclasses import dataclass, field, replace
 from typing import Protocol
 
 from spicy_docs.extraction.gpo_normalize import METADATA_RULES, normalize_gpo_glyphs
-from spicy_docs.sources.cfr.models import CFR_SECTION_NUMBER
+from spicy_docs.sources.cfr_section_number import CFR_SECTION_NUMBER
 
 from .evidence import (
     Decision,

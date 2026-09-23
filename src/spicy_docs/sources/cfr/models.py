@@ -7,18 +7,13 @@ from dataclasses import dataclass
 from datetime import date as Date
 from typing import Literal
 
+from spicy_docs.sources.cfr_section_number import CFR_SECTION_NUMBER
 from spicy_docs.transport.source_acquirer import limit_byte_bound
 
 DEFAULT_MAX_BYTES = 16 * 1024 * 1024
 MAX_CFR_BYTES = 256 * 1024 * 1024
 _PART = re.compile(r"[0-9]+(?:-[0-9]+)*")
 _SECTION = re.compile(r"[0-9][0-9A-Za-z()._-]*")
-#: One printed ``part.section`` number (``1.1``, ``50-201.1``, ``1601.0-1``): the
-#: annual granule selector and the reconstruction parser's section heading read
-#: the same grammar. Lettered parts (``261a.1``), parenthesized (``1.401(k)-1``)
-#: and ranged numbers are outside it; ``annual.split_annual_cfr_section`` reads
-#: every printed form.
-CFR_SECTION_NUMBER = r"[0-9]+(?:-[0-9]+)*\.[0-9]+[A-Za-z]?(?:-[0-9]+[A-Za-z]?)*"
 _ANNUAL_SECTION = re.compile(CFR_SECTION_NUMBER)
 
 

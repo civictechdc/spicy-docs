@@ -2,12 +2,15 @@
 
 Excerpts are cut from retained 2025 annual volumes (see fixtures/cfr/README.md):
 subpart-numbered Title 43, compound Title 41 parts and its wrapper section,
-headings the pattern must stop inside, wrong running heads, revised and
-repeated copies, publisher typos and Title 14 Part 241's own numbering.
+unclosed revised text that swallows later parts, headings the pattern must stop
+inside, wrong running heads, revised and repeated copies, publisher typos and
+duplicates, whitespace-only numbers and Title 14 Part 241's own numbering.
 """
 
 from __future__ import annotations
 
+import random
+import re
 from pathlib import Path
 
 import pytest
@@ -21,6 +24,7 @@ from spicy_docs.sources.cfr import (
     scan_annual_cfr_sections,
     split_annual_cfr_section,
 )
+from spicy_docs.sources.cfr_section_number import CFR_SECTION_NUMBER
 
 FIXTURES = Path(__file__).parent / "fixtures" / "cfr"
 
@@ -48,7 +52,7 @@ def test_title_43_part_is_the_heading_and_its_citation_is_the_printed_number():
     assert (first.part, first.subpart, first.running_head, first.granule) == ("1600", "1601", "Pt. 1600", "1601-0-1")
     number = split(first)
     assert (number.printed_part, number.section, number.citation) == ("1601", "1601.0-1", "1601.0-1")
-    assert not number.mismatch and not number.range
+    assert number.citation_joins and not number.mismatch and not number.range
     (finding,) = find_citations("43 CFR 1601.0-1", kinds=("cfr_section",))
     assert finding.target_key == f"43-{number.citation}"
     assert split(sections["§\u20091610.1"]).citation == "1610.1"
@@ -70,13 +74,38 @@ def test_compound_parts_keep_their_hyphen_and_placeholders_hold_no_sections():
 def test_wrapper_section_nests_whole_parts_under_their_own_headings():
     """Title 41 vol 4 prints § 201-1.304 around the FTR: nested sections take the innermost PART."""
     sections = scan("CFR-2025-title41-vol4")
-    assert [(s.number, s.part, s.nested) for s in sections] == [
-        ("§\u2009201-1.303", "201-1", False),
-        ("§\u2009201-1.304", "201-1", False),
-        ("§\u2009300-1.1", "300-1", True),
-        ("§\u2009300-2.1", "300-2", True),
+    assert [(s.number, s.part, s.nested, s.wrapped) for s in sections] == [
+        ("§\u2009201-1.303", "201-1", False, False),
+        ("§\u2009201-1.304", "201-1", False, False),
+        ("§\u2009300-1.1", "300-1", True, True),
+        ("§\u2009300-2.1", "300-2", True, True),
     ]
     assert all(section.canonical and not section.revised for section in sections)
+
+
+def test_unclosed_revised_text_swallows_the_parts_that_follow():
+    """15 CFR vol 1 prints PART 8 onward inside § 6.5's revised text: nested and revised, yet the only, current copy."""
+    sections = scan("CFR-2025-title15-vol1")
+    assert [(s.number, s.part, s.nested, s.wrapped, s.revised, s.canonical) for s in sections] == [
+        ("§\u20096.1", "6", False, False, False, True),
+        ("§\u20096.5", "6", False, False, False, True),
+        ("§\u20096.1", "6", True, False, True, False),
+        ("§\u20096.5", "6", True, False, True, False),
+        ("§\u20098.1", "8", True, True, True, True),
+    ]
+    assert split(sections[-1]).citation == "8.1"
+
+
+def test_outer_numbered_subpart_does_not_reach_a_nested_part():
+    """A part-width subpart of the wrapper's PART does not number sections of a PART printed inside the wrapper."""
+    body = (FIXTURES / "ancestry" / "CFR-2025-title41-vol4.xml").read_bytes()
+    heading, number = b"Subpart C\xe2\x80\x94Exclusion", "§\u2009300-1.1".encode()
+    assert body.count(heading) == 1 and body.count(number) == 1
+    body = body.replace(heading, "Subpart 300-9—Exclusion".encode()).replace(number, "§\u2009300-9.1".encode())
+    wrapper, nested = scan("CFR-2025-title41-vol4", body)[1:3]
+    assert (wrapper.part, wrapper.subpart) == ("201-1", "300-9")
+    assert (nested.part, nested.subpart) == ("300-1", None)
+    assert split(nested).mismatch and split(nested).citation is None
 
 
 @pytest.mark.parametrize(
@@ -109,7 +138,7 @@ def test_revised_copy_is_kept_flagged_and_not_canonical():
     current, revised = scan("CFR-2025-title12-vol10")[1:]
     assert current.granule == revised.granule == "1282-1" and current.part == revised.part == "1282"
     assert (current.nested, current.revised, current.canonical) == (False, False, True)
-    assert (revised.nested, revised.revised, revised.canonical) == (True, True, False)
+    assert (revised.nested, revised.wrapped, revised.revised, revised.canonical) == (True, False, True, False)
     assert not current.repeated and not revised.repeated
 
 
@@ -125,6 +154,45 @@ def test_un_nested_copy_is_canonical_even_when_a_nested_copy_comes_first():
     nested, outer = [section for section in sections if section.granule == "300-1-1"]
     assert nested.nested and not nested.canonical
     assert not outer.nested and outer.canonical and outer.part == "201-1"
+
+
+def test_un_revised_copy_is_canonical_even_when_a_revised_copy_comes_first():
+    """Among un-nested copies the un-revised one answers, whatever the order."""
+    body = (FIXTURES / "ancestry" / "CFR-2025-title12-vol9.xml").read_bytes()
+    number, closing = "§\u20091033.101".encode(), b"</APPENDIX>\n    </SUBPART>"
+    assert body.count(number) == 2 and body.count(closing) == 1
+    body = body.replace(number, "§\u20091033.102".encode(), 1)
+    body = body.replace(closing, closing + b"<SUBPART><SECTION><SECTNO>" + number + b"</SECTNO></SECTION></SUBPART>")
+    revised, current = [section for section in scan("CFR-2025-title12-vol9", body) if section.granule == "1033-101"]
+    assert revised.revised and not revised.canonical
+    assert not current.revised and current.canonical and revised.repeated and current.repeated
+
+
+def test_un_revised_publisher_duplicate_is_kept_and_flagged():
+    """48 CFR vol 5 prints § 849.504 twice under the same subpart heading; the first answers."""
+    first, second = scan("CFR-2025-title48-vol5")
+    assert first.granule == second.granule == "849-504" and first.part == second.part == "849"
+    assert not (first.nested or first.revised or second.nested or second.revised)
+    assert first.repeated and second.repeated and first.canonical and not second.canonical
+
+
+def test_whitespace_only_numbers_are_never_canonical():
+    """17 CFR vol 5 prints two SECTNOs holding an em space: kept as printed, with an empty token that answers nothing."""
+    sections = scan("CFR-2025-title17-vol5")
+    assert [section.number for section in sections] == ["\u2003", "\u2003"]
+    assert all(s.granule == "" and not s.canonical and not s.repeated and s.part is None for s in sections)
+    assert split(sections[0]).citation is None
+
+
+def test_numbered_subpart_outside_title_43_does_not_cite():
+    """NASA numbers subparts 1, 2, …: § 1201.100 cites under its part, and a printed ``1.`` prefix is no citation."""
+    body = (FIXTURES / "ancestry" / "CFR-2025-title14-vol5.xml").read_bytes()
+    (section,) = scan("CFR-2025-title14-vol5", body)
+    assert (section.part, section.subpart, split(section).citation) == ("1201", "1", "1201.100")
+    number = "§\u20091201.100".encode()
+    assert body.count(number) == 1
+    (renumbered,) = scan("CFR-2025-title14-vol5", body.replace(number, "§\u20091.100".encode()))
+    assert split(renumbered).mismatch and split(renumbered).citation is None
 
 
 def test_repeated_un_nested_copies_are_both_kept_and_flagged():
@@ -164,7 +232,15 @@ def test_parenthesized_numbers_cite_and_single_section_mark_ranges_do_not():
     single, span = scan("CFR-2025-title26-vol6")
     assert single.granule == "1-401k-1"
     assert (split(single).section, split(single).citation) == ("401(k)-1", "1.401(k)-1")
-    assert split(span).range and split(span).citation is None
+    assert split(span).range and split(span).citation is None and not split(span).citation_joins
+
+
+def test_parenthesized_citation_does_not_join_the_federal_register_key():
+    """Today's Federal Register ``cfr_section`` key stops at the parenthesis; B4 decides one spelling for both sides."""
+    (single,) = [s for s in scan("CFR-2025-title26-vol6") if s.granule == "1-401k-1"]
+    assert split(single).citation == "1.401(k)-1" and not split(single).citation_joins
+    (finding,) = find_citations("26 CFR 1.401(k)-1", kinds=("cfr_section",))
+    assert finding.target_key == "26-1.401"
 
 
 def test_section_outside_any_part_has_no_part():
@@ -211,6 +287,25 @@ def test_split_reads_every_printed_form(printed, part, subpart, expected):
 def test_granule_token_matches_govinfo_spelling(printed, token):
     """Tokens equal GovInfo's own granule suffixes, including its trailing-period ``sec752-1-``."""
     assert annual_cfr_granule_token(printed) == token
+
+
+def test_granule_token_is_the_old_locator_spelling_for_every_accepted_number():
+    """For every number the selector grammar accepts, the token is the locator's former ``.``-to-``-`` spelling."""
+    rng = random.Random(20260923)
+    grammar = re.compile(CFR_SECTION_NUMBER)
+
+    def run(letters=""):
+        return "".join(rng.choices("0123456789", k=rng.randint(1, 5))) + letters
+
+    for _ in range(2000):
+        part = "-".join(run() for _ in range(rng.randint(1, 3)))
+        section = "-".join(run(rng.choice(["", rng.choice("abcxyzABCXYZ")])) for _ in range(rng.randint(1, 3)))
+        number = f"{part}.{section}"
+        assert grammar.fullmatch(number)
+        assert annual_cfr_granule_token(number) == number.replace(".", "-")
+        assert annual_cfr_xml_locator(AnnualCfrSelection(2025, 1, 1, number)).endswith(
+            f"-sec{number.replace('.', '-')}.xml"
+        )
 
 
 def test_locator_uses_the_shared_token_and_accepts_volume_zero():
