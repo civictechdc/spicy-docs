@@ -233,17 +233,54 @@ def test_the_poll_budget_bounds_the_wait():
         list(publisher.reader(poll_max=3).records())
 
 
-@pytest.mark.parametrize(
-    "download,match",
-    [
-        (_extract("A", "B", total=3), "differs from totalRecords"),
-        (_extract("A", "A"), "repeats an entity"),
-        (gzip.compress(json.dumps([_entity("A")]).encode()), "states no totalRecords"),
-    ],
-)
-def test_a_file_that_disagrees_with_its_own_count_refuses(download, match):
-    with pytest.raises(SamExtractError, match=match):
-        list(_Publisher(httpx.Response(200, content=download)).reader().records())
+def _registration(uei: str, eft: str | None = None, updated: str = "2026-09-01", name: str = "X") -> dict:
+    return {
+        "entityRegistration": {
+            "ueiSAM": uei,
+            "entityEFTIndicator": eft,
+            "lastUpdateDate": updated,
+            "legalBusinessName": name,
+        }
+    }
+
+
+def _file(records: list[dict], total: int) -> bytes:
+    return gzip.compress(json.dumps({"totalRecords": total, "entityData": records}).encode())
+
+
+def _read(download: bytes) -> list[dict]:
+    return list(_Publisher(httpx.Response(200, content=download)).reader().records())
+
+
+def test_a_file_with_fewer_registrations_than_it_declares_refuses():
+    with pytest.raises(SamExtractError, match="fewer than its totalRecords"):
+        _read(_file([_registration("A"), _registration("B")], total=3))
+    with pytest.raises(SamExtractError, match="states no totalRecords"):
+        _read(gzip.compress(json.dumps([_entity("A")]).encode()))
+
+
+def test_registrations_are_keyed_by_uei_and_eft_indicator():
+    """One entity registers once per EFT indicator; both registrations are kept."""
+    got = _read(_file([_registration("A", "0001"), _registration("A", "0002"), _registration("B")], total=3))
+    assert sorted((r["entityRegistration"]["ueiSAM"], r["entityRegistration"]["entityEFTIndicator"]) for r in got) == [
+        ("A", "0001"),
+        ("A", "0002"),
+        ("B", None),
+    ]
+
+
+def test_a_file_written_while_registrations_change_keeps_the_newest_version_and_may_exceed_its_count():
+    """Measured 2026-09-23: 147,250 declared, 147,256 rows, 147,254 registrations, two held twice."""
+    older, newer = _registration("A", updated="2026-08-29"), _registration("A", updated="2026-09-16")
+    got = _read(_file([older, newer, _registration("B"), _registration("C")], total=2))
+    assert sorted(r["entityRegistration"]["ueiSAM"] for r in got) == ["A", "B", "C"]
+    assert [r for r in got if r["entityRegistration"]["ueiSAM"] == "A"] == [newer]
+
+
+def test_identical_repeats_collapse_and_differing_ones_at_one_date_refuse():
+    assert len(_read(_file([_registration("A"), _registration("A")], total=1))) == 1
+    with pytest.raises(SamExtractError, match="two differing versions"):
+        _read(_file([_registration("A", name="X"), _registration("A", name="Y")], total=1))
 
 
 def test_a_trigger_naming_no_download_refuses():

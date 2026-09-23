@@ -5,7 +5,9 @@ trigger with a plain-text sentence naming a download URL whose ``api_key`` is
 the literal ``REPLACE_WITH_API_KEY`` placeholder; the download answers HTTP
 400 with ``errorCode`` ``FSP`` while the file generates (both measured
 2026-09-23). The trigger states no count, so the downloaded file's own
-``totalRecords`` is the selection's count. The key travels merged into each
+``totalRecords`` is the selection's count, and a floor: the file is written while
+registrations change, so it may hold more (never fewer) registrations, each keyed
+by UEI and EFT indicator (:func:`registrations`). The key travels merged into each
 URL's own query: httpx's ``params`` replaces a query rather than extending it,
 which once dropped every selection filter. This module owns that loop and the
 defensive file parse, so callers receive validated entity records or a
@@ -25,11 +27,12 @@ import json
 import re
 import time
 import zipfile
-from collections.abc import Callable, Iterator
-from typing import cast
+from collections.abc import Callable, Iterator, Mapping, Sequence
+from typing import Any, cast
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 import httpx
+from loguru import logger
 
 from spicy_docs.transport.retry import retry_http
 
@@ -66,6 +69,39 @@ def extract_entities_url(*, registration_status: str = "A", year: int | None = N
     if year is not None:
         query.append(("registrationDate", year_window_literal(year)))
     return f"{API}/entities?{urlencode(query, safe='[],/')}"
+
+
+def registration_key(record: Mapping[str, Any]) -> tuple[str, str | None]:
+    """A SAM registration's identity: its UEI and its EFT indicator.
+
+    One entity registers once per EFT indicator (measured 2026-09-23: 187 of the 147,038 UEIs in the
+    2026 registration-year extract carry more than one), so the UEI alone is not a key.
+    """
+    registration = record["entityRegistration"]
+    return validate_entity(record), registration.get("entityEFTIndicator")
+
+
+def registrations(records: Sequence[dict]) -> list[dict]:
+    """One record per registration: a repeated key keeps its newest ``lastUpdateDate``.
+
+    The extract is generated over minutes while registrations change, so a file can carry two
+    versions of one registration (two in the 2026 extract, 2026-09-23) and registrations newer
+    than its own ``totalRecords``. Identical repeats collapse; differing ones at one date refuse.
+    """
+    chosen: dict[tuple[str, str | None], dict] = {}
+    for record in records:
+        key = registration_key(record)
+        held = chosen.get(key)
+        if held is None:
+            chosen[key] = record
+            continue
+        mine = str(record["entityRegistration"].get("lastUpdateDate") or "")
+        theirs = str(held["entityRegistration"].get("lastUpdateDate") or "")
+        if mine == theirs and record != held:
+            raise SamExtractError(f"SAM extract holds two differing versions of {key} at one lastUpdateDate")
+        if mine > theirs:
+            chosen[key] = record
+    return list(chosen.values())
 
 
 def validate_entity(record: object) -> str:
@@ -343,11 +379,13 @@ class SamBulkExtract:
                 if download_url is None:
                     raise SamExtractError("SAM extract trigger named no download URL")
                 total, records = self._download_records(client, download_url)
-            if len(records) != total:
-                raise SamExtractError("SAM extract record count differs from totalRecords")
-            identities = {validate_entity(record) for record in records}
-            if len(identities) != total:
-                raise SamExtractError("SAM extract repeats an entity identifier")
+            records = registrations(records)
+            if len(records) < total:
+                raise SamExtractError(
+                    f"SAM extract holds {len(records):,} registrations, fewer than its totalRecords {total:,}"
+                )
+            if len(records) > total:
+                logger.info("SAM extract: {:,} registrations beyond its totalRecords {:,}", len(records) - total, total)
             for record in records:
                 if not self._budget_left():
                     return
@@ -413,6 +451,8 @@ __all__ = [
     "extract_population",
     "find_extract_download_url",
     "parse_extract_records",
+    "registration_key",
+    "registrations",
     "reinject_extract_key",
     "validate_entity",
     "year_window_literal",
