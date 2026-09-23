@@ -14,6 +14,9 @@ dependencies = [
 acquisition = ["boto3", "httpx", "loguru", "tqdm"]
 # Captured comment Parquet parsing/full replay and flat-table publication.
 public-table = ["polars", "pyarrow"]
+# A full pass over a retained CourtListener export decompresses its bzip2 blocks on
+# every core (courtlistener/bulk.py); without it the reader stays single-threaded.
+courtlistener-local = ["indexed-bzip2>=1.7,<2"]
 # Retained publisher HTML whose source fields lack a structured representation.
 html = ["beautifulsoup4==4.14.3"]
 # PDF/image decoding is shared; select recognition providers separately.

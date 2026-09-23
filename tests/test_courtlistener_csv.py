@@ -92,3 +92,29 @@ def test_column_count_is_bounded_even_for_empty_fields():
     assert len(next(iter_postgres_csv(io.BytesIO(b"," * 1023)))) == 1024
     with pytest.raises(CourtListenerCsvError, match="exceeds 1024 columns"):
         list(iter_postgres_csv(io.BytesIO(b"," * 1024)))
+
+
+@pytest.mark.parametrize("chunk_size", [1, 2, 3, 5, 64, 65536])
+def test_random_publisher_values_round_trip_through_every_chunk_boundary(monkeypatch, chunk_size):
+    """Escape pairs, lone backslashes, CR/LF and \\N survive the quoted fast path at any chunk split."""
+    import random
+
+    monkeypatch.setattr(csv, "_TEXT_CHUNK", chunk_size)
+    rng = random.Random(20260922)
+    pieces = ['"', "\\", '\\"', "\\\\", ",", "\n", "\r\n", "é", "\\N", "a", '<p id="x">', " "]
+    records = [
+        [None if rng.random() < 0.1 else "".join(rng.choices(pieces, k=rng.randint(0, 12))) for _ in range(4)]
+        for _ in range(300)
+    ]
+
+    def encode(value):
+        # The publisher's FORCE_QUOTE * encoding: NULL unquoted and empty, backslash-escaped quotes.
+        return "" if value is None else '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+    body = "a,b,c,d\n" + "".join(",".join(encode(value) for value in record) + "\n" for record in records)
+    assert list(iter_postgres_csv(io.BytesIO(body.encode()))) == [["a", "b", "c", "d"], *records]
+
+
+def test_a_backslash_before_other_text_stays_literal_inside_quotes():
+    """Only a quote or backslash is escaped; the fast path keeps any other backslash, as the loop did."""
+    assert list(iter_postgres_csv(io.BytesIO(b'h\n"a\\pb\\\nc\\\\\\"d"\n'))) == [["h"], ['a\\pb\\\nc\\"d']]

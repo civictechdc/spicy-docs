@@ -262,6 +262,74 @@ class _CountingStream(io.RawIOBase):
         return size
 
 
+#: A bzip2 stream ends with this 48-bit marker, a 32-bit CRC and at most seven zero padding bits.
+_STREAM_END = 0x177245385090
+
+
+def _ends_with_stream_end(tail: bytes) -> bool:
+    """Whether ``tail`` (a file's last 11 bytes) closes a complete bzip2 stream with nothing after it."""
+    if len(tail) < 10:
+        return False
+    bits = int.from_bytes(tail, "big")
+    return any(
+        bits & ((1 << padding) - 1) == 0 and (bits >> (padding + 32)) & ((1 << 48) - 1) == _STREAM_END
+        for padding in range(8)
+    )
+
+
+def _parallel_decompression_available() -> bool:
+    try:
+        import indexed_bzip2  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
+class _ParallelLocalStream(io.RawIOBase):
+    """Decompress a whole local export on several threads with indexed_bzip2.
+
+    The strict decoder then spends its time parsing rather than waiting on bzip2: 127 MB/s of text
+    against 45 MB/s single-threaded on the 2026-06-30 opinions export (measured 2026-09-22, ten
+    threads). indexed_bzip2 reads a file that is not bzip2 as empty and ignores bytes after the last
+    stream, so the first and last bytes are checked here to refuse what ``bz2`` refuses. It keeps no
+    exact compressed offset while reading, so ``compressed_bytes`` is the file size once the whole
+    file has been read and zero before; bounded passes use ``_CountingStream`` instead.
+    """
+
+    def __init__(self, path: Path, *, threads: int) -> None:
+        import indexed_bzip2
+
+        self._size = path.stat().st_size
+        with path.open("rb") as handle:
+            head = handle.read(4)
+            handle.seek(max(0, self._size - 11))
+            tail = handle.read()
+        if len(head) < 4 or head[:3] != b"BZh" or head[3:4] not in b"123456789":
+            raise OSError("Invalid data stream")
+        if not _ends_with_stream_end(tail):
+            raise EOFError("CourtListener bulk: incomplete bzip2 member at source EOF, or bytes after the last one")
+        self._source = indexed_bzip2.open(str(path), parallelization=threads)
+        self.compressed_bytes = 0
+        self.decompressed_bytes = 0
+        self.resumes = 0
+        self.budget_exhausted = False
+
+    def readable(self) -> bool:
+        return True
+
+    def close(self) -> None:
+        self._source.close()
+        super().close()
+
+    def readinto(self, target) -> int:  # type: ignore[override]
+        size = self._source.readinto(target)
+        if size:
+            self.decompressed_bytes += size
+        else:
+            self.compressed_bytes = self._size
+        return size
+
+
 class CourtListenerBulkReader(Reader):
     """Yield raw CSV rows from one CourtListener bulk dump, decompressed inline.
 
@@ -270,6 +338,10 @@ class CourtListenerBulkReader(Reader):
     instead of the network, which is how the small dumps are handled once cached. ``max_records`` and
     ``max_compressed_bytes`` bound a run, and ``row_filter`` drops rows before they are materialized,
     which keeps a filtered pass over a huge dump cheap.
+
+    A full pass over a local file decompresses on ``decompression_threads`` threads (0: every core)
+    when the ``courtlistener-local`` extra is installed; 1, a bounded pass, or a network stream keeps
+    the single-threaded path with its exact compressed-byte accounting. Rows are the same either way.
     """
 
     def __init__(
@@ -282,9 +354,17 @@ class CourtListenerBulkReader(Reader):
         max_compressed_bytes: int | None = None,
         max_record_characters: int = MAX_RECORD_CHARACTERS,
         row_filter: Callable[[dict], bool] | None = None,
+        decompression_threads: int = 0,
     ) -> None:
         super().__init__()
         validate_record_limit(max_record_characters)
+        if (
+            isinstance(decompression_threads, bool)
+            or not isinstance(decompression_threads, int)
+            or decompression_threads < 0
+        ):
+            raise ValueError("decompression_threads must be a non-negative integer")
+        self.decompression_threads = decompression_threads
         self.max_record_characters = max_record_characters
         self.dataset = dataset
         self.dump_date = dump_date
@@ -320,16 +400,27 @@ class CourtListenerBulkReader(Reader):
     def iter_records(self) -> Iterator[dict]:
         """Stream decompressed rows, updating the run counters and stopping early at ``max_records``."""
         self.stopped_early = True
-        handle, response = self._stream()
-        counter = _CountingStream(
-            handle,
-            max_compressed_bytes=self.max_compressed_bytes,
-            reopen=(
-                (lambda headers: _open(str(self.source_url), extra_headers=headers, attempts=1))
-                if response is not None
-                else None
-            ),
-        )
+        counter: _CountingStream | _ParallelLocalStream
+        if (
+            self.local_file is not None
+            and self.max_records is None
+            and self.max_compressed_bytes is None
+            and self.decompression_threads != 1
+            and _parallel_decompression_available()
+        ):
+            self.source_url = str(self.local_file)
+            counter = _ParallelLocalStream(self.local_file, threads=self.decompression_threads)
+        else:
+            handle, response = self._stream()
+            counter = _CountingStream(
+                handle,
+                max_compressed_bytes=self.max_compressed_bytes,
+                reopen=(
+                    (lambda headers: _open(str(self.source_url), extra_headers=headers, attempts=1))
+                    if response is not None
+                    else None
+                ),
+            )
         completed = False
         try:
             with io.BufferedReader(counter) as raw:
@@ -353,11 +444,12 @@ class CourtListenerBulkReader(Reader):
                     self.rows_scanned += 1
                     if self.rows_scanned % _PROGRESS_EVERY == 0:
                         logger.info(
-                            "CourtListener bulk {}: {:,} rows scanned, {:,} kept, {:.2f} GiB compressed",
+                            "CourtListener bulk {}: {:,} rows scanned, {:,} kept, {:.2f} GiB compressed, {:.2f} GiB text",
                             self.dataset,
                             self.rows_scanned,
                             self.rows_yielded,
                             counter.compressed_bytes / 2**30,
+                            counter.decompressed_bytes / 2**30,
                         )
                     record = dict(zip(header, row, strict=True))
                     if self.row_filter is not None and not self.row_filter(record):

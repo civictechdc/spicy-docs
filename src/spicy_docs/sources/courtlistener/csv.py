@@ -18,7 +18,13 @@ MAX_RECORD_CHARACTERS = 64 * 1024 * 1024
 MAX_COLUMNS = 1024
 _TEXT_CHUNK = 64 * 1024
 _UNQUOTED_RUN = re.compile(r'[^,"\r\n]+')
-_QUOTED_RUN = re.compile(r'[^"\\]+')
+#: A quoted run takes escape pairs with it. Opinion HTML escapes every attribute quote (``\\"``);
+#: ending the run at each backslash sent each pair through the per-character loop below, 73% of a
+#: pass over the 2026-06-30 opinions export (profiled 2026-09-22). A backslash that ends a chunk
+#: still goes through that loop, which resolves the pair once the next chunk arrives.
+_QUOTED_RUN = re.compile(r'(?:[^"\\]+|\\[\s\S])+')
+#: Inside quotes only a quote or a backslash is escaped; any other backslash is literal, as in the loop.
+_QUOTED_ESCAPE = re.compile(r'\\(["\\])')
 
 
 class CourtListenerCsvError(ValueError):
@@ -91,6 +97,8 @@ def iter_postgres_csv(
                 if match := pattern.match(chunk, position):
                     value = match.group()
                     count(len(value))
+                    if state == "quoted" and "\\" in value:
+                        value = _QUOTED_ESCAPE.sub(r"\1", value)
                     field.write(value)
                     if state == "start":
                         state = "unquoted"

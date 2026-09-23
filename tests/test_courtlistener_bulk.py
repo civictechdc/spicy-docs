@@ -381,7 +381,7 @@ def test_reader_keeps_counters_and_closes_on_early_generator_close(tmp_path, mon
         original(stream)
 
     monkeypatch.setattr(bulk._CountingStream, "close", close)
-    reader = CourtListenerBulkReader("courts", local_file=path)
+    reader = CourtListenerBulkReader("courts", local_file=path, decompression_threads=1)
     rows = reader.iter_records()
     assert next(rows)["id"] == "1"
     rows.close()
@@ -449,7 +449,7 @@ def test_natural_eof_requires_complete_bzip2_footer(tmp_path, concatenated):
     payload = (bz2.compress(b"id\nfirst\n") if concatenated else b"") + member[:-5]
     path = tmp_path / "truncated.bz2"
     path.write_bytes(payload)
-    reader = CourtListenerBulkReader("courts", local_file=path)
+    reader = CourtListenerBulkReader("courts", local_file=path, decompression_threads=1)
     with pytest.raises(EOFError, match="incomplete bzip2 member"):
         list(reader.iter_records())
     assert reader.stopped_early
@@ -498,3 +498,89 @@ def test_unaligned_budget_caps_the_resumed_read_and_closes_current_response(monk
     assert stream.resumes == 1
     assert stream.budget_exhausted
     assert len(resumed) == 1 and resumed[0]._served == 1 and resumed[0].closed
+
+
+# -- full passes over a local file on several threads -------------------------
+
+
+def _multi_stream(tmp_path: Path, name: str = "citations-2026-06-30.csv.bz2") -> Path:
+    """Two concatenated bzip2 streams, as a publisher compressor change could produce."""
+    path = tmp_path / name
+    first = 'id,text\n"1","a \\"quoted\\" word"\n' + "".join(f'"{n}","line\\nnext"\n' for n in range(2, 4000))
+    path.write_bytes(bz2.compress(first.encode()) + bz2.compress(b'"4000",\n"4001",""\n'))
+    return path
+
+
+def test_a_parallel_local_pass_yields_the_same_rows_and_counters(tmp_path):
+    pytest.importorskip("indexed_bzip2")
+    path = _multi_stream(tmp_path)
+    single = CourtListenerBulkReader("citations", local_file=path, decompression_threads=1)
+    parallel = CourtListenerBulkReader("citations", local_file=path, decompression_threads=2)
+    assert list(parallel.iter_records()) == list(single.iter_records())
+    for reader in (single, parallel):
+        assert reader.compressed_bytes == path.stat().st_size
+        assert reader.stopped_early is False
+    assert parallel.decompressed_bytes == single.decompressed_bytes
+    assert parallel.rows_scanned == single.rows_scanned == 4001
+
+
+@pytest.mark.parametrize(
+    ("damage", "error"),
+    [("prefix", OSError), ("suffix", None), ("truncate", EOFError)],
+    ids=["not-bzip2", "trailing-bytes", "truncated"],
+)
+def test_a_parallel_pass_refuses_what_bz2_refuses(tmp_path, damage, error):
+    """indexed_bzip2 reads non-bzip2 input as empty and ignores trailing bytes; the reader must not."""
+    pytest.importorskip("indexed_bzip2")
+    path = _multi_stream(tmp_path)
+    data = path.read_bytes()
+    path.write_bytes({"prefix": b"PK" + data, "suffix": data + b"JUNK", "truncate": data[:-7]}[damage])
+    for threads in (1, 2):
+        # bz2 reports trailing bytes as an invalid stream; the parallel check reports the missing footer.
+        with pytest.raises((OSError, EOFError) if damage == "suffix" else error):
+            list(CourtListenerBulkReader("citations", local_file=path, decompression_threads=threads).iter_records())
+
+
+def test_every_bzip2_stream_ending_is_recognized():
+    """The end-of-stream marker is bit-aligned; every padding width from 0 to 7 must be found."""
+    import random
+
+    rng = random.Random(7)
+    widths = set()
+    for size in range(400):
+        compressed = bz2.compress(bytes(rng.getrandbits(8) for _ in range(size)))
+        bits = int.from_bytes(compressed[-11:], "big")
+        widths.update(p for p in range(8) if (bits >> (p + 32)) & ((1 << 48) - 1) == bulk._STREAM_END)
+        assert bulk._ends_with_stream_end(compressed[-11:])
+        assert not bulk._ends_with_stream_end((compressed + b"\x00")[-11:])
+        assert not bulk._ends_with_stream_end(compressed[:-1][-11:])
+    assert widths == set(range(8))
+
+
+def test_bounded_local_passes_keep_exact_compressed_accounting(tmp_path, monkeypatch):
+    path = _multi_stream(tmp_path)
+    monkeypatch.setattr(
+        bulk, "_ParallelLocalStream", lambda *a, **k: pytest.fail("a bounded pass stays single-threaded")
+    )
+    reader = CourtListenerBulkReader("citations", local_file=path, max_records=5)
+    assert len(list(reader.iter_records())) == 5
+    assert 0 < reader.compressed_bytes <= path.stat().st_size
+    assert reader.stopped_early
+
+
+@pytest.mark.parametrize("threads", [-1, True, 1.5])
+def test_invalid_decompression_threads_are_refused(threads):
+    with pytest.raises(ValueError, match="decompression_threads"):
+        CourtListenerBulkReader("citations", decompression_threads=threads)
+
+
+def test_an_early_closed_parallel_pass_reports_no_compressed_bytes(tmp_path):
+    """indexed_bzip2 keeps no exact compressed offset, so only a completed pass states one."""
+    pytest.importorskip("indexed_bzip2")
+    path = _multi_stream(tmp_path)
+    reader = CourtListenerBulkReader("citations", local_file=path, decompression_threads=2)
+    rows = reader.iter_records()
+    assert next(rows)["id"] == "1"
+    rows.close()
+    assert reader.stopped_early and reader.rows_scanned == 1
+    assert reader.compressed_bytes == 0 and reader.decompressed_bytes > 0

@@ -148,6 +148,34 @@ not content hashes; `published_object_pin()` checks only listing metadata.
 Conditional resumes bind to the first download response, not an earlier listing.
 The raw reader does not hash or retain the downloaded object for the caller.
 
+### Full passes over a retained export
+
+A network pass is bounded by the bucket (about 1.75 MiB/s). A retained local
+original is bounded by the reader: on the 54.6 GB `opinions` export,
+single-threaded bzip2 and CSV decoding ran at 26 MB/s, near five hours. Two
+changes, measured 2026-09-22 on that export, bring it near an hour:
+
+- The decoder's quoted-text fast path now takes backslash escape pairs with it.
+  Opinion HTML escapes every attribute quote, and each one used to drop into the
+  per-character loop (73% of the pass). Output is unchanged; parsing alone went
+  from 56 to 113 MB/s.
+- With the `courtlistener-local` extra, a full pass over a local file decompresses
+  on every core through indexed_bzip2 (`decompression_threads`, 0 = all). The
+  first bytes and the closing end-of-stream marker are checked so a file that is
+  not bzip2, or that is truncated or followed by other bytes, is refused as `bz2`
+  refuses it. Together: 127 MB/s of text.
+
+Bounded passes (`max_records`, `max_compressed_bytes`) and network streams keep
+the single-threaded path, whose exact compressed offsets they report; a parallel
+pass reports `compressed_bytes` as the file size once it has read the whole file.
+
+Faster third-party parsers were measured and rejected on this dialect. DuckDB
+fed through a pipe keeps every buffer it has read and ran out of memory 160 GB
+into the export; in its default parallel mode it also guessed a record start
+inside a long quoted field and refused a valid record. pyarrow's CSV reader
+accepts unterminated quotes, doubled quotes and text after a closing quote
+without error. Polars has no backslash escape at all.
+
 ### Reuse listing rules through the installed wheel
 
 [`courtlistener_listing.py`](../../src/spicy_docs/sources/courtlistener/listing.py)
@@ -186,7 +214,7 @@ copies; the wheel API alone does not establish adoption.
 ## Change and check
 
 ```sh
-uv run --frozen pytest -q tests/test_mirrulations_reader.py tests/test_courtlistener_bulk.py tests/test_courtlistener_listing.py
+uv run --frozen pytest -q tests/test_mirrulations_reader.py tests/test_courtlistener_bulk.py tests/test_courtlistener_listing.py tests/test_courtlistener_csv.py
 ```
 
 Add a focused transport/parsing fixture. Preserve each reader's actual failure
