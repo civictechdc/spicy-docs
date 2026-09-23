@@ -21,7 +21,7 @@ rather than buried in control flow.
 | `money_bills` | a bill title, its identity, and referral signals from `BillStatus.committees` system codes | `MoneyBillFinding` (kind, subcommittee, fiscal year, rule, reason codes) |
 | `bill_signals` | normalized document text and candidate catalog rows | `ExtractedSignals` (with `title_source`) and ranked `BillMatch` records, each signal reported with its weight and score |
 | `vote_matching` | `BillAction.recorded_votes`, and House vote `legislationType`/`legislationNumber` | `RecordedVoteReferences` (references plus per-entry refusals), a `VoteIndex` with conflicts, and one `VoteMatch` per vote |
-| `release_matching` | committee RSS items (title, and description where a feed sends one) and bill identities | one compiled `BillPattern` per bill, and `ReleaseMatch` naming the field the mention was found in |
+| `release_matching` | committee RSS items (title, and description where a feed sends one) and bill identities | one `BillPattern` entry per bill, and `ReleaseMatch` naming the field the mention was found in; mentions are read by `citations`' `bill_number` rule |
 | `member_matching` | a bioguide id, a Senate LIS id or a sponsor display string, the legislators crosswalk, and a `MemberIndex` built once from published member rows | `MemberMatch` (bioguide, rule, score) |
 | `interest_areas` | a reader's keyword list and parsed bill sections | `SectionMatch` (excerpt, area, matched keywords, rule, relevance) |
 | `version_kind` | a bill version's `version_code` slug and, for the size heuristic, its extracted section count or body byte length | `VersionKindFinding` (kind, the rule that fired, section count, body bytes); `version_kind` is a thin wrapper returning just the kind |
@@ -29,6 +29,9 @@ rather than buried in control flow.
 | `bill_summaries` | one bill version's text, title, status and money-bill kind, and an injected `ModelCall`; or, for `summarize_diff`, a section diff's changed items (`op`, both placements' heading and body) and an injected `ModelCall` | `BillSummaryResult` with model, prompt version, content hash, token counts and timestamps; `summarize_diff` produces `DiffSummaryResult` (headline, key changes, sections added/removed, dollar changes) with the same provenance columns |
 | `model_call` | — | the one injected model seam (`ModelCall`, `ModelResponse`, `ModelCallError`) the two model-backed modules share, and the `AnswerField` declaration each prompt, each reader and each request schema (`answer_schema`) is derived from |
 | `gemini_call` | a `GenerationClient` (`extraction/gemini`'s `GeminiClient`, or a stub) | that client as a `ModelCall`: it builds the request, sends the caller's `response_schema` as `responseJsonSchema`, parses the answer and carries the publisher's token counts |
+| `citation_grammar` | a citation string or running text | the stack's one data-side grammar for CFR, U.S. Code, Public Law, Statutes at Large and other legal-authority citations, each result judged rather than discarded; moved from RefSpec (see the decision below) |
+| `identifier_shapes` | a catalog identifier value, or running text | RIN, Federal Register document number and docket shapes, validators and normalizers (`normalize_docket_reference` for a value that is one docket, `normalize_docket_references` for every docket a labelled, annotated or listed value names, `unpadded_federal_register_document_number`, the one published RIN key `published_rin`), and the overlap-arbitrated prose detector; moved from RefSpec with `citation_grammar` |
+| `iri_minting` | a value `identifier_shapes` or `citation_grammar` already reads: a RIN, CFR title/part/section, executive order, public law, docket, or Federal Register document number (with its publication date where the legacy space needs one) | a `MintedIdentifier` (the rulespec scheme and its `urn:rkaf` IRI) or `None`; the stack's minters, placed here by spicy-regs decision 28 and moved from RefSpec with the Federal Register collision verdicts they consult ([decision](decisions.md#the-stacks-identifier-minting-lives-beside-the-shapes)) |
 | `citations` | one document's normalized text, its per-page split where the rendition has one, the Congress its own index record states, and the chamber-roster vocabulary the caller already parsed | one `CitationFinding` per occurrence (kind, rule version, canonical target key, whether the key is the hosted target's own spelling, **which route reached it**, the matched text, the character span, and the printed page) |
 | `bill_actions` | one document's normalized text and the `bill_number` `CitationFinding`s already read out of it | one `BillActionFinding` per (action phrase, bill) pair: the print's own sealed phrasing, the `bill_stage` rung it maps to or NULL, the publisher's BILLSTATUS action code for that phrasing **in that row's chamber** or none, the dates the sentence states, both spans, how many bills the sentence names and the attachment class that follows from it; plus every phrase that reached no bill |
 | `cbo_estimates` | one committee report's normalized text | one `CboEstimateFinding`: whether the **cover recital** declares a CBO cost estimate (the gate; a heading is never one), the measure the cover says the report accompanies, and either the reprinted letter's heading, span, digest, end rule and signatory, or the publisher's own paragraph saying why there is none, with its span |
@@ -73,12 +76,14 @@ old outcome beside the new one.
 - **Vote matching reads structured references.** The regex over vote question
   text could not match any Senate bill. `recordedVotes` on the bill's own action
   is the join, and the House vote route states the legislation in two fields.
-- **Release matching compiles one pattern per bill, once**, built from that
-  bill's own type with the number escaped and bounded. The source rebuilt a
-  pattern per (release, bill) pair and offered the bare number as an
-  alternative, so bill 1 matched any `1`. Matching runs field by field, title
-  first, and reports which field matched, because one of the two feeds sends no
-  description at all.
+- **Release matching reads a mention once per field**, with the shared
+  `bill_number` citation rule, and looks the number up exactly as written. The
+  source rebuilt a pattern per (release, bill) pair and offered the bare number
+  as an alternative, so bill 1 matched any `1`; the port's own per-type
+  alternation still read `CR S4530` as a Senate bill, which the shared rule
+  does not. Matching runs field by field,
+  title first, and reports which field matched, because one of the two feeds
+  sends no description at all.
 - **Member matching prefers identifiers.** Bioguide, then LIS through the
   crosswalk, then the name; the name path strips the bracketed
   party/state/district block and reads the surname before the comma, and always
@@ -184,7 +189,12 @@ release is about; it reports the first bill named and which field named it, so
 a consumer can weigh a title match differently from a body one.
 
 `citations` reads what a document *prints*, which is a narrower thing than
-what it cites. It cannot see a cite the print spells in a form no measured
+what it cites. Its U.S. Code, CFR, Public Law, Statutes and Federal Register
+kinds read through `citation_grammar`, and its RIN and docket kinds through
+`identifier_shapes`, so they see what those modules see and refuse what they
+refuse: a hyphen between two CFR parts (`Part 1500-1508`) stays one
+unresolved token, a lone capital after a part (`7 CFR 1940-G`, a subpart) is
+not read, and a RIN-shaped damage (`1625-AAOO`) is never a key. It cannot see a cite the print spells in a form no measured
 rule covers, it attributes a match straddling a page break to the page it
 began on, and its `committee_name` rule is a **candidate** finder: the target
 key is a `system_code` only where the roster vocabulary the caller supplied

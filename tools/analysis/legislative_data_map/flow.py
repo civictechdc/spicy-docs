@@ -13,6 +13,7 @@ from urllib.parse import urlencode, urlsplit
 
 import httpx
 
+from spicy_docs.interpretation.communication_rin import REPORT_NATURE_RIN
 from spicy_docs.reading.paged_json import PagedJsonReader, PagedJsonSourceError
 from spicy_docs.reading.xml import parse_xml
 from spicy_docs.transport.credentials import CredentialRefusedError, scrub_credential
@@ -1168,14 +1169,14 @@ def measure_flow(
         """The first sampled communication that is a rulemaking with a RIN, else the first."""
         details = communication_details()
         return next(
-            (d for d in details if re.search(r"RIN:?\s*\d{4}-[A-Z]{2}\d{2}", str(d.get("reportNature", "")))),
+            (d for d in details if REPORT_NATURE_RIN.search(str(d.get("reportNature", "")))),
             details[0] if details else {},
         )
 
     def communication_typing() -> tuple[bool, str]:
         details = communication_details()
         rulemaking = sum(1 for d in details if str(d.get("isRulemaking")) == "True")
-        with_rin = sum(1 for d in details if re.search(r"RIN:?\s*\d{4}-[A-Z]{2}\d{2}", str(d.get("reportNature", ""))))
+        with_rin = sum(1 for d in details if REPORT_NATURE_RIN.search(str(d.get("reportNature", ""))))
         referred = sum(1 for d in details if d.get("committees"))
         required = sum(1 for d in details if d.get("matchingRequirements"))
         dated = sum(1 for d in details if d.get("congressionalRecordDate"))
@@ -1206,7 +1207,7 @@ def measure_flow(
 
     def communication_federal_register() -> tuple[bool, str]:
         detail = house_communication()
-        match = re.search(r"RIN:?\s*(\d{4}-[A-Z]{2}\d{2})", str(detail.get("reportNature", "")))
+        match = REPORT_NATURE_RIN.search(str(detail.get("reportNature", "")))
         if not match:
             return False, f"EC {detail.get('number')} states no RIN"
         rin = match[1]

@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pytest
 
+from spicy_docs.interpretation.citations import CITATION_RULES_BY_NAME
 from tools.analysis.pdf_family_rollup import (
     JOIN_KEY_RULES,
     STRUCTURE_RULES,
@@ -191,13 +192,37 @@ def test_the_recommendation_marker_reads_the_publishers_heading_not_a_verb() -> 
         assert re.search(marker, heading) is not None
 
 
-def test_the_committed_sidecar_was_written_by_these_rules() -> None:
-    """The committed sidecar's spot-check and rule patterns match the code's current rules."""
+def test_the_tool_runs_the_rules_its_sidecar_recorded() -> None:
+    """The dated measurement re-runs on its own rules, which reject every lookalike they name."""
     sidecar = json.loads(SIDECAR.read_text())
 
     assert sidecar["spot_check_failures"] == {}
-    assert [entry["name"] for entry in sidecar["join_key_rules"]] == [entry.name for entry in JOIN_KEY_RULES]
-    assert [entry["pattern"] for entry in sidecar["join_key_rules"]] == [entry.pattern for entry in JOIN_KEY_RULES]
+    assert [(entry["name"], entry["pattern"]) for entry in sidecar["join_key_rules"]] == [
+        (rule.name, rule.pattern) for rule in JOIN_KEY_RULES
+    ]
+
+
+def test_every_product_rule_that_left_the_measured_pattern_moved_its_version() -> None:
+    """Where the product now reads a kind differently from the 2026-09-20 measurement, it says so by version.
+
+    Eight kinds have moved: seven read through the shared grammar and
+    ``bill_number`` with its added guard. The rest still read exactly as
+    measured.
+    """
+    measured = {rule.name: rule.pattern for rule in JOIN_KEY_RULES}
+    moved = {name for name, pattern in measured.items() if CITATION_RULES_BY_NAME[name].pattern != pattern}
+
+    assert moved == {
+        "bill_number",
+        "public_law",
+        "statutes_at_large",
+        "usc_section",
+        "cfr_section",
+        "federal_register_cite",
+        "rin",
+        "docket_number",
+    }
+    assert all(CITATION_RULES_BY_NAME[name].version != "001" for name in moved)
 
 
 def test_the_committed_sidecar_states_the_numbers_the_report_leads_with() -> None:

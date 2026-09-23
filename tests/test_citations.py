@@ -21,6 +21,7 @@ import pytest
 from spicy_docs.interpretation.citations import (
     CITATION_RULE_SET_VERSION,
     CITATION_RULES,
+    CITATION_RULES_BY_NAME,
     DOCUMENT_CITATION_KINDS,
     CitationError,
     canonical_alnum,
@@ -137,7 +138,20 @@ def test_every_rule_rejects_its_own_lookalikes() -> None:
     assert rejected_lookalikes() == {}
 
 
-@pytest.mark.parametrize("rule", CITATION_RULES, ids=lambda rule: rule.name)
+PATTERN_RULES = tuple(rule for rule in CITATION_RULES if rule.reader is None)
+#: The kinds the shared grammar reads (citation_grammar and identifier_shapes).
+GRAMMAR_KINDS = (
+    "public_law",
+    "statutes_at_large",
+    "usc_section",
+    "cfr_section",
+    "federal_register_cite",
+    "rin",
+    "docket_number",
+)
+
+
+@pytest.mark.parametrize("rule", PATTERN_RULES, ids=lambda rule: rule.name)
 def test_a_rule_matches_one_string_and_not_a_tuple_of_groups(rule) -> None:
     """No capturing group, so ``findall`` and ``finditer`` agree about what matched.
 
@@ -155,16 +169,30 @@ def test_every_rule_states_a_version_a_merge_can_order(rule) -> None:
     assert re.fullmatch(r"\d{3}", rule.version), rule.version
 
 
-def test_the_three_rules_whose_published_key_changed_moved_their_version() -> None:
-    """``rin``, ``docket_number`` and ``us_reports_cite`` gained a target reader.
+def test_the_rules_whose_published_keys_changed_moved_their_version() -> None:
+    """Nine rules have changed which keys they publish, and each moved its version.
 
-    Each had been publishing its measurement-comparison form -- ``RIN3133AF97``
-    rather than the ``3133-AF97`` ``regulation_id_numbers_json`` holds -- which
-    is a change to the key a consumer joins on, so the procedure applies: move
-    the version, re-pin the digest, re-pin the fixture counts.
+    ``us_reports_cite`` gained a target reader, publishing ``600-183`` rather
+    than its measurement-comparison form. The seven grammar kinds read
+    through the shared grammar since 2026-09-23, which respells, splits and
+    newly reads keys; ``rin`` and ``docket_number`` had already moved once
+    for their own target readers. ``bill_number`` 002 refuses a designator
+    after a letter and a period (``R.S. 2477``). In every case the procedure
+    applied: move the version, re-pin the digests, re-pin the fixture counts.
     """
-    moved = {rule.name for rule in CITATION_RULES if rule.version != "001"}
-    assert moved == {"rin", "docket_number", "us_reports_cite"}
+    moved = {rule.name: rule.version for rule in CITATION_RULES if rule.version != "001"}
+    assert moved == {
+        "us_reports_cite": "002",
+        "bill_number": "002",
+        "public_law": "002",
+        "statutes_at_large": "002",
+        "usc_section": "002",
+        "cfr_section": "002",
+        "federal_register_cite": "002",
+        "rin": "003",
+        "docket_number": "003",
+    }
+    assert {rule.name for rule in CITATION_RULES if rule.reader is not None} == set(GRAMMAR_KINDS)
 
 
 def test_the_rule_set_version_is_pinned_to_these_rules() -> None:
@@ -178,7 +206,7 @@ def test_the_rule_set_version_is_pinned_to_these_rules() -> None:
     passed the whole suite, since a reject that is no longer asserted cannot
     fail.
     """
-    assert CITATION_RULE_SET_VERSION == "568f1c894232"
+    assert CITATION_RULE_SET_VERSION == "13d6b810b8f6"
 
 
 def test_the_stored_kinds_are_every_rule_that_reaches_a_key() -> None:
@@ -197,12 +225,99 @@ def test_the_stored_kinds_are_every_rule_that_reaches_a_key() -> None:
     assert {"rin", "docket_number"} <= set(DOCUMENT_CITATION_KINDS)
 
 
+#: A retained sample of the parsing survey's Federal Register titles and
+#: abstracts, chosen for the shapes the grammar kinds read (README beside it).
+GRAMMAR_SPECIMENS = CITATION_FIXTURES / "grammar-specimens.jsonl"
+
+
+def grammar_fixture_texts() -> list[str]:
+    """Every committed text a grammar kind is pinned over: both activity reports, both budget volumes, the specimens."""
+    from tests.test_budget_volumes import BEYOND_CAP, WHOLE
+    from tests.test_budget_volumes import body_for as budget_body
+
+    specimens = [json.loads(line)["text"] for line in GRAMMAR_SPECIMENS.read_text(encoding="utf-8").splitlines()]
+    return [
+        body_for(DENSE).text,
+        body_for(TRUNCATED).text,
+        budget_body(WHOLE).text,
+        budget_body(BEYOND_CAP).text,
+        *specimens,
+    ]
+
+
+def grammar_reading() -> dict[str, tuple[str, str]]:
+    """Per grammar kind: its rule version, and a digest of everything it reads over the committed texts."""
+    lines: dict[str, list[str]] = {kind: [] for kind in GRAMMAR_KINDS}
+    for index, text in enumerate(grammar_fixture_texts()):
+        for f in find_citations(text, kinds=GRAMMAR_KINDS):
+            lines[f.kind].append(f"{index}|{f.span_start}|{f.span_end}|{f.target_key}|{f.target_resolved}")
+    return {
+        kind: (CITATION_RULES_BY_NAME[kind].version, hashlib.sha256("\n".join(rows).encode()).hexdigest()[:16])
+        for kind, rows in lines.items()
+    }
+
+
+#: What each grammar kind reads over the committed texts, at its version. The
+#: rule-set digest above sees a grammar kind's reader only by name, so a change
+#: inside ``citation_grammar`` or ``identifier_shapes`` moves nothing there;
+#: this is what catches it.
+PINNED_GRAMMAR_READING = {
+    "public_law": ("002", "c9f4d1273027e4ce"),
+    "statutes_at_large": ("002", "ec88c4ad033cbbf0"),
+    "usc_section": ("002", "2b33e21e303a3be0"),
+    "cfr_section": ("002", "519dd4d3c7e02dda"),
+    "federal_register_cite": ("002", "7c1ec1de2286fb0e"),
+    "rin": ("003", "5199b682929eb361"),
+    "docket_number": ("003", "71c8b621b8e6e5fe"),
+}
+
+
+def test_a_grammar_change_moves_the_rule_version() -> None:
+    """A change in what a grammar kind reads must come with a new version of that kind.
+
+    The procedure when this fails: if the digest moved and the version did
+    not, move that rule's ``version`` in ``interpretation/citations.py`` (the
+    published rows change, and the merge must prefer them); then re-pin both
+    here, and the rule-set digest above.
+    """
+    for kind, (version, digest) in grammar_reading().items():
+        pinned_version, pinned_digest = PINNED_GRAMMAR_READING[kind]
+        if digest != pinned_digest and version == pinned_version:
+            pytest.fail(
+                f"{kind}: the grammar reads the committed fixtures differently (digest {digest}, pinned "
+                f"{pinned_digest}) -- move the rule version of {kind} in interpretation/citations.py, then re-pin"
+            )
+        assert (version, digest) == (pinned_version, pinned_digest), f"{kind}: re-pin to ({version!r}, {digest!r})"
+
+
+def test_the_grammar_pin_reads_every_grammar_kind() -> None:
+    """A kind that reads nothing over the fixtures would pin an empty digest and guard nothing."""
+    counts = {kind: 0 for kind in GRAMMAR_KINDS}
+    for text in grammar_fixture_texts():
+        for f in find_citations(text, kinds=GRAMMAR_KINDS):
+            counts[f.kind] += 1
+    assert min(counts.values()) >= 10, counts
+
+
 def test_a_reject_check_that_never_bit_would_be_worthless() -> None:
-    """Prove the rejection check can fail, by widening one rule until it does."""
+    """Prove the rejection check can fail, by widening one rule of each reading until it does."""
     from dataclasses import replace
 
-    widened = replace(next(r for r in CITATION_RULES if r.name == "public_law"), pattern=r"P\.?L")
-    assert [candidate for candidate in widened.rejects if widened.compiled().search(candidate)]
+    widened = replace(CITATION_RULES_BY_NAME["bill_number"], pattern=r"S")
+    assert [candidate for candidate in widened.rejects if widened.reads(candidate)]
+    # A grammar-read rule is held to its rejects by what the grammar reads.
+    lax = replace(CITATION_RULES_BY_NAME["usc_section"], rejects=("42 U.S.C. 7401",))
+    assert [candidate for candidate in lax.rejects if lax.reads(candidate)] == ["42 U.S.C. 7401"]
+
+
+def test_a_rule_is_read_one_way() -> None:
+    """A pattern and a grammar reader together, or neither, is refused at construction."""
+    from dataclasses import replace
+
+    with pytest.raises(CitationError, match="exactly one"):
+        replace(CITATION_RULES_BY_NAME["usc_section"], pattern=r"U\.S\.C")
+    with pytest.raises(CitationError, match="not by a pattern"):
+        CITATION_RULES_BY_NAME["usc_section"].compiled()
 
 
 def test_deleting_a_reject_moves_the_rule_set_digest() -> None:
@@ -324,6 +439,241 @@ def test_each_kind_reaches_its_stated_key_shape(kind: str, printed: str, expecte
     """Each kind's target key matches its documented shape and resolves."""
     (finding,) = find_citations(printed, kinds=(kind,))
     assert (finding.target_key, finding.target_resolved) == (expected, True)
+
+
+# The four grammar kinds. Every specimen was read off a 001 key the published
+# ``document_citations`` held or a cite the 001 patterns missed in the 60,000
+# Federal Register titles and abstracts the parsing survey retained
+# (``docs/research/parsing-survey-2026-09-23.md`` sections 2 and 5).
+
+
+@pytest.mark.parametrize(
+    ("kind", "printed", "keys"),
+    [
+        # 001 kept the sentence's period, and a dangling hyphen, in the key.
+        ("cfr_section", "40 CFR 60.5.", ["40-60.5"]),
+        ("usc_section", "5 U.S.C. 552.", ["5-552"]),
+        ("usc_section", "Paperwork Reduction Act (44 U.S.C. 3506(C)(2)(A)).", ["44-3506"]),
+        # 001 published a range as one token; the grammar states both ends,
+        # and an en dash is the same dash.
+        ("usc_section", "42 U.S.C. 7401-7671q", ["42-7401", "42-7671q"]),
+        ("usc_section", "42 U.S.C. 7401\u20137671q", ["42-7401", "42-7671q"]),
+        ("usc_section", "16 U.S.C. 1531 through 1544", ["16-1531", "16-1544"]),
+        ("cfr_section", "40 CFR 60.1 through 60.5", ["40-60.1", "40-60.5"]),
+        ("cfr_section", "40 CFR parts 1500 through 1508", ["40-1500", "40-1508"]),
+        # 001 read only lower-case singular "part".
+        ("cfr_section", "40 CFR Part 60", ["40-60"]),
+        ("cfr_section", "40 CFR PART 60", ["40-60"]),
+        ("cfr_section", "24 CFR parts 813 and 913", ["24-813", "24-913"]),
+        ("cfr_section", "40 CFR Parts 60, 61, and 63", ["40-60", "40-61", "40-63"]),
+        ("cfr_section", "part 60 of title 40, Code of Federal Regulations", ["40-60"]),
+        # A compound section name is one section, not a range.
+        ("usc_section", "42 U.S.C. 1395w-4", ["42-1395w-4"]),
+        ("cfr_section", "46 CFR 1.01-15", ["46-1.01-15"]),
+        # An appendix is a different place, spelled the way law_code_sections spells it.
+        ("usc_section", "50 U.S.C. app. 2401", ["50A-2401"]),
+        # Spellings 001 missed.
+        ("public_law", "Public Law 92- 463", ["92-public-463"]),
+        # A zero pad is read through, not refused: 111-5 is the Recovery Act.
+        ("public_law", "(Pub. L. 111-05, approved February 17, 2009)", ["111-public-5"]),
+        ("public_law", "Pub. L. 111-008", ["111-public-8"]),
+        ("public_law", "PUBLIC LAW 91\u2013510", ["91-public-510"]),
+        ("statutes_at_large", "86 Stat.770", ["86-770"]),
+        ("statutes_at_large", "116 Stat 2962", ["116-2962"]),
+        ("statutes_at_large", "113 Stat. 1501A-293", ["113-1501A-293"]),
+        ("statutes_at_large", "114 Stat. 2763A-326 to 2763A-328", ["114-2763A-326", "114-2763A-328"]),
+        ("statutes_at_large", "70A Stat. 157", ["70A-157"]),
+    ],
+)
+def test_a_grammar_kind_publishes_keys_that_are_citations(kind: str, printed: str, keys: list[str]) -> None:
+    """Each key is clean, resolved, and one per endpoint; endpoints of one range share one span."""
+    findings = find_citations(printed, kinds=(kind,))
+    assert [f.target_key for f in findings] == keys
+    assert all(f.target_resolved for f in findings)
+    assert len({(f.span_start, f.span_end) for f in findings if f.matched_text == findings[0].matched_text}) == 1
+
+
+@pytest.mark.parametrize(
+    ("kind", "printed", "keys"),
+    [
+        # A hyphen between two parts is ambiguous to the grammar -- real
+        # section numbers carry one -- so the printed token stands, unresolved.
+        ("cfr_section", "40 CFR Part 1500-1508", [("40-1500-1508", False)]),
+        # An abbreviated span's end was expanded, not printed.
+        ("usc_section", "20 U.S.C. 1484-86", [("20-1484", True), ("20-1486", False)]),
+        # A title that cannot exist, and a part longer than any real part.
+        ("cfr_section", "99 CFR 12", [("99-12", False)]),
+        ("cfr_section", "42 CFR 412106", [("42-412106", False)]),
+        ("usc_section", "99 U.S.C. 12", [("99-12", False)]),
+        # A law number before the numbered series is damage, not a law --
+        # read, so the print's evidence is kept, but never a resolved join.
+        ("public_law", "Pub. L. 4-13", [("4-public-13", False)]),
+        ("public_law", "(Pub. L. 04-13)", [("4-public-13", False)]),
+        # "et seq." is scope, not a doubt about the section it follows.
+        ("usc_section", "42 U.S.C. 7401 et seq.", [("42-7401", True)]),
+    ],
+)
+def test_a_key_the_grammar_doubts_is_published_unresolved(kind: str, printed: str, keys: list) -> None:
+    """Kept as evidence, as every unsettled key is, but never as a resolved join."""
+    assert [(f.target_key, f.target_resolved) for f in find_citations(printed, kinds=(kind,))] == keys
+
+
+@pytest.mark.parametrize(
+    ("kind", "printed"),
+    [
+        ("cfr_section", "under 40 CFR 60- and"),  # 001 published "40-60-"
+        ("cfr_section", "Title 40 CFR"),
+        ("usc_section", "42 U.S.C. chapter 85"),
+    ],
+)
+def test_a_cite_with_no_readable_coordinate_has_no_key(kind: str, printed: str) -> None:
+    """Nothing is published where the grammar read no coordinate, rather than a malformed key."""
+    assert find_citations(printed, kinds=(kind,)) == ()
+
+
+# The four shapes the grammar read as no coordinate, or as a range's first
+# endpoint alone, until 2026-09-23 -- counts over the parsing survey's 60,000
+# Federal Register titles and abstracts.
+
+
+@pytest.mark.parametrize(
+    ("kind", "printed", "keys"),
+    [
+        # A part followed by its printed heading (155 part citations; em dash
+        # folds to one hyphen) and a section likewise (8, which read the
+        # heading into the section).
+        ("cfr_section", "30 CFR part 886--State and Tribal Reclamation Grants", ["30-886"]),
+        ("cfr_section", "10 CFR part 33-Specific Domestic Licenses", ["10-33"]),
+        ("cfr_section", "10 CFR Part 34-- Licenses for Industrial Radiography", ["10-34"]),
+        ("cfr_section", "10 CFR Part 33\u2014Specific Domestic Licenses", ["10-33"]),
+        ("cfr_section", "30 CFR 77.1901--Reporting", ["30-77.1901"]),
+        # A hyphen then a space inside a part (66): a title-41 compound, and a
+        # plural label's range.
+        ("cfr_section", "Per 41 CFR 102- 3.140(d), any oral presentations", ["41-102-3.140"]),
+        ("cfr_section", "the CEQ regulations at 40 CFR Parts 1500- 1508", ["40-1500", "40-1508"]),
+        # A doubled dash (27) and a one-sided spaced dash (81) between two
+        # U.S. Code sections: a range, both ends read.
+        ("usc_section", "Paperwork Reduction Act of 1995, 44 U.S.C. 3501--3520.", ["44-3501", "44-3520"]),
+        ("usc_section", "42 USC 4321--4347 (NEPA)", ["42-4321", "42-4347"]),
+        ("usc_section", "the Act, 21 U.S.C. 1901- 1908, authorizes", ["21-1901", "21-1908"]),
+        # The same lost space inside one section's name (30 such keys): one
+        # section, not a range's first endpoint left unresolved.
+        ("usc_section", "under 16 U.S.C. 460l- 9 and", ["16-460l-9"]),
+        ("usc_section", "42 U.S.C. 288- 5", ["42-288-5"]),
+        ("usc_section", "42 U.S.C. 300ff- 51--300ff-67", ["42-300ff-51", "42-300ff-67"]),
+        ("usc_section", "Civil Rights Act of 1964, 42 U.S.C. 2000d- 2000d-42, as amended", ["42-2000d", "42-2000d-42"]),
+        # A comma page before another comma is a page.
+        ("federal_register_cite", "88 Fed. Reg. 12,345, 12,350 (Mar. 1, 2023)", ["88-12345"]),
+        ("federal_register_cite", "85 FR 43,304, the agency", ["85-43304"]),
+    ],
+)
+def test_the_shapes_the_grammar_used_to_drop_are_read(kind: str, printed: str, keys: list[str]) -> None:
+    """Each is read, resolved, and spanned without its heading or its trailing punctuation."""
+    findings = find_citations(printed, kinds=(kind,))
+    assert [(f.target_key, f.target_resolved) for f in findings] == [(key, True) for key in keys]
+
+
+def test_a_heading_is_not_part_of_the_span() -> None:
+    """The span ends at the coordinate, so the matched text is the citation, not its heading."""
+    (finding,) = find_citations("30 CFR part 886--State and Tribal Reclamation Grants", kinds=("cfr_section",))
+    assert finding.matched_text == "30 CFR part 886"
+
+
+@pytest.mark.parametrize(
+    ("kind", "printed", "keys"),
+    [
+        # 002 cut the docket at its first all-letter segment, and read an ITC
+        # investigation as one.
+        ("docket_number", "Docket No. EPA-HQ-OAR-2004-0015.", ["EPA-HQ-OAR-2004-0015"]),
+        ("docket_number", "Docket Number CERCLA-02-2011-2003 (referred", ["CERCLA-02-2011-2003"]),
+        ("docket_number", "investigation Nos. 731-TA-1199-1200 (Preliminary)", []),
+        # A Regulations.gov document id names a document, not a docket.
+        ("docket_number", "comment EPA-HQ-OAR-2004-0015-0001", []),
+        # The Register's own spelling, which 001 did not read.
+        ("federal_register_cite", "published at 89 FR 12345 on", ["89-12345"]),
+        ("federal_register_cite", "(60 FR 17388), HUD published", ["60-17388"]),
+        # Every RIN in a list, labelled once; a damaged or placeholder one is
+        # found and never keyed.
+        (
+            "rin",
+            "under RINs 1018-AU04, 1018-AU09, 1018-AU13, and 1018-AU28",
+            ["1018-AU04", "1018-AU09", "1018-AU13", "1018-AU28"],
+        ),
+        ("rin", "corrects the RIN number from 0701- AA81 to 0701-AA94.", ["0701-AA94"]),
+        ("rin", "RIN 1625-AAOO and RIN 2060-XXXX", []),
+        # An OMB control number a FEMA collection shapes like a RIN is the OMB number.
+        ("rin", "OMB Number: 1660-NW32. Abstract: The purpose", []),
+        ("rin", "OMB No. 1660-NW32 and RIN 1660-AA12", ["1660-AA12"]),
+    ],
+)
+def test_an_identifier_kind_is_keyed_by_identifier_shapes(kind: str, printed: str, keys: list[str]) -> None:
+    """Dockets through the label-aware docket normalizer, RINs through the one published RIN shape."""
+    assert [f.target_key for f in find_citations(printed, kinds=(kind,))] == keys
+
+
+def _rendered(kind: str, key: str) -> str:
+    """A key written back as the citation it names, by the key's own documented shape."""
+    if kind == "public_law":
+        congress, _, number = key.split("-")
+        return f"Pub. L. {congress}-{number}"
+    if kind == "rin":
+        return f"RIN {key}"
+    if kind == "docket_number":
+        return f"Docket No. {key}"
+    head, _, rest = key.partition("-")
+    if kind == "federal_register_cite":
+        return f"{head} FR {rest}"
+    if kind == "usc_section":
+        return f"{head[:-1]} U.S.C. app. {rest}" if head.endswith("A") else f"{head} U.S.C. {rest}"
+    if kind == "cfr_section":
+        return f"{head} CFR {rest}"
+    return f"{head} Stat. {rest}"
+
+
+#: What a grammar key may look like, written without the grammar: no space,
+#: no en dash, nothing but a letter or digit at either end.
+_KEY_SHAPE = re.compile(r"[0-9A-Za-z](?:[0-9A-Za-z.-]*[0-9A-Za-z])?")
+
+
+#: Texts beside the fixtures carrying every key shape the prints do not: a
+#: range, an appendix title, an abbreviated span, a refused hyphen, a compound
+#: section and lettered Statutes volumes and pages.
+_KEY_SHAPE_SPECIMENS = (
+    "42 U.S.C. 7401-7671q, 50 U.S.C. app. 2401, 42 U.S.C. 1395w-4 and 20 U.S.C. 1484-86; "
+    "40 CFR Parts 60 and 61, 40 CFR Part 1500-1508 and 46 CFR 1.01-15; "
+    "114 Stat. 2763A-326 to 2763A-328 and 70A Stat. 157; Pub. L. No. 118-31 and Pub. L. 111-05; "
+    "88 Fed. Reg. 12,345 and 89 FR 91529; RINs 1018-AU04 and 1018-AU09; Docket No. EPA-HQ-OAR-2004-0015."
+)
+
+
+@pytest.mark.parametrize("package", [DENSE, TRUNCATED, None])
+def test_every_grammar_key_parses_back_to_itself(package: str | None) -> None:
+    """The A10 gate: a published key, written back as a citation, reads as that key and nothing else.
+
+    Checked by two different means: a plain shape test that knows nothing of
+    the grammar, and the round trip through the rule itself.
+    """
+    text = _KEY_SHAPE_SPECIMENS if package is None else body_for(package).text
+    pairs = {(f.kind, f.target_key) for f in find_citations(text, kinds=GRAMMAR_KINDS)}
+    assert pairs
+    for kind, key in sorted(pairs):
+        assert _KEY_SHAPE.fullmatch(key), (kind, key)
+        assert [f.target_key for f in find_citations(_rendered(kind, key), kinds=(kind,))] == [key], (kind, key)
+
+
+@pytest.mark.parametrize(
+    ("printed", "key"),
+    [
+        ("Public Law 98-369", "98-public-369"),
+        ("P.L. 98-369", "98-public-369"),
+        ("PL 98-369", "98-public-369"),
+        ("Pub. L. No. 89-136", "89-public-136"),
+        ("Pub. L. 119-21", "119-public-21"),
+    ],
+)
+def test_the_public_law_rule_reads_every_spelling_the_sample_printed(printed: str, key: str) -> None:
+    """Four spellings, the Bluebook ``Pub. L. No.`` among them, which the rollup's first rule missed."""
+    assert [f.target_key for f in find_citations(printed, kinds=("public_law",))] == [key]
 
 
 def test_an_unknown_kind_is_refused_rather_than_ignored() -> None:
@@ -452,9 +802,13 @@ def test_the_retained_text_is_the_one_the_measurement_read(package: str) -> None
 
 
 def test_the_dense_report_reproduces_the_measurements_own_counts() -> None:
-    """CRPT-118hrpt968, as the 2026-09-20 sidecar records it.
+    """CRPT-118hrpt968, as the 2026-09-20 sidecar records it -- and two laws it could not see.
 
-    179 distinct bills and 3 public laws are its ``distinct_count``s; the
+    179 distinct bills are its ``distinct_count``. It counted 3 public laws
+    with the 001 pattern; the grammar the rule reads through since 002 also
+    reads ``PUBLIC LAW 91–510`` in capitals and ``P.L. 117–`` wrapped onto
+    the next line before ``81``, and the package MODS states both (see
+    ``test_the_dense_reports_mods_laws_are_read_exactly``). The
     committee line needs saying carefully, because the sidecar counts
     candidates and this table counts rows.  The sidecar records 9 printed
     candidate occurrences over 5 distinct candidate strings, 4 of which
@@ -469,8 +823,15 @@ def test_the_dense_report_reproduces_the_measurements_own_counts() -> None:
 
     assert len({f.target_key for f in bills}) == 179
     assert len(bills) == 267
-    assert len({f.target_key for f in laws}) == 3
-    assert {f.target_key for f in laws} == {"107-public-40", "107-public-228", "117-public-263"}
+    assert {f.target_key for f in laws} == {
+        "91-public-510",
+        "107-public-40",
+        "107-public-228",
+        "117-public-81",
+        "117-public-263",
+    }
+    stated = {f"{law.congress}-public-{law.number}" for law in mods_for(DENSE).laws}
+    assert {f.target_key for f in laws} <= stated
 
     assert len(committees) == 9
     assert sum(1 for f in committees if f.target_resolved) == 8
@@ -766,3 +1127,48 @@ def test_a_cfr_or_statute_block_missing_its_outer_number_yields_nothing() -> Non
     assert _inline_mods('<cfr><part number="60"/></cfr>').cfr_parts == ()
     assert _inline_mods('<statuteAtLarge><page pages="1234"/></statuteAtLarge>').statutes == ()
     assert _inline_mods("<rin/>").rins == ()
+
+
+def test_the_identifier_detection_runs_once_per_document(monkeypatch: pytest.MonkeyPatch) -> None:
+    """``rin`` and ``docket_number`` read one detection of the text, not one each."""
+    from spicy_docs.interpretation import citations
+
+    calls = 0
+    real = citations.detect_identifier_shapes
+
+    def counting(text):
+        nonlocal calls
+        calls += 1
+        return real(text)
+
+    monkeypatch.setattr(citations, "detect_identifier_shapes", counting)
+    citations._identifiers_in.cache_clear()
+    findings = find_citations("Docket No. EPA-HQ-OAR-2004-0015 and RIN 2060-AU12.", kinds=("rin", "docket_number"))
+    assert calls == 1
+    assert [f.target_key for f in findings] == ["EPA-HQ-OAR-2004-0015", "2060-AU12"]
+
+
+def test_doubling_a_document_does_not_quadruple_the_reading_of_every_grammar_kind() -> None:
+    """All seven grammar kinds through ``find_citations``, identifier kinds included; best of three.
+
+    The grammar's own guard (``tests/test_citation_grammar.py``) times its
+    readers; this one times the rules as the table reads them.
+    """
+    import time
+
+    block = (
+        "The Clean Air Act (42 U.S.C. 7401, 7402 and 7403), Pub. L. 92-463, 86 Stat. 770, 89 FR 12345, 40 CFR "
+        "parts 60 and 61; Docket No. EPA-HQ-OAR-2004-0015, RINs 2060-AU12 and 2060-AU13. "
+    )
+
+    def best(copies: int) -> float:
+        text = block * copies
+        times = []
+        for _ in range(3):
+            started = time.perf_counter()
+            find_citations(text, kinds=GRAMMAR_KINDS)
+            times.append(time.perf_counter() - started)
+        return min(times)
+
+    small, large = best(300), best(600)
+    assert large < 3 * small, (small, large)

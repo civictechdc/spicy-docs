@@ -11,9 +11,11 @@ unchanged from ``BillTrax/src/lib/bill-identify.ts`` (weights 0.55 / 0.20 /
 0.10 / 0.10 / 0.05, congress off-by-one worth 0.3, heading overlap accepted at
 Jaccard 0.5, at most five results and none below 0.1), with heading
 comparisons capped at ``MAX_HEADING_COMPARISONS``, the bound BillTrax spent as
-three database queries. ``normalize_for_comparison`` deliberately keeps ASCII
-``\\w`` semantics so already-stored normalized titles and their Jaccard scores
-stay comparable across the port.
+three database queries. One pattern is no longer BillTrax's: a prose bill
+number is read by the shared ``bill_number`` citation rule (see
+``_PROSE_BILL_NUMBER``). ``normalize_for_comparison`` deliberately
+keeps ASCII ``\\w`` semantics so already-stored normalized titles and their
+Jaccard scores stay comparable across the port.
 """
 
 from __future__ import annotations
@@ -22,6 +24,8 @@ import re
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
+
+from spicy_docs.interpretation.citations import CITATION_RULES_BY_NAME, bill_type_and_number
 
 HEAD_CHARS = 3000
 SPONSOR_HEAD_CHARS = 6000
@@ -54,11 +58,16 @@ MIN_CONFIDENCE = 0.1
 
 TITLE_SOURCES: tuple[str, ...] = ("may-be-cited-as", "fallback-marker", "fallback-position", "none")
 
-_PROSE_BILL_NUMBER = re.compile(
-    r"\b(H\.?\s*R\.?|S\.?|H\.?\s*J\.?\s*Res\.?|S\.?\s*J\.?\s*Res\.?"
-    r"|H\.?\s*Con\.?\s*Res\.?|S\.?\s*Con\.?\s*Res\.?|H\.?\s*Res\.?|S\.?\s*Res\.?)\.?\s*(\d{1,5})\b",
-    re.IGNORECASE,
-)
+#: The prose bill number, read by the shared ``bill_number`` citation rule and
+#: versioned by that rule's own ``version``. It replaced BillTrax's
+#: case-insensitive alternation on 2026-09-23 (consolidation item A9), which
+#: read a Congressional Record page (``CR S4530``), a U.S. Code section
+#: (``U.S.C. S300f``) and a possessive (``President's 2027``) as Senate bills;
+#: the shared rule needs a separator after the designator and takes its
+#: capitals as evidence, so an unspaced ``HR1234`` and a lower-case ``h.r. 5``
+#: are no longer read here either. Nothing stores these signals yet. The GPO
+#: bullet pattern is unchanged.
+_PROSE_BILL_NUMBER = CITATION_RULES_BY_NAME["bill_number"].compiled()
 # The GPO bullet line, "•HR  7148  IH".
 _BULLET_BILL_NUMBER = re.compile(r"[•·]\s*(HR|S|HJRES|SJRES|HCONRES|SCONRES|HRES|SRES)\s+(\d{1,5})\s", re.IGNORECASE)
 _CONGRESS = re.compile(r"(\d{2,3})(?:st|nd|rd|th)?\s*Congress", re.IGNORECASE)
@@ -142,11 +151,6 @@ def token_jaccard(left: str, right: str) -> float:
     return intersection / (len(left_tokens) + len(right_tokens) - intersection)
 
 
-def normalize_bill_type(raw: str) -> str:
-    """``H.R.`` and ``H R`` both become ``HR``."""
-    return _WHITESPACE.sub("", re.sub(r"\.\s*", "", raw.upper())).strip()
-
-
 def _title_from_citation(text: str) -> str | None:
     match = _SHORT_TITLE.search(text)
     return match.group(1).strip() if match else None
@@ -186,19 +190,32 @@ TITLE_TIERS: tuple[TitleTier, ...] = (
 )
 
 
+def _prose_bill_number(match: re.Match[str]) -> tuple[str, str] | None:
+    parts = bill_type_and_number(match.group(0))
+    return None if parts is None else (parts[0].upper(), parts[1])
+
+
+def _bullet_bill_number(match: re.Match[str]) -> tuple[str, str] | None:
+    return match.group(1).upper(), match.group(2)
+
+
 @dataclass(frozen=True, slots=True)
 class BillNumberPattern:
-    """``window`` is how many leading characters the pattern is allowed to see."""
+    """``window`` is how many leading characters the pattern is allowed to see.
+
+    ``split`` turns a match into the ``(bill type, number)`` pair the signal
+    records, in the catalog's upper-case type spelling (``HR``, ``HJRES``).
+    """
 
     name: str
     pattern: re.Pattern[str]
     window: int
-    normalize_type: bool
+    split: Callable[[re.Match[str]], tuple[str, str] | None]
 
 
 BILL_NUMBER_PATTERNS: tuple[BillNumberPattern, ...] = (
-    BillNumberPattern("prose", _PROSE_BILL_NUMBER, HEAD_CHARS, True),
-    BillNumberPattern("gpo-bullet", _BULLET_BILL_NUMBER, HEAD_CHARS, False),
+    BillNumberPattern("prose", _PROSE_BILL_NUMBER, HEAD_CHARS, _prose_bill_number),
+    BillNumberPattern("gpo-bullet", _BULLET_BILL_NUMBER, HEAD_CHARS, _bullet_bill_number),
 )
 
 
@@ -210,9 +227,9 @@ def extract_signals(text: str) -> ExtractedSignals:
     bill_number: str | None = None
     for candidate in BILL_NUMBER_PATTERNS:
         match = candidate.pattern.search(text[: candidate.window])
-        if match:
-            bill_type = normalize_bill_type(match.group(1)) if candidate.normalize_type else match.group(1).upper()
-            bill_number = match.group(2)
+        parts = None if match is None else candidate.split(match)
+        if parts is not None:
+            bill_type, bill_number = parts
             break
 
     congress_match = _CONGRESS.search(head)
@@ -384,7 +401,6 @@ __all__ = [
     "confidence_band",
     "extract_signals",
     "identify_bill",
-    "normalize_bill_type",
     "normalize_for_comparison",
     "sponsor_last_name_of",
     "token_jaccard",

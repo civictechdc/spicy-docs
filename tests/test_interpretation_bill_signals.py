@@ -6,6 +6,8 @@ cap, and the port's own invariants: the five weights sum to one and heading
 comparisons are bounded to three candidates.
 """
 
+import pytest
+
 from spicy_docs.interpretation.bill_signals import (
     IDENTIFY_CONFIDENCE_THRESHOLDS,
     MAX_HEADING_COMPARISONS,
@@ -62,6 +64,23 @@ def test_parses_house_joint_resolution() -> None:
     """``H.J.Res. 42`` parses as type ``HJRES``."""
     signals = extract_signals("H.J.Res. 42 - Joint resolution")
     assert (signals.bill_type, signals.bill_number) == ("HJRES", "42")
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        # Survey item A9: what BillTrax's case-insensitive alternation read as
+        # Senate bills, and the shared bill-number rule does not.
+        "Congressional Record CR S4530, the Senator's remarks",
+        "under paragraph S9 of the agreement",
+        "as amended by 42 U.S.C. S300f",
+        "The President's 2027 budget request",
+    ],
+)
+def test_what_is_not_a_bill_number_yields_none(text: str) -> None:
+    """A Record page, a paragraph label, a Code section and a possessive year name no bill."""
+    signals = extract_signals(text)
+    assert (signals.bill_type, signals.bill_number) == (None, None)
 
 
 def test_no_bill_number_pattern() -> None:

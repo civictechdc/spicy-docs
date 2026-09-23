@@ -1086,6 +1086,139 @@ and by how much. The committed sidecar was deliberately **not** regenerated —
 it is the measurement as run, and a re-run's timings would contradict the
 prose the report quotes from it.
 
+## The stack's citation grammar and identifier shapes live here
+
+RefSpec's `citation_grammar` and `identifier_shapes` are now
+`interpretation/citation_grammar.py` and `interpretation/identifier_shapes.py`
+(consolidation item B4, 2026-09-23). They import only the standard library,
+spicy-docs cannot import RefSpec (RefSpec depends on it), and RefSpec's pin
+cannot be installed beside spicy-regs', so the one place every repository can
+reach a shared grammar is here. They were chosen, not merely the first to
+move: five prose grammars were run over the same retained inputs and RefSpec's
+was right on every hand-read specimen but three range cases
+([parsing survey](research/parsing-survey-2026-09-23.md), section 5). The
+move itself kept behaviour exactly, and the module docstrings record the
+RefSpec path and commit. spicysearch keeps its query grammar: it reads intent
+in a query, not a citation in a document (spicy-regs decision 14).
+
+This is the canonical copy now, and it has changed since the move, so
+RefSpec's repin moves its receipts' identity and must say so. The changes:
+the grammar is linear in its text (a 12-million-character budget volume took
+479 s through four readers), with its output unchanged over the survey's
+retained inputs; it locates Public Law, Statutes and Federal Register
+citations in running text; and it reads four shapes it dropped -- a
+zero-padded law number, a part or section followed by its printed heading, a
+space after a part's inner hyphen, and a doubled or one-sided dash between
+two Code sections -- a range where the two ascend, and one section with a
+lost space where they do not (`16 U.S.C. 460l- 9`). The docket column reader also takes the prose reader's
+closed trailing tokens (`GIPSA-2006-FGIS-0029-NONRULE`): 67 of the retained
+Regulations.gov documents table's docket ids end on one, and it refused them
+all. Of the 2,531 RefSpec tests that exercise the two modules, two
+expectations see a difference, and both move at the repin:
+`tests/test_cfr_ranges.py` expects "41 CFR 60- 1" to stay an unread
+coordinate, which reads as the title-41 part it prints now, and
+`tests/test_identifier_shapes.py` expects the column reader to refuse
+"GIPSA-2008-FGIS-0002-NONRULEMAKING".
+
+What a later change must preserve:
+
+- **A grammar kind is keyed from what the grammar parsed.** Seven
+  `document_citations` kinds read through the two modules -- U.S. Code, CFR,
+  Public Law, Statutes and Federal Register cites through the grammar, RINs
+  and dockets through the identifier shapes -- so every key parses back to
+  itself, a range is its two endpoints, and a refusal publishes the key
+  unresolved instead of a malformed one. The grammar's refusals are
+  respected, not overridden in `citations.py`: fixing a refusal is a change
+  to the grammar.
+- **A change inside either module moves the reading kind's version.** The
+  rule-set digest sees a grammar reader by name only, so
+  `tests/test_citations.py` pins what each grammar kind reads over the
+  committed fixtures, at its version, and names the version to move when that
+  changes.
+- **The unpadded Federal Register number is a comparison key, never an
+  identifier.** The Register pads some years and not others and the literal
+  string is what it issued; `unpadded_federal_register_document_number` exists
+  so a join can meet Regulations.gov's padded spelling, and a join reduces
+  both sides, tries the exact string first, and refuses a key that reaches two
+  documents. spicy-docs holds no join helper; the consumer's index does that.
+- **A docket column is read whole, then walked, never searched.**
+  `normalize_docket_reference` reads a value that IS one docket;
+  `normalize_docket_references` returns every docket a value names behind a
+  longer label, before a note, or in a list, and it must open on a docket once
+  its label is off. A list member after the first must share the first one's
+  organization or carry the prose reader's four-digit-year shape, which is
+  what ends a list at a note's own numbers (`FRL-8231-8`). Over the
+  rulemaking build's `fr_docket_links`, 5,825 link rows name a held docket
+  the single reader refuses; the walk reads 5,389 of them in full and 67 in
+  part, and the 369 it leaves open a value with something else (`Public
+  Notice:`, `FAR Case 2017-014, Docket No. X`) that a search would read and
+  this does not.
+- **The RIN key stays `\d{4}-[A-Z]{2}\d{2}`, written once.**
+  `identifier_shapes.PUBLISHED_RIN` and `published_rin` are the only published
+  key shape; `document_citations.rin` and `communication_rin` key through them.
+  The wider shapes admit only damage or placeholders and are for detection
+  alone -- `normalize_rin` is never a key.
+- **`bill_actions` keeps the 001 public-law spelling on purpose.** Its
+  `became_public_law` phrase embeds the pattern the `public_law` citation rule
+  read before the grammar, byte for byte, because the phrase vocabulary is
+  sealed (`PRINT_ACTION_RULE_SET_VERSION` digests it) and the phrase matches
+  raw print text, where an en dash stands that the grammar only reads after
+  folding. The key a cite names is the grammar's; the phrase decides only
+  whether a sentence says a bill became law.
+- **The two dated measurement tools run the rules they measured with.**
+  `tools/analysis/pdf_family_rollup.py` reads its join-key rules back from the
+  2026-09-20 sidecar it wrote, and the MODS re-check runs on the same rules,
+  so both receipts stay reproducible while the product's rules move.
+
+## The stack's identifier minting lives beside the shapes
+
+RefSpec's `iri_minting` is now `interpretation/iri_minting.py` (2026-09-23).
+spicy-regs, rulespec-projection and spicysearch each re-implement RIN, CFR,
+executive-order, Federal Register and docket minting, and spicy-regs decision
+28 puts the minters here, beside the identifier shapes they refuse over, not in
+Rulespec Core: spicy-docs is the one place all of them can import. REF-024
+(RefSpec `docs/decisions.md`) still assigns identity functions to Rulespec
+Core. Decision 28 proposes narrowing that clause so Core owns the lexical
+spaces and spicy-docs' tests hold its minters to them; that amendment awaits
+the owner's confirmation, and REF-024 is not amended.
+
+Behaviour is RefSpec `4a680c81`'s but for three dockets. Over 3,966,225
+paired calls (RefSpec's pinned Federal Register and Unified Agenda columns,
+every literal in its minting, zero-part and shape tests, and fuzz) the two
+minters' outputs, `ValueError` messages included, are byte-identical except
+the dockets this repository's column docket reader newly reads since
+2026-09-23, those ending in a `-RULE`-family token:
+`GIPSA-2008-FGIS-0002-NONRULEMAKING`, `GIPSA-2010-FGIS-0014-NONRULEMAKING` and
+`Docket #GIPSA-2010-FGIS-0014-NONRULEMAKING` mint here and are refused there.
+The last is real, the one such value in the pinned Federal Register
+`docket_ids_json`. The minter wraps that reader and adds no opinion of its
+own, so RefSpec's expectation at `tests/test_identifier_shapes.py:365` moves
+when it adopts the module. The module docstring records the RefSpec path and
+commit.
+
+What a later change must preserve:
+
+- **The partner namespace stays `refspec`.** It is spelled into every
+  `urn:rkaf:partner:refspec:` identifier already minted.
+- **Both copied tables are checked only in RefSpec, once it adopts.**
+  `_FR_COLLISION_VERDICTS` restates the seven REF-066 rows of RefSpec's
+  `hand_validated_interpretations`, whose census, witnesses and audit stay
+  there, and `IDENTIFIER_SPACES` restates the compiled profiles in RefSpec's
+  vendored `rulespec-conformance` wheel. spicy-docs can read neither source:
+  RefSpec is not a dependency, the wheel deliberately is not
+  (`tests/releases/test_compatibility.py`), and `rulespec-artifacts`, which
+  is, carries no identifier space. RefSpec's adoption therefore adds a test
+  holding its collision table equal to the imported `_FR_COLLISION_VERDICTS`,
+  and points `test_the_minted_spaces_are_the_contract_verbatim` at the
+  imported `IDENTIFIER_SPACES`. A new collision lands in RefSpec's evidence
+  first and must then be carried here.
+- **spicy-regs' adoption is a question of timing only.** Its decision 27
+  chose these rkaf spaces and the deletion of `urn:spicy-regs:frdoc`, having found
+  that no published spicy-regs column carries that prefix; its one writer,
+  `federal_register_identifier` (`ontology/citations.py`), has no build
+  caller. The RIN, CFR and executive-order minters agree with spicy-regs' on
+  every measured value but two en-dash RINs, which only this one mints.
+
 ## A Mirrulations key that produced no record is unresolved, never processed
 
 **2026-09-20**, closing candidate F2 of the

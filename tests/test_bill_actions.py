@@ -237,8 +237,14 @@ def test_the_reported_rule_reads_the_verb_and_not_the_noun_in_a_bill_title() -> 
     assert [key for key, _, _, _ in phrase_matches("the Committee reported the bill to the House")] == ["reported"]
 
 
-def test_the_public_law_spelling_is_the_citation_rule_s_and_not_a_second_copy() -> None:
-    """All four public-law spellings map only to became_public_law, via the citation rule."""
+def test_every_public_law_spelling_is_the_became_public_law_phrase() -> None:
+    """All four public-law spellings map only to became_public_law, en dash included.
+
+    The phrase keeps the spelling it was measured with -- the ``public_law``
+    citation rule's 001 pattern -- now that the rule itself reads through the
+    citation grammar, which folds dashes before it matches and so could not
+    stand in for it on raw print text.
+    """
     for spelling in ("Public Law 118-15", "P.L. 118–63", "PL 118-31", "Pub. L. No. 118-5"):
         assert [key for key, _, _, _ in phrase_matches(spelling)] == ["became_public_law"], spelling
 

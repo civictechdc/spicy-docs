@@ -7,9 +7,12 @@ chamber rosters this repository already reads, and returns one
 :class:`CitationFinding` per occurrence naming the kind, the rule and its
 version, the canonical target key in the hosted table's own spelling, the
 exact text that matched, and the character offsets and printed page where it
-was read. The patterns are measured, lifted unchanged from the rollup tool
-that now imports them from this module so measurement and product cannot
-drift, and each rule carries the lookalikes it must reject, asserted in
+was read. Seven kinds are read by the stack's one data-side grammar and keyed
+from what it parsed: U.S. Code sections, CFR parts and sections, Public Laws,
+Statutes at Large pages and Federal Register cites by
+:mod:`spicy_docs.interpretation.citation_grammar`, RINs and agency dockets by
+:mod:`spicy_docs.interpretation.identifier_shapes`. The rest are patterns
+measured and lifted unchanged from the 2026-09-20 rollup. Every rule carries the lookalikes it must reject, asserted in
 ``tests/test_citations.py`` so a rule that widened into prose fails a check
 rather than raising a hit rate. The committee resolver takes the roster
 vocabulary as an argument, so this module stays pure: nothing fetches, reads a
@@ -21,9 +24,18 @@ from __future__ import annotations
 import bisect
 import hashlib
 import re
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
+from functools import lru_cache
 
+from spicy_docs.interpretation import citation_grammar
+from spicy_docs.interpretation.identifier_shapes import (
+    IdentifierCandidate,
+    IdentifierKind,
+    detect_identifier_shapes,
+    normalize_docket_reference,
+    published_rin,
+)
 from spicy_docs.schemas.tables import natural_key
 
 
@@ -37,17 +49,6 @@ class CitationError(ValueError):
 def canonical_alnum(value: str) -> str:
     """``H.R. 7806``, ``HR 7806`` and a wrapped ``H.R.\\n7806`` are one key."""
     return re.sub(r"[^A-Z0-9]", "", value.upper())
-
-
-def canonical_law_number(value: str) -> str:
-    """``P.L. 98-369``, ``Public Law 98–369`` and the index's ``PUB 98-369`` are one key."""
-    digits = re.search(r"(\d{1,3})[-–](\d{1,4})", value)
-    return f"{digits.group(1)}-{digits.group(2)}" if digits else canonical_alnum(value)
-
-
-def canonical_digits(value: str) -> str:
-    """Every run of non-digits becomes one hyphen: ``12 Stat. 45`` is ``12-45``."""
-    return re.sub(r"[^0-9]+", "-", value.strip())
 
 
 #: The bill-type vocabulary, longest spelling first so ``SRES21`` is a Senate
@@ -72,9 +73,15 @@ MONTHS: tuple[str, ...] = (
 )
 
 #: A bill designator, then a separator, then the number.  Both halves were
-#: re-derived from measured false positives (module docstring).
+#: re-derived from measured false positives (module docstring).  The first
+#: guard refuses a designator right after a letter and a period -- ``U.S.``,
+#: and since 002 ``R.S. 2477`` (a Revised Statutes section) and ``W.S.
+#: 11-6-302`` (Wyoming's), which read as Senate bills. It is the guard
+#: ``release_matching``'s own alternation carried when this rule replaced it
+#: (consolidation item A9): over the survey's 143,964 retained texts it
+#: removed those 9 matches and no other.
 CONGRESS_CHAMBER = (
-    r"(?<!U\.)(?<!U\.\s)(?<![A-Za-z])"
+    r"(?<![A-Za-z]\.)(?<!U\.\s)(?<![A-Za-z])"
     r"(?:H\.?\s?R|H\.?\s?J\.?\s?Res|H\.?\s?Con\.?\s?Res|H\.?\s?Res"
     r"|S\.?\s?J\.?\s?Res|S\.?\s?Con\.?\s?Res|S\.?\s?Res|S)"
 )
@@ -269,39 +276,18 @@ def _bill_target(value: str, context: CitationContext) -> tuple[str, bool, str]:
     return natural_key(context.congress, *parts), True, "bill_number"
 
 
-def _public_law_target(value: str, _context: CitationContext) -> tuple[str, bool, str]:
-    """``Pub. L. No. 118-31`` is ``118-public-31``: the ``laws`` identity, joined.
-
-    Always ``public``, because this rule's pattern reads only the public
-    spellings (a private law prints ``Private Law`` and is not matched), and
-    the Congress comes from the cite itself.
-    """
-    number = canonical_law_number(value)
-    congress, _, within = number.partition("-")
-    if not congress.isdecimal() or not within.isdecimal():
-        return number, False, "public_law"
-    return natural_key(congress, "public", within), True, "public_law"
-
-
-_USC_PARTS = re.compile(r"(\d{1,2})\s+U\.?\s?S\.?\s?C\.?\s+(?:§{1,2}\s?)?(\d[\w.–-]*)")
-_CFR_PARTS = re.compile(r"(\d{1,2})\s+C\.?\s?F\.?\s?R\.?\s+(?:part\s+|§\s?)?(\d[\w.–-]*)")
-_FEDERAL_REGISTER_PARTS = re.compile(r"(\d{1,3})\s+Fed\.?\s?Reg\.?\s+([\d,]{3,9})")
 _DOCKET_PARTS = re.compile(r"(\d{2})[-–](\d{1,4})")
 _US_REPORTS_PARTS = re.compile(r"(\d{1,3})\s+U\.\s?S\.\s+(\d{1,4})")
-_RIN_NUMBER = re.compile(r"\d{4}[-–][A-Z]{2}\d{2}")
 
 
-def _two_part_target(name: str, pattern: re.Pattern[str], *, strip: str = "") -> TargetReader:
+def _two_part_target(name: str, pattern: re.Pattern[str]) -> TargetReader:
     """``{first}-{second}`` from a two-part cite, or the printed form unresolved."""
 
     def read(value: str, _context: CitationContext) -> tuple[str, bool, str]:
         parts = pattern.search(value)
         if parts is None:
             return canonical_alnum(value), False, name
-        second = parts.group(2)
-        for character in strip:
-            second = second.replace(character, "")
-        return f"{parts.group(1)}-{second}", True, name
+        return f"{parts.group(1)}-{parts.group(2)}", True, name
 
     read.__name__ = f"two_part_{name}"
     return read
@@ -324,19 +310,6 @@ def _printed_id_target(name: str) -> TargetReader:
     return read
 
 
-def _rin_target(value: str, _context: CitationContext) -> tuple[str, bool, str]:
-    """``RIN: 3133-AF97`` is ``3133-AF97``, the spelling the Federal Register record uses.
-
-    ``federal_register.regulation_id_numbers_json`` holds the bare number, so
-    the label and the punctuation the print sets come off; the measurement's
-    canonical form keeps them and is deliberately left alone.
-    """
-    match = _RIN_NUMBER.search(value)
-    if match is None:
-        return canonical_alnum(value), False, "rin"
-    return match.group(0).replace("–", "-"), True, "rin"
-
-
 def _committee_target(value: str, context: CitationContext) -> tuple[str, bool, str]:
     """The ``system_code`` a roster settled this candidate to, or the candidate itself.
 
@@ -353,27 +326,203 @@ def _committee_target(value: str, context: CitationContext) -> tuple[str, bool, 
     return outcome.system_code, True, outcome.route
 
 
+#: One occurrence a grammar-read rule found: ``(span_start, span_end, target
+#: key, whether the key is the hosted table's own spelling)``.
+type GrammarHit = tuple[int, int, str, bool]
+
+#: How a grammar-read rule reads one whole text: every occurrence, in order.
+#: "The grammar" is the pair of modules the stack shares -- ``citation_grammar``
+#: and ``identifier_shapes`` -- and a change inside either moves no pattern
+#: here, which is why ``tests/test_citations.py`` pins what the readers say
+#: over the committed fixtures as well as what they are called.
+type GrammarReader = Callable[[str], Iterator[GrammarHit]]
+
+#: The grammar's refusals that leave a key's coordinates as printed: each is
+#: about the cite's *scope* -- ``et seq.``, a note, a subpart pairing, a range
+#: end it could not read -- and not about the title, part or section the key
+#: is built from. An allowlist on purpose: any other refusal, including one
+#: the grammar gains later, publishes its key unresolved.
+_SCOPE_ONLY_REFUSALS: frozenset[str | None] = frozenset(
+    {
+        None,
+        "open_ended_reference_unresolved",
+        "note_target_unresolved",
+        "ambiguous_part_scope",
+        "range_end_unread",
+        "usc_open_ended_reference_unresolved",
+        "usc_note_position_unresolved",
+    }
+)
+
+
+def _usc_section_hits(text: str) -> Iterator[GrammarHit]:
+    """``42 U.S.C. 7401-7671q`` is ``42-7401`` and ``42-7671q``: a range is its two endpoints, on one span.
+
+    The key is ``{title}-{section}`` in the grammar's section spelling --
+    lower-cased, with subsection detail, trailing punctuation and zero pads
+    left off -- and an appendix title carries the ``A`` ``law_code_sections``
+    spells it with (``50A-2401``). A chapter names no section and is not read.
+    Unresolved where the grammar refuses the coordinates themselves, where a
+    list member was reached past a Statutes cite (the grammar cannot tell a
+    resumed section from that law's own page), and at the end of an
+    *abbreviated* span such as ``1484-86``, which the grammar expanded rather
+    than read. A hyphen the grammar cannot order stays one token
+    (``4801-4582``), as the grammar keeps it.
+    """
+    for occurrence in citation_grammar.find_usc_citations(text):
+        citation = occurrence.citation
+        if citation.authority_type != "usc" or citation.usc_title is None or citation.usc_section is None:
+            continue
+        title = f"{citation.usc_title}{'A' if citation.usc_appendix else ''}"
+        trusted = occurrence.refusal in _SCOPE_ONLY_REFUSALS and not citation.usc_section_after_statute
+        yield occurrence.start, occurrence.end, f"{title}-{citation.usc_section}", trusted
+        if citation.usc_section_end is not None:
+            stated = citation.usc_section_span_rule == citation_grammar.USC_SPAN_STATED
+            yield occurrence.start, occurrence.end, f"{title}-{citation.usc_section_end}", trusted and stated
+
+
+def _cfr_section_hits(text: str) -> Iterator[GrammarHit]:
+    """``40 CFR part 60`` is ``40-60`` and ``40 CFR 60.5`` is ``40-60.5``: a section is spelled with its part.
+
+    Every case of the part label reads (``part``, ``Part``, ``Parts``,
+    ``PART``), a plural label's list is one key per part, and a ``through``
+    range is its two endpoints on one span. A *hyphen* between two numbers is
+    not split: the grammar refuses it as ambiguous, because real section
+    numbers carry one (``46 CFR 1.01-15``), so ``40 CFR Part 1500-1508`` keeps
+    the printed token and is unresolved. Unresolved too where the title cannot
+    exist or the part's digit run is longer than any real part's. A title with
+    no part (``40 CFR``) names nothing and is not read.
+    """
+    for occurrence in citation_grammar.find_cfr_citations(text):
+        citation = occurrence.citation
+        endpoints = (
+            (citation.start, citation.end) if isinstance(citation, citation_grammar.CfrCitationRange) else (citation,)
+        )
+        trusted = occurrence.refusal in _SCOPE_ONLY_REFUSALS
+        for endpoint in endpoints:
+            if endpoint.cfr_part is None:
+                continue
+            section = f".{endpoint.cfr_section}" if endpoint.cfr_section else ""
+            plausible = endpoint.title_is_possible and endpoint.part_is_plausible is not False
+            yield (
+                occurrence.start,
+                occurrence.end,
+                f"{endpoint.cfr_title}-{endpoint.cfr_part}{section}",
+                trusted and plausible,
+            )
+
+
+def _public_law_hits(text: str) -> Iterator[GrammarHit]:
+    """``Pub. L. No. 118-31`` is ``118-public-31``: the ``laws`` identity, joined, with integer parts.
+
+    Always ``public``: the grammar reads only the public spellings, and the
+    Congress comes from the cite itself. Unresolved below the first Congress
+    whose laws are numbered (the 57th), where the print's number is damage
+    (``Pub. L. 04-13``) rather than a law.
+    """
+    for occurrence in citation_grammar.find_public_law_citations(text):
+        congress, _, number = str(occurrence.citation.public_law).partition("-")
+        numbered = int(congress) >= citation_grammar.PL_FIRST_NUMBERED_CONGRESS
+        yield occurrence.start, occurrence.end, natural_key(congress, "public", number), numbered
+
+
+def _statutes_hits(text: str) -> Iterator[GrammarHit]:
+    """``136 Stat. 1234`` is ``136-1234``: ``{volume}-{page}``, with a lettered volume or page kept whole.
+
+    ``70A Stat. 157`` is ``70A-157`` and ``113 Stat. 1501A-293`` is
+    ``113-1501A-293``; a range of lettered pages is its two pages on one span.
+    Unresolved where the volume cannot carry a law of the Public Law printed
+    beside it -- one of the two is damaged, and nothing here says which.
+    """
+    for occurrence in citation_grammar.find_statute_citations(text):
+        citation = occurrence.citation
+        volume = citation.statute_volume_text or citation.statute_volume
+        pages = citation.statute_page_text.split(" to ") if citation.statute_page_text else [str(citation.statute_page)]
+        consistent = citation.statute_volume_matches_public_law is not False
+        for page in pages:
+            yield occurrence.start, occurrence.end, f"{volume}-{page}", consistent
+
+
+def _federal_register_hits(text: str) -> Iterator[GrammarHit]:
+    """``89 FR 12345`` and ``88 Fed. Reg. 12,345`` are ``{volume}-{page}``, the pair the host resolves.
+
+    The Register's own ``FR`` spelling reads, which the 001 pattern -- the
+    Bluebook ``Fed. Reg.`` alone -- did not; a thousands comma is the page's.
+    """
+    for occurrence in citation_grammar.find_federal_register_citations(text):
+        citation = occurrence.citation
+        yield occurrence.start, occurrence.end, f"{citation.volume}-{citation.page}", True
+
+
+@lru_cache(maxsize=1)
+def _identifiers_in(text: str) -> tuple[IdentifierCandidate, ...]:
+    """The prose detector's reading of one text, kept for the next rule that asks.
+
+    Two rules read the same detection -- ``rin`` and ``docket_number`` -- and it
+    was a fifth of a whole document's reading time done twice. One entry: the
+    last text read is held until the next one replaces it.
+    """
+    return tuple(detect_identifier_shapes(text))
+
+
+#: A label that says the number after it is an OMB control number, which a
+#: FEMA collection can shape like a RIN ("OMB Number: 1660-NW32"): 2 of the 21
+#: RINs the identifier detector read that the 002 labelled rule did not, in the
+#: parsing survey's Federal Register texts.
+_OMB_NUMBER_LABEL = re.compile(r"\bOMB\s+(?:control\s+)?(?:numbers?|nos?\.?|#)\s*[:#]?\s*$", re.IGNORECASE)
+
+
+def _identifier_reader(
+    kind: IdentifierKind, key: Callable[[str], str | None], *, refused_after: re.Pattern[str] | None = None
+) -> GrammarReader:
+    """Every identifier of ``kind`` the prose detector finds, keyed by ``key``; a value it cannot key is not read.
+
+    The detector arbitrates overlaps -- a docket inside a Regulations.gov
+    document id is the document's -- and its spans index the text as printed.
+    ``refused_after`` is a label that, ending right before a candidate, says
+    the candidate is another system's number.
+    """
+
+    def read(text: str) -> Iterator[GrammarHit]:
+        for candidate in _identifiers_in(text):
+            start, end = candidate.span
+            if candidate.kind is not kind or (value := key(candidate.value)) is None:
+                continue
+            if refused_after is not None and refused_after.search(text, max(0, start - 40), start):
+                continue
+            yield start, end, value, True
+
+    read.__name__ = f"identifier_shapes_{kind.value}"
+    return read
+
+
 @dataclass(frozen=True, slots=True)
 class CitationRule:
     """One measured extraction rule, what it joins to, and what it must reject.
 
-    ``pattern`` carries no capturing group, so one match is one string on every
-    reader (a test holds it to that); a rule that needs the match's parts reads
-    them in its own ``target`` with a second, local pattern, which keeps the
-    measured pattern byte-identical to what was measured. ``index_pattern``
-    exists because the two sides spell the same fact differently (Congress.gov
-    states ``PUB 98-369`` where the print says ``P.L. 98-369``) and both sides
-    reduce to ``canonical`` before any comparison, so a key the index already
-    states is never counted as something only the document holds. ``version``
-    moves when the pattern, the rejects or the target reader changes, and is a
-    zero-padded decimal because a merge orders this column as a string.
+    A rule is read one of two ways, and exactly one. A ``pattern`` carries no
+    capturing group, so one match is one string on every reader (a test holds
+    it to that); a rule that needs the match's parts reads them in its own
+    ``target`` with a second, local pattern, which keeps the measured pattern
+    byte-identical to what was measured. A ``reader`` is the citation grammar:
+    it reads the whole text and states each occurrence's span and key itself,
+    because what it recognises -- lists, ranges, reversed ``part 60 of title
+    40`` forms -- is not one match of one pattern. ``index_pattern`` exists
+    because the two sides spell the same fact differently and both sides
+    reduce to ``canonical`` before the rollup tool compares them, so a key the
+    index already states is never counted as something only the document
+    holds. ``version`` moves when the pattern or reader, the rejects or the
+    target reader changes, and is a zero-padded decimal because a merge orders
+    this column as a string.
     """
 
     name: str
     version: str
-    pattern: str
     target_table: str
     target_key_shape: str
+    pattern: str | None = None
+    #: The citation grammar's reading of this kind, for a rule it reads.
+    reader: GrammarReader | None = None
     rejects: tuple[str, ...] = ()
     note: str = ""
     #: How the *index* spells this key, when that differs from the print.
@@ -383,11 +532,28 @@ class CitationRule:
     #: The hosted key one match names.  Defaults to ``canonical``.
     target: TargetReader | None = None
 
+    def __post_init__(self) -> None:
+        if (self.pattern is None) == (self.reader is None):
+            raise CitationError(f"{self.name}: a rule is read by a pattern or by the grammar, and by exactly one")
+
+    @property
+    def source(self) -> str:
+        """What reads this rule: its pattern, or the name of the grammar reader."""
+        return self.pattern if self.reader is None else f"reader:{self.reader.__name__}"
+
     def compiled(self) -> re.Pattern[str]:
+        if self.pattern is None:
+            raise CitationError(f"{self.name} is read by the citation grammar, not by a pattern")
         return re.compile(self.pattern)
 
     def compiled_index(self) -> re.Pattern[str]:
-        return re.compile(self.index_pattern or self.pattern)
+        return re.compile(self.index_pattern) if self.index_pattern else self.compiled()
+
+    def reads(self, text: str) -> bool:
+        """Whether this rule finds anything at all in ``text`` -- what a reject must never do."""
+        if self.reader is not None:
+            return next(self.reader(text), None) is not None
+        return self.compiled().search(text) is not None
 
     def target_key(self, matched: str, context: CitationContext) -> tuple[str, bool, str]:
         reader = self.target or _target_from_canonical(self.name, self.canonical)
@@ -397,7 +563,7 @@ class CitationRule:
 CITATION_RULES: tuple[CitationRule, ...] = (
     CitationRule(
         name="bill_number",
-        version="001",
+        version="002",
         pattern=rf"{CONGRESS_CHAMBER}[.\s]\s?\d{{1,5}}\b",
         target_table="congress_bills",
         target_key_shape="bill_id: {congress}-{bill_type}-{number}, from the caller's stated Congress",
@@ -411,74 +577,83 @@ CITATION_RULES: tuple[CitationRule, ...] = (
             "HR974",
             "S4601",
             "ANALYSIS. 12",
+            "R.S. 2477",
+            "W.S. 11-6-302",
         ),
         note="chamber designator plus number; the Congress must come from the document's own date or index row",
         target=_bill_target,
     ),
+    # The four kinds below have been read by the citation grammar since their
+    # 002 (2026-09-23, consolidation items B4 and A10). Their 001 patterns
+    # published keys that do not parse back -- a trailing ``.`` or ``-``, an
+    # en dash, a U.S.C. range as one token, a zero-padded law number -- all
+    # with ``target_resolved`` true, and read only lower-case singular
+    # ``part``; see ``docs/research/parsing-survey-2026-09-23.md`` section 2.
     CitationRule(
         name="public_law",
-        version="001",
-        # One rule for all four spellings in the sample: ``Public Law 98-369``,
-        # ``P.L. 98-369``, ``PL 98-369`` and the Bluebook ``Pub. L. No. 89-136``.
-        # The first rule could not read the Bluebook form and so missed 35
-        # occurrences -- 18 in the activity reports, 11 in GAO -- which is the
-        # shape a court or an auditor writes in.
-        pattern=r"\bP(?:ub(?:lic)?)?\.?\s*L(?:aw)?\.?\s?(?:No\.\s?)?\d{1,3}[-–]\d{1,4}\b",
-        index_pattern=(r"\b(?:P(?:ub(?:lic)?)?\.?\s*L(?:aw)?\.?\s?(?:No\.\s?)?|PUB\s+|PRIV\s+)\d{1,3}[-–]\d{1,4}\b"),
-        canonical=canonical_law_number,
+        version="002",
+        reader=_public_law_hits,
         target_table="laws",
         target_key_shape="(congress, law_type, number), joined: {congress}-public-{number}",
         rejects=("Public Lands", "P.L. Smith", "Pub L", "Republic Law 5", "Pub. L. Rev."),
-        target=_public_law_target,
+        note=(
+            "001 read four spellings with one pattern; the grammar also reads a space after the dash "
+            "('Public Law 92- 463') and a dotted separator, and does not read a zero-padded number"
+        ),
     ),
     CitationRule(
         name="statutes_at_large",
-        version="001",
-        pattern=r"\b\d{1,3}\s+Stat\.\s+\d{1,4}\b",
-        canonical=canonical_digits,
+        version="002",
+        reader=_statutes_hits,
         target_table="laws",
-        target_key_shape="statutes_at_large_cite as {volume}-{page}",
+        target_key_shape="statutes_at_large_cite as {volume}-{page}; a lettered volume or page kept whole",
         rejects=("Stat. of the Union", "12 State 45"),
+        note="001 required a period and a space ('86 Stat.770' and '116 Stat 2962' went unread)",
     ),
     CitationRule(
         name="usc_section",
-        version="001",
-        pattern=r"\b\d{1,2}\s+U\.?\s?S\.?\s?C\.?\s+(?:§{1,2}\s?)?\d[\w.–-]*",
+        version="002",
+        reader=_usc_section_hits,
         target_table="law_code_sections",
-        target_key_shape="{usc_title}-{usc_section}",
-        rejects=("U.S. Code of conduct", "42 USC for"),
-        target=_two_part_target("usc_section", _USC_PARTS),
+        target_key_shape="{usc_title}-{usc_section}; an appendix title as {title}A; a range as its two endpoints",
+        rejects=("U.S. Code of conduct", "42 USC for", "42 U.S.C. chapter 85"),
     ),
     CitationRule(
         name="cfr_section",
-        version="001",
-        pattern=r"\b\d{1,2}\s+C\.?\s?F\.?\s?R\.?\s+(?:part\s+|§\s?)?\d[\w.–-]*",
+        version="002",
+        reader=_cfr_section_hits,
         target_table="cfr sections (host-side)",
-        target_key_shape="{title}-{part}",
-        rejects=("CFR is the", "40 CRF 60"),
-        target=_two_part_target("cfr_section", _CFR_PARTS),
+        target_key_shape="{title}-{part}, or {title}-{part}.{section} where a section is cited",
+        rejects=("CFR is the", "40 CRF 60", "A40 CFR 60", "3 CFR, 1977 Comp., p. 123"),
     ),
+    # Three more read through the grammar modules since 2026-09-23, each
+    # moving its version: 001 of ``federal_register_cite`` read only the
+    # Bluebook ``Fed. Reg.`` and missed the Register's own ``89 FR 12345``;
+    # 002 of ``docket_number`` cut ``EPA-HQ-OAR-2004-0015`` to
+    # ``OAR-2004-0015`` and read ITC investigations (``731-TA-1199-1200``) as
+    # dockets; 002 of ``rin`` kept its own copy of the RIN shape and needed
+    # the ``RIN`` label, so a list (``RINs 1018-AU04, 1018-AU09``) gave its
+    # first member only.
     CitationRule(
         name="federal_register_cite",
-        version="001",
-        pattern=r"\b\d{1,3}\s+Fed\.?\s?Reg\.?\s+[\d,]{3,9}\b",
+        version="002",
+        reader=_federal_register_hits,
         target_table="federal_register",
         target_key_shape="{volume}-{start_page}; the host resolves document_number by that pair",
-        rejects=("Fed. Reg. of the", "88 Federal agencies"),
-        target=_two_part_target("federal_register_cite", _FEDERAL_REGISTER_PARTS, strip=","),
+        rejects=("Fed. Reg. of the", "88 Federal agencies", "88 fr 123", "76 R 11462"),
     ),
     CitationRule(
         name="rin",
-        version="002",
-        pattern=r"\bRIN[: ]\s?\d{4}[-–][A-Z]{2}\d{2}\b",
+        version="003",
+        reader=_identifier_reader(IdentifierKind.RIN, published_rin, refused_after=_OMB_NUMBER_LABEL),
         target_table="federal_register",
-        target_key_shape="the bare RIN, as regulation_id_numbers_json spells it",
-        rejects=("RIN of the", "RIN 1234"),
+        target_key_shape="the bare RIN, as regulation_id_numbers_json spells it: identifier_shapes.PUBLISHED_RIN",
+        # A RIN-shaped damage or placeholder is detected and never keyed.
+        rejects=("RIN of the", "RIN 1234", "RIN 1625-AAOO", "RIN 2060-XXXX", "OMB Number: 1660-NW32"),
         note=(
             "87 distinct RINs across the eight House activity reports and none in any CRPT MODS: "
             "the family's largest single citation yield, and invisible to a 60-page read"
         ),
-        target=_rin_target,
     ),
     CitationRule(
         name="gao_product_id",
@@ -511,13 +686,12 @@ CITATION_RULES: tuple[CitationRule, ...] = (
     ),
     CitationRule(
         name="docket_number",
-        version="002",
-        pattern=r"\b[A-Z]{2,7}[-–]\d{4}[-–]\d{4}\b",
+        version="003",
+        reader=_identifier_reader(IdentifierKind.DOCKET, normalize_docket_reference),
         target_table="dockets",
-        target_key_shape="docket_id as the agency prints it",
-        rejects=("FAA 2016 6907", "ABC-16-0001"),
+        target_key_shape="docket_id as Regulations.gov spells it: identifier_shapes.normalize_docket_reference",
+        rejects=("FAA 2016 6907", "ABC-16-0001", "731-TA-1199-1200", "MM Docket No. 98-213", "ER00-2089-000"),
         note="38 distinct agency dockets across the eight House activity reports; no CRPT MODS states one",
-        target=_printed_id_target("docket_number"),
     ),
     CitationRule(
         name="case_docket_number",
@@ -617,7 +791,7 @@ DOCUMENT_CITATION_KINDS: tuple[str, ...] = (
 
 
 def _rule_set_version(rules: Sequence[CitationRule]) -> str:
-    """A digest over every rule's name, version, pattern **and rejects**.
+    """A digest over every rule's name, version, pattern or grammar reader **and rejects**.
 
     Derived, not written: editing a pattern moves this even when someone
     forgets to move that rule's own ``version``, and the pinned test then names
@@ -628,7 +802,7 @@ def _rule_set_version(rules: Sequence[CitationRule]) -> str:
     *inside* a reader; that is what the per-rule ``version`` is for.
     """
     joined = "\n".join(
-        f"{rule.name}|{rule.version}|{rule.pattern}|{'|'.join(rule.rejects)}"
+        f"{rule.name}|{rule.version}|{rule.source}|{'|'.join(rule.rejects)}"
         f"|{getattr(rule.target, '__name__', 'canonical')}"
         for rule in rules
     )
@@ -714,10 +888,12 @@ def find_citations(
     if unknown:
         raise CitationError(f"no such citation rule: {', '.join(unknown)}")
 
-    matches: dict[str, list[tuple[str, int, int]]] = {}
-    for name in kinds:
-        rule = CITATION_RULES_BY_NAME[name]
-        matches[name] = [(m.group(0), m.start(), m.end()) for m in rule.compiled().finditer(text)]
+    rules = [CITATION_RULES_BY_NAME[name] for name in kinds]
+    matches: dict[str, list[tuple[str, int, int]]] = {
+        rule.name: [(m.group(0), m.start(), m.end()) for m in rule.compiled().finditer(text)]
+        for rule in rules
+        if rule.reader is None
+    }
 
     # A printed committee name is a candidate until a roster settles it, and it
     # is settled over the whole document at once: the sibling-prefix rule reads
@@ -726,10 +902,19 @@ def find_citations(
     context = CitationContext(congress=congress, committees=resolve_committee_names(candidates, committees))
 
     findings: list[CitationFinding] = []
-    for name in kinds:
-        rule = CITATION_RULES_BY_NAME[name]
-        for matched, start, end in matches[name]:
-            target, resolved, route = rule.target_key(matched, context)
+    for rule in rules:
+        if rule.reader is None:
+            hits = [(start, end, *rule.target_key(matched, context)) for matched, start, end in matches[rule.name]]
+        else:
+            hits = [(start, end, key, resolved, rule.name) for start, end, key, resolved in rule.reader(text)]
+        # The table's identity is (kind, key, span start): the grammar can
+        # reach one key at one offset twice -- two of its forms over one span
+        # -- and that is one citation, not two.
+        seen: set[tuple[str, int]] = set()
+        for start, end, target, resolved, route in hits:
+            if (target, start) in seen:
+                continue
+            seen.add((target, start))
             findings.append(
                 CitationFinding(
                     kind=rule.name,
@@ -738,13 +923,13 @@ def find_citations(
                     target_table=rule.target_table,
                     target_resolved=resolved,
                     target_rule=route,
-                    matched_text=matched,
+                    matched_text=text[start:end],
                     span_start=start,
                     span_end=end,
                     page=None if not starts else bisect.bisect_right(starts, start),
                 )
             )
-    findings.sort(key=lambda finding: (finding.kind, finding.span_start))
+    findings.sort(key=lambda finding: (finding.kind, finding.span_start, finding.target_key))
     return tuple(findings)
 
 
@@ -756,8 +941,7 @@ def rejected_lookalikes() -> dict[str, list[str]]:
     """
     failures: dict[str, list[str]] = {}
     for rule in CITATION_RULES:
-        compiled = rule.compiled()
-        bad = [candidate for candidate in rule.rejects if compiled.search(candidate)]
+        bad = [candidate for candidate in rule.rejects if rule.reads(candidate)]
         if bad:
             failures[rule.name] = bad
     return failures
@@ -777,10 +961,10 @@ __all__ = [
     "CitationFinding",
     "CitationRule",
     "CommitteeResolution",
+    "GrammarHit",
+    "GrammarReader",
     "bill_type_and_number",
     "canonical_alnum",
-    "canonical_digits",
-    "canonical_law_number",
     "committee_vocabulary",
     "find_citations",
     "page_starts",
