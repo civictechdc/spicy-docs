@@ -2,7 +2,9 @@
 
 Status: proposal, 2026-09-22, re-validated the same day against the trees in
 §10. The 2026-09-23 [survey](parsing-survey-2026-09-23.md) adds A5–A12 and B6–B12, runs B4's bakeoff and adds
-rulings 5–7. It supersedes the earlier shared-catalog-admission note, which reached for
+rulings 5–7; the same day's filemap duplication validation (§11) confirms B9,
+refines B4 and adds B13–B17. The survey supersedes the earlier
+shared-catalog-admission note, which reached for
 an R2 profile the work does not need. Nothing here is decided; §5 lists the
 rulings. File and line cites were read on the §10 trees; re-verify before
 acting on them.
@@ -72,6 +74,11 @@ rows only on the owner's approval.
 | B10 | spicy-docs, then spicy-regs | Congress routes and contracts: `bill-detail`, `CRS_REPORTS`, `BILL_VOTE_REFERENCES` with `parse_bill_id`, printing order, scope constants. | [survey](parsing-survey-2026-09-23.md) §3 | the spicy-regs shapers are deleted |
 | B11 | spicy-docs | One Unified Agenda field-path projection. | spicy-regs and RefSpec navigators disagree; [survey](parsing-survey-2026-09-23.md) §3 | both consume it |
 | B12 | spicy-docs | One visible-text layout in `reading/` with named profiles; pypdf and PDF folds shared; GPO normalization per collection. | [survey](parsing-survey-2026-09-23.md) §6 | DocSpec extractor v3 |
+| B13 | spicy-docs S36 | Delete the source-domain drift gate fork: module, script, test and observed snapshot; spicy-regs keeps the gate, and spicy-docs keeps only the publisher-capture pins its acquisition needs. | publisher captures byte-identical in both repos while the observed halves drifted: spicy-docs pins 2026-08-03 citing the fork's old R2 URLs, spicy-regs re-pinned 2026-09-22 with the `table_urls()` fix (`15dc2d6`, `cc63661`) the fork lacks; both forks CI-gated; §11 | no drift gate outside spicy-regs; `./scripts/check` green |
+| B14 | RefSpec | Migrate RefSpec's Zyte adapters, tools and tests to `spicy_docs.sources.zyte`; delete `registry/infrastructure/zyte_transport.py`. The spicy-docs decision ledger already rules the RefSpec copy a known copy, not a second design. | same fetcher written twice — identical URL, token validation and error strings; spicy-docs' is the superset (`browserHtml`, `request_id`, the reflected-credential refusal at `sources/zyte.py:296-315`); the vendored 0.26.6 wheel already contains the module; `docs/decisions.md:924-928`; §11 | no second Zyte protocol implementation; RefSpec's tests expect the credential-reflection refusal |
+| B15 | RefSpec, at the next scheduled rebuild | Re-point `usc_act_index.py` and `tools/build_usc_popular_names.py` at `sources/uscode/table3.py` and `sources/uscode/popular_names.py`; re-pin per the rebuild runbook. | both parse the same OLRC Table III bulk XML and Popular Name Tool page with independent stdlib parsers; RefSpec's copies predate the spicy-docs routes (2026-08-31/09-05 vs 2026-09-14); §11 | rebuild, adjudicated delta, re-pin; the provenance test forces the re-pin |
+| B16 | RefSpec, at cache regeneration | Extract the eCFR authority-notes cache through `sources/cfr/authority.py` instead of the local research scripts; re-pin. | the frozen 2026-08-24 cache was extracted by independent stdlib scripts from unretained full-title XML; the reusable scanner post-dates it; §11 | parse deltas surface as counted differences at re-pin |
+| B17 | spicy-regs | Extract the shared candidate-selection, partition-walk and catalog-upsert driver behind `enrich_pdf.py` and `backfill_derived_text.py`; the two text sources stay distinct. | near-identical candidate SQL (`enrich_pdf.py:493-501` vs `backfill_derived_text.py:352-360`) and twin mains, about 200 lines; the docstring names the sibling; both touch the durable R2 catalog write path; §11 | both CLIs' dedicated tests stay green on the shared driver |
 
 ### Track C. Put a timer on it. Parallel, cheap.
 
@@ -108,6 +115,8 @@ republish every row once. Ruling 4 in §5 orders the two.
   numbers.
 - From the survey: A5 first (a credential in logs), then A6–A11 as quiet bugs;
   B6–B11 before B12, which is large and changes DocSpec output.
+- From §11: B13 with week two; B14 when RefSpec next re-vendors; B15–B16 ride
+  the scheduled rebuilds and cache regenerations; B17 independently.
 - PM01's remaining steps sit before or after D3, as ruling 4 decides.
 
 ## 5. Rulings this plan needs
@@ -196,6 +205,11 @@ Update one row per event; commit each update on its own.
 | B10 | proposed | [survey](parsing-survey-2026-09-23.md) |
 | B11 | proposed | [survey](parsing-survey-2026-09-23.md) |
 | B12 | proposed | [survey](parsing-survey-2026-09-23.md) |
+| B13 | proposed | §11 |
+| B14 | proposed; wheel API parity unverified | §11 |
+| B15 | proposed; rides the next scheduled rebuild | §11 |
+| B16 | proposed; rides cache regeneration | §11 |
+| B17 | proposed | §11 |
 | C1 | proposed | — |
 | C2 | proposed | — |
 | C3 | not before C1 | — |
@@ -213,9 +227,46 @@ DocSpec `d66aebb`, spicyengine `056cb04`, spicysearch `66a0eb1`. The
 `f83c0d7a`, DocSpec `2cdde74`, spicyengine `31f7959`, spicysearch `b150fdd` and
 rulespec `23d5f2d9`. The fork's output ledger and backlog (spicy-regs
 `docs/research/fork-output-ledger-2026-09-21.md`, `docs/fork-generation.md`)
-track which published tables items A5–A12 touch.
+track which published tables items A5–A12 touch. The §11 validation passes
+read the 2026-09-23 working trees without commit pins and ran no repository
+gate.
 
 - DuckDB iceberg extension, catalogs and writing.
   <https://duckdb.org/docs/current/core_extensions/iceberg/catalogs>
   <https://duckdb.org/docs/current/core_extensions/iceberg/writing_to_iceberg>
 - PyIceberg API, `add_files`. <https://py.iceberg.apache.org/api/>
+
+## 11. Filemap duplication validation, 2026-09-23
+
+A scan of the workspace filemap's descriptions flagged candidate duplications
+across and inside repositories; four parallel validation passes then read the
+code, decision records and git history on the working trees. Most flags were
+the intended layering — one parser, several owners adding acceptance rules,
+pins or normalization on top through vendored wheels. The residue is below;
+confirmed items entered Track B as B13–B17, and the refutations are recorded
+so the next scan does not re-flag them.
+
+| Flag | Verdict | Disposition |
+| --- | --- | --- |
+| `schemas` package, spicy-docs vs spicy-regs | fork mid-migration: extract functions identical except `pdf_extraction_results_json` and the polars column types; `pipelines/repair_regulations.py` already runs spicy-docs extract against the host schema while `pipelines/regulations.py` still runs the local fork; no equivalence test exists | confirms B9; add a test asserting both extract implementations agree on shared fixtures |
+| Zyte fetcher, RefSpec vs spicy-docs | same fetcher written twice; the spicy-docs ledger already names the RefSpec copy "a known copy, not a second design", and the vendored 0.26.6 wheel contains the shared module | B14 |
+| OLRC Table III bulk and Popular Names parsers | RefSpec parses both artifacts with independent stdlib parsers that predate the spicy-docs routes (which landed 2026-09-14) | B15 |
+| eCFR authority-notes cache | frozen 2026-08-24 cache extracted by independent research scripts from unretained XML; the reusable spicy-docs scanner post-dates it | B16 |
+| `enrich_pdf` / `backfill_derived_text` drivers | complementary text-fill gates, but parallel partition/catalog scaffolding of about 200 lines | B17 |
+| source-domain drift gate | the whole gate exists twice; publisher captures byte-identical, observed snapshots drifted apart, and the spicy-regs copy carries fixes the fork lacks | B13 |
+| citation grammars | RefSpec's `citation_grammar` is the declared union and spicysearch's preparation path already imports it; spicy-regs' serving grammar and spicysearch's query grammar stay independent by adjudicated boundary | refines B4: move spicy-regs only on a measured disagreement on real corpus data, under a contract test over the bakeoff corpus (survey §5), never the sealed query-side shapes |
+| DocSpec blob store | D31's two blockers (ctime false-positive, root pinning) are fixed in the vendored rulespec-artifacts; Core C07's retention now rests on sequencing, not incompatibility | DocSpec C07 owns it: bounded retry with the existing concurrency probe as the gate; not a row here |
+| `billstatus_codes`; FR topics reader; List of Subjects; Unified Agenda; CourtListener listing; `with_iceberg`; the two filemap generators; spicy-docs' two Zyte modules; the Iceberg trio; the PDF-text trio; sealed canonical-JSON emitters; blob wrappers | intentional layering: one parser or one delegation, several owners; each borrow is docstring- or ledger-recorded | no action |
+| identifier shapes, spicysearch vs RefSpec | contract-governed dual implementation: boundary test, exception table and wheel-digest tripwire re-exercised 2026-09-22 (325 checks pass, the 99 adjudicated divergences skip unchanged) | no action; re-measure at every re-vendor |
+| spicysearch `wiki/` | generated 2026-09-01, two days before the runtime retirement; the ten flagged pages describe code deleted 2026-09-21, and only the README disclaims it | S, spicysearch's plan: retire `wiki/http_api.md` beside the retired API spec; banner or regenerate the rest |
+| spicysearch run-notes pair | `docs/history/2026-09-02-reference-run-notes.md` and `2026-09-02-semantic-p3-round1-RUN_NOTES.md` are byte-identical, both carrying the same wrong self-referencing H1 | S, spicysearch's plan: keep one, leave a stub at the other name |
+| agency rollups wrapper; court-dockets API/bulk pair; text-fill cascade; RefSpec explorer JS port; rulespec stub and oracle | documented layering (compat wrapper, candidate-vs-live routes, gated cascade, local/deployed pair, prescribed oracle) | no action; optional attribution fixes where the data dictionary still credits the wrapper |
+
+Premises the scan got wrong, corrected during validation: RefSpec's
+`storage.py` holds canonical JSON and Parquet helpers, not blob storage;
+rulespec's `atlas_membership_stub` is an original seam that removed vendored
+RefSpec code, not a copy; and the UI-migration note expected at
+`spicyengine/docs/history/` lives only in spicysearch. The validation passes
+ran no repository gate, pinned no commits, and did not diff the vendored
+`spicy_docs` wheel against the checkout — B14 in particular needs the wheel's
+API checked before migration.
