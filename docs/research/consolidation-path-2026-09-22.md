@@ -233,24 +233,24 @@ Update one row per event; commit each update on its own.
 | A6 | done: spicy-docs `d12c17b` (0.30.0); spicy-regs `f90cc2d` merged (`3e39fba`, pushed 2026-09-23); `comments.parquet` republished at table digest `c3f45f07…` (2026-09-23) with 65,994 comments' derived text in numeric attachment order and one tool recorded, the other 23,818,790 rows identical to the replaced object | [survey](parsing-survey-2026-09-23.md); receipt `comment-text-repair-2026-09-23/` |
 | A7 | code complete and reviewed on wt/regs-a7 (`cbb7b04`, `ac836d9`): label-aware docket reads, unpadded FR keys that refuse different-width padding, folds named in status; the candidate is rebuilt and published after the 0.31.0 re-vendor | [survey](parsing-survey-2026-09-23.md); receipt `rulemaking-joins-2026-09-23/` |
 | A8 | done: spicy-docs 0.30.0 scan (`eae0812`, `1183d0c`); spicy-regs `5f4423c` places from the heading with a publish-first marker; `cfr_sections` republished at `de703ffe…` (2026-09-23) and its workflow re-enabled; title 41 citations join after A7 | receipt `cfr-ancestry-fix-2026-09-23/` |
-| A9 | proposed | [survey](parsing-survey-2026-09-23.md) |
-| A10 | in progress (wt/b4, under rework); gate: RefSpec's `usc_section_oracle` finds 331 unresolvable rows | [survey](parsing-survey-2026-09-23.md) §2, §11 |
+| A9 | done in spicy-docs 0.31.0 (`c0b4922`): one bill-number rule; the `release_matching` and `bill_signals` patterns are gone | [survey](parsing-survey-2026-09-23.md) |
+| A10 | done in spicy-docs 0.31.0 (`d998451`, `0bd70c5`): trailing punctuation stripped, dashes folded, ranges split into both endpoints, "Part" in any case; spicy-regs re-reads `document_citations` under 0.31.0 (rule versions 002/003) | [survey](parsing-survey-2026-09-23.md) §2, §11; receipt `b4-citation-grammar-2026-09-23/` |
 | A11 | done: spicy-docs 0.30.0 owns `vote_day` and appends `roll_call_votes.vote_day` (`c5bd161`, `6e1bb3b`); spicy-regs `57a68bc` backfills prior rows and adds `term_match = undated`; the version column stays `vote_date` until the backfill is published (next scheduled roll-call run) | receipt `vote-day-2026-09-23/`, `vote-day-backfill-2026-09-23/` |
 | A12 | rulemaking half on wt/regs-a7 with A7 (one Eastern-day rule, `eastern_day` → `regulations_gov_day` at the re-vendor); the bill-walk distinct count follows B6; the wider tables stay proposed | [survey](parsing-survey-2026-09-23.md) §11 |
-| A13 | spicy-docs helper done (`b4fd806`, `1f80bee`, on the 0.31.0 release branch); DocSpec, spicysearch and spicyengine adoption proposed | [survey](parsing-survey-2026-09-23.md) §11 |
-| A14 | spicy-docs done (`5847505`, `4c67e1e`, `a17fa2f`, `197937c`, on the 0.31.0 release branch); spicy-regs `acquire_annual` adopts the validator at the re-vendor (`TODO(A14)` in `sources/cfr_sections.py`) | [survey](parsing-survey-2026-09-23.md) §11 |
+| A13 | spicy-docs helper released in 0.31.0 (`b4fd806`, `1f80bee`); spicy-regs adopts it with A7; DocSpec, spicysearch and spicyengine adoption proposed | [survey](parsing-survey-2026-09-23.md) §11 |
+| A14 | spicy-docs released in 0.31.0 (`5847505`, `4c67e1e`, `a17fa2f`, `197937c`); spicy-regs `acquire_annual` adopts the validator at the re-vendor | [survey](parsing-survey-2026-09-23.md) §11 |
 | A15 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
 | B1 | proposed | — |
 | B2 | partial: readers deleted on main; shaper copy remains (re-confirmed 2026-09-23) | `9837fae`…`f808ecf`; `build_federal_register.py:88` |
 | B3 | proposed | — |
-| B4 | bakeoff run 2026-09-23; move proposed | [survey](parsing-survey-2026-09-23.md) §5 |
+| B4 | done in spicy-docs 0.31.0 (`e214428` move, `11841f5` linear, `64a828d`/`0bd70c5` drops read and versions pinned, `157db9b` shared fold): reviewed twice; RefSpec imports the copies at its repin (three of its expectations move: `41 CFR 60- 1`, the `-NONRULEMAKING` docket, the renamed sort helper); spicy-regs keeps its dict reader | [survey](parsing-survey-2026-09-23.md) §5; receipt `b4-citation-grammar-2026-09-23/` |
 | B5 | proposed; re-confirmed 2026-09-23 | [survey](parsing-survey-2026-09-23.md) |
-| B6 | spicy-docs done (`9d53b32`…`61c86c1`, on the 0.31.0 release branch): pooled identities across up to four differently paged walks, settled on a clean walk or a pool equal to the declared count, typed `DeclaredCountMismatch`/`DeclaredCountChanged`/`IncompleteWalkError`; spicy-regs adoption on wt/regs-b6 (`41054ee`) awaits the re-vendor | [survey](parsing-survey-2026-09-23.md) |
+| B6 | spicy-docs released in 0.31.0 (`9d53b32`…`61c86c1`): pooled identities across up to four differently paged walks, settled on a clean walk or a pool equal to the declared count, typed `DeclaredCountMismatch`/`DeclaredCountChanged`/`IncompleteWalkError`; spicy-regs adopts it at the re-vendor (wt/regs-b6) | [survey](parsing-survey-2026-09-23.md) |
 | B7 | proposed | [survey](parsing-survey-2026-09-23.md) |
 | B8 | proposed | [survey](parsing-survey-2026-09-23.md) |
 | B9 | proposed | [survey](parsing-survey-2026-09-23.md) |
 | B10 | proposed; the key resolver is copied in nine spicy-regs modules, not five | [survey](parsing-survey-2026-09-23.md) §11 |
-| B11 | spicy-docs done (`1967f7d`, `3c62e5d`, on the 0.31.0 release branch); RefSpec and spicy-regs adopt it at their repins | [survey](parsing-survey-2026-09-23.md) §11 |
+| B11 | spicy-docs released in 0.31.0 (`1967f7d`, `3c62e5d`); RefSpec and spicy-regs adopt it at their repins | [survey](parsing-survey-2026-09-23.md) §11 |
 | B12 | proposed | [survey](parsing-survey-2026-09-23.md) |
 | B13 | proposed | §11 |
 | B14 | proposed; wheel API parity unverified | §11 |
@@ -259,7 +259,7 @@ Update one row per event; commit each update on its own.
 | B17 | proposed | §11 |
 | B18 | proposed | [survey](parsing-survey-2026-09-23.md) §9 |
 | B19 | proposed | [survey](parsing-survey-2026-09-23.md) §9 |
-| B20 | spicy-docs on wt/iri (`46aea16`, on the B4 rework): reviewed, byte-identical to RefSpec's minter on 3,966,225 paired calls except the `-RULE`-family docket suffixes B4 admits; merges with B4 into 0.31.0; its home is ruling 12; REF-024's wording amendment awaits Mike (decision 28) | [survey](parsing-survey-2026-09-23.md) §11 |
+| B20 | spicy-docs released in 0.31.0 (`b9603a3`): byte-identical to RefSpec's minter on 3,966,225 paired calls except the `-RULE`-family docket suffixes B4 admits; RefSpec, spicy-regs, spicysearch and rulespec-projection adopt at their repins; REF-024's wording amendment awaits Mike (decision 28) | [survey](parsing-survey-2026-09-23.md) §11 |
 | B21 | proposed; after RefSpec repins | [survey](parsing-survey-2026-09-23.md) §11 |
 | B22 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
 | B23 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
