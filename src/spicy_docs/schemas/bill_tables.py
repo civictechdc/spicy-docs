@@ -119,6 +119,13 @@ CONGRESS_BILLS = table_contract(
             "observations of this document, never evidence that no CBO estimate exists. Populated items "
             "can still have unkeyable URLs, which the family records as refusals."
         ),
+        "url_source": (
+            "Who stated url, and so which kind of URL it is: billstatus (the BILLSTATUS legislationUrl, "
+            "the congress.gov page), congress_api (the Congress.gov detail record's legislationUrl, the same "
+            "page), congress_api_list (the Congress.gov list route's url, the API resource), or inherited "
+            "(this observation stated none and a host merge kept an earlier observation's value; its lineage "
+            "is that earlier source, not a fresh read). NULL when url is NULL or the row predates this label."
+        ),
     },
 )
 
@@ -313,6 +320,7 @@ def shape_bill(
         "related_bills_json": json_column([_related_bill(entry) for entry in related]),
         "related_bill_count": text(len(related)),
         "cbo_cost_estimates_outcome": text(getattr(status, "cbo_cost_estimates_outcome", None)),
+        "url_source": "billstatus" if text(status.legislation_url) else None,
     }
 
 

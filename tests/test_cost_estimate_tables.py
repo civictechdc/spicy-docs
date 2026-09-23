@@ -101,8 +101,8 @@ def test_empty_observations_publish_on_the_bill_without_estimate_rows(block: str
 
 
 def test_unread_and_populated_are_distinct_and_the_column_is_appended() -> None:
-    """Unread and populated outcomes are distinct, and the outcome column is appended second-to-last in
-    congress_bills.
+    """Unread and populated outcomes are distinct, and the outcome column is appended after
+    related_bill_count in congress_bills (url_source follows it).
     """
     parsed = status("BILLSTATUS-118hr801", HR801)
     assert parsed.cbo_cost_estimates_outcome == "populated"
@@ -113,8 +113,18 @@ def test_unread_and_populated_are_distinct_and_the_column_is_appended() -> None:
             diff=False,
         )
         assert family.bills[0]["cbo_cost_estimates_outcome"] == value
-    assert len(CONGRESS_BILLS.columns) == 49
-    assert CONGRESS_BILLS.columns[-2:] == ("related_bill_count", "cbo_cost_estimates_outcome")
+    assert len(CONGRESS_BILLS.columns) == 50
+    assert CONGRESS_BILLS.columns[-3:] == ("related_bill_count", "cbo_cost_estimates_outcome", "url_source")
+
+
+def test_url_source_names_billstatus_only_when_the_document_states_a_url() -> None:
+    parsed = status("BILLSTATUS-118hr801", HR801)
+    stated = "https://www.congress.gov/bill/118th-congress/house-bill/801"
+    for url, source in ((stated, "billstatus"), (None, None)):
+        family = build_bill_family(
+            BillFamilyCapture(status=replace(parsed, legislation_url=url), versions=()), engine=ENGINE, diff=False
+        )
+        assert (family.bills[0]["url"], family.bills[0]["url_source"]) == (url, source)
 
 
 def test_reader_falls_back_to_the_guide_spelling() -> None:
