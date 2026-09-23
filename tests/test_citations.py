@@ -206,7 +206,7 @@ def test_the_rule_set_version_is_pinned_to_these_rules() -> None:
     passed the whole suite, since a reject that is no longer asserted cannot
     fail.
     """
-    assert CITATION_RULE_SET_VERSION == "40cc08bf9df3"
+    assert CITATION_RULE_SET_VERSION == "13d6b810b8f6"
 
 
 def test_the_stored_kinds_are_every_rule_that_reaches_a_key() -> None:
@@ -262,13 +262,13 @@ def grammar_reading() -> dict[str, tuple[str, str]]:
 #: inside ``citation_grammar`` or ``identifier_shapes`` moves nothing there;
 #: this is what catches it.
 PINNED_GRAMMAR_READING = {
-    "public_law": ("002", "9c0e05b1988ea33a"),
-    "statutes_at_large": ("002", "6cb41218881f7c68"),
-    "usc_section": ("002", "adc048a7519caba4"),
-    "cfr_section": ("002", "2424ad52af72ed69"),
-    "federal_register_cite": ("002", "72db9920eadf877f"),
-    "rin": ("003", "de5112ca3800ec37"),
-    "docket_number": ("003", "2360bd6dd717553f"),
+    "public_law": ("002", "c9f4d1273027e4ce"),
+    "statutes_at_large": ("002", "ec88c4ad033cbbf0"),
+    "usc_section": ("002", "2b33e21e303a3be0"),
+    "cfr_section": ("002", "519dd4d3c7e02dda"),
+    "federal_register_cite": ("002", "7c1ec1de2286fb0e"),
+    "rin": ("003", "5199b682929eb361"),
+    "docket_number": ("003", "71c8b621b8e6e5fe"),
 }
 
 
@@ -556,6 +556,15 @@ def test_a_cite_with_no_readable_coordinate_has_no_key(kind: str, printed: str) 
         ("usc_section", "Paperwork Reduction Act of 1995, 44 U.S.C. 3501--3520.", ["44-3501", "44-3520"]),
         ("usc_section", "42 USC 4321--4347 (NEPA)", ["42-4321", "42-4347"]),
         ("usc_section", "the Act, 21 U.S.C. 1901- 1908, authorizes", ["21-1901", "21-1908"]),
+        # The same lost space inside one section's name (30 such keys): one
+        # section, not a range's first endpoint left unresolved.
+        ("usc_section", "under 16 U.S.C. 460l- 9 and", ["16-460l-9"]),
+        ("usc_section", "42 U.S.C. 288- 5", ["42-288-5"]),
+        ("usc_section", "42 U.S.C. 300ff- 51--300ff-67", ["42-300ff-51", "42-300ff-67"]),
+        ("usc_section", "Civil Rights Act of 1964, 42 U.S.C. 2000d- 2000d-42, as amended", ["42-2000d", "42-2000d-42"]),
+        # A comma page before another comma is a page.
+        ("federal_register_cite", "88 Fed. Reg. 12,345, 12,350 (Mar. 1, 2023)", ["88-12345"]),
+        ("federal_register_cite", "85 FR 43,304, the agency", ["85-43304"]),
     ],
 )
 def test_the_shapes_the_grammar_used_to_drop_are_read(kind: str, printed: str, keys: list[str]) -> None:
@@ -592,6 +601,9 @@ def test_a_heading_is_not_part_of_the_span() -> None:
         ),
         ("rin", "corrects the RIN number from 0701- AA81 to 0701-AA94.", ["0701-AA94"]),
         ("rin", "RIN 1625-AAOO and RIN 2060-XXXX", []),
+        # An OMB control number a FEMA collection shapes like a RIN is the OMB number.
+        ("rin", "OMB Number: 1660-NW32. Abstract: The purpose", []),
+        ("rin", "OMB No. 1660-NW32 and RIN 1660-AA12", ["1660-AA12"]),
     ],
 )
 def test_an_identifier_kind_is_keyed_by_identifier_shapes(kind: str, printed: str, keys: list[str]) -> None:
@@ -1115,3 +1127,48 @@ def test_a_cfr_or_statute_block_missing_its_outer_number_yields_nothing() -> Non
     assert _inline_mods('<cfr><part number="60"/></cfr>').cfr_parts == ()
     assert _inline_mods('<statuteAtLarge><page pages="1234"/></statuteAtLarge>').statutes == ()
     assert _inline_mods("<rin/>").rins == ()
+
+
+def test_the_identifier_detection_runs_once_per_document(monkeypatch: pytest.MonkeyPatch) -> None:
+    """``rin`` and ``docket_number`` read one detection of the text, not one each."""
+    from spicy_docs.interpretation import citations
+
+    calls = 0
+    real = citations.detect_identifier_shapes
+
+    def counting(text):
+        nonlocal calls
+        calls += 1
+        return real(text)
+
+    monkeypatch.setattr(citations, "detect_identifier_shapes", counting)
+    citations._identifiers_in.cache_clear()
+    findings = find_citations("Docket No. EPA-HQ-OAR-2004-0015 and RIN 2060-AU12.", kinds=("rin", "docket_number"))
+    assert calls == 1
+    assert [f.target_key for f in findings] == ["EPA-HQ-OAR-2004-0015", "2060-AU12"]
+
+
+def test_doubling_a_document_does_not_quadruple_the_reading_of_every_grammar_kind() -> None:
+    """All seven grammar kinds through ``find_citations``, identifier kinds included; best of three.
+
+    The grammar's own guard (``tests/test_citation_grammar.py``) times its
+    readers; this one times the rules as the table reads them.
+    """
+    import time
+
+    block = (
+        "The Clean Air Act (42 U.S.C. 7401, 7402 and 7403), Pub. L. 92-463, 86 Stat. 770, 89 FR 12345, 40 CFR "
+        "parts 60 and 61; Docket No. EPA-HQ-OAR-2004-0015, RINs 2060-AU12 and 2060-AU13. "
+    )
+
+    def best(copies: int) -> float:
+        text = block * copies
+        times = []
+        for _ in range(3):
+            started = time.perf_counter()
+            find_citations(text, kinds=GRAMMAR_KINDS)
+            times.append(time.perf_counter() - started)
+        return min(times)
+
+    small, large = best(300), best(600)
+    assert large < 3 * small, (small, large)

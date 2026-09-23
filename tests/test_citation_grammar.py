@@ -4123,14 +4123,21 @@ def test_a_plural_label_range_with_a_wrapped_hyphen_is_two_endpoints() -> None:
         ("42 USC 4321--4347", "4321", "4347"),
         ("21 U.S.C. 1901- 1908", "1901", "1908"),
         ("16 U.S.C. 792- 823b", "792", "823b"),
-        # The separator never overrules the ordering rule: 9 does not follow 460l.
-        ("16 U.S.C. 460l- 9", "460l", None),
+        # A lost space after a hyphen is closed and the ordering rule decides as
+        # it decides the unspaced pair: 9 does not follow 460l, so this is one
+        # section, 16 U.S.C. 460l-9, and so are 288-5 and the start of 300ff's run.
+        ("16 U.S.C. 460l- 9", "460l-9", None),
+        ("42 U.S.C. 288- 5", "288-5", None),
+        ("42 U.S.C. 300ff- 51--300ff-67", "300ff-51", "300ff-67"),
+        # Where the second token runs on into a compound name, the space
+        # separates a range: 2000d to 2000d-42, the whole of Title VI.
+        ("42 U.S.C. 2000d- 2000d-42", "2000d", "2000d-42"),
         # A compound section's own hyphen is still its name.
         ("42 U.S.C. 1395w-4", "1395w-4", None),
     ],
 )
 def test_a_doubled_or_one_sided_dash_separates_a_range(text: str, section: str, end: str | None) -> None:
-    """27 doubled and 81 one-sided dashes were read as the range's first endpoint alone."""
+    """27 doubled and 81 one-sided dashes were read as the range's first endpoint alone; a name is still a name."""
     (field,) = parse_authority_citation(text)
     assert (field.usc_section, field.usc_section_end) == (section, end)
     (occurrence,) = citation_grammar.find_usc_citations(text)
@@ -4142,6 +4149,10 @@ def test_a_doubled_or_one_sided_dash_separates_a_range(text: str, section: str, 
     [
         ("89 FR 12345", [(89, 12345, "89 FR 12345")]),
         ("88 Fed. Reg. 12,345.", [(88, 12345, "88 Fed. Reg. 12,345")]),
+        # A comma page before a list comma or a sentence's comma is still a
+        # page (CRPT-118hrpt930 prints "85 FR 43,304,").
+        ("88 Fed. Reg. 12,345, 12,350 (Mar. 1, 2023)", [(88, 12345, "88 Fed. Reg. 12,345")]),
+        ("85 FR 43,304, the agency", [(85, 43304, "85 FR 43,304")]),
         ("89 FR 91529, 91530", [(89, 91529, "89 FR 91529")]),
         ("89 FR 91529,91530", [(89, 91529, "89 FR 91529")]),
         ("74 FR 1,234,567", []),

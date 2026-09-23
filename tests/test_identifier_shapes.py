@@ -1673,6 +1673,8 @@ def test_the_segment_admits_only_its_five_tokens_after_a_sequence(value: str) ->
             ("FAA-2007-0410", "FAA-2007-0411", "FAA-2007-0412"),
         ),
         ("and FDA-2015-N-1837", ("FDA-2015-N-1837",)),
+        # A docket a list names twice is returned once, where it first stood.
+        ("Docket Nos. FDA-2009-E-0202, FDA-2009-E-0204 and FDA-2009-E-0202", ("FDA-2009-E-0202", "FDA-2009-E-0204")),
         # A whole docket is still the single reader's answer.
         ("GIPSA-2010-FGIS-0014-NONRULEMAKING", ("GIPSA-2010-FGIS-0014-NONRULEMAKING",)),
     ],

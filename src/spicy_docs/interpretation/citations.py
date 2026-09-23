@@ -26,9 +26,11 @@ import hashlib
 import re
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
+from functools import lru_cache
 
 from spicy_docs.interpretation import citation_grammar
 from spicy_docs.interpretation.identifier_shapes import (
+    IdentifierCandidate,
     IdentifierKind,
     detect_identifier_shapes,
     normalize_docket_reference,
@@ -452,17 +454,43 @@ def _federal_register_hits(text: str) -> Iterator[GrammarHit]:
         yield occurrence.start, occurrence.end, f"{citation.volume}-{citation.page}", True
 
 
-def _identifier_reader(kind: IdentifierKind, key: Callable[[str], str | None]) -> GrammarReader:
+@lru_cache(maxsize=1)
+def _identifiers_in(text: str) -> tuple[IdentifierCandidate, ...]:
+    """The prose detector's reading of one text, kept for the next rule that asks.
+
+    Two rules read the same detection -- ``rin`` and ``docket_number`` -- and it
+    was a fifth of a whole document's reading time done twice. One entry: the
+    last text read is held until the next one replaces it.
+    """
+    return tuple(detect_identifier_shapes(text))
+
+
+#: A label that says the number after it is an OMB control number, which a
+#: FEMA collection can shape like a RIN ("OMB Number: 1660-NW32"): 2 of the 21
+#: RINs the identifier detector read that the 002 labelled rule did not, in the
+#: parsing survey's Federal Register texts.
+_OMB_NUMBER_LABEL = re.compile(r"\bOMB\s+(?:control\s+)?(?:numbers?|nos?\.?|#)\s*[:#]?\s*$", re.IGNORECASE)
+
+
+def _identifier_reader(
+    kind: IdentifierKind, key: Callable[[str], str | None], *, refused_after: re.Pattern[str] | None = None
+) -> GrammarReader:
     """Every identifier of ``kind`` the prose detector finds, keyed by ``key``; a value it cannot key is not read.
 
     The detector arbitrates overlaps -- a docket inside a Regulations.gov
     document id is the document's -- and its spans index the text as printed.
+    ``refused_after`` is a label that, ending right before a candidate, says
+    the candidate is another system's number.
     """
 
     def read(text: str) -> Iterator[GrammarHit]:
-        for candidate in detect_identifier_shapes(text):
-            if candidate.kind is kind and (value := key(candidate.value)) is not None:
-                yield candidate.span[0], candidate.span[1], value, True
+        for candidate in _identifiers_in(text):
+            start, end = candidate.span
+            if candidate.kind is not kind or (value := key(candidate.value)) is None:
+                continue
+            if refused_after is not None and refused_after.search(text, max(0, start - 40), start):
+                continue
+            yield start, end, value, True
 
     read.__name__ = f"identifier_shapes_{kind.value}"
     return read
@@ -617,11 +645,11 @@ CITATION_RULES: tuple[CitationRule, ...] = (
     CitationRule(
         name="rin",
         version="003",
-        reader=_identifier_reader(IdentifierKind.RIN, published_rin),
+        reader=_identifier_reader(IdentifierKind.RIN, published_rin, refused_after=_OMB_NUMBER_LABEL),
         target_table="federal_register",
         target_key_shape="the bare RIN, as regulation_id_numbers_json spells it: identifier_shapes.PUBLISHED_RIN",
         # A RIN-shaped damage or placeholder is detected and never keyed.
-        rejects=("RIN of the", "RIN 1234", "RIN 1625-AAOO", "RIN 2060-XXXX"),
+        rejects=("RIN of the", "RIN 1234", "RIN 1625-AAOO", "RIN 2060-XXXX", "OMB Number: 1660-NW32"),
         note=(
             "87 distinct RINs across the eight House activity reports and none in any CRPT MODS: "
             "the family's largest single citation yield, and invisible to a 60-page read"

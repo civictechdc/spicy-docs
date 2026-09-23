@@ -78,7 +78,7 @@ the collections that do carry them.
 uv run --frozen python ~/Work/corpora/supply-2026-09-02/receipts/document-citations-2026-09-20/build-fixtures.py
 ```
 
-## `grammar-specimens.jsonl`
+## `grammar-specimens.jsonl` (frozen)
 
 266 Federal Register titles and abstracts, one JSON object per line
 (`{"id": "<document_number>@<publication_date>", "text": ...}`), copied
@@ -87,17 +87,22 @@ unchanged from the parsing survey's retained input
 (`sha256:1ee21de8bf2ab6ced188bd5bea953790a39e68026cda50da66d848bd65912cb2`).
 Public-domain government text; nothing was fetched.
 
-Chosen by a fixed rule, so the file is rebuilt rather than hand-edited: for
-each of twenty shapes the grammar kinds were changed for (a CFR part or
-section before its heading, a space after a part's inner hyphen, every case of
-"Part", a `through` range, a reversed "part N of title N", a doubled or
-one-sided dash between Code sections, a Code range, appendix and trailing
-period, a zero-padded law number, a spaced law separator, an unspaced
-Statutes cite, `FR` and comma-paged `Fed. Reg.` cites, RIN lists and
-unlabelled RINs, long dockets and ITC investigation numbers), the first eight
-texts carrying it in corpus order; then 120 more, sampled with seed 20260923
-from the texts in which the grammar kinds read anything. Builder, command and
-output: receipt `corpora/supply-2026-09-02/receipts/b4-citation-grammar-2026-09-23/`.
+**Frozen.** The file is chosen without the grammar it pins, so rebuilding it
+with any version of the grammar builds these same bytes, and a rule that
+starts or stops reading text shows as a moved digest rather than as a moved
+sample. It is not rebuilt to follow the code. The rule: for each of twenty
+shapes the grammar kinds were changed for, found by plain regular
+expressions in the builder (a CFR part or section before its heading, a
+space after a part's inner hyphen, every case of "Part", a `through` range,
+a reversed "part N of title N", a doubled or one-sided dash between Code
+sections, a Code range, appendix and trailing period, a zero-padded law
+number, a spaced law separator, an unspaced Statutes cite, `FR` and
+comma-paged `Fed. Reg.` cites, RIN lists and unlabelled RINs, long dockets
+and ITC investigation numbers), the first eight texts carrying it in corpus
+order; then 120 more drawn with seed 20260923 from every other retained id.
+Builder, command and output: receipt
+`corpora/supply-2026-09-02/receipts/b4-citation-grammar-2026-09-23/`
+(`uv run --frozen python build_grammar_specimens.py <out>`).
 
 `tests/test_citations.py` pins what each grammar-read kind reads over this
 file, both activity reports and both budget volumes, at that kind's rule
@@ -106,4 +111,4 @@ and names the version to move.
 
 | Fixture | Bytes | SHA-256 |
 | --- | --- | --- |
-| `grammar-specimens.jsonl` | 310,429 | `cee8ddc31d8206b298366282dff4ce8811f61d60ef7667f9e0cac2f5a474b73e` |
+| `grammar-specimens.jsonl` | 298,203 | `7fbfd98619e2b6c1190ea1cf70aaf7a4e0fdcdbde0f77ca0f7ce23e431b6c6ed` |

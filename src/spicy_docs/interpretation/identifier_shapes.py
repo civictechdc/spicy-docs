@@ -1262,7 +1262,12 @@ def _organization(docket: str) -> str:
 
 
 def normalize_docket_references(reference: object) -> tuple[str, ...]:
-    """Every Regulations.gov docket a docket-column reference names, in order; ``()`` when it names none.
+    """Every docket-shaped value a docket-column reference names, in order, once each; ``()`` for none.
+
+    Shape, not existence, as every answer here: a value is a candidate to be
+    joined against the dockets the publisher holds, and one this reader
+    returns may name no held docket (an older DOT docket, another agency's
+    number of the same silhouette).
 
     :func:`normalize_docket_reference` reads a reference that IS one docket,
     whole. A docket column also writes a docket inside more: a longer label

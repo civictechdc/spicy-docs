@@ -1109,7 +1109,8 @@ retained inputs; it locates Public Law, Statutes and Federal Register
 citations in running text; and it reads four shapes it dropped -- a
 zero-padded law number, a part or section followed by its printed heading, a
 space after a part's inner hyphen, and a doubled or one-sided dash between
-two Code sections. The docket column reader also takes the prose reader's
+two Code sections -- a range where the two ascend, and one section with a
+lost space where they do not (`16 U.S.C. 460l- 9`). The docket column reader also takes the prose reader's
 closed trailing tokens (`GIPSA-2006-FGIS-0029-NONRULE`): 67 of the retained
 Regulations.gov documents table's docket ids end on one, and it refused them
 all. Of the 2,531 RefSpec tests that exercise the two modules, two

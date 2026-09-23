@@ -835,7 +835,20 @@ _USC_SECTION_TOKEN = rf"\d+(?:{_ONE_REPEATED_LETTER}(?![A-Za-z]))?"
 #: grammar deliberately cannot tell them apart; :func:`_usc_section_range`
 #: decides by ordering, after the match. Six patterns wrote this out
 #: identically, so a widening in one was a silent divergence from five.
-_USC_SECTION_SPAN = rf"{_USC_SECTION_TOKEN}(?:-{_USC_SECTION_TOKEN})?"
+#:
+#: One space may follow the hyphen (spicy-docs, 2026-09-23): a name never
+#: holds a space, so "16 U.S.C. 460l- 9" and "42 U.S.C. 288- 5" are a lost
+#: space inside one section's name, and "21 U.S.C. 1901- 1908" the same lost
+#: space inside a range. :func:`_usc_section` closes the space and the
+#: ordering rule decides as it decides the unspaced pair -- so the first two
+#: read as sections 460l-9 and 288-5, the third as a range. Reading the
+#: spaced pair as a separator instead made the ordering rule's refusal leave
+#: the first endpoint alone and unresolved (29 keys in the parsing survey's
+#: Federal Register texts). Not where a hyphen and digits follow the second
+#: token (read whole -- the group is atomic, or "2000d" would give back its
+#: "d"): in "42 U.S.C. 2000d- 2000d-42" the space separates a range whose end
+#: is a compound name, and :data:`_LOOSE_DASH` reads it as one.
+_USC_SECTION_SPAN = rf"{_USC_SECTION_TOKEN}(?:-{_USC_SECTION_TOKEN}|-[ \t](?>{_USC_SECTION_TOKEN})(?!-\d))?"
 
 #: :data:`_USC_SECTION_SPAN` written out so the bare-token half alone carries
 #: :data:`_A_DOTTED_NUMBER_IS_A_CFR_SECTION` and the hyphenated-span half
@@ -894,6 +907,7 @@ _USC_SECTION_SPAN = rf"{_USC_SECTION_TOKEN}(?:-{_USC_SECTION_TOKEN})?"
 #: see :data:`_A_DOTTED_NUMBER_IS_A_CFR_SECTION` for why.
 _USC_SECTION_SPAN_UNTRUNCATED = (
     rf"{_USC_SECTION_TOKEN}-{_USC_SECTION_TOKEN}"
+    rf"|{_USC_SECTION_TOKEN}-[ \t](?>{_USC_SECTION_TOKEN})(?!-\d)"
     rf"|(?>{_USC_SECTION_TOKEN}){_A_DOTTED_NUMBER_IS_A_CFR_SECTION}"
 )
 
@@ -925,12 +939,15 @@ _SPACED_DASH = r"\s+-\s+"
 
 #: The spaced dash's two relatives, licensed by the same rule -- a section's
 #: name holds neither a space nor two dashes running. A DOUBLED dash is the
-#: typewriter's em dash ("44 U.S.C. 3501--3520"; a real em dash folds to one
-#: hyphen and is read as one), and a dash with space on ONE side is the
-#: publisher's lost space ("21 U.S.C. 1901- 1908"). Measured 2026-09-23 over
-#: the parsing survey's 60,000 Federal Register titles and abstracts: 27 and
-#: 81 such ranges, each read as its first endpoint alone. The ordering rule
-#: still decides whether the two numbers are a range.
+#: typewriter's em dash ("44 U.S.C. 3501--3520", 27 in the parsing survey's
+#: 60,000 Federal Register titles and abstracts, each read as its first
+#: endpoint alone until 2026-09-23; a real em dash folds to one hyphen and is
+#: read as one), and a dash with space on one side is the publisher's lost
+#: space. A space AFTER a dash is usually taken first by the section token
+#: (:data:`_USC_SECTION_SPAN`), because it is as often inside a name as between
+#: a range's ends; it reaches this separator only where the section token
+#: declines it ("2000d- 2000d-42"). The ordering rule still decides whether
+#: two numbers are a range.
 _LOOSE_DASH = r"(?:\s*--\s*|\s+-\s*|\s*-\s+)"
 
 # The title accepts leading zeros like the CFR grammar: "07 USC 5602" is
@@ -1641,12 +1658,14 @@ _EXECUTIVE_ORDER_ABBREVIATED = re.compile(
 #: Reg. 12,345"): until 2026-09-23 the page stopped at the comma and this read
 #: page 12. Only one comma followed by exactly three digits is a thousands
 #: comma, so a list ("89 FR 91529, 91530" or "91529,91530") still reads its
-#: first page whole, and a number no page reaches ("1,234,567") reads as none.
+#: first page whole, a comma page before a list comma or a sentence comma is
+#: read ("88 Fed. Reg. 12,345, 12,350", "85 FR 43,304, the agency"), and a
+#: number no page reaches ("1,234,567") reads as none.
 _FR_CITATION_FORM = re.compile(
     # "Fed"/"FED" both read (the timetable builder uppercases its column
     # before parsing); the opening capitals stay required either way.
     rf"{_LEFT}(?P<volume>[1-9]\d{{0,2}})\s*-?\s*(?:FR|F[Ee][Dd]\.?\s?R[Ee][Gg]\.?)\s*-?\s*"
-    rf"(?P<page>\d{{1,3}},\d{{3}}(?![\d,])|\d{{1,6}}(?!,\d{{3}}(?!\d))){_RIGHT}"
+    rf"(?P<page>\d{{1,3}},\d{{3}}(?!\d|,\d)|\d{{1,6}}(?!,\d{{3}}(?!\d))){_RIGHT}"
 )
 
 #: "Stat" must be capitalized for the same reason, and the digit ranges are
@@ -2264,11 +2283,11 @@ _ZERO_PADDED_SECTION = re.compile(r"(?:^|(?<=[a-z]-))0+(?=\d)")
 
 
 def _usc_section(value: str | None) -> str | None:
-    """Lowercase a section token, drop subsection detail, strip a zero pad."""
+    """Lowercase a section token, drop subsection detail, close a lost space after a hyphen, strip a zero pad."""
 
     if value is None:
         return None
-    text = re.sub(r"\([^)]*\)", "", value.strip().lower())
+    text = re.sub(r"-[ \t]+", "-", re.sub(r"\([^)]*\)", "", value.strip().lower()))
     return _ZERO_PADDED_SECTION.sub("", text) or None
 
 
