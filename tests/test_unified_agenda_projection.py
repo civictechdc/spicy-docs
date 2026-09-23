@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import time
 from pathlib import Path
 
 import pytest
@@ -120,6 +121,15 @@ def test_the_2004_control_byte_is_repaired_in_memory_for_its_two_editions_only()
         project(relabeled, "202510")
 
 
+def test_a_second_control_byte_in_a_2004_edition_is_refused_not_guessed():
+    body = (
+        (FIXTURES / "record-200404-1084-AA00.xml").read_bytes().replace(b"Department\x19s", b"Department\x19s\x19", 1)
+    )
+    assert body.count(b"\x19") == 2
+    with pytest.raises(UnifiedAgendaSourceError, match="one measured 0x19"):
+        project(body, "200404")
+
+
 def test_the_repair_does_not_count_against_the_served_byte_bound():
     body = (FIXTURES / "record-200404-1084-AA00.xml").read_bytes()
     assert project(body, "200404", max_bytes=len(body))[0].repaired_bytes == 1
@@ -146,15 +156,21 @@ def continuation_texts(text):
 
 
 def test_a_continuation_stops_at_each_of_its_three_boundaries():
-    # The paragraph mark: 3235-AG65, Fall 1995, verbatim.
+    # The paragraph mark: 3235-AG65, Fall 1995, the whole field.
     assert legal_authority_continuations(
-        "LEGAL AUTHORITY CONT: 15 USC 77(g); 15 USC 77(j); 15 USC 77 (eee) ^PRFA:  N"
+        "LEGAL AUTHORITY CONT: 15 USC 77(g); 15 USC 77(j); 15 USC 77 (eee); 15 USC 77(ggg); 15 USC 77(nnn); "
+        "15 USC 77(sss); 15 USC 78(d); 15 USC 78(ff); 15 USC 80a-20; 15 USC 80a-23; 15 USC 80b-4; 15 USC 80b-11 "
+        "^PRFA:  N"
     ) == (
         UnifiedAgendaAuthorityContinuation(
-            "legal-authority-cont", "LEGAL AUTHORITY CONT:", "15 USC 77(g); 15 USC 77(j); 15 USC 77 (eee)"
+            "legal-authority-cont",
+            "LEGAL AUTHORITY CONT:",
+            "15 USC 77(g); 15 USC 77(j); 15 USC 77 (eee); 15 USC 77(ggg); 15 USC 77(nnn); 15 USC 77(sss); "
+            "15 USC 78(d); 15 USC 78(ff); 15 USC 80a-20; 15 USC 80a-23; 15 USC 80b-4; 15 USC 80b-11",
         ),
     )
-    # The blank line: 3235-AH16, Spring 1999, verbatim, with another field's continuation behind it.
+    # The blank line: 3235-AH16, Spring 1999, shortened after the first CFR citation, with another field's
+    # continuation behind it.
     assert continuation_texts(
         "LEGAL AUTHORITY CONT: 15 USC 78i; 15 USC 78o; 15 USC 78q; 15 USC 78w; 15 USC 78mm \n"
         "\nCFR CITATION CONT: 17 CFR 249.617 (Revision)"
@@ -162,6 +178,10 @@ def test_a_continuation_stops_at_each_of_its_three_boundaries():
     # Another field's label, which no retained edition needs: the same two fields joined by a semicolon.
     assert continuation_texts("LEGAL AUTHORITY CONT: 15 USC 78i; 15 USC 78mm; CFR CITATION CONT: 17 CFR 249.617") == [
         "15 USC 78i; 15 USC 78mm;"
+    ]
+    # A field label behind the paragraph mark does not move the stop past the mark.
+    assert continuation_texts("LEGAL AUTHORITY CONT: 42 USC 1395 ^PRFA: N ^PCFR CITATIONS CONT: 8 CFR 232") == [
+        "42 USC 1395"
     ]
     # "continued" in prose is not a label, because a label ends in a colon.
     assert continuation_texts("LEGAL AUTHORITY CONT: 29 USC 1027, as continued by Pub. L. 104-191") == [
@@ -193,20 +213,51 @@ def test_each_measured_label_spelling_names_its_family(text, family, marker):
 
 
 def test_labels_that_do_not_continue_the_authority_list_are_not_read():
-    # A label may follow anything (0938-AG59 puts a docket number first) and is read from its end.
-    assert continuation_texts("HSQ-215 ^PLEGAL AUTHORITY CONT: 42 USC 1395f(b) 42 USC 1395l 42 USC 1395ww") == [
-        "42 USC 1395f(b) 42 USC 1395l 42 USC 1395ww"
-    ]
+    # A label may follow anything and is read from its end: 0938-AG59, Fall 1996, the whole field.
+    assert legal_authority_continuations(
+        "HSQ-215 ^PLegal Authority (Continued) 42 USC 1395f(b) 42 USC 1395l 42 USC 1395ww"
+    ) == (
+        UnifiedAgendaAuthorityContinuation(
+            "legal-authority-cont", "Legal Authority (Continued)", "42 USC 1395f(b) 42 USC 1395l 42 USC 1395ww"
+        ),
+    )
     for text in (
         "LEGAL AUTHORITY CONT: ^PRFA: N",  # a label with nothing behind it
         "",
         "STATUTORY DEADLINE CONT: 07/01/1997",  # other fields' continuations
         "CFR CITATIONS CONT: 8 CFR 232, 233",
-        "Legal Authority: PL-105-33, sec 4505",  # restating the field is not continuing it (0938-AI52, 199804)
-        "8. Legal Authority: OMB Circular A-110",  # 1090-AA67, 199804
+        "Legal Authority: PL-105-33, sec 4505",  # restating is not continuing: opening of 0938-AI52, 199804
+        "8. Legal Authority: OMB Circular A-110",  # opening of 1090-AA67, 199804
         "Additional authority DOT Order 5660.1A",  # 2125-AD78: never says "legal"
     ):
         assert legal_authority_continuations(text) == (), text
+
+
+def test_a_label_two_patterns_read_is_read_once_by_the_one_that_starts_first():
+    # Not in the retained editions; the only overlaps possible are "Additional ..." or "Continue from ..." followed
+    # by a CONT label. The later reading is skipped, and its words stay in the text.
+    assert legal_authority_continuations("Additional Legal Authorities Continued: 42 USC 1395") == (
+        UnifiedAgendaAuthorityContinuation(
+            "additional-legal-authority", "Additional Legal Authorities", "Continued: 42 USC 1395"
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("LEGAL AUTHORITY CONT: 42 USC 1395 a" + " " * 100_000 + "b", ["42 USC 1395 a b"]),
+        ("LEGAL AUTHORITY CONT: 42 USC 1395 ^Pa" + " " * 100_000 + "b", ["42 USC 1395"]),
+        ("AUTHORITY" + " " * 100_000 + "(" + " " * 100_000 + "x", []),
+        ("Continue from" + " " * 100_000 + "#" + " " * 100_000 + "x", []),
+    ],
+    ids=["letter-then-spaces", "spaces-past-the-mark", "label-spaces-paren", "continue-from-spaces"],
+)
+def test_long_whitespace_runs_are_searched_in_linear_time(text, expected):
+    # RefSpec's patterns took 5 s on 2,000 spaces behind one letter, growing as the cube; a record may hold 4 MiB.
+    started = time.perf_counter()
+    assert continuation_texts(text) == expected
+    assert time.perf_counter() - started < 5
 
 
 def test_continuations_read_every_additional_info_with_its_whitespace_intact():

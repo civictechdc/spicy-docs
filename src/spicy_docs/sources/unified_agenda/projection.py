@@ -9,13 +9,15 @@ Four rules, each measured over all 60 retained editions (241,726 records; receip
 ``corpora/supply-2026-09-02/receipts/unified-agenda-projection-2026-09-23/``):
 
 * **Whitespace runs collapse** to one ASCII space in every projected string, as a citation box's are, and so
-  does a lone non-ASCII space (U+2009, U+202F). Stripping alone keeps them inside 4,748 records: 1,562 CFR
-  lists, 1,959 authority lists and 1,373 timetables.
+  does a lone non-ASCII space (U+2009, U+202F). Whitespace is what ``str.split()`` splits on: Unicode
+  whitespace plus U+001C-U+001F and U+0085 (48 of those in the editions, none in a projected path).
+  Stripping alone keeps them inside 4,748 records: 1,562 CFR lists, 1,959 authority lists and 1,373 timetables.
 * **Every** ``CFR_LIST/CFR``, ``LEGAL_AUTHORITY_LIST/LEGAL_AUTHORITY`` and ``TIMETABLE_LIST/TIMETABLE`` is
   read, and nothing else inside those lists; no edition repeats a list or puts a foreign child in one, so
   this equals RefSpec's first-list reading on every record while losing nothing if one ever does.
 * **The 2004 editions' one ``0x19`` byte each** is the publisher's mangled ``U+2019`` and is repaired in
-  memory for those two editions only; any other edition carrying one is refused by the strict parser.
+  memory for those two editions only. A second one there is refused, as is one in any other edition
+  (by the strict parser), because only one each was measured.
 * **Legal-authority lists continued in ``ADDITIONAL_INFO``** under a label are read as separate
   continuations: 98 records, all 199510-200510, carry lists that ``LEGAL_AUTHORITY_LIST`` does not
   (1,310 citations by RefSpec's current grammar, as its sealed table holds).
@@ -42,7 +44,7 @@ from .records import (
 #: Editions whose export carries the publisher's mangled ``U+2019`` as a ``0x19`` byte, which XML 1.0 forbids:
 #: exactly one each ("Department\x19s", "bureau\x19s") and none in the other 58 editions. It is not systematic
 #: mojibake -- no ``0x1c``/``0x1d``/``0x14`` companions from curly quotes or dashes appear -- so the repair is
-#: scoped to these two exports rather than applied to any file that happens to carry the byte.
+#: scoped to these two exports and their one byte each, rather than applied to any file that carries the byte.
 MANGLED_APOSTROPHE_EDITIONS = ("200404", "200410")
 _MANGLED_APOSTROPHE = b"\x19"
 _APOSTROPHE = "\u2019".encode()
@@ -60,10 +62,12 @@ CONTINUATION_LABEL_FAMILIES = ("legal-authority-cont", "additional-legal-authori
 # Every spelling the retained editions contain, and no wider: the optional "LEGAL", singular and plural, the
 # parenthesised form, each truncation of "CONTINUED", and the dots or colons behind it; the "Additional Legal
 # Authority" family with its "information:" outlier; and "Continue from #8 Legal Authority" (3235-AE11, 199704).
+# RefSpec wrote each optional part as "\s*\(?\s*"; "\s*(?:\(\s*)?" matches the same text without two
+# quantifiers competing for one whitespace run, so a label followed by spaces backtracks linearly.
 _CONTINUATION_MARKERS: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
         "legal-authority-cont",
-        re.compile(r"(?:LEGAL\s+)?AUTHORIT(?:Y|IES)\s*\(?\s*CONT(?:INUED|INUES|INUE)?\)?\s*[.:]*", re.IGNORECASE),
+        re.compile(r"(?:LEGAL\s+)?AUTHORIT(?:Y|IES)\s*(?:\(\s*)?CONT(?:INUED|INUES|INUE)?\)?\s*[.:]*", re.IGNORECASE),
     ),
     (
         "additional-legal-authority",
@@ -71,20 +75,24 @@ _CONTINUATION_MARKERS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ),
     (
         "additional-legal-authority",
-        re.compile(r"CONTINUE[DS]?\s+FROM\s*#?\s*\d+\s*LEGAL\s+AUTHORIT(?:Y|IES)\s*[.:]*", re.IGNORECASE),
+        re.compile(r"CONTINUE[DS]?\s+FROM\s*(?:#\s*)?\d+\s*LEGAL\s+AUTHORIT(?:Y|IES)\s*[.:]*", re.IGNORECASE),
     ),
 )
 # A continuation ends at the publisher's paragraph mark (a literal "^", written "^P" before the next field) or a
 # blank line, the same boundary in editions that carry real newlines.
 _CONTINUATION_BOUNDARY = re.compile(r"\^|\n[ \t]*\n")
-# Or at another field continuing under its own label. This fires on nothing in the retained editions -- every
-# "CFR CITATIONS CONT:" and "STATUTORY DEADLINE CONT:" already sits behind a boundary above -- and is kept because
-# the regression it guards is silent: two continuations separated by a semicolon would hand a CFR list to the
-# authority reader. A label ends in a colon; "continued" in prose does not, so a list is never cut by its own text.
-# Its search is quadratic in the longest run of letters and spaces behind a label (4,000 characters in one run:
-# 0.18 s; 16,000: 3 s). The longest ADDITIONAL_INFO in the 60 editions is 4,236 characters, and projecting all 60
-# costs what reading them with spicy-regs' strip() rules did (61.6 s against 63.7 s).
-_ANOTHER_FIELD_CONTINUES = re.compile(r"[A-Za-z][A-Za-z ']*\s*\(?\s*CONT(?:INUED|INUES|INUE)?\)?\s*:", re.IGNORECASE)
+# Or, before that boundary, at another field continuing under its own label. This fires on nothing in the retained
+# editions -- every "CFR CITATIONS CONT:" and "STATUTORY DEADLINE CONT:" already sits behind a boundary above -- and
+# is kept because the regression it guards is silent: two continuations separated by a semicolon would hand a CFR
+# list to the authority reader. A label ends in a colon; "continued" in prose does not, so a list is never cut by
+# its own text. A label's words are at most 64 letters and spaces; a longer run before "CONT:" is prose, and only
+# its last 64 characters are cut. RefSpec searched to the end of the field with "[A-Za-z ']*\s*\(?\s*", which is
+# cubic in a run of spaces behind one letter (1,000 spaces: 0.6 s; 2,000: 5.0 s; 2,000 after a paragraph mark:
+# 9.8 s), and a record may hold 4 MiB. Searched only up to the boundary and bounded, 100,000 spaces take 0.09 s.
+# Over the 65,128 ADDITIONAL_INFO fields in the 60 editions both searches return the same result.
+_ANOTHER_FIELD_CONTINUES = re.compile(
+    r"[A-Za-z][A-Za-z ']{0,63}\s*(?:\(\s*)?CONT(?:INUED|INUES|INUE)?\)?\s*:", re.IGNORECASE
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -159,6 +167,8 @@ def project_unified_agenda_edition(
     if not isinstance(body, bytes) or len(body) > max_bytes:
         raise UnifiedAgendaSourceError("Unified Agenda XML must be bytes within max_bytes")
     repaired_bytes = body.count(_MANGLED_APOSTROPHE) if edition.publication_id in MANGLED_APOSTROPHE_EDITIONS else 0
+    if repaired_bytes > 1:
+        raise UnifiedAgendaSourceError("Unified Agenda 2004 edition carries more than its one measured 0x19 byte")
     readable = body.replace(_MANGLED_APOSTROPHE, _APOSTROPHE) if repaired_bytes else body
     identity = _EditionIdentity(edition)
 
@@ -191,10 +201,11 @@ def legal_authority_continuations(additional_info: str) -> tuple[UnifiedAgendaAu
         if start < consumed:
             continue
         consumed = end
-        rest = additional_info[end:]
-        stops = (_CONTINUATION_BOUNDARY.search(rest), _ANOTHER_FIELD_CONTINUES.search(rest))
-        stop = min((match.start() for match in stops if match is not None), default=len(rest))
-        if text := _collapse(rest[:stop]):
+        boundary = _CONTINUATION_BOUNDARY.search(additional_info, end)
+        stop = boundary.start() if boundary is not None else len(additional_info)
+        if label := _ANOTHER_FIELD_CONTINUES.search(additional_info, end, stop):
+            stop = label.start()
+        if text := _collapse(additional_info[end:stop]):
             found.append(UnifiedAgendaAuthorityContinuation(family, marker.strip(), text))
     return tuple(found)
 

@@ -74,8 +74,9 @@ normalization; the projection below does both.
 `project_unified_agenda_edition` reads one retained edition. It proves each
 record's identity the same way acquisition does. For each record it yields the
 CFR references, legal authorities, timetable entries and any legal-authority
-list continued in `ADDITIONAL_INFO`, beside the raw observation. SpicyRegs and
-RefSpec read these paths from it rather than keeping their own copies.
+list continued in `ADDITIONAL_INFO`, beside the raw observation. It is meant to
+replace the copies SpicyRegs and RefSpec still keep of these paths; neither has
+adopted it yet.
 
 ```python
 from spicy_docs.sources.unified_agenda import UnifiedAgendaEdition
@@ -94,12 +95,12 @@ agency = [field for field in first.record.fields if field.element.tag == "AGENCY
   publisher's text, zero-day months included.
 - Every `CFR_LIST/CFR`, `LEGAL_AUTHORITY_LIST/LEGAL_AUTHORITY` and
   `TIMETABLE_LIST/TIMETABLE` is read, and nothing else inside those lists.
-- The 2004 editions' `0x19` byte is repaired to `U+2019`, in memory and only
-  for those two editions. `scan.input_sha256` pins the bytes as served, and
-  `scan.repaired_bytes` counts the repairs.
+- The 2004 editions' one `0x19` byte each is repaired to `U+2019`, in memory
+  and only for those two editions; a second one is refused. `scan.input_sha256`
+  pins the bytes as served, and `scan.repaired_bytes` counts the repairs.
 - A continuation is read only under a legal-authority continuation label. It
-  keeps that label and its family, runs to the next `^` paragraph mark, blank
-  line or other field's label, and is never split.
+  keeps that label and its family, runs to the next `^` paragraph mark or blank
+  line, or to another field's label before that, and is never split.
 
 The rules, their provenance and the counts behind them are in the
 [module](../../src/spicy_docs/sources/unified_agenda/projection.py). Over all
