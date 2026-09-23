@@ -159,146 +159,109 @@ def test_reinject_key_refuses_foreign_host():
 # -- orchestration with a fake client ----------------------------------------
 
 
-class _FakeResponse:
-    def __init__(self, status_code: int, content: bytes = b"", payload: dict | None = None):
-        self.status_code = status_code
-        self.content = content
-        self._payload = payload
+# -- the trigger-poll-download loop, through httpx's own request building ------------------
 
-    def json(self):
-        assert self._payload is not None, "json() called on a response without a payload"
-        return self._payload
-
-
-class _FakeClient:
-    def __init__(self, responses: list):
-        self._responses = list(responses)
-        self.calls: list[tuple[str, dict | None]] = []
-
-    def get(self, url, params=None):
-        self.calls.append((url, params))
-        assert self._responses, "fake client ran out of responses"
-        return self._responses.pop(0)
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *args):
-        return None
+# The trigger's real answer (2026-09-23): a sentence, not JSON, and no count.
+SENTENCE = (
+    "Extract File will be available for download with url: "
+    "https://api.sam.gov/entity-information/v4/download-entities?api_key=REPLACE_WITH_API_KEY&token=Tok123 "
+    "in some time. If you have requested for an email notification, you will receive it once the file is ready."
+)
+# The download's real answer while the file generates.
+IN_PROGRESS = {
+    "httpStatus": "400",
+    "title": "Extract File Generation is Still in Progress",
+    "detail": "File Processing in Progress. Please check again later ",
+    "type": "Still in Progress",
+    "errorCode": "FSP",
+}
 
 
-def test_records_triggers_then_downloads_and_checks_counts(monkeypatch):
-    body = json.dumps({"entityData": [_entity("A"), _entity("B")]}).encode()
-    client = _FakeClient(
-        [
-            _FakeResponse(
-                200,
-                payload={"totalRecords": 2, "download": "https://api.sam.gov/x/f.json?api_key=REPLACE_WITH_API_KEY"},
-            ),
-            _FakeResponse(200, content=body),
-        ]
+def _extract(*ueis: str, total: int | None = None) -> bytes:
+    body = {"totalRecords": len(ueis) if total is None else total, "entityData": [_entity(u) for u in ueis]}
+    return gzip.compress(json.dumps(body).encode())
+
+
+class _Publisher:
+    """A MockTransport answering the trigger with SENTENCE and the download from ``downloads`` in turn."""
+
+    def __init__(self, *downloads: httpx.Response, trigger: httpx.Response | None = None):
+        self.downloads = list(downloads)
+        self.trigger = trigger or httpx.Response(200, text=SENTENCE)
+        self.requests: list[httpx.Request] = []
+
+    def __call__(self, request: httpx.Request) -> httpx.Response:
+        self.requests.append(request)
+        if request.url.path.endswith("/entities"):
+            return self.trigger
+        return self.downloads.pop(0)
+
+    def reader(self, **kwargs) -> SamBulkExtract:
+        return SamBulkExtract(api_key="secret", transport=httpx.MockTransport(self), sleep=lambda _: None, **kwargs)
+
+
+def test_the_trigger_keeps_its_selection_and_adds_the_key():
+    """httpx ``params`` would replace the query; the selection and the key must both arrive."""
+    publisher = _Publisher(httpx.Response(200, content=_extract("A")))
+    assert _ueis(publisher.reader(year=2026).records()) == ["A"]
+    trigger = publisher.requests[0].url.params
+    assert (trigger["registrationStatus"], trigger["format"], trigger["api_key"]) == ("A", "json", "secret")
+    assert trigger["registrationDate"] == "[01/01/2026,12/31/2026]"
+    download = publisher.requests[1].url.params
+    assert (download["token"], download["api_key"]) == ("Tok123", "secret")
+
+
+def test_the_download_polls_through_the_in_progress_answer():
+    publisher = _Publisher(
+        httpx.Response(400, json=IN_PROGRESS),
+        httpx.Response(400, json=IN_PROGRESS),
+        httpx.Response(200, content=_extract("A", "B")),
     )
-    reader = SamBulkExtract(api_key="secret", sleep=lambda _: None)
-    monkeypatch.setattr(httpx, "Client", lambda **_: client)
-    got = _ueis(reader.records())
-    assert got == ["A", "B"]
-    # The trigger asked for a JSON extract; the download URL had the key re-injected.
-    trigger_url, trigger_params = client.calls[0]
-    assert "format=json" in trigger_url
-    assert trigger_params == {"api_key": "secret"}
-    assert "REPLACE_WITH_API_KEY" not in client.calls[1][0]
-    assert "api_key=secret" in client.calls[1][0]
+    assert _ueis(publisher.reader().records()) == ["A", "B"]
+    assert len(publisher.requests) == 4
 
 
-def test_records_accepts_inline_population_without_download(monkeypatch):
-    client = _FakeClient([_FakeResponse(200, payload={"totalRecords": 2, "entityData": [_entity("A"), _entity("B")]})])
-    reader = SamBulkExtract(api_key="secret", sleep=lambda _: None)
-    monkeypatch.setattr(httpx, "Client", lambda **_: client)
-    assert _ueis(reader.records()) == ["A", "B"]
-    assert len(client.calls) == 1  # no download request when the data came inline
+def test_any_other_400_refuses():
+    publisher = _Publisher(httpx.Response(400, json={"errorCode": "BAD", "title": "Invalid token"}))
+    with pytest.raises(SamExtractError, match="HTTP 400"):
+        list(publisher.reader().records())
 
 
-def test_records_refuses_count_mismatch(monkeypatch):
-    client = _FakeClient(
-        [
-            _FakeResponse(
-                200,
-                payload={"totalRecords": 3, "download": "https://api.sam.gov/x/f.json?api_key=REPLACE_WITH_API_KEY"},
-            ),
-            _FakeResponse(200, content=json.dumps([_entity("A"), _entity("B")]).encode()),
-        ]
-    )
-    reader = SamBulkExtract(api_key="secret", sleep=lambda _: None)
-    monkeypatch.setattr(httpx, "Client", lambda **_: client)
-    with pytest.raises(SamExtractError, match="count differs"):
-        list(reader.records())
-
-
-def test_records_refuses_repeated_identifier(monkeypatch):
-    client = _FakeClient(
-        [
-            _FakeResponse(
-                200,
-                payload={"totalRecords": 2, "download": "https://api.sam.gov/x/f.json?api_key=REPLACE_WITH_API_KEY"},
-            ),
-            _FakeResponse(200, content=json.dumps([_entity("A"), _entity("A")]).encode()),
-        ]
-    )
-    reader = SamBulkExtract(api_key="secret", sleep=lambda _: None)
-    monkeypatch.setattr(httpx, "Client", lambda **_: client)
-    with pytest.raises(SamExtractError, match="repeats an entity"):
-        list(reader.records())
-
-
-def test_download_polls_until_ready(monkeypatch):
-    body = json.dumps({"entityData": [_entity("A"), _entity("B")]}).encode()
-    client = _FakeClient(
-        [
-            _FakeResponse(
-                200,
-                payload={"totalRecords": 2, "download": "https://api.sam.gov/x/f.json?api_key=REPLACE_WITH_API_KEY"},
-            ),
-            _FakeResponse(202),
-            _FakeResponse(202),
-            _FakeResponse(200, content=body),
-        ]
-    )
-    reader = SamBulkExtract(api_key="secret", sleep=lambda _: None)
-    monkeypatch.setattr(httpx, "Client", lambda **_: client)
-    assert _ueis(reader.records()) == ["A", "B"]
-
-
-def test_download_gives_up_after_poll_budget(monkeypatch):
-    client = _FakeClient(
-        [
-            _FakeResponse(
-                200,
-                payload={"totalRecords": 2, "download": "https://api.sam.gov/x/f.json?api_key=REPLACE_WITH_API_KEY"},
-            ),
-            _FakeResponse(202),
-            _FakeResponse(202),
-            _FakeResponse(202),
-        ]
-    )
-    reader = SamBulkExtract(api_key="secret", sleep=lambda _: None, poll_max=3)
-    monkeypatch.setattr(httpx, "Client", lambda **_: client)
+def test_the_poll_budget_bounds_the_wait():
+    publisher = _Publisher(*[httpx.Response(400, json=IN_PROGRESS)] * 3)
     with pytest.raises(SamExtractError, match="poll budget"):
-        list(reader.records())
+        list(publisher.reader(poll_max=3).records())
 
 
-def test_records_bounds_max_records_across_population(monkeypatch):
-    client = _FakeClient(
-        [
-            _FakeResponse(
-                200,
-                payload={"totalRecords": 3, "download": "https://api.sam.gov/x/f.json?api_key=REPLACE_WITH_API_KEY"},
-            ),
-            _FakeResponse(200, content=json.dumps([_entity("A"), _entity("B"), _entity("C")]).encode()),
-        ]
-    )
-    reader = SamBulkExtract(api_key="secret", sleep=lambda _: None, max_records=2)
-    monkeypatch.setattr(httpx, "Client", lambda **_: client)
-    assert _ueis(reader.records()) == ["A", "B"]
+@pytest.mark.parametrize(
+    "download,match",
+    [
+        (_extract("A", "B", total=3), "differs from totalRecords"),
+        (_extract("A", "A"), "repeats an entity"),
+        (gzip.compress(json.dumps([_entity("A")]).encode()), "states no totalRecords"),
+    ],
+)
+def test_a_file_that_disagrees_with_its_own_count_refuses(download, match):
+    with pytest.raises(SamExtractError, match=match):
+        list(_Publisher(httpx.Response(200, content=download)).reader().records())
+
+
+def test_a_trigger_naming_no_download_refuses():
+    publisher = _Publisher(trigger=httpx.Response(200, text="Please try again later."))
+    with pytest.raises(SamExtractError, match="no download URL"):
+        list(publisher.reader().records())
+
+
+def test_an_inline_population_needs_no_download():
+    inline = {"totalRecords": 2, "entityData": [_entity("A"), _entity("B")]}
+    publisher = _Publisher(trigger=httpx.Response(200, json=inline))
+    assert _ueis(publisher.reader().records()) == ["A", "B"]
+    assert len(publisher.requests) == 1
+
+
+def test_max_records_bounds_what_is_emitted():
+    publisher = _Publisher(httpx.Response(200, content=_extract("A", "B", "C")))
+    assert _ueis(publisher.reader(max_records=2).records()) == ["A", "B"]
 
 
 def test_reader_refuses_missing_key():

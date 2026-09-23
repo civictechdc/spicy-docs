@@ -1,12 +1,14 @@
 """SAM.gov bulk entity extracts: trigger, poll, defensive parse.
 
 The Entity Management API's asynchronous extract (``format=json``) answers the
-trigger with ``totalRecords`` and an embedded download URL whose ``api_key``
-is the literal ``REPLACE_WITH_API_KEY`` placeholder; the download may not be
-ready on the first GET and answers 202/404 while it generates. This module
-owns that loop and the defensive file parse — gzip, zip or plain text, holding
-either a JSON envelope (``{"entityData": [...]}``), a bare JSON array, or
-newline-delimited JSON — so callers receive validated entity records or a
+trigger with a plain-text sentence naming a download URL whose ``api_key`` is
+the literal ``REPLACE_WITH_API_KEY`` placeholder; the download answers HTTP
+400 with ``errorCode`` ``FSP`` while the file generates (both measured
+2026-09-23). The trigger states no count, so the downloaded file's own
+``totalRecords`` is the selection's count. The key travels merged into each
+URL's own query: httpx's ``params`` replaces a query rather than extending it,
+which once dropped every selection filter. This module owns that loop and the
+defensive file parse, so callers receive validated entity records or a
 refusal, never a partial, unchecked population.
 
 The synchronous paged walk lives in :mod:`spicy_docs.sources.sam` and refuses a
@@ -20,6 +22,7 @@ from __future__ import annotations
 import gzip
 import io
 import json
+import re
 import time
 import zipfile
 from collections.abc import Callable, Iterator
@@ -39,6 +42,9 @@ EXTRACT_POLL_MAX = 60
 EXTRACT_POLL_INTERVAL = 10.0
 MAX_RETRIES = 5
 DEFAULT_TIMEOUT = httpx.Timeout(120.0, connect=30.0)
+
+
+_SENTENCE_URL = re.compile(r"https://api\.sam\.gov/\S+")
 
 
 class SamExtractError(RuntimeError):
@@ -107,6 +113,12 @@ def find_extract_download_url(payload: object) -> str | None:
     returned (placeholder preferred; otherwise any http(s) URL whose path
     mentions download/extract).
     """
+    if isinstance(payload, str):
+        # The trigger answers a sentence: "Extract File will be available for download with
+        # url: https://api.sam.gov/.../download-entities?api_key=REPLACE_WITH_API_KEY&token=...
+        # in some time." (measured 2026-09-23).
+        match = _SENTENCE_URL.search(payload)
+        return match.group(0).rstrip(".,;") if match else None
     fallback: str | None = None
 
     def walk(node: object) -> str | None:
@@ -138,6 +150,17 @@ def find_extract_download_url(payload: object) -> str | None:
     return walk(payload) or fallback
 
 
+def _still_generating(response: httpx.Response) -> bool:
+    """True for SAM's in-progress answer: HTTP 400 whose JSON body carries ``errorCode`` ``FSP``."""
+    if response.status_code != 400:
+        return False
+    try:
+        body = response.json()
+    except ValueError:
+        return False
+    return isinstance(body, dict) and body.get("errorCode") == "FSP"
+
+
 def reinject_extract_key(link: str, api_key: str) -> str:
     """Return ``link`` with the real api_key re-injected on the SAM host.
 
@@ -153,6 +176,31 @@ def reinject_extract_key(link: str, api_key: str) -> str:
     query = parse_qs(parts.query, keep_blank_values=True)
     query["api_key"] = [api_key]
     return urlunparse(parts._replace(query=urlencode(query, doseq=True)))
+
+
+def _body(response: httpx.Response) -> object:
+    """A JSON body when the response is one, otherwise its text (the trigger answers a sentence)."""
+    try:
+        return response.json()
+    except ValueError:
+        return response.text
+
+
+def extract_population(raw: bytes) -> tuple[int, list[dict]]:
+    """A downloaded extract's own ``totalRecords`` and its validated records.
+
+    The trigger states no count (it answers a sentence), so the file's envelope is the only
+    publisher count for the selection; an extract without one refuses. Measured 2026-09-23: the
+    download is a gzip JSON envelope, ``{"totalRecords": 508, "entityData": [508 entities]}`` for
+    one registration day, equal to the paged route's count for the same selection.
+    """
+    try:
+        doc = json.loads(_decompress_extract(raw))
+    except ValueError:
+        raise SamExtractError("SAM extract is not one JSON envelope") from None
+    if not isinstance(doc, dict) or "totalRecords" not in doc:
+        raise SamExtractError("SAM extract states no totalRecords")
+    return _total_records(doc), _entity_data(doc)
 
 
 def parse_extract_records(raw: bytes) -> list[dict]:
@@ -287,10 +335,14 @@ class SamBulkExtract:
             transport=self.transport,
         ) as client:
             url = extract_entities_url(registration_status=self.registration_status, year=self.year)
-            trigger = self._trigger(client, url)
-            total = _total_records(trigger)
-            download_url = find_extract_download_url(trigger)
-            records = self._download_records(client, download_url) if download_url else _entity_data(trigger)
+            trigger = _body(self._get(client, url))
+            if isinstance(trigger, dict) and "entityData" in trigger:
+                total, records = _total_records(trigger), _entity_data(trigger)
+            else:
+                download_url = find_extract_download_url(trigger)
+                if download_url is None:
+                    raise SamExtractError("SAM extract trigger named no download URL")
+                total, records = self._download_records(client, download_url)
             if len(records) != total:
                 raise SamExtractError("SAM extract record count differs from totalRecords")
             identities = {validate_entity(record) for record in records}
@@ -305,27 +357,28 @@ class SamBulkExtract:
     def _budget_left(self) -> bool:
         return self.max_records is None or self._seen < self.max_records
 
-    def _trigger(self, client: httpx.Client, url: str) -> dict:
-        """GET the trigger with bounded retries; failures never become successful empty data."""
+    def _get(self, client: httpx.Client, url: str) -> httpx.Response:
+        """GET ``url`` with the key merged into its own query, under bounded retries.
 
-        def attempt() -> dict:
-            response = client.get(url, params={"api_key": self.api_key})
+        Passing ``params`` to httpx replaces a URL's query rather than extending it, which
+        silently dropped every selection filter (measured 2026-09-23: the trigger answered
+        the unfiltered 1,845,420-entity default page), so the key is merged here instead.
+        """
+        keyed = httpx.URL(url).copy_merge_params({"api_key": self.api_key})
+
+        def attempt() -> httpx.Response:
+            response = client.get(keyed)
             if response.status_code == 429 or response.status_code >= 500:
                 raise httpx.HTTPStatusError("retryable", request=response.request, response=response)
             if response.status_code != 200:
                 raise SamExtractError(
                     f"SAM request refused with HTTP {response.status_code}; verify SAM-specific access"
                 )
-            payload = response.json()
-            if not isinstance(payload, dict):
-                raise SamExtractError("SAM response must be a JSON object")
-            return payload
+            return response
 
-        return retry_http(
-            attempt, retryable=(httpx.HTTPError, ValueError), max_attempts=MAX_RETRIES, api_key=self.api_key
-        )
+        return retry_http(attempt, retryable=(httpx.HTTPError,), max_attempts=MAX_RETRIES, api_key=self.api_key)
 
-    def _download_records(self, client: httpx.Client, download_url: str) -> list[dict]:
+    def _download_records(self, client: httpx.Client, download_url: str) -> tuple[int, list[dict]]:
         """Poll the extract download until ready, then defensively parse its bytes."""
         url = reinject_extract_key(download_url, self.api_key)
         for attempt in range(1, self.poll_max + 1):
@@ -336,15 +389,16 @@ class SamBulkExtract:
                     raise SamExtractError("SAM extract transport retries exhausted") from None
                 self.sleep(self.poll_interval)
                 continue
-            # The file may still be generating: SAM answers 202/404/429/5xx until ready.
-            if response.status_code in (202, 404, 429) or response.status_code >= 500:
+            # The file may still be generating: SAM answers 400 with errorCode FSP ("Extract
+            # File Generation is Still in Progress", measured 2026-09-23), and 202/404/429/5xx.
+            if _still_generating(response) or response.status_code in (202, 404, 429) or response.status_code >= 500:
                 if attempt == self.poll_max:
                     raise SamExtractError("SAM extract did not finish within its poll budget")
                 self.sleep(self.poll_interval)
                 continue
             if response.status_code != 200:
                 raise SamExtractError(f"SAM extract refused with HTTP {response.status_code}")
-            return parse_extract_records(response.content)
+            return extract_population(response.content)
         raise SamExtractError("SAM extract poll budget exhausted")
 
 
@@ -356,6 +410,7 @@ __all__ = [
     "SamBulkExtract",
     "SamExtractError",
     "extract_entities_url",
+    "extract_population",
     "find_extract_download_url",
     "parse_extract_records",
     "reinject_extract_key",
