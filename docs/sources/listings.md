@@ -263,12 +263,51 @@ applies one rule everywhere:
   final URLs agree; Congress.gov spells `sort=updateDate desc` with a raw
   space, and the raw form stays in the retained page.
 - The declared count may not change between pages, the observed total may not
-  exceed it, and at the publisher's terminal page the two must agree.
+  exceed it, and at the publisher's terminal page the two must agree; a
+  terminal disagreement raises `DeclaredCountMismatch` with `declared` and
+  `observed`, so a host never matches the message.
   Reaching `max_pages` with a continuation outstanding is a refusal, not an
   end. Pages already yielded remain partial observations.
 - 404 and 410 raise `PagedJsonUnavailableError` with the capture; 401 and 403
   abort with `CredentialRefusedError`; 429 and 5xx retry within the request
   budget, and exhaustion is not absence.
+
+## Pool a list that shifts while it is read
+
+An offset walk over a list that reorders mid-read can repeat one record and
+skip another while serving exactly its declared count: the 119th Congress
+amendments walk served 7,066 rows but 7,013 distinct amendments on
+2026-09-23. `pool_walks` in `reading/paged_json.py` repeats whole walks and
+pools them by a caller's identity key (a key, never the whole record), keeping
+the newest version by a caller's `version`:
+
+- An identity counts once two walks have observed it. One only a single walk
+  observed is dropped: no walk can tell a record it skipped from one deleted
+  since, and a deleted record must not fill a skipped record's slot.
+- The walks settle when the counted identities equal the latest declared total
+  and the latest walk found nothing new, so a query costs at least two walks.
+- A query still short, over or unsettled after `max_passes` (default 3) raises
+  `IncompleteWalkError` with `declared`, `distinct`, `corroborated` and
+  `passes`.
+
+`CongressListingReader.pooled` alternates `updateDate desc` and `asc` between
+walks where the route honors `sort`, and repeats the one request elsewhere:
+
+```python
+route = LIST_ROUTES["amendment"]
+with CongressListingReader(budget=budget, api_key=key) as congress:
+    pooled = congress.pooled(
+        route,
+        list_route_url(route, congress=119),
+        key=lambda row: (row["congress"], row["type"].lower(), row["number"]),
+        version=lambda row: row["updateDate"],
+    )
+    print(pooled.declared, len(pooled.records), pooled.passes)
+```
+
+A publisher that states its total elsewhere, such as FCC ECFS's aggregations,
+passes `pool_walks` a function returning one `WalkPass(records, declared)` per
+walk.
 
 ## Use the routes
 

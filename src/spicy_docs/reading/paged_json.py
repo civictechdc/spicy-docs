@@ -17,12 +17,29 @@ needs the explicit ``single_record`` opt-in on ``page()``/``pages()`` -- off by
 default so a wrong or mismatched ``records_key`` resolving to a wrapper object
 still refuses instead of reading as one bogus record, and an empty object refuses
 either way because empty success is not absence.
+
+**A walk that agrees with its count can still be wrong.** A list that shifts
+while it is read (Congress.gov sorted by ``updateDate``, CRS, FCC ECFS) can
+repeat one record and skip another while serving exactly the declared total:
+the 119th Congress amendments walk served its declared 7,066 rows but 7,013
+distinct amendments (spicy-regs ``build_amendments``, 2026-09-23). A terminal
+disagreement raises ``DeclaredCountMismatch`` with both numbers; agreement proves
+only the row count. ``pool_walks`` repeats whole walks of one query and pools
+them by a caller's identity key, keeping each identity's newest version. An
+identity counts once two walks have observed it. The walks settle when the
+counted identities equal the latest walk's declared total and the latest walk
+observed no identity for the first time, so never in fewer than two walks. One
+walk alone cannot tell a record it skipped from one deleted since, so an
+identity only one walk observed is neither counted nor returned: a record
+deleted between walks cannot fill the slot of one every walk skipped. Queries
+still short, over or unsettled after ``max_passes`` raise
+``IncompleteWalkError``.
 """
 
 from __future__ import annotations
 
 import json
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Hashable, Iterable, Iterator, Mapping
 from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal
@@ -45,6 +62,8 @@ if TYPE_CHECKING:
 MAX_PAGE_BYTES = 64 * 1024 * 1024
 DEFAULT_MAX_PAGE_BYTES = 16 * 1024 * 1024
 DEFAULT_MAX_PAGES = 100
+# Whole walks a pooled enumeration may spend on one query; spicy-regs' CRS and ECFS hosts used three.
+DEFAULT_POOL_PASSES = 3
 # Query parameter names publishers accept credentials under; they must never appear in a retained URL.
 CREDENTIAL_QUERY_NAMES = frozenset({"api_key", "apikey", "api-key", "key", "token", "access_token"})
 type NextKind = Literal["url", "page-number", "offset"]
@@ -60,6 +79,44 @@ class PagedJsonUnavailableError(PagedJsonSourceError):
     def __init__(self, capture: CapturedBodyResponse) -> None:
         super().__init__(f"list source answered HTTP {capture.status_code} for the requested page")
         self.capture = capture
+
+
+class DeclaredCountMismatch(PagedJsonSourceError):
+    """A walk reached the publisher's terminal page having served a total other than the one it declared.
+
+    Raised only at the terminal page, so ``observed`` is everything the walk
+    served; a host that tolerates a bounded over-declaration reads the two
+    numbers here instead of the message.
+    """
+
+    def __init__(self, message: str, *, declared: int, observed: int) -> None:
+        super().__init__(message)
+        self.declared = declared
+        self.observed = observed
+
+
+class IncompleteWalkError(PagedJsonSourceError):
+    """Pooled walks ended with their corroborated identities off the declared total, or still finding new ones.
+
+    ``distinct`` is every identity any pass observed; ``corroborated`` those at
+    least two passes observed, the ones compared with ``declared``.
+    """
+
+    def __init__(
+        self, label: str, *, declared: int, distinct: int, corroborated: int, passes: int, stable: bool
+    ) -> None:
+        message = (
+            f"{label}: {passes} passes observed {distinct:,} distinct records against {declared:,} declared, "
+            f"{corroborated:,} of them in at least two passes"
+        )
+        if not stable:
+            message += "; the last pass still found records no earlier pass had"
+        super().__init__(message)
+        self.declared = declared
+        self.distinct = distinct
+        self.corroborated = corroborated
+        self.passes = passes
+        self.stable = stable
 
 
 def normalize_url(url: str, *, drop: frozenset[str] = frozenset()) -> str:
@@ -453,9 +510,8 @@ class PagedJsonReader(SourceAcquirer):
         observed = 0
         index = 0
 
-        def refuse(message: str) -> PagedJsonSourceError:
+        def traced(error: PagedJsonSourceError) -> PagedJsonSourceError:
             # Traversal refusals explain themselves the way page refusals do.
-            error = PagedJsonSourceError(f"{self.family.label} {message}")
             error.__dict__[self.context_key] = {
                 "operation": "traversal",
                 "family": self.family.name,
@@ -468,6 +524,9 @@ class PagedJsonReader(SourceAcquirer):
                 "declaredCount": declared,
             }
             return error
+
+        def refuse(message: str) -> PagedJsonSourceError:
+            return traced(PagedJsonSourceError(f"{self.family.label} {message}"))
 
         for index in range(max_pages):
             request = (url, _encode_body(body) if body is not None else None)
@@ -497,7 +556,13 @@ class PagedJsonReader(SourceAcquirer):
             yield page
             if page.next_url is None:
                 if exact and declared is not None and observed != declared:
-                    raise refuse("declared and observed record counts differ")
+                    raise traced(
+                        DeclaredCountMismatch(
+                            f"{self.family.label} declared and observed record counts differ",
+                            declared=declared,
+                            observed=observed,
+                        )
+                    )
                 return
             bound = self.family.max_page_number
             if bound is not None and self.family.next_kind == "page-number":
@@ -515,3 +580,110 @@ class PagedJsonReader(SourceAcquirer):
 def family_with(family: JsonPageFamily, **changes: object) -> JsonPageFamily:
     """A publisher variant (another endpoint's row key or method) without restating the contract."""
     return replace(family, **changes)
+
+
+@dataclass(frozen=True, slots=True)
+class WalkPass:
+    """One whole walk of a query: every record it served, in order, and the total the publisher declared for it."""
+
+    records: tuple[Mapping[str, Any], ...]
+    declared: int
+
+    def __post_init__(self) -> None:
+        if isinstance(self.declared, bool) or not isinstance(self.declared, int) or self.declared < 0:
+            raise ValueError("declared must be a non-negative integer")
+
+    @classmethod
+    def from_pages(cls, pages: Iterable[JsonPage]) -> WalkPass:
+        """Consume one walk's pages; its declared total is the one they state, which ``pages()`` holds constant."""
+        records: list[Mapping[str, Any]] = []
+        declared: int | None = None
+        for page in pages:
+            records.extend(page.records)
+            if page.declared_count is not None:
+                declared = page.declared_count
+        if declared is None:
+            raise PagedJsonSourceError("a pooled walk needs a declared total, and no page of this walk stated one")
+        return cls(tuple(records), declared)
+
+
+@dataclass(frozen=True, slots=True)
+class PooledWalk:
+    """What pooled walks agreed on: one record per corroborated identity, its newest version, first-observed first.
+
+    ``uncorroborated`` counts the identities only one pass observed, which are
+    neither counted nor among ``records`` (module docstring).
+    """
+
+    records: tuple[Mapping[str, Any], ...]
+    declared: int
+    passes: int
+    uncorroborated: int
+
+
+def _identity(value: object, label: str) -> Hashable:
+    """A key, never a record: a nonempty string, an integer, or a nonempty tuple of them.
+
+    A missing or blank identity refuses rather than collapsing every such record into one.
+    """
+    parts = value if isinstance(value, tuple) else (value,)
+    if not parts or not all(
+        (isinstance(part, str) and part.strip()) or (isinstance(part, int) and not isinstance(part, bool))
+        for part in parts
+    ):
+        raise PagedJsonSourceError(f"{label} served a record without a usable identity key")
+    return value
+
+
+def pool_walks(
+    walk: Callable[[int], WalkPass],
+    *,
+    key: Callable[[Mapping[str, Any]], Hashable],
+    version: Callable[[Mapping[str, Any]], Any] | None = None,
+    max_passes: int = DEFAULT_POOL_PASSES,
+    label: str,
+) -> PooledWalk:
+    """Repeat whole walks of one query, pooled by ``key``, until they settle on the declared total.
+
+    ``walk(index)`` runs pass ``index`` (from 0) to its terminal page; a caller
+    alternates the order by index where the publisher honors it
+    (``CongressListingReader.pooled``). ``version`` orders one identity's
+    observations: the greatest is kept, a tie going to the later one, and
+    without it the latest observation wins. The settling and corroboration
+    rules are the module docstring's. Each pass is O(records) and at most
+    ``max_passes`` run; a query that does not settle raises ``IncompleteWalkError``.
+    """
+    if isinstance(max_passes, bool) or not isinstance(max_passes, int) or max_passes < 2:
+        raise ValueError("max_passes must be an integer of at least 2: settling compares a pass with earlier ones")
+    kept: dict[Hashable, tuple[Mapping[str, Any], Any]] = {}
+    sightings: dict[Hashable, int] = {}  # passes that observed each identity, however often each did
+    last_pass: dict[Hashable, int] = {}
+    for index in range(max_passes):
+        walked = walk(index)
+        if not isinstance(walked, WalkPass):
+            raise TypeError("walk must return a WalkPass")
+        found_new = False
+        for record in walked.records:
+            identity = _identity(key(record), label)
+            if last_pass.get(identity) != index:
+                found_new = found_new or identity not in last_pass
+                sightings[identity] = sightings.get(identity, 0) + 1
+                last_pass[identity] = index
+            stamp = None if version is None else version(record)
+            held = kept.get(identity)
+            if held is None or version is None or stamp >= held[1]:
+                kept[identity] = (record, stamp)
+        # Once the latest pass finds nothing new, every identity it observed is corroborated, so
+        # the corroborated set is the latest pass plus what at least two passes agree it skipped.
+        corroborated = [identity for identity in kept if sightings[identity] > 1]
+        if index and not found_new and len(corroborated) == walked.declared:
+            records = tuple(kept[identity][0] for identity in corroborated)
+            return PooledWalk(records, walked.declared, index + 1, len(kept) - len(corroborated))
+    raise IncompleteWalkError(
+        label,
+        declared=walked.declared,
+        distinct=len(kept),
+        corroborated=len(corroborated),
+        passes=max_passes,
+        stable=not found_new,
+    )

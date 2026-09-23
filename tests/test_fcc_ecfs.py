@@ -2,7 +2,9 @@
 
 The publisher's bracketed bounds are instants at ``00:00:00Z``, so an inclusive
 caller window ending on day E is sent as ``[lte]E+1``; see the module docstring
-for the live measurement behind that.
+for the live measurement behind that. ECFS states no count in ``pagination``, so
+a pooled walk of a window pools against a total its host reads from the
+``aggregations`` beside the rows.
 """
 
 import json
@@ -12,7 +14,7 @@ from urllib.parse import quote
 import httpx
 import pytest
 
-from spicy_docs.reading.paged_json import PagedJsonBudget, PagedJsonSourceError
+from spicy_docs.reading.paged_json import PagedJsonBudget, PagedJsonSourceError, WalkPass, pool_walks
 from spicy_docs.sources.fcc_ecfs import FCC_ECFS, FccEcfsReader, filings_url, proceedings_url
 from spicy_docs.transport import retry
 
@@ -112,3 +114,38 @@ def test_pinned_pages_parse_and_the_walk_advances_by_offset():
         pages = list(source.proceedings(proceedings_url(created_from="2026-01-01", created_to="2026-01-31", limit=2)))
     assert [len(p.records) for p in pages] == [2, 1] and pages[1].next_url is None
     assert [str(c.url).rsplit("offset=", 1)[1] for c in transport.calls] == ["0", "2"]
+
+
+def _filings_page(records, *, counted):
+    """A filings page with the ``express_comment`` aggregation ECFS answers beside every response."""
+    buckets = [{"key": 1, "doc_count": counted}] if counted else []
+    aggregation = {"doc_count_error_upper_bound": 0, "sum_other_doc_count": 0, "buckets": buckets}
+    return json.dumps({"filing": records, "aggregations": {"express_comment": aggregation}}).encode()
+
+
+def test_fcc_pools_a_window_until_its_aggregate_count():
+    """A window that repeats one filing and skips another is pooled by ``id_submission`` against its aggregate.
+
+    Ported from spicy-regs' ``test_reference_source_failures``, where the host
+    sums the aggregation's buckets as the window's count (``_COUNTED_BY``) until
+    that count moves here.
+    """
+    first = {"id_submission": "f1", "date_received": "2026-09-08T23:56:03Z", "express_comment": 1}
+    second = {"id_submission": "f2", "date_received": "2026-09-08T04:47:28Z", "express_comment": 0}
+    transport = Transport(
+        _filings_page([first, first], counted=2),
+        _filings_page([second, first], counted=2),
+        _filings_page([first, second], counted=2),
+    )
+    url = filings_url(received_from="2026-09-08", received_to="2026-09-08", limit=250, descending=False)
+    with FccEcfsReader(budget=BUDGET, api_key=KEY, transport=transport) as source:
+
+        def one_pass(_index):
+            pages = list(source.filings(url))
+            aggregation = json.loads(pages[-1].capture.body)["aggregations"]["express_comment"]
+            counted = sum(bucket["doc_count"] for bucket in aggregation["buckets"]) + aggregation["sum_other_doc_count"]
+            return WalkPass(tuple(record for page in pages for record in page.records), counted)
+
+        result = pool_walks(one_pass, key=lambda filing: filing["id_submission"], label="FCC ECFS filings")
+    assert sorted(filing["id_submission"] for filing in result.records) == ["f1", "f2"]
+    assert len(transport.calls) == 3

@@ -27,24 +27,36 @@ one-day-old window cut ``committee-bills``' declared count (honored) while
 leaving ``bill-actions`` at 59 either way (ignored). Every other route
 defaults to ``True`` as a carried-forward assumption, not a measurement --
 unlike ``sort_honored``, which is measured for every route.
+
+A list sorted by ``updateDate`` shifts while it is read, so one walk can serve
+its declared count and still skip records. ``CongressListingReader.pooled``
+repeats whole walks of one query and pools them by identity
+(``reading.paged_json.pool_walks``), alternating the order only where
+``sort_honored`` says the publisher reorders.
 """
 
 from __future__ import annotations
 
 import re
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Hashable, Iterator, Mapping
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 from urllib.parse import urlencode
 
 from spicy_docs.reading.paged_json import (
     DEFAULT_MAX_PAGES,
+    DEFAULT_POOL_PASSES,
     JsonPage,
     JsonPageFamily,
     PagedJsonBudget,
     PagedJsonReader,
     PagedJsonSourceError,
+    PooledWalk,
+    WalkPass,
+    pool_walks,
+    query_value,
+    with_query,
 )
 from spicy_docs.sources.congress.bill_status import BILL_TYPES
 from spicy_docs.transport.source_acquirer import utc_now
@@ -722,6 +734,28 @@ def crs_report_list_url(
     return f"{API}/{path}?{urlencode(query)}"
 
 
+_OPPOSITE_SORT: dict[str, ListSort] = {"updateDate desc": "updateDate asc", "updateDate asc": "updateDate desc"}
+
+
+def _pass_urls(route: CongressListRoute, url: str) -> tuple[str, ...]:
+    """The requests successive pooled passes cycle through: both ``updateDate`` orders only where ``sort`` is honored.
+
+    The two orders drop different records from a shifting list: one pass of
+    each, pooled, reached all 7,066 amendments of the 119th Congress where one
+    pass reached 7,013 (spicy-regs ``build_amendments``, 2026-09-23). A route
+    that ignores ``sort`` gains nothing from alternating it, so it repeats its
+    one request.
+    """
+    if not route.sort_honored:
+        return (url,)
+    first = query_value(url, "sort")
+    if first is None:
+        first, url = "updateDate desc", with_query(url, "sort", "updateDate desc")
+    if first not in _OPPOSITE_SORT:
+        raise PagedJsonSourceError("sort must be 'updateDate asc' or 'updateDate desc'")
+    return (url, with_query(url, "sort", _OPPOSITE_SORT[first]))
+
+
 class CongressListingReader(PagedJsonReader):
     """Every Congress.gov list route; every page is one bounded, evidenced request."""
 
@@ -746,3 +780,30 @@ class CongressListingReader(PagedJsonReader):
 
     def crs_reports(self, url: str, *, max_pages: int = DEFAULT_MAX_PAGES) -> Iterator[JsonPage]:
         return self.records(LIST_ROUTES["crsreport"], url, max_pages=max_pages)
+
+    def pooled(
+        self,
+        route: CongressListRoute,
+        url: str,
+        *,
+        key: Callable[[Mapping[str, Any]], Hashable],
+        version: Callable[[Mapping[str, Any]], Any] | None = None,
+        max_passes: int = DEFAULT_POOL_PASSES,
+        max_pages: int = DEFAULT_MAX_PAGES,
+    ) -> PooledWalk:
+        """Every record one query declares, pooled over whole walks (``reading.paged_json.pool_walks``).
+
+        Passes alternate ``updateDate`` order where the route honors ``sort``,
+        starting from the order ``url`` names (descending when it names none);
+        elsewhere every pass repeats ``url``.
+        """
+        if not isinstance(route, CongressListRoute):
+            raise TypeError("route must be a CongressListRoute")
+        urls = _pass_urls(route, url)
+        return pool_walks(
+            lambda index: WalkPass.from_pages(self.records(route, urls[index % len(urls)], max_pages=max_pages)),
+            key=key,
+            version=version,
+            max_passes=max_passes,
+            label=f"{self.family.label} {route.name}",
+        )
