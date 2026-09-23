@@ -146,6 +146,11 @@ ROLL_CALL_VOTES = table_contract(
         "tally_kind": "positions for ordinary totals, candidates for native named-choice totals; NULL on legacy or linkage-only rows.",
         "documents_json": "Ordered Senate document objects with native congress, type, number, name, title and short_title; [] for captured votes without documents, NULL for legacy or linkage-only rows. Numbers retain publisher spelling, including nomination suffixes; this does not assert a matched bill or nomination.",
         "amendments_json": "Ordered Senate amendment objects with native number, to_amendment_number, to_amendment_to_amendment_number, to_document_number, to_document_short_title and purpose; [] for captured votes without amendments, NULL for legacy or linkage-only rows. Repeated empty-ID blocks remain separate observations; no document pairing is inferred.",
+        "vote_day": (
+            "The chamber's own printed vote date as an ISO day (YYYY-MM-DD) in Eastern local time, which sorts where "
+            "vote_date does not and is never the UTC day of a Congress.gov recordedVotes date; NULL where the file "
+            "prints no date and on linkage-only or legacy rows."
+        ),
     },
 )
 
@@ -337,6 +342,10 @@ def shape_roll_call_vote(
     result, date and source_url are read unless the caller overrides them, so a linkage-only row leaves them NULL.
     ``tally`` is folded here rather than on the source record, and ``action_index``/``conflict_count`` are passed in
     because ``VoteMatch`` carries neither.
+
+    ``vote_day`` is the record's own ``day``, which the source reader parses from the chamber's printed date; this
+    stdlib leaf cannot re-read a literal, so it is NULL wherever ``vote_date`` is not that record's own date -- a
+    ``VoteKey`` whose date falls back to the match's UTC instant, or a caller's differing override.
     """
     tally_kind = getattr(vote, "tally_kind", None)
     counts = {} if tally_kind == "candidates" else folded_tally(tally)
@@ -396,6 +405,7 @@ def shape_roll_call_vote(
         "tally_kind": text(tally_kind),
         "documents_json": documents_json,
         "amendments_json": amendments_json,
+        "vote_day": getattr(vote, "day", None) if vote_date in (None, getattr(vote, "date", None)) else None,
     }
 
 

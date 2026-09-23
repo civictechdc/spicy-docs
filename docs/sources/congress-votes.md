@@ -92,7 +92,7 @@ totals blocks, and every `recorded-vote`:
 | `vote-question` | `.../vote-question` | `RollCallVote.question` |
 | `vote-type` | `.../vote-type` | `RollCallVote.vote_type` |
 | `vote-result` | `.../vote-result` | `RollCallVote.result` |
-| `action-date` | `.../action-date` | `RollCallVote.date` |
+| `action-date` | `.../action-date` | `RollCallVote.date` (literal), `.day` (ISO day; see "Vote day") |
 | `action-time` (text and `time-etz`) | `.../action-time` | `RollCallVote.action_time`, `.action_time_etz` |
 | `vote-desc` | `.../vote-desc` | `RollCallVote.vote_desc` |
 | Totals by party | `vote-totals/totals-by-party` (repeated) | `RollCallVote.party_totals: tuple[PartyTotal, ...]`, each `{party, counts}` with the publisher's own count names |
@@ -110,7 +110,7 @@ totals blocks, and every `recorded-vote`:
 | --- | --- | --- |
 | `congress`, `session`, `vote_number` (shared identity) | top-level | `RollCallVote.congress`, `.session`, `.roll_number` |
 | `congress_year` | top-level | `RollCallVote.congress_year` |
-| `vote_date` | top-level | `RollCallVote.date` |
+| `vote_date` | top-level | `RollCallVote.date` (literal), `.day` (ISO day; see "Vote day") |
 | `modify_date` | top-level | `RollCallVote.modify_date` |
 | `vote_question_text` | top-level | `RollCallVote.vote_question_text` |
 | `vote_document_text` | top-level | `RollCallVote.vote_document_text` |
@@ -146,6 +146,31 @@ the exact publisher spelling beside `.vote_normalized`. Both pinned fixtures
 only ever spell `Yea`, `Nay` and `Not Voting`; `Aye`/`No`/`Present` are
 accepted but unexercised by them (a plain RECORDED VOTE, rather than a
 YEA-AND-NAY vote, is where the Clerk uses `Aye`/`No`).
+
+## Vote day
+
+Each chamber prints the day it voted in its own spelling, in Eastern local
+time: the Clerk's `action-date` (`8-Sep-2025`) and the Senate's `vote_date`
+(`January 9, 2025,  02:54 PM`). Neither literal sorts by time, so
+`vote_day(chamber, literal)` reads either into an ISO day (`2025-09-08`) and
+is the one owner of that rule; `RollCallVote.day` exposes it, and
+`roll_call_votes.vote_day` publishes it beside the literal `vote_date`.
+
+- A file that prints no date gives `None`, not a refusal: the Clerk file has
+  always been accepted without `action-date`.
+- A printed date in any other spelling refuses (`VoteSourceError`), so the
+  record is never built with a guessed day.
+- The day is the chamber's own, never converted through UTC. Congress.gov's
+  `recordedVotes` date is a UTC instant whose day runs one later for an
+  evening vote: 91 of the 847 vote–date pairs in the live
+  `bill_vote_references` that join `roll_call_votes` (145 of 1,347 rows), every
+  one later and none earlier, while its Eastern day agrees on every row.
+
+Measured 2026-09-23 on every retained 119th-Congress body (676 House, 897
+Senate; the same day as the Congress.gov house-vote index's `startDate` and
+the Senate vote menu's day-month on every vote) and on spot samples back to
+each archive's floor (Clerk 1990, Senate 1989). The command and receipt are in
+`~/Work/corpora/fork-execution-2026-09-21/vote-day-2026-09-23/`.
 
 ## Identity rule
 

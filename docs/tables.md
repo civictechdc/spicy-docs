@@ -34,7 +34,7 @@ once more in [the docs index](README.md).
 
 | Table | Grain | Identity | Version column | Columns | Supplier |
 | --- | --- | --- | --- | --- | --- |
-| `congress_bills` | One row per bill or resolution, as one BILLSTATUS document states it. | `bill_id` | `update_date` | 49 | `interpretation.bill_family` |
+| `congress_bills` | One row per bill or resolution, as one BILLSTATUS document states it. | `bill_id` | `update_date` | 50 | `interpretation.bill_family` |
 | `bill_actions` | One row per action entry in a bill's BILLSTATUS document, in publisher order. | `bill_id`, `action_index` | `action_date` | 14 | `interpretation.bill_family` |
 | `bill_committees` | One row per committee or subcommittee a bill reached, as its BILLSTATUS document names it. | `bill_id`, `system_code` | `snapshot_update_date` | 10 | `interpretation.bill_family` |
 | `bill_publisher_summaries` | One row per CRS summary the publisher states on a bill, at the version and action it describes. | `bill_id`, `summary_version_code`, `action_date` | `update_date` | 7 | `interpretation.bill_family` |
@@ -50,7 +50,7 @@ once more in [the docs index](README.md).
 | `public_activity_events` | One row per change detected between two runs of the bill family. | `bill_id`, `event_type`, `subject_id`, `occurred_at` | `detected_at` | 6 | `schemas.activity_events` |
 | `amendments` | One row per amendment, as the Congress.gov amendment list route states it. | `congress`, `amendment_type`, `amendment_number` | `update_date` | 18 | `sources.congress.listing` (`amendment`) |
 | `press_releases` | One row per item in one appropriations committee press-release feed capture. | `release_id` | `observed_at` | 34 | `sources.congress.press_releases` |
-| `roll_call_votes` | One row per roll call: the publisher's own tally, and the bill it refers to. | `congress`, `chamber`, `session`, `roll_number` | `vote_date` | 20 | `sources.congress.votes` |
+| `roll_call_votes` | One row per roll call: the publisher's own tally, and the bill it refers to. | `congress`, `chamber`, `session`, `roll_number` | `vote_date` | 24 | `sources.congress.votes` |
 | `member_votes` | One row per member's position on one roll call. | `congress`, `chamber`, `session`, `roll_number`, `member_key` | `vote_date` | 14 | `sources.congress.votes` |
 | `members` | One row per legislator in one capture of the community crosswalk. | `bioguide_id` | `observed_at` | 18 | `sources.legislators` |
 | `member_terms` | One row per term a legislator served, in the crosswalk's own order. | `bioguide_id`, `term_index` | `observed_at` | 9 | `sources.legislators` |
@@ -74,7 +74,7 @@ once more in [the docs index](README.md).
 | `bill_committee_actions` | One row per action phrase a committee print states about one bill it names in the same sentence: the print's own phrasing, what it maps to, and how reliable the pairing is. | `document_key`, `text_sha256`, `bill_id`, `print_phrasing`, `span_start` | `rule_set_version` | 27 | `schemas.bill_action_tables`, `interpretation.bill_actions` |
 | `hearing_bill_links` | One row per bill one source states a hearing was held on or noticed for: the pair, the source that stated it, and the committee-and-date key the statement was checked against. | `package_id`, `bill_id`, `link_source` | `link_rule_version` | 12 | `schemas.hearing_bill_link_tables`, `interpretation.hearing_bill_links`, `sources.congress.house_committee_repository` |
 
-Eight hundred and fourteen columns in all, each with its own sentence.
+Eight hundred and nineteen columns in all, each with its own sentence.
 
 ### Version equality and replacement
 
@@ -86,6 +86,14 @@ digest. Select the intended input generation before merging; a successful
 correction supersedes its prior regardless of digest spelling. Conflicting
 same-key rows from different rule generations in one input require an explicit
 generation choice or refusal, not a maximum digest.
+
+A publisher date orders rows only in a sortable spelling.
+`roll_call_votes.vote_date` and `member_votes.vote_date` keep each chamber's
+literal (`8-Sep-2025`), which sorts lexicographically, not by time; the
+appended `roll_call_votes.vote_day` is its ISO reading
+([vote day](sources/congress-votes.md#vote-day)). A host that moves its merge
+onto `vote_day` must backfill it first: rows published before the column
+existed carry NULL.
 
 The current SpicyRegs `transforms.table_merge.merge_table` already ranks fresh
 rows before prior rows (`_src DESC` before the version). Its same-input
