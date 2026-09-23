@@ -53,6 +53,13 @@ def test_a_date_only_value_keeps_its_printed_day_and_states_no_instant(value):
     assert regulations_gov_instant(value) is None
 
 
+@pytest.mark.parametrize("value", ["20240101", "2024-W01-1"])
+def test_other_iso_spellings_read_as_their_date_as_the_spicy_regs_rule_did(value):
+    """Basic and ISO-week dates that ``fromisoformat`` reads give their day and no instant."""
+    assert regulations_gov_day(value) == date(2024, 1, 1)
+    assert regulations_gov_instant(value) is None
+
+
 def test_a_timestamp_without_an_offset_keeps_its_printed_day_and_states_no_instant():
     """Without an offset there is no instant to convert; the printed date stands."""
     assert regulations_gov_day("2025-06-02T23:30:00") == date(2025, 6, 2)

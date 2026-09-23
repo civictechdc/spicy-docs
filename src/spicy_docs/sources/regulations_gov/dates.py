@@ -47,7 +47,11 @@ def regulations_gov_instant(value: str | None) -> datetime | None:
 def regulations_gov_day(value: str | None) -> date | None:
     """The Eastern calendar day a Regulations.gov date or timestamp names; None when absent or unreadable.
 
-    A date-only value keeps its printed date, as does a timestamp without an offset.
+    A date-only value keeps its printed date, as does a timestamp without an
+    offset. Any other spelling Python's ``fromisoformat`` reads counts too, as
+    in SpicyRegs' ``_regsgov_day``: basic ``20240101`` and ISO week
+    ``2024-W01-1`` give 2024-01-01. The 1753 placeholders are not flagged:
+    ``1753-01-02T04:56:01Z`` gives 1753-01-01, as that rule did.
     """
     text = (value or "").strip()
     if (match := _DATE_ONLY.fullmatch(text)) is not None:
