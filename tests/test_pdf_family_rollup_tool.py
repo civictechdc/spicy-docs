@@ -18,7 +18,6 @@ import pytest
 from spicy_docs.interpretation.citations import CITATION_RULES_BY_NAME
 from tools.analysis.pdf_family_rollup import (
     JOIN_KEY_RULES,
-    MEASURED_001_RULES,
     STRUCTURE_RULES,
     committee_vocabulary,
     compact,
@@ -193,23 +192,37 @@ def test_the_recommendation_marker_reads_the_publishers_heading_not_a_verb() -> 
         assert re.search(marker, heading) is not None
 
 
-def test_the_committed_sidecar_was_written_by_these_rules() -> None:
-    """The committed sidecar's spot-check and rule patterns match the rules this tool runs.
-
-    One has moved since, and by one guard only: ``bill_number`` 002 refuses a
-    designator after a letter and a period (``R.S. 2477``) where 001 refused
-    it after ``U.`` alone. The four the citation grammar reads are run here at
-    the 001 the sidecar recorded.
-    """
+def test_the_tool_runs_the_rules_its_sidecar_recorded() -> None:
+    """The dated measurement re-runs on its own rules, which reject every lookalike they name."""
     sidecar = json.loads(SIDECAR.read_text())
-    recorded = {entry["name"]: entry["pattern"] for entry in sidecar["join_key_rules"]}
-    running = {rule.name: rule.pattern for rule in JOIN_KEY_RULES}
 
     assert sidecar["spot_check_failures"] == {}
-    assert list(recorded) == list(running)
-    assert {name for name in running if recorded[name] != running[name]} == {"bill_number"}
-    assert recorded["bill_number"].replace("(?<!U\\.)(?<!U", "(?<![A-Za-z]\\.)(?<!U", 1) == running["bill_number"]
-    assert {name for name, rule in MEASURED_001_RULES.items() if CITATION_RULES_BY_NAME[name].reader is None} == set()
+    assert [(entry["name"], entry["pattern"]) for entry in sidecar["join_key_rules"]] == [
+        (rule.name, rule.pattern) for rule in JOIN_KEY_RULES
+    ]
+
+
+def test_every_product_rule_that_left_the_measured_pattern_moved_its_version() -> None:
+    """Where the product now reads a kind differently from the 2026-09-20 measurement, it says so by version.
+
+    Eight kinds have moved: seven read through the shared grammar and
+    ``bill_number`` with its added guard. The rest still read exactly as
+    measured.
+    """
+    measured = {rule.name: rule.pattern for rule in JOIN_KEY_RULES}
+    moved = {name for name, pattern in measured.items() if CITATION_RULES_BY_NAME[name].pattern != pattern}
+
+    assert moved == {
+        "bill_number",
+        "public_law",
+        "statutes_at_large",
+        "usc_section",
+        "cfr_section",
+        "federal_register_cite",
+        "rin",
+        "docket_number",
+    }
+    assert all(CITATION_RULES_BY_NAME[name].version != "001" for name in moved)
 
 
 def test_the_committed_sidecar_states_the_numbers_the_report_leads_with() -> None:

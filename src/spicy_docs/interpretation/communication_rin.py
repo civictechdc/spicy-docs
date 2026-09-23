@@ -17,8 +17,11 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-#: The measured label rule.  Group 1 is the RIN as the publisher spelled it.
-REPORT_NATURE_RIN = re.compile(r"RIN:?\s*(\d{4}-[A-Z]{2}\d{2})")
+from spicy_docs.interpretation.identifier_shapes import PUBLISHED_RIN
+
+#: The measured label rule.  Group 1 is the RIN as the publisher spelled it,
+#: in the one shape a published RIN key takes (``identifier_shapes``).
+REPORT_NATURE_RIN = re.compile(rf"RIN:?\s*({PUBLISHED_RIN})")
 
 RIN_RULES: tuple[str, ...] = ("report_nature_rin_label", "unmatched")
 

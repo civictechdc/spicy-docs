@@ -35,10 +35,8 @@ from pathlib import Path
 from typing import Any
 
 from spicy_docs.interpretation.citations import (
-    CITATION_RULES,
     CitationRule,
     canonical_alnum,
-    rejected_lookalikes,
     resolve_committee_names,
 )
 from spicy_docs.interpretation.citations import committee_vocabulary as build_committee_vocabulary
@@ -360,14 +358,18 @@ def _zyte_record(transport: Any, mode: str) -> dict[str, Any]:
 
 # --- join-key patterns ---------------------------------------------------------------
 #
-# The patterns themselves are not here, with one dated exception below. Every
-# pattern rule this measurement runs lives in
-# ``spicy_docs.interpretation.citations``, which the ``document_citations``
-# contract also runs, so the measurement and the product cannot drift apart:
-# a rule corrected here is corrected there, and a rule widened there shows up
-# in this tool's own spot check. Each rule names the hosted table it joins to
-# and carries the lookalikes it must reject. The exception is the four kinds
-# the product now reads through the citation grammar (``MEASURED_001_RULES``).
+# This tool is a dated measurement, and it runs the rules it measured with.
+# They are read back from the sidecar it committed on 2026-09-20
+# (``MEASURED_SIDECAR``), which records each rule's name, pattern, target and
+# rejects, so no copy of a pattern lives here. What the sidecar does not
+# record is kept beside it: the two comparison forms that were not
+# ``canonical_alnum`` and the index spelling Congress.gov gives a law. The
+# product's rules have moved on since -- eight of the sixteen kinds are read by
+# the shared grammar now, and ``bill_number`` gained a guard -- and
+# ``document_citations`` makes the print-against-index comparison itself, in
+# target-key space, through ``stated_by_index`` over the package MODS. The
+# MODS re-check (``pdf_yield_mods_recheck``) re-runs on these same rules, so
+# both dated receipts stay reproducible.
 #
 # This module keeps only what is *not* a rule: which roster files the committee
 # vocabulary is pinned to here, and the acquisition that reads them. The
@@ -381,6 +383,9 @@ def _zyte_record(transport: Any, mode: str) -> dict[str, Any]:
 HOUSE_ROSTER = ROOT / "tests" / "fixtures" / "congress_rosters" / "memberdata-119-excerpt.xml"
 SENATE_ROSTER = ROOT / "tests" / "fixtures" / "congress_rosters" / "cvc-member-data-excerpt.xml"
 
+#: The sidecar this measurement wrote, which is also the record of its rules.
+MEASURED_SIDECAR = ROOT / "docs" / "research" / "pdf-family-rollup-yield-2026-09-20.json"
+
 
 def _canonical_law_number(value: str) -> str:
     """``P.L. 98-369``, ``Public Law 98–369`` and the index's ``PUB 98-369`` are one key."""
@@ -393,64 +398,39 @@ def _canonical_digits(value: str) -> str:
     return re.sub(r"[^0-9]+", "-", value.strip())
 
 
-#: The four rules this measurement ran as patterns on 2026-09-20 and the
-#: citation grammar has read since their 002 (``public_law``,
-#: ``statutes_at_large``, ``usc_section``, ``cfr_section``), kept here at their
-#: 001 exactly as measured. This tool compares canonical *pattern* matches
-#: against an index record's rendered text -- where Congress.gov spells a law
-#: ``PUB 98-369``, which the grammar does not read -- and the committed sidecar
-#: and the MODS re-check's receipts are keyed in that space. They are the
-#: dated measurement's rules, not the product's: ``document_citations`` reads
-#: these kinds through the grammar and compares them with the package MODS in
-#: target-key space (``stated_by_index``).
-MEASURED_001_RULES: dict[str, CitationRule] = {
-    rule.name: rule
-    for rule in (
-        CitationRule(
-            name="public_law",
-            version="001",
-            pattern=r"\bP(?:ub(?:lic)?)?\.?\s*L(?:aw)?\.?\s?(?:No\.\s?)?\d{1,3}[-–]\d{1,4}\b",
-            index_pattern=(
-                r"\b(?:P(?:ub(?:lic)?)?\.?\s*L(?:aw)?\.?\s?(?:No\.\s?)?|PUB\s+|PRIV\s+)\d{1,3}[-–]\d{1,4}\b"
-            ),
-            canonical=_canonical_law_number,
-            target_table="laws",
-            target_key_shape="(congress, law_type, number), joined: {congress}-public-{number}",
-            rejects=("Public Lands", "P.L. Smith", "Pub L", "Republic Law 5", "Pub. L. Rev."),
-        ),
-        CitationRule(
-            name="statutes_at_large",
-            version="001",
-            pattern=r"\b\d{1,3}\s+Stat\.\s+\d{1,4}\b",
-            canonical=_canonical_digits,
-            target_table="laws",
-            target_key_shape="statutes_at_large_cite as {volume}-{page}",
-            rejects=("Stat. of the Union", "12 State 45"),
-        ),
-        CitationRule(
-            name="usc_section",
-            version="001",
-            pattern=r"\b\d{1,2}\s+U\.?\s?S\.?\s?C\.?\s+(?:§{1,2}\s?)?\d[\w.–-]*",
-            target_table="law_code_sections",
-            target_key_shape="{usc_title}-{usc_section}",
-            rejects=("U.S. Code of conduct", "42 USC for"),
-        ),
-        CitationRule(
-            name="cfr_section",
-            version="001",
-            pattern=r"\b\d{1,2}\s+C\.?\s?F\.?\s?R\.?\s+(?:part\s+|§\s?)?\d[\w.–-]*",
-            target_table="cfr sections (host-side)",
-            target_key_shape="{title}-{part}",
-            rejects=("CFR is the", "40 CRF 60"),
-        ),
-    )
+#: The comparison form each measured rule reduced both sides to, where it was
+#: not ``canonical_alnum``.
+_MEASURED_CANONICAL: dict[str, Callable[[str], str]] = {
+    "public_law": _canonical_law_number,
+    "statutes_at_large": _canonical_digits,
 }
 
-#: Every citation rule, in the library's order: the library's own where it is
-#: read by a pattern, the measured 001 pattern where the grammar reads it now.
-JOIN_KEY_RULES: tuple[CitationRule, ...] = tuple(
-    rule if rule.reader is None else MEASURED_001_RULES[rule.name] for rule in CITATION_RULES
-)
+#: How the index spelled a key, where it differed from the print: Congress.gov
+#: states a law as ``PUB 98-369``.
+_MEASURED_INDEX_PATTERN: dict[str, str] = {
+    "public_law": r"\b(?:P(?:ub(?:lic)?)?\.?\s*L(?:aw)?\.?\s?(?:No\.\s?)?|PUB\s+|PRIV\s+)\d{1,3}[-–]\d{1,4}\b",
+}
+
+
+def _measured_rules() -> tuple[CitationRule, ...]:
+    """The join-key rules as the sidecar recorded them, in its order."""
+    return tuple(
+        CitationRule(
+            name=entry["name"],
+            version="measured-2026-09-20",
+            pattern=entry["pattern"],
+            target_table=entry["target_table"],
+            target_key_shape=entry["target_key"],
+            rejects=tuple(entry["rejects"]),
+            note=entry["note"],
+            index_pattern=_MEASURED_INDEX_PATTERN.get(entry["name"]),
+            canonical=_MEASURED_CANONICAL.get(entry["name"], canonical_alnum),
+        )
+        for entry in json.loads(MEASURED_SIDECAR.read_text(encoding="utf-8"))["join_key_rules"]
+    )
+
+
+JOIN_KEY_RULES: tuple[CitationRule, ...] = _measured_rules()
 
 
 @cache
@@ -1391,14 +1371,12 @@ def spot_check() -> dict[str, list[str]]:
     """
     for _, pattern in STRUCTURE_RULES:
         re.compile(pattern)
-    # The join-key half is the library's own check, run here so this report and
-    # `tests/test_citations.py` assert the same thing about the same patterns,
-    # plus the same check over the measured 001 rules this tool still runs.
-    failures = rejected_lookalikes()
-    for rule in MEASURED_001_RULES.values():
+    # The join-key half: each measured rule against the lookalikes it names.
+    failures: dict[str, list[str]] = {}
+    for rule in JOIN_KEY_RULES:
         bad = [candidate for candidate in rule.rejects if rule.reads(candidate)]
         if bad:
-            failures[f"{rule.name}@001"] = bad
+            failures[rule.name] = bad
     return failures
 
 

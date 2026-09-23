@@ -28,6 +28,7 @@ from spicy_docs.interpretation import citation_grammar
 from spicy_docs.interpretation.citation_grammar import (
     CfrCitationRange,
     find_act_relative_citations,
+    find_cfr_citations,
     normalize_popular_name,
     parse_authority_citation,
     parse_cfr_citations,
@@ -3982,8 +3983,8 @@ def test_a_range_keeps_its_far_end_in_the_four_places_it_was_losing_it() -> None
         ("Pub. L 103.311", [("103-311", "Pub. L 103.311")]),
         # Every occurrence, not every distinct law.
         ("P.L. 94-409 and P.L. 94-409", [("94-409", "P.L. 94-409"), ("94-409", "P.L. 94-409")]),
-        # Refused as the field reader refuses them.
-        ("Pub. L. 112-055", []),
+        # A zero pad is read through (see below); a label with no law is not one.
+        ("Pub. L. 112-055", [("112-55", "Pub. L. 112-055")]),
         ("Public Lands and Republic Law 5", []),
     ],
 )
@@ -4044,6 +4045,114 @@ def test_the_occurrence_readers_state_what_the_field_reader_states(text: str) ->
         stated = {replace(row, parse_status="ok") for row in fields if row.authority_type == family}
         located = {replace(o.citation, parse_status="ok") for o in finder(text)}
         assert located == stated, (family, text)
+
+
+# --------------------------------------------------------------------------- #
+# New in spicy-docs (2026-09-23): four shapes this grammar read as no
+# coordinate, or as a range's first endpoint alone. Counts are over the
+# parsing survey's 60,000 Federal Register titles and abstracts. RefSpec's
+# ``tests/test_cfr_ranges.py`` expects "41 CFR 60- 1" to stay an unread
+# coordinate; it reads as the title-41 part it prints now, and that one
+# expectation moves when RefSpec imports this module back.
+
+
+@pytest.mark.parametrize(
+    ("text", "law"),
+    [
+        ("(Pub. L. 111-05, approved February 17, 2009)", "111-5"),
+        ("Public Law 99-02", "99-2"),
+        ("Pub. L. 111-008", "111-8"),
+        ("(Pub. L. 04-13)", "4-13"),
+    ],
+)
+def test_a_zero_padded_law_number_is_read_through(text: str, law: str) -> None:
+    """The pad was the whole reason the citation went unread (34 numbers, 5 Congresses)."""
+    assert [o.citation.public_law for o in citation_grammar.find_public_law_citations(text)] == [law]
+    assert [c.public_law for c in parse_authority_citation(text) if c.authority_type == "public_law"] == [law]
+
+
+@pytest.mark.parametrize(
+    ("text", "part", "section", "slice_"),
+    [
+        ("30 CFR part 886--State and Tribal Reclamation Grants", "886", None, "30 CFR part 886"),
+        ("10 CFR part 33-Specific Domestic Licenses", "33", None, "10 CFR part 33"),
+        ("10 CFR Part 34-- Licenses for Industrial Radiography", "34", None, "10 CFR Part 34"),
+        ("10 CFR Part 33—Specific Domestic Licenses", "33", None, "10 CFR Part 33"),
+        ("40 CFR 60.5--Definitions", "60", "5", "40 CFR 60.5"),
+        # A lone capital is a subpart, and stays what it was: unread.
+        ("7 CFR part 1927-B, Real Estate Title Clearance", None, None, None),
+    ],
+)
+def test_a_printed_heading_ends_the_coordinate(text: str, part: str | None, section: str | None, slice_) -> None:
+    """155 part citations read as no coordinate, and 8 sections read the heading into the section."""
+    (occurrence,) = find_cfr_citations(text)
+    assert (occurrence.citation.cfr_part, occurrence.citation.cfr_section) == (part, section)
+    if slice_ is not None:
+        assert occurrence.text == slice_ and occurrence.refusal is None
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("41 CFR 102- 3.140(d)", (41, "102-3", "140")),
+        ("41 CFR 60- 1", (41, "60-1", None)),
+    ],
+)
+def test_a_space_after_a_parts_inner_hyphen_is_closed(text: str, expected: tuple) -> None:
+    """66 such citations were an unread coordinate; a part's name holds no space, so the key closes it."""
+    (occurrence,) = find_cfr_citations(text)
+    citation = occurrence.citation
+    assert (citation.cfr_title, citation.cfr_part, citation.cfr_section) == expected
+    assert occurrence.refusal is None and occurrence.text == text
+
+
+def test_a_plural_label_range_with_a_wrapped_hyphen_is_two_endpoints() -> None:
+    """``Parts 1500- 1508`` is the CEQ regulations entire, as ``Parts 1500-1508`` already was."""
+    (occurrence,) = find_cfr_citations("40 CFR Parts 1500- 1508")
+    assert occurrence.citation == CfrCitationRange(
+        citation_grammar._cfr_coordinate(40, "1500"), citation_grammar._cfr_coordinate(40, "1508")
+    )
+    (singular,) = find_cfr_citations("40 CFR Part 1500- 1508")
+    assert (singular.citation.cfr_part, singular.refusal) == ("1500-1508", "ambiguous_hyphen")
+
+
+@pytest.mark.parametrize(
+    ("text", "section", "end"),
+    [
+        ("44 U.S.C. 3501--3520", "3501", "3520"),
+        ("42 USC 4321--4347", "4321", "4347"),
+        ("21 U.S.C. 1901- 1908", "1901", "1908"),
+        ("16 U.S.C. 792- 823b", "792", "823b"),
+        # The separator never overrules the ordering rule: 9 does not follow 460l.
+        ("16 U.S.C. 460l- 9", "460l", None),
+        # A compound section's own hyphen is still its name.
+        ("42 U.S.C. 1395w-4", "1395w-4", None),
+    ],
+)
+def test_a_doubled_or_one_sided_dash_separates_a_range(text: str, section: str, end: str | None) -> None:
+    """27 doubled and 81 one-sided dashes were read as the range's first endpoint alone."""
+    (field,) = parse_authority_citation(text)
+    assert (field.usc_section, field.usc_section_end) == (section, end)
+    (occurrence,) = citation_grammar.find_usc_citations(text)
+    assert (occurrence.citation.usc_section, occurrence.citation.usc_section_end) == (section, end)
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("89 FR 12345", [(89, 12345, "89 FR 12345")]),
+        ("88 Fed. Reg. 12,345.", [(88, 12345, "88 Fed. Reg. 12,345")]),
+        ("89 FR 91529, 91530", [(89, 91529, "89 FR 91529")]),
+        ("89 FR 91529,91530", [(89, 91529, "89 FR 91529")]),
+        ("74 FR 1,234,567", []),
+        ("88 fr 123", []),
+    ],
+)
+def test_a_federal_register_citation_is_located_and_its_thousands_comma_is_the_pages(text: str, expected) -> None:
+    """Until 2026-09-23 "88 Fed. Reg. 12,345" was page 12; one thousands comma belongs to the page."""
+    found = citation_grammar.find_federal_register_citations(text)
+    assert [(o.citation.volume, o.citation.page, o.text) for o in found] == expected
+    assert parse_federal_register_citations(text) == tuple(o.citation for o in found)
 
 
 # --------------------------------------------------------------------------- #
@@ -4120,9 +4229,10 @@ def test_the_indexed_public_law_beside_a_statute_is_the_scan_it_replaced() -> No
 
 def _read_all(text: str) -> None:
     citation_grammar.find_usc_citations(text)
-    citation_grammar.find_cfr_citations(text)
+    find_cfr_citations(text)
     citation_grammar.find_public_law_citations(text)
     citation_grammar.find_statute_citations(text)
+    citation_grammar.find_federal_register_citations(text)
 
 
 def test_doubling_the_text_does_not_quadruple_the_time() -> None:
@@ -4133,7 +4243,7 @@ def test_doubling_the_text_does_not_quadruple_the_time() -> None:
     (2.0 times). Best of three, so a scheduler hiccup does not fail it.
     """
     block = (
-        "The Clean Air Act (42 U.S.C. 7401, 7402 and 7403), Pub. L. 92-463, 86 Stat. 770, "
+        "The Clean Air Act (42 U.S.C. 7401, 7402 and 7403), Pub. L. 92-463, 86 Stat. 770, 89 FR 12345, "
         "and 40 CFR parts 60 and 61 as amended by Pub. L. 101-549, 104 Stat. 2399. "
     )
 

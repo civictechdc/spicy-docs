@@ -13,7 +13,7 @@ Jaccard 0.5, at most five results and none below 0.1), with heading
 comparisons capped at ``MAX_HEADING_COMPARISONS``, the bound BillTrax spent as
 three database queries. One pattern is no longer BillTrax's: a prose bill
 number is read by the shared ``bill_number`` citation rule (see
-:data:`BILL_NUMBER_RULE_VERSION`). ``normalize_for_comparison`` deliberately
+``_PROSE_BILL_NUMBER``). ``normalize_for_comparison`` deliberately
 keeps ASCII ``\\w`` semantics so already-stored normalized titles and their
 Jaccard scores stay comparable across the port.
 """
@@ -58,15 +58,15 @@ MIN_CONFIDENCE = 0.1
 
 TITLE_SOURCES: tuple[str, ...] = ("may-be-cited-as", "fallback-marker", "fallback-position", "none")
 
-#: The bill-number reading this module's prose pattern moved to. 001 was
-#: BillTrax's case-insensitive alternation, which read a Congressional Record
-#: page (``CR S4530``), a U.S. Code section (``U.S.C. S300f``) and a possessive
-#: (``President's 2027``) as Senate bills; 002 (2026-09-23, consolidation item
-#: A9) is the shared ``bill_number`` citation rule, which needs a separator
-#: after the designator and reads its capitals. The GPO bullet pattern is
-#: unchanged.
-BILL_NUMBER_RULE_VERSION = "002"
-
+#: The prose bill number, read by the shared ``bill_number`` citation rule and
+#: versioned by that rule's own ``version``. It replaced BillTrax's
+#: case-insensitive alternation on 2026-09-23 (consolidation item A9), which
+#: read a Congressional Record page (``CR S4530``), a U.S. Code section
+#: (``U.S.C. S300f``) and a possessive (``President's 2027``) as Senate bills;
+#: the shared rule needs a separator after the designator and takes its
+#: capitals as evidence, so an unspaced ``HR1234`` and a lower-case ``h.r. 5``
+#: are no longer read here either. Nothing stores these signals yet. The GPO
+#: bullet pattern is unchanged.
 _PROSE_BILL_NUMBER = CITATION_RULES_BY_NAME["bill_number"].compiled()
 # The GPO bullet line, "•HR  7148  IH".
 _BULLET_BILL_NUMBER = re.compile(r"[•·]\s*(HR|S|HJRES|SJRES|HCONRES|SCONRES|HRES|SRES)\s+(\d{1,5})\s", re.IGNORECASE)
@@ -380,7 +380,6 @@ def confidence_band(confidence: float) -> str:
 
 __all__ = [
     "BILL_NUMBER_PATTERNS",
-    "BILL_NUMBER_RULE_VERSION",
     "CONGRESS_OFF_BY_ONE_SCORE",
     "HEADING_OVERLAP_MIN_JACCARD",
     "HEAD_CHARS",

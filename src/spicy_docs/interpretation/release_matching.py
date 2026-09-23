@@ -20,17 +20,17 @@ from dataclasses import dataclass
 from spicy_docs.interpretation.citations import CITATION_RULES_BY_NAME, bill_type_and_number
 from spicy_docs.sources.congress.bill_status import BillIdentity
 
-#: The bill-number reader every mention goes through, compiled once.
+#: The bill-number reader every mention goes through, compiled once: the
+#: shared citation rule, whose own ``version`` is what versions a mention.
+#: It replaced this module's case-insensitive alternation of per-type
+#: spellings on 2026-09-23 (consolidation item A9): it needs a separator after
+#: the designator, so a Congressional Record page (``CR S4530``) or a U.S. Code
+#: section (``U.S.C. S300f``) is not a Senate bill, and it takes the capitals
+#: as its evidence, so neither ``President's 2027`` nor a lower-case ``s 2027``
+#: nor an unspaced ``HR1234`` names one. No bill link on the 28 retained press
+#: rows moved. ``press_releases`` carries no version column, so a re-run is
+#: what re-reads a row (its merge prefers the newest ``observed_at``).
 _BILL_MENTION = CITATION_RULES_BY_NAME["bill_number"].compiled()
-
-#: Moves when what counts as a mention changes; the ``match_rule`` values below
-#: do not. 001 was this module's own case-insensitive alternation of per-type
-#: spellings; 002 (2026-09-23, consolidation item A9) is the shared citation
-#: rule, which needs a separator after the designator, so a Congressional
-#: Record page (``CR S4530``) or a U.S. Code section (``U.S.C. S300f``) is not
-#: a Senate bill, and reads the designator's capitals, so ``President's 2027``
-#: is not ``S. 2027``. Measured: no bill link on the retained press rows moves.
-RELEASE_MATCH_RULE_VERSION = "002"
 
 MATCH_FIELDS: tuple[str, ...] = ("title", "excerpt")
 RELEASE_MATCH_RULES: tuple[str, ...] = ("bill_number_in_title", "bill_number_in_excerpt", "unmatched")
@@ -152,7 +152,6 @@ def match_releases(
 __all__ = [
     "MATCH_FIELDS",
     "RELEASE_MATCH_RULES",
-    "RELEASE_MATCH_RULE_VERSION",
     "BillPattern",
     "Release",
     "ReleaseMatch",

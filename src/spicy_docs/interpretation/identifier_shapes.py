@@ -107,6 +107,7 @@ from typing import Any
 __all__ = [
     "BARE_LEGACY_FEDERAL_REGISTER_DOCUMENT_NUMBER",
     "FEDERAL_REGISTER_DOCUMENT_NUMBER",
+    "PUBLISHED_RIN",
     "IdentifierCandidate",
     "IdentifierKind",
     "NumberingSystem",
@@ -117,9 +118,11 @@ __all__ = [
     "is_regulation_identifier_number",
     "keep_longest_then_most_specific",
     "normalize_docket_reference",
+    "normalize_docket_references",
     "normalize_regsgov_identifier",
     "normalize_rin",
     "numbering_system",
+    "published_rin",
     "unpadded_federal_register_document_number",
 ]
 
@@ -395,6 +398,18 @@ class IdentifierCandidate:
 # outside the mintable space rather than as malformed, and widening the shape
 # to admit them would cost the fence that refuses an OMB control number.
 _RIN = re.compile(rf"{_LEFT}(?P<value>\d{{4}}-[A-Za-z]{{2}}[A-Za-z0-9]{{2}}){_RIGHT}")
+
+#: The RIN a table may PUBLISH as a key: four digits, two capitals, two
+#: digits. Deliberately narrower than :data:`_RIN`, which also admits a
+#: letter or a lower-case one in the last two places so the prose reader can
+#: find a damaged RIN (``1625-AAOO``) or a placeholder (``2060-XXXX``) and
+#: say what it found: the wider shape admits only damage or placeholders
+#: (99 such values in this module's pinned columns, measured by the parsing
+#: survey, spicy-docs ``docs/research/parsing-survey-2026-09-23.md`` section
+#: 5), so it detects and never keys. One home for the key shape across the
+#: stack; a consumer publishing a RIN calls :func:`published_rin`.
+PUBLISHED_RIN = r"\d{4}-[A-Z]{2}\d{2}"
+_PUBLISHED_RIN = re.compile(PUBLISHED_RIN)
 
 #: The modern Federal Register document number, and the one lexical space the
 #: downstream identifier mint admits. Four digits then three to five — a
@@ -800,7 +815,8 @@ _DOCKET_OFFICE = r"(?:(?P<office>[A-Za-z]+(?:[-_][A-Za-z]+)*)[-_])?"
 #: the engine backtracks to the only branch that completes. A mutation
 #: reversing the order leaves the suite green, which is the measurement
 #: behind this comment rather than a reassurance about it.
-_DOCKET_SEGMENT = r"(?:[-_](?P<segment>NONRULEMAKING|RULEMAKING|NONRULE|RULE|DRAFT))?"
+_DOCKET_SEGMENT_TOKENS = "NONRULEMAKING|RULEMAKING|NONRULE|RULE|DRAFT"
+_DOCKET_SEGMENT = rf"(?:[-_](?P<segment>{_DOCKET_SEGMENT_TOKENS}))?"
 
 
 def _docket_body(year: str, sequence_group: str = "sequence", office: str = "") -> str:
@@ -891,9 +907,18 @@ _REGSGOV_VALID = re.compile(r"[A-Z0-9]+(?:[-_][A-Z0-9]+)*")
 #: be any number of digits rather than three to five. The office segment
 #: between year and sequence ("FDA-2026-N-0008") is NOT one of them any more
 #: — both readers read it, because letters cannot be mistaken for the
-#: sequence of a Regulations.gov document id. It ends on
-#: digits, which is the fence that refuses
-#: "GIPSA-2008-FGIS-0002-NONRULEMAKING" and the FEMA disaster numbers.
+#: sequence of a Regulations.gov document id. It ends on digits, which is
+#: the fence that refuses the FEMA disaster numbers -- or on one of the
+#: prose reader's closed five trailing tokens (:data:`_DOCKET_SEGMENT`),
+#: which the column reader refused until 2026-09-23 although the prose
+#: reader already read them: 67 of the retained Regulations.gov documents
+#: table's 278,370 distinct ``docket_id`` values end on one
+#: ("GIPSA-2006-FGIS-0029-NONRULE"; NONRULEMAKING 47, RULEMAKING 14, NONRULE
+#: 4, RULE 2), each the publisher's own statement of a document's docket,
+#: and no other value in that column or in the dockets table's 279,124 was
+#: refused but one. That one, GSA-NA-2005, states no sequence at all, and
+#: stays refused: admitting organization-office-year would admit every
+#: number with that silhouette.
 #: The two-digit year is real rather than tolerated: AMS-SC-25-0848 is cited
 #: by Federal Register document 2026-14918, and regulations.gov's own API
 #: answers 404 for it rather than the 400 it returns for a malformed id
@@ -915,7 +940,7 @@ _FERC_DOCKET_PREFIXES = (  # noqa: SIM905 -- a list literal would flatten this i
 _FERC_DOCKET = re.compile(rf"(?:{'|'.join(_FERC_DOCKET_PREFIXES)})\d{{2}}-\d+(?:-\d{{3}})?")
 
 _REGSGOV_DOCKET_SHAPE = re.compile(
-    r"[A-Z][A-Z0-9]*(?:[-_][A-Z0-9]+)*[-_]\d{2}(?:\d{2})?(?:[-_][A-Z0-9]+)*[-_]\d+"
+    rf"[A-Z][A-Z0-9]*(?:[-_][A-Z0-9]+)*[-_]\d{{2}}(?:\d{{2}})?(?:[-_][A-Z0-9]+)*[-_]\d+(?:[-_](?:{_DOCKET_SEGMENT_TOKENS}))?"
     r"|[A-Z][A-Z0-9]{1,9}_FRDOC_\d{4}"
 )
 
@@ -936,6 +961,19 @@ def is_regulation_identifier_number(value: object) -> bool:
     """Whether a value is, in whole, a Regulation Identifier Number."""
 
     return normalize_rin(value) is not None
+
+
+def published_rin(value: object) -> str | None:
+    """The RIN a value states, in the one shape a published key may take, or ``None``.
+
+    Dashes and letter case fold first, as every reader here folds them
+    (``3133–af97`` is ``3133-AF97``); then the whole value must be
+    :data:`PUBLISHED_RIN`. :func:`normalize_rin` is the wider, detection-side
+    answer and is never a key.
+    """
+
+    text = _folded_text(value)
+    return text if _PUBLISHED_RIN.fullmatch(text) else None
 
 
 def normalize_rin(value: object) -> str | None:
@@ -1077,12 +1115,9 @@ def corrected_rin(value: object, roster: Container[str]) -> tuple[str, str] | No
     return survivors.pop(), "unique-roster-existence"
 
 
-#: The zero pad in front of a document number's sequence: the zeros after its
-#: last hyphen that still leave a digit behind them, so "2010-00000" keeps "0".
-#: Named outside the ``_FR_`` family on purpose: it is not a production, and
-#: ``test_no_federal_register_production_claims_another_ones_specimen``
-#: censuses every ``_FR_`` pattern as one.
-_SEQUENCE_ZERO_PAD = re.compile(r"(?<=-)0+(?=\d+$)")
+#: The widest sequence any document-number form here carries (the six-digit
+#: tails), so every zero-padded spelling of a key is within reach of it.
+_WIDEST_SEQUENCE = 6
 
 
 def unpadded_federal_register_document_number(value: object) -> str | None:
@@ -1090,14 +1125,13 @@ def unpadded_federal_register_document_number(value: object) -> str | None:
 
     ``2010-02394`` is ``2010-2394`` and the legacy ``E9-09366`` is ``E9-9366``;
     only the digits after the last hyphen move, so ``C1-2012-09978`` keeps its
-    year. ``None`` for a value that is not a document number in any form this
-    module reads -- column-licensed (:func:`is_federal_register_document_number`)
-    or prose (the correction, republication and legacy forms) -- so a docket
-    or a RIN is never given a key. The key is taken once, from a number this
-    module reads, and need not itself be one: ``C1-2012-09978`` keys to
-    ``C1-2012-9978``, which the correction form's fixed five-digit tail
-    refuses (REF-054's deferred short-tail corrections), so the Register's own
-    ``C1-2012-9978`` has no key and joins only exactly.
+    year. A value has a key when some zero-padded spelling of that key is a
+    document number in a form this module reads -- column-licensed
+    (:func:`is_federal_register_document_number`) or prose (the correction,
+    republication and legacy forms) -- so a docket or a RIN never has one, and
+    the key is a fixed point: ``C1-2012-9978``, which the correction form's
+    fixed five-digit tail refuses as written, keys to itself because
+    ``C1-2012-09978`` is read.
 
     **A comparison key, not an identifier.** The literal string stays the
     identifier (:data:`FEDERAL_REGISTER_DOCUMENT_NUMBER`): the Office of the
@@ -1105,10 +1139,16 @@ def unpadded_federal_register_document_number(value: object) -> str | None:
     ``document_number`` column holds 135,264 padded numbers -- every modern
     year from 2013 pads -- beside unpadded ones before it. Regulations.gov's
     ``fr_doc_num`` pads where the Register did not, which is why 49,403
-    Federal Register references in the published ``rule_targets`` were
-    ``missing``; 40,340 of them name a held document once both sides are
-    unpadded, with no key reaching two documents (spicy-docs
-    ``docs/research/parsing-survey-2026-09-23.md`` section 2, item A7).
+    Federal Register references in the rulemaking build's ``rule_targets``
+    were ``missing``. Two counts of what unpadding recovers, with their
+    bases: 40,340 by the parsing survey's rule (spicy-docs
+    ``docs/research/parsing-survey-2026-09-23.md`` section 2, item A7), which
+    strips the zeros of an already-upper-case reference and looks the result
+    up literally; and 41,372 by this key, measured 2026-09-23 over the same
+    tables with both sides reduced, the exact string tried first and a key
+    reaching two held numbers refused. The second holds all of the first; the
+    1,030 more are 936 en-dash references, 79 unpadded references to padded
+    numbers and 15 others. No key reached two documents.
 
     So a join reduces **both** sides to this key and tries the exact string
     first: unpadding only the reference would break the 2013-onward matches
@@ -1119,10 +1159,17 @@ def unpadded_federal_register_document_number(value: object) -> str | None:
     that reaches more than one held number is refused, not chosen between.
     """
 
-    text = _folded_text(value)
-    if not (is_federal_register_document_number(text, column_licensed=True) or _FR_DOCUMENT.fullmatch(text)):
+    head, dash, sequence = _folded_text(value).rpartition("-")
+    if not dash or not sequence.isdigit():
         return None
-    return _SEQUENCE_ZERO_PAD.sub("", text)
+    tail = sequence.lstrip("0") or "0"
+    spellings = (f"{head}-{tail.zfill(width)}" for width in range(len(tail), max(len(tail), _WIDEST_SEQUENCE) + 1))
+    if not any(
+        is_federal_register_document_number(spelling, column_licensed=True) or _FR_DOCUMENT.fullmatch(spelling)
+        for spelling in spellings
+    ):
+        return None
+    return f"{head}-{tail}"
 
 
 def normalize_regsgov_identifier(identifier: object) -> str | None:
@@ -1180,6 +1227,88 @@ def normalize_docket_reference(reference: object) -> str | None:
             return None
         return identifier
     return None
+
+
+#: What may stand in front of the dockets a docket column names, wider than
+#: the single reader's label because this reader then insists the remainder
+#: OPEN on a docket: up to three words ("U.S. DOT", "Waiver Petition") before
+#: a docket, document or FDMS noun and up to two counter words ("Docket ID
+#: Number:", "Docket ID.", "Document Number", "FDMS No."), or a counter word
+#: alone ("No. CPSC-2010-0022"), or the conjunction a list split across two
+#: values leaves behind ("and FDA-2015-N-1837"). An opening bracket the
+#: publisher's page left behind may stand before or after the label
+#: ("[Docket No. X", "Docket ID: [X").
+_REFERENCES_LEAD = re.compile(
+    rf"^[\s\[]*(?:(?:[A-Za-z.]+\s+){{0,3}}?(?:dockets?|docs?|documents?|fdms)\b\.?\s*(?:{_LABEL_COUNTER_WORD}\s*){{0,2}}"
+    rf"|{_LABEL_COUNTER_WORD}|and\b|or\b)?[\s:#.\-\[]*",
+    re.IGNORECASE,
+)
+#: One whole token: letters, digits, hyphens and underscores, opening and
+#: closing on a letter or digit.
+_REFERENCE_TOKEN = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9_-]*[A-Za-z0-9])?")
+#: Where a docket may end in a reference that says more: the end, the
+#: punctuation that opens a note ("X, Notice No. 2", "X (HM-224F)", "X:
+#: FRL..."), a stray hyphen before one ("EPA-R06-RCRA-2008-0756-"), or a space
+#: before a WORD ("X Directorate Identifier ..."). A space before a number is
+#: not an end: "WO-150-1820-00 1A" is one Bureau of Land Management serial,
+#: not a docket with a note.
+_REFERENCE_TOKEN_END = re.compile(r"$|[,;:()\[\]]|-(?:\s|$)|\s+(?=[A-Za-z(\[]|$)")
+#: The joint between two dockets of one list: "X and Y", "X, Y", "X, Y, and Z", "X; Y".
+_REFERENCE_LIST_JOINT = re.compile(r"\s*(?:,\s*(?:and\s+|or\s+)?|;\s*|&\s*|\s+and\s+|\s+or\s+)", re.IGNORECASE)
+
+
+def _organization(docket: str) -> str:
+    return re.split(r"[-_]", docket, maxsplit=1)[0]
+
+
+def normalize_docket_references(reference: object) -> tuple[str, ...]:
+    """Every Regulations.gov docket a docket-column reference names, in order; ``()`` when it names none.
+
+    :func:`normalize_docket_reference` reads a reference that IS one docket,
+    whole. A docket column also writes a docket inside more: a longer label
+    ("U.S. DOT Docket Number X", "Docket ID Number: X"), a note after it ("X,
+    Notice No. 2", "X (HM-224F)", "X, FRL-8231-8"), or a list ("Docket Nos. X
+    and Y"). Measured 2026-09-23 over the rulemaking build's
+    ``fr_docket_links`` (spicy-docs ``docs/research/parsing-survey-2026-09-23.md``
+    item A7): 5,825 link rows name a docket the dockets table holds, as a whole
+    token, and the single reader refuses every one. This reads 5,389 of them in
+    full and 67 in part; the 369 it leaves open on something else ("Public
+    Notice: X", "FAR Case 2017-014, Docket No. X"), and only a search would
+    read them.
+
+    Deliberately not a search. The reference must OPEN on a docket once its
+    label is off, a list continues only across list punctuation, and a
+    member after the first must be a docket of the first one's organization
+    or the prose reader's strict four-digit-year shape -- so the numbers a
+    note carries ("FRL-8231-8", "SC-20-326", "NIOSH-314") end the list rather
+    than joining it, and a reference that only mentions a docket somewhere
+    ("FAR Case 2017-014, Docket No. FAR-2017-0014") names none here. Each
+    member is read by the single reader, so the FERC fence and the shape it
+    states are the same.
+    """
+
+    whole = normalize_docket_reference(reference)
+    if whole is not None:
+        return (whole,)
+    stated = docket_reference_as_stated(reference)
+    if not stated:
+        return ()
+    position = _REFERENCES_LEAD.match(stated).end()
+    found: list[str] = []
+    while (token := _REFERENCE_TOKEN.match(stated, position)) is not None and _REFERENCE_TOKEN_END.match(
+        stated, token.end()
+    ):
+        docket = normalize_docket_reference(token.group(0))
+        if docket is None:
+            break
+        if found and _organization(docket) != _organization(found[0]) and not _DOCKET_BARE.fullmatch(docket):
+            break
+        found.append(docket)
+        joint = _REFERENCE_LIST_JOINT.match(stated, token.end())
+        if joint is None:
+            break
+        position = joint.end()
+    return tuple(dict.fromkeys(found))
 
 
 # --------------------------------------------------------------------------- #

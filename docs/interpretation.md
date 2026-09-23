@@ -30,7 +30,7 @@ rather than buried in control flow.
 | `model_call` | — | the one injected model seam (`ModelCall`, `ModelResponse`, `ModelCallError`) the two model-backed modules share, and the `AnswerField` declaration each prompt, each reader and each request schema (`answer_schema`) is derived from |
 | `gemini_call` | a `GenerationClient` (`extraction/gemini`'s `GeminiClient`, or a stub) | that client as a `ModelCall`: it builds the request, sends the caller's `response_schema` as `responseJsonSchema`, parses the answer and carries the publisher's token counts |
 | `citation_grammar` | a citation string or running text | the stack's one data-side grammar for CFR, U.S. Code, Public Law, Statutes at Large and other legal-authority citations, each result judged rather than discarded; moved from RefSpec (see the decision below) |
-| `identifier_shapes` | a catalog identifier value, or running text | RIN, Federal Register document number and docket shapes, validators and normalizers (`normalize_docket_reference`, `unpadded_federal_register_document_number`), and the overlap-arbitrated prose detector; moved from RefSpec with `citation_grammar` |
+| `identifier_shapes` | a catalog identifier value, or running text | RIN, Federal Register document number and docket shapes, validators and normalizers (`normalize_docket_reference` for a value that is one docket, `normalize_docket_references` for every docket a labelled, annotated or listed value names, `unpadded_federal_register_document_number`, the one published RIN key `published_rin`), and the overlap-arbitrated prose detector; moved from RefSpec with `citation_grammar` |
 | `citations` | one document's normalized text, its per-page split where the rendition has one, the Congress its own index record states, and the chamber-roster vocabulary the caller already parsed | one `CitationFinding` per occurrence (kind, rule version, canonical target key, whether the key is the hosted target's own spelling, **which route reached it**, the matched text, the character span, and the printed page) |
 | `bill_actions` | one document's normalized text and the `bill_number` `CitationFinding`s already read out of it | one `BillActionFinding` per (action phrase, bill) pair: the print's own sealed phrasing, the `bill_stage` rung it maps to or NULL, the publisher's BILLSTATUS action code for that phrasing **in that row's chamber** or none, the dates the sentence states, both spans, how many bills the sentence names and the attachment class that follows from it; plus every phrase that reached no bill |
 | `cbo_estimates` | one committee report's normalized text | one `CboEstimateFinding`: whether the **cover recital** declares a CBO cost estimate (the gate; a heading is never one), the measure the cover says the report accompanies, and either the reprinted letter's heading, span, digest, end rule and signatory, or the publisher's own paragraph saying why there is none, with its span |
@@ -79,8 +79,8 @@ old outcome beside the new one.
   `bill_number` citation rule, and looks the number up exactly as written. The
   source rebuilt a pattern per (release, bill) pair and offered the bare number
   as an alternative, so bill 1 matched any `1`; the port's own per-type
-  alternation (`RELEASE_MATCH_RULE_VERSION` 001) still read `CR S4530` as a
-  Senate bill, which the shared rule does not. Matching runs field by field,
+  alternation still read `CR S4530` as a Senate bill, which the shared rule
+  does not. Matching runs field by field,
   title first, and reports which field matched, because one of the two feeds
   sends no description at all.
 - **Member matching prefers identifiers.** Bioguide, then LIS through the
@@ -188,11 +188,12 @@ release is about; it reports the first bill named and which field named it, so
 a consumer can weigh a title match differently from a body one.
 
 `citations` reads what a document *prints*, which is a narrower thing than
-what it cites. Its U.S. Code, CFR, Public Law and Statutes kinds read through
-`citation_grammar`, so they see what that grammar sees and refuse what it
-refuses: a hyphen between two CFR parts (`Part 1500-1508`) stays one
-unresolved token, and a zero-padded law number (`Pub. L. 112-055`) is not
-read at all. It cannot see a cite the print spells in a form no measured
+what it cites. Its U.S. Code, CFR, Public Law, Statutes and Federal Register
+kinds read through `citation_grammar`, and its RIN and docket kinds through
+`identifier_shapes`, so they see what those modules see and refuse what they
+refuse: a hyphen between two CFR parts (`Part 1500-1508`) stays one
+unresolved token, a lone capital after a part (`7 CFR 1940-G`, a subpart) is
+not read, and a RIN-shaped damage (`1625-AAOO`) is never a key. It cannot see a cite the print spells in a form no measured
 rule covers, it attributes a match straddling a page break to the page it
 began on, and its `committee_name` rule is a **candidate** finder: the target
 key is a `system_code` only where the roster vocabulary the caller supplied

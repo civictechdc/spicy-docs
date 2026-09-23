@@ -127,6 +127,7 @@ __all__ = [
     "EoCompilationLocator",
     "EoCompilationOccurrence",
     "FederalRegisterCitation",
+    "FederalRegisterCitationOccurrence",
     "LocalClauseOccurrence",
     "SupremeCourtCitation",
     "TimetableFrCitation",
@@ -137,6 +138,7 @@ __all__ = [
     "find_act_relative_occurrences",
     "find_cfr_citations",
     "find_eo_compilation_locators",
+    "find_federal_register_citations",
     "find_local_clause_occurrences",
     "find_public_law_citations",
     "find_statute_citations",
@@ -537,14 +539,31 @@ _DASHES = str.maketrans(dict.fromkeys(_DASH_SPELLINGS, "-"))
 # --------------------------------------------------------------------------- #
 # CFR
 
+#: A part's or section's printed HEADING after a dash: "30 CFR part
+#: 886--State and Tribal Reclamation Grants", "10 CFR Part 33—Specific
+#: Domestic Licenses" (the em dash folds to one hyphen). One or two dashes, at
+#: most one space, then a capital followed by a lower-case letter, which no
+#: part or section number carries: the letter a number carries is lower case
+#: ("15a") or a lone capital ("7 CFR 1940-G", a subpart). Added in spicy-docs
+#: 2026-09-23: over the parsing survey's 60,000 Federal Register titles and
+#: abstracts, 155 part citations were followed by one and read as no
+#: coordinate at all, and 8 section citations read the heading into the
+#: section ("60.5--Definitions").
+_CFR_HEADING_DASH = r"-{1,2}[ \t]?(?-i:[A-Z][a-z])"
+
 #: A section's inner dots and hyphens belong to its name ("60.5-1"); a
-#: trailing one is the sentence's punctuation.
-_CFR_SECTION_CAPTURE = r"[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?"
+#: trailing one is the sentence's punctuation, and a hyphen that opens a
+#: heading is the heading's.
+_CFR_SECTION_CAPTURE = rf"[A-Za-z0-9](?:(?:(?!{_CFR_HEADING_DASH})[A-Za-z0-9.-])*[A-Za-z0-9])?"
 
 # Capture the whole token before interpreting its hyphens. Title 41 has
 # compound parts, including plural lists of them; elsewhere a plural label
 # can state a numeric part range. Neither licenses a shorter numeric prefix.
-_CFR_PART_CAPTURE = r"\d+[A-Za-z]?(?:-\d+[A-Za-z]?)*(?![\w-])"
+# One space may follow an inner hyphen -- "41 CFR 102- 3.140", "40 CFR Parts
+# 1500- 1508": 66 such citations in the survey's Federal Register texts, all
+# read as no coordinate until 2026-09-23 -- and :func:`_canonical_part`
+# closes it, because a part's name holds no space. A heading may follow.
+_CFR_PART_CAPTURE = rf"\d+[A-Za-z]?(?:-[ \t]?\d+[A-Za-z]?)*(?:(?![\w-])|(?={_CFR_HEADING_DASH}))"
 
 #: The word naming the unit a CFR number belongs to. "Part" and "section" are
 #: different units but one syntactic slot, and the CFR writes both.
@@ -904,6 +923,16 @@ _RANGE_SEPARATOR = r"\s*(?:to|through|thru)\s*"
 #: untouched, because none of them is spaced.
 _SPACED_DASH = r"\s+-\s+"
 
+#: The spaced dash's two relatives, licensed by the same rule -- a section's
+#: name holds neither a space nor two dashes running. A DOUBLED dash is the
+#: typewriter's em dash ("44 U.S.C. 3501--3520"; a real em dash folds to one
+#: hyphen and is read as one), and a dash with space on ONE side is the
+#: publisher's lost space ("21 U.S.C. 1901- 1908"). Measured 2026-09-23 over
+#: the parsing survey's 60,000 Federal Register titles and abstracts: 27 and
+#: 81 such ranges, each read as its first endpoint alone. The ordering rule
+#: still decides whether the two numbers are a range.
+_LOOSE_DASH = r"(?:\s*--\s*|\s+-\s*|\s*-\s+)"
+
 # The title accepts leading zeros like the CFR grammar: "07 USC 5602" is
 # USDA's title 7 zero-padded, the identical damage class web-verified for
 # CFR titles, and [1-9] silently dropped it here for a further day.
@@ -967,7 +996,7 @@ _USC_STANDARD = re.compile(
     # one of them a citation the filer wrote in full. An atomic group refuses
     # to give back what it matched, so the tail now fails as a whole and the
     # second citation is read where it stands.
-    rf"(?:(?:\s*\([0-9A-Za-z]{{1,4}}\))*(?:{_RANGE_SEPARATOR}|{_SPACED_DASH})"
+    rf"(?:(?:\s*\([0-9A-Za-z]{{1,4}}\))*(?:{_RANGE_SEPARATOR}|{_SPACED_DASH}|{_LOOSE_DASH})"
     rf"(?P<range_end>(?>{_USC_SECTION_SPAN}))"
     rf"{_ANOTHER_CITATION_AHEAD})?",
     re.IGNORECASE,
@@ -1037,7 +1066,7 @@ _USC_CHAPTER = re.compile(
 _USC_LIST_TAIL = re.compile(
     rf"(?:,|\band\b|\bor\b)\s*(?P<section>{_USC_SECTION_SPAN_UNTRUNCATED})\b"
     rf"{_ANOTHER_CITATION_AHEAD}"
-    rf"(?:(?:\s*\([0-9A-Za-z]{{1,4}}\))*(?:{_RANGE_SEPARATOR}|{_SPACED_DASH})"
+    rf"(?:(?:\s*\([0-9A-Za-z]{{1,4}}\))*(?:{_RANGE_SEPARATOR}|{_SPACED_DASH}|{_LOOSE_DASH})"
     rf"(?P<range_end>(?>{_USC_SECTION_SPAN}))"
     rf"{_ANOTHER_CITATION_AHEAD})?",
     re.IGNORECASE,
@@ -1553,9 +1582,14 @@ _OMB_INSTRUMENT = re.compile(
 # number (13 rows, measured 2026-08-22).
 # "Pub. L. No: 114-190" writes the No with a colon; both punctuation marks
 # are the label's, not the number's.
+# A zero pad is read through, not refused: "Pub. L. 111-05" is the American
+# Recovery and Reinvestment Act, 111-5, and the pad was the whole reason the
+# citation went unread -- 34 zero-padded numbers and 5 zero-padded
+# Congresses in the parsing survey's Federal Register texts (2026-09-23).
+# Both halves are read as integers, so the pad never reaches a key.
 _PUBLIC_LAW = re.compile(
     rf"{_LEFT}(?:pub(?:lic)?\.?\s*l(?:aw)?\.?|p\.?\s*l\.?)[\s-]*(?:no\.?:?\s*)?"
-    rf"(?P<congress>[1-9]\d*)(?:\s*-\s*){{1,2}}(?P<number>[1-9]\d*){_RIGHT}",
+    rf"0*(?P<congress>[1-9]\d*)(?:\s*-\s*){{1,2}}0*(?P<number>[1-9]\d*){_RIGHT}",
     re.IGNORECASE,
 )
 
@@ -1603,10 +1637,16 @@ _EXECUTIVE_ORDER_ABBREVIATED = re.compile(
 #: "83 FR32768" all occur in the Unified Agenda's timetable field — but
 #: only one dash or nothing: "76 R 11462" (a lost F) and a CFR citation
 #: sitting in the FR column stay unread rather than guessed.
+#: The page may carry one thousands comma, the Bluebook's spelling ("88 Fed.
+#: Reg. 12,345"): until 2026-09-23 the page stopped at the comma and this read
+#: page 12. Only one comma followed by exactly three digits is a thousands
+#: comma, so a list ("89 FR 91529, 91530" or "91529,91530") still reads its
+#: first page whole, and a number no page reaches ("1,234,567") reads as none.
 _FR_CITATION_FORM = re.compile(
     # "Fed"/"FED" both read (the timetable builder uppercases its column
     # before parsing); the opening capitals stay required either way.
-    rf"{_LEFT}(?P<volume>[1-9]\d{{0,2}})\s*-?\s*(?:FR|F[Ee][Dd]\.?\s?R[Ee][Gg]\.?)\s*-?\s*(?P<page>\d{{1,6}}){_RIGHT}"
+    rf"{_LEFT}(?P<volume>[1-9]\d{{0,2}})\s*-?\s*(?:FR|F[Ee][Dd]\.?\s?R[Ee][Gg]\.?)\s*-?\s*"
+    rf"(?P<page>\d{{1,3}},\d{{3}}(?![\d,])|\d{{1,6}}(?!,\d{{3}}(?!\d))){_RIGHT}"
 )
 
 #: "Stat" must be capitalized for the same reason, and the digit ranges are
@@ -2165,11 +2205,11 @@ def _part_is_plausible(part: str | None) -> bool | None:
 
 
 def _canonical_part(part: str | None) -> str | None:
-    """Strip leading zeros: the part is a JOIN KEY, and "0718" must meet "718"."""
+    """Strip leading zeros and a wrapped hyphen's space: the part is a JOIN KEY, and "0718" must meet "718"."""
 
     if part is None:
         return None
-    head, separator, tail = part.partition("-")
+    head, separator, tail = re.sub(r"-[ \t]+", "-", part).partition("-")
     return (head.lstrip("0") or "0") + separator + tail
 
 
@@ -4879,13 +4919,24 @@ def parse_supreme_court_citation(citation: object, source_url: object) -> Suprem
     )
 
 
-def parse_federal_register_citations(text: str) -> tuple[FederalRegisterCitation, ...]:
-    """Every Federal Register citation in one string, in order.
+@dataclass(frozen=True)
+class FederalRegisterCitationOccurrence:
+    """A Federal Register citation with its exact, codepoint-indexed source slice."""
+
+    citation: FederalRegisterCitation
+    start: int
+    end: int
+    text: str
+
+
+def find_federal_register_citations(text: str) -> tuple[FederalRegisterCitationOccurrence, ...]:
+    """Every Federal Register citation in one string, in order, with where it was read.
 
     The Unified Agenda's timetable field writes these as the whole value
     ("89 FR 91529"); prose writes them inline. Uppercase "FR" is required —
     lowercase is ordinary prose, the same capitalization-as-evidence rule the
-    bare "EO" and "Stat" forms carry.
+    bare "EO" and "Stat" forms carry. The match runs over the dash-folded
+    text, one character for one, so spans index ``text`` itself.
     """
 
     normalized = _normalize_dashes(text)
@@ -4893,10 +4944,21 @@ def parse_federal_register_citations(text: str) -> tuple[FederalRegisterCitation
         # The page reads through leading zeros ("62 FR 04670" occurs in the
         # Agenda's own field) by integer value — the third appearance of the
         # zero-padding lesson today. Page 0 does not exist and stays unread.
-        FederalRegisterCitation(volume=int(m.group("volume")), page=int(m.group("page")))
+        FederalRegisterCitationOccurrence(
+            FederalRegisterCitation(volume=int(m.group("volume")), page=page),
+            m.start(),
+            m.end(),
+            text[m.start() : m.end()],
+        )
         for m in _FR_CITATION_FORM.finditer(normalized)
-        if int(m.group("page")) > 0
+        if (page := int(m.group("page").replace(",", ""))) > 0
     )
+
+
+def parse_federal_register_citations(text: str) -> tuple[FederalRegisterCitation, ...]:
+    """Every Federal Register citation in one string, in order: :func:`find_federal_register_citations` without spans."""
+
+    return tuple(occurrence.citation for occurrence in find_federal_register_citations(text))
 
 
 # --------------------------------------------------------------------------- #

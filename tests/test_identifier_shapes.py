@@ -26,6 +26,7 @@ from spicy_docs.interpretation import identifier_shapes
 from spicy_docs.interpretation.identifier_shapes import (
     BARE_LEGACY_FEDERAL_REGISTER_DOCUMENT_NUMBER,
     FEDERAL_REGISTER_DOCUMENT_NUMBER,
+    PUBLISHED_RIN,
     IdentifierCandidate,
     IdentifierKind,
     NumberingSystem,
@@ -36,9 +37,11 @@ from spicy_docs.interpretation.identifier_shapes import (
     is_regulation_identifier_number,
     keep_longest_then_most_specific,
     normalize_docket_reference,
+    normalize_docket_references,
     normalize_regsgov_identifier,
     normalize_rin,
     numbering_system,
+    published_rin,
     unpadded_federal_register_document_number,
 )
 
@@ -360,13 +363,17 @@ def test_docket_stripping_never_mutilates_a_numbered_label() -> None:
 
 
 def test_a_docket_must_end_on_the_sequence_it_is_keyed_by() -> None:
-    """The suffixed spellings keep refusing: the shape must end on digits.
+    """The suffixed spellings keep refusing: the shape must end on digits, or on one of the five closed tokens.
 
     "Internal Agency Docket No. FEMA-1971-DR" (2,918 distinct references) is
     refused for the same reason, not for the two words in front of its label.
+    RefSpec's copy of this test also expected "GIPSA-2008-FGIS-0002-NONRULEMAKING"
+    refused; the prose reader already read that family as the docket the
+    publisher states, and since 2026-09-23 the column reader does too (see the
+    segment tests at the end of this file).
     """
 
-    assert normalize_docket_reference("GIPSA-2008-FGIS-0002-NONRULEMAKING") is None
+    assert normalize_docket_reference("GIPSA-2008-FGIS-0002-NONRULEMAKING") == "GIPSA-2008-FGIS-0002-NONRULEMAKING"
     assert normalize_docket_reference("Internal Agency Docket No. FEMA-1971-DR") is None
 
 
@@ -1498,6 +1505,15 @@ def test_a_prefix_shared_with_a_real_agency_is_left_alone() -> None:
         ("2015\u201307390", "2015-7390"),
         # A sequence that is all zeros keeps one digit rather than vanishing.
         ("2010-00000", "2010-0"),
+        # Only the sequence moves: a correction keeps its year, and its key is
+        # a fixed point although the correction form's five-digit tail refuses
+        # the key as written.
+        ("C1-2012-09978", "C1-2012-9978"),
+        ("C1-2012-9978", "C1-2012-9978"),
+        # A six-digit tail the shape refuses as written, whose key is a legacy
+        # number: the one missing reference the survey's rule resolved and the
+        # first version of this key did not.
+        ("E8-030520", "E8-30520"),
         # Already unpadded, and folded like every other reader here.
         ("2010-2394", "2010-2394"),
         (" e9-09366 ", "E9-9366"),
@@ -1517,7 +1533,7 @@ def test_a_document_number_reduces_to_its_unpadded_key(stated: str, key: str) ->
         "1625-AA00",  # a RIN
         "89 FR 12345",  # a citation, not a number
         "2014-04654s",  # colophon damage the column itself carries
-        "E8-030520",  # a one-digit-prefix six-digit tail: refused by the shape, not guessed
+        "2010-1234567",  # no padding of it is a document number
         "",
         None,
     ],
@@ -1527,10 +1543,26 @@ def test_only_a_document_number_has_a_key(value: object) -> None:
     assert unpadded_federal_register_document_number(value) is None
 
 
-def test_only_the_sequence_moves_and_the_key_is_taken_once() -> None:
-    """A correction keeps its year; its key falls below the correction form and so is not re-keyed."""
-    assert unpadded_federal_register_document_number("C1-2012-09978") == "C1-2012-9978"
-    assert unpadded_federal_register_document_number("C1-2012-9978") is None
+def test_the_key_is_idempotent_over_every_form_the_module_reads() -> None:
+    """Keying a key changes nothing, for a specimen of every document-number production here."""
+    specimens = [
+        "2012-00019",
+        "2010-1",
+        "09-19806",
+        "00-1",
+        "94-120124",
+        "E9-654",
+        "X10-11220",
+        "X09-101207",
+        "E3-2013-2261",
+        "C1-2012-09978",
+        "R1-2010-13257",
+        "R1-10679",
+    ]
+    for specimen in specimens:
+        key = unpadded_federal_register_document_number(specimen)
+        assert key is not None, specimen
+        assert unpadded_federal_register_document_number(key) == key, specimen
 
 
 def test_the_key_is_compared_on_both_sides_and_refused_where_it_collides() -> None:
@@ -1549,3 +1581,122 @@ def test_the_key_is_compared_on_both_sides_and_refused_where_it_collides() -> No
 def test_a_labelled_docket_is_read_behind_its_label() -> None:
     """The rulemaking tables' own specimen: the FR docket column states the label."""
     assert normalize_docket_reference("Docket No. SSA-2010-0037") == "SSA-2010-0037"
+
+
+# --------------------------------------------------------------------------- #
+# New in spicy-docs: the one RIN shape a published key may take.
+
+
+def test_the_published_rin_is_the_narrow_shape_and_folds_like_every_reader() -> None:
+    """Four digits, two capitals, two digits; case and dash folded; nothing wider ever a key."""
+    assert PUBLISHED_RIN == r"\d{4}-[A-Z]{2}\d{2}"
+    assert published_rin("3133-AF97") == "3133-AF97"
+    assert published_rin(" 3133\u2013af97 ") == "3133-AF97"
+    # The wide detector admits these; a published key never does.
+    for damaged in ("1625-AAOO", "2060-XXXX", "0648-XA123", "0648-A110"):
+        assert published_rin(damaged) is None, damaged
+    assert normalize_rin("1625-AAOO") == "1625-AAOO"
+    # A value that merely contains one is not one.
+    assert published_rin("RIN 3133-AF97") is None
+
+
+# --------------------------------------------------------------------------- #
+# New in spicy-docs: the column reader takes the prose reader's closed trailing
+# tokens. 67 of the retained Regulations.gov documents table's 278,370 distinct
+# docket ids end on one, each the publisher's own statement of a document's
+# docket, and the column reader refused every one until 2026-09-23.
+
+
+@pytest.mark.parametrize(
+    "docket",
+    [
+        "GIPSA-2006-FGIS-0029-NONRULE",
+        "GIPSA-2006-PSP-0028-RULE",
+        "GIPSA-2010-FGIS-0014-NONRULEMAKING",
+        "GIPSA-2009-FGIS-0011-RULEMAKING",
+    ],
+)
+def test_a_docket_ending_on_a_segment_token_is_read_as_itself(docket: str) -> None:
+    """The column reader and the prose reader now read one convention, written once."""
+    assert normalize_docket_reference(docket) == docket
+    assert normalize_docket_reference(f"Docket #{docket}") == docket
+    assert [c.value for c in detect_identifier_shapes(docket) if c.kind is IdentifierKind.DOCKET] == [docket]
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "GIPSA-2008-FGIS-0002-WITHDRAWN",  # a sixth token is not one of the five
+        "FEMA-1971-DR",  # the fence the digits-last rule exists for
+        "Internal Agency Docket No. FEMA-1971-DR",
+        "GSA-NA-2005",  # a real docket with no sequence: its silhouette is every such number's
+    ],
+)
+def test_the_segment_admits_only_its_five_tokens_after_a_sequence(value: str) -> None:
+    """Only a closed token after a real sequence is admitted; the refused shapes stay refused."""
+    assert normalize_docket_reference(value) is None
+
+
+# --------------------------------------------------------------------------- #
+# New in spicy-docs: every docket a docket-column reference names. Specimens
+# are real ``fr_docket_links.docket_id`` values from the rulemaking build,
+# each naming a docket the Regulations.gov dockets table holds; 5,825 such
+# link rows were refused by the single reader.
+
+
+@pytest.mark.parametrize(
+    ("reference", "dockets"),
+    [
+        # A longer label.
+        ("Docket ID No. BOEM-2011-0076", ("BOEM-2011-0076",)),
+        ("Docket ID Number: DOT-OST-2026-2707", ("DOT-OST-2026-2707",)),
+        ("Docket ID. FMCSA-2009-0154", ("FMCSA-2009-0154",)),
+        ("U.S. DOT Docket Number NHTSA-2001-8797", ("NHTSA-2001-8797",)),
+        ("Waiver Petition Docket Number FRA-2000-6877", ("FRA-2000-6877",)),
+        ("Document Number AMS-FV-09-0022", ("AMS-FV-09-0022",)),
+        ("FDMS No. NARA-18-0003", ("NARA-18-0003",)),
+        ("No. CPSC-2010-0022", ("CPSC-2010-0022",)),
+        ("[Docket No. FAA-2022-1316", ("FAA-2022-1316",)),
+        # A note after the docket, whose numbers end the reading.
+        ("EPA-HQ-OAR-2002-0086, FRL-8231-8", ("EPA-HQ-OAR-2002-0086",)),
+        ("Docket No. FRA-2005-23281, Notice No. 2", ("FRA-2005-23281",)),
+        ("Docket No. PHMSA-2012-0257 (HM-258)", ("PHMSA-2012-0257",)),
+        ("Docket No. FAA-2007-27723 Directorate Identifier 2007-CE-029-AD", ("FAA-2007-27723",)),
+        ("Docket Number CDC-2018-0050, NIOSH-314", ("CDC-2018-0050",)),
+        ("Document Number AMS-SC-19-0103, SC-20-326", ("AMS-SC-19-0103",)),
+        ("EPA-R06-RCRA-2008-0756-", ("EPA-R06-RCRA-2008-0756",)),
+        # A list: every member.
+        ("Docket Nos. FDA-2009-E-0202 and FDA-2009-E-0204", ("FDA-2009-E-0202", "FDA-2009-E-0204")),
+        ("EPA-HQ-OPP-2013-0654 and EPA-HQ-OPP-2013-0655", ("EPA-HQ-OPP-2013-0654", "EPA-HQ-OPP-2013-0655")),
+        (
+            "Docket Nos. FAA-2007-0410, FAA-2007-0411, and FAA-2007-0412",
+            ("FAA-2007-0410", "FAA-2007-0411", "FAA-2007-0412"),
+        ),
+        ("and FDA-2015-N-1837", ("FDA-2015-N-1837",)),
+        # A whole docket is still the single reader's answer.
+        ("GIPSA-2010-FGIS-0014-NONRULEMAKING", ("GIPSA-2010-FGIS-0014-NONRULEMAKING",)),
+    ],
+)
+def test_every_docket_a_reference_names_is_read(reference: str, dockets: tuple[str, ...]) -> None:
+    """Labels, notes and lists around a docket are presentation; each docket named is returned, in order."""
+    assert normalize_docket_references(reference) == dockets
+
+
+@pytest.mark.parametrize(
+    "reference",
+    [
+        "File No. SR-Amex-2003-102",  # another system's label: no docket noun, nothing read
+        "MM Docket No. 98-213",
+        "ER00-2089-000",  # FERC, fenced as the single reader fences it
+        "Internal Agency Docket No. FEMA-4319-DR",
+        "WO-150-1820-00 1A",  # a serial with a number after it, not a docket with a note
+        "FAR Case 2017-014, Docket No. FAR-2017-0014",  # not a search: it must open on a docket
+        "see the docket for FDA-2015-N-1837",
+        "Docket No.",
+        "",
+        None,
+    ],
+)
+def test_a_reference_that_does_not_open_on_a_docket_names_none(reference: object) -> None:
+    """The reader walks a docket column's value; it does not search prose for anything docket-shaped."""
+    assert normalize_docket_references(reference) == ()

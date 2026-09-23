@@ -90,7 +90,7 @@ def test_a_missing_report_nature_is_unmatched_not_an_error() -> None:
 
 
 def test_the_rule_is_the_maps_own_pattern() -> None:
-    """The map tool's pattern, character for character, so the two cannot drift apart unnoticed."""
+    """The measured label over the one published RIN shape; the map tool now reads this same compiled rule."""
     assert REPORT_NATURE_RIN.pattern == r"RIN:?\s*(\d{4}-[A-Z]{2}\d{2})"
 
 
