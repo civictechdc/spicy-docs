@@ -2,7 +2,7 @@
 
 The family profiles that compose Rulespec's `DocumentCapture v1` parent
 schema. The parent, profile meta-schema and invariant validator come from the
-installed `rulespec-artifacts==1.1.0` wheel, pinned by digest in `PINS.json`. A capture validates against the parent and
+installed `rulespec-artifacts==1.1.1` wheel, pinned by digest in `PINS.json`. A capture validates against the parent and
 its family profile and records both pins. The design record is
 [`docs/research/document-capture-schema-2026-09-19.md`](../../../../../docs/research/document-capture-schema-2026-09-19.md);
 the worked conversions are produced by `tools/analysis/document_capture.py`
