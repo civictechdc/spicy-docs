@@ -1,0 +1,41 @@
+<?xml version='1.0' encoding='utf-8'?>
+<CFRDOC xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CFRMergedXML.xsd">
+ <TITLE>
+  <CHAPTER>
+   <SUBCHAP TYPE="N">
+    <PART>
+     <EAR>Pt. 1208</EAR>
+     <HD SOURCE="HED">PART 1209—RULES OF PRACTICE AND PROCEDURE</HD>
+     <SUBPART>
+      <HD SOURCE="HED">Subpart A—Scope and Authority</HD>
+      <SECTION>
+       <SECTNO>§ 1209.1</SECTNO>
+       <SUBJECT>Scope.</SUBJECT>
+      </SECTION>
+     </SUBPART>
+    </PART>
+   </SUBCHAP>
+   <SUBCHAP TYPE="P">
+    <PART>
+     <EAR>Pt. 1282</EAR>
+     <HD SOURCE="HED">PART 1282—ENTERPRISE HOUSING GOALS AND MISSION</HD>
+     <SUBPART>
+      <HD SOURCE="HED">Subpart A—General</HD>
+      <SECTION>
+       <SECTNO>§ 1282.1</SECTNO>
+       <SUBJECT>Definitions.</SUBJECT>
+       <EFFDNOTP>
+        <REVTXT>
+         <SECTION>
+          <SECTNO>§ 1282.1</SECTNO>
+          <SUBJECT>Definitions.</SUBJECT>
+         </SECTION>
+        </REVTXT>
+       </EFFDNOTP>
+      </SECTION>
+     </SUBPART>
+    </PART>
+   </SUBCHAP>
+  </CHAPTER>
+ </TITLE>
+</CFRDOC>

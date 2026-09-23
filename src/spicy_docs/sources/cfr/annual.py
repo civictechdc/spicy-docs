@@ -1,11 +1,39 @@
-"""Annual CFR bulk volumes and explicitly selected GovInfo section granules."""
+"""Annual CFR bulk volumes, their sections' printed PART ancestry, and explicitly selected GovInfo section granules."""
 
 from __future__ import annotations
 
 import re
+from collections import Counter
+from dataclasses import dataclass
 
 from ._xml import IdentityXmlScan
 from .models import DEFAULT_MAX_BYTES, AnnualCfrSelection, CfrSourceError, CfrXmlMetadata, _date
+
+# GovInfo spells a section granule from the printed number with `§`, whitespace
+# and parentheses dropped and dashes and periods folded to `-`: `§ 1.1(h)-1` is
+# `sec1-1h-1`, `Sec. 1-1` is `secSec-1-1`. Over the 262 volumes behind the
+# published table only appendix, TOC and four content granules stay unmatched
+# (docs/research/parsing-survey-2026-09-23.md §4).
+_GRANULE_DROP = re.compile(r"[\s§()]")
+_GRANULE_FOLD = str.maketrans("—–.", "---")
+
+# `PART` elements carry no attributes: the part exists only as heading text.
+# `\s*` admits headings that begin with a newline (12 CFR 326). Matching before
+# any dash folding keeps `PART 8—4-H CLUB` at 8 and `PART 124—8(a)` at 124;
+# `-(?=[A-Za-z])` ends `PART 1-POSTAL POLICY` at 1 and keeps compound `50-201`.
+_PART_NUMBER = r"[0-9]+[A-Za-z]?(?:-[0-9]+[A-Za-z]?)*"
+_HEADINGS = {
+    tag: re.compile(rf"\s*{tag}\s+({_PART_NUMBER})(?=[—–\s]|-(?=[A-Za-z])|$)", re.IGNORECASE)
+    for tag in ("PART", "SUBPART")
+}
+_PRINTED_PART = re.compile(rf"({_PART_NUMBER})\.")
+_RANGE = re.compile(r"§§|through|[—–,]", re.IGNORECASE)
+_REVISIONS = frozenset({"EFFDNOT", "EFFDNOTP", "REVTXT"})
+
+
+def annual_cfr_granule_token(number: str) -> str:
+    """Spell a printed section number as GovInfo's granule id does after ``-sec``."""
+    return _GRANULE_DROP.sub("", number).translate(_GRANULE_FOLD)
 
 
 def annual_cfr_xml_locator(identity: AnnualCfrSelection) -> str:
@@ -14,15 +42,107 @@ def annual_cfr_xml_locator(identity: AnnualCfrSelection) -> str:
         raise CfrSourceError("identity must be an AnnualCfrSelection")
     package = f"CFR-{identity.year}-title{identity.title}-vol{identity.volume}"
     if identity.section is not None:
-        granule = package + "-sec" + identity.section.replace(".", "-")
+        granule = package + "-sec" + annual_cfr_granule_token(identity.section)
         return f"https://www.govinfo.gov/content/pkg/{package}/xml/{granule}.xml"
     return f"https://www.govinfo.gov/bulkdata/CFR/{identity.year}/title-{identity.title}/{package}.xml"
 
 
+@dataclass(frozen=True, slots=True)
+class AnnualCfrSectionNumber:
+    """A printed section number split into the citation parts of its heading part.
+
+    ``number`` drops ``§``, whitespace and one trailing period. ``printed_part``
+    is its own leading part (1601 for ``1601.0-1``), ``None`` for unprefixed
+    forms such as ``Section 01`` and ``Sec. 1-1``. ``section`` is the number
+    less its heading ``{part}.`` prefix when it has one, else the whole number.
+    ``range`` marks ``§§``, ``through``, dash- and comma-joined and
+    repeated-prefix spans (``§ 1.404(a)-4-1.404(a)-7``). ``mismatch`` marks a
+    printed part that is neither the heading part nor the enclosing subpart's
+    number: publisher typos (``§ 206.253`` under ``PART 1206``) and Title 14
+    Part 241's ``19-8.1``. ``citation`` is ``number`` when it cites one section
+    under a known heading part, else ``None``. Title 43 numbers sections by subpart
+    (§ 1601.0-1 in ``PART 1600``, ``Subpart 1601``); its printed number is the
+    citation while the part stays 1600.
+    """
+
+    number: str
+    printed_part: str | None
+    section: str
+    citation: str | None
+    range: bool
+    mismatch: bool
+
+
+def split_annual_cfr_section(number: str, part: str | None, subpart: str | None) -> AnnualCfrSectionNumber:
+    """Split a printed SECTNO under its heading ``part`` and numbered ``subpart`` (see ``AnnualCfrSection``)."""
+    bare = re.sub(r"[\s§]", "", number).removesuffix(".")
+    printed = _PRINTED_PART.match(bare)
+    printed_part = printed[1] if printed else None
+    section = bare.removeprefix(f"{part}.") if part is not None else bare
+    # A later number restating a part prefix is a span (`§ 141.15-141.19`,
+    # `1509.203-1519.204` under PART 1519); any `-N.` is not: `109-38.301-1.50`.
+    rest = bare[printed.end() :] if printed else ""
+    spans = _RANGE.search(number) is not None or any(f"-{p}." in rest for p in (printed_part, part, subpart) if p)
+    mismatch = printed_part is not None and part is not None and printed_part not in (part, subpart)
+    citable = printed_part is not None and part is not None and not spans and not mismatch
+    return AnnualCfrSectionNumber(bare, printed_part, section, bare if citable else None, spans, mismatch)
+
+
+@dataclass(frozen=True, slots=True)
+class AnnualCfrSection:
+    """One SECTION of an annual CFR volume and the PART heading that encloses it.
+
+    ``number`` is its first SECTNO's text as printed, empty when it prints none.
+    ``part`` is the innermost enclosing PART's heading number (``PART
+    50-201—…`` gives ``50-201``), ``None`` where that PART prints no numbered
+    heading or no PART encloses the section (back-matter reprints of OMB
+    sections). The running head never substitutes:
+    some are wrong (``Pt. 1208`` over ``PART 1209``), so ``running_head`` keeps
+    that PART's EAR text for diagnostics only. ``subpart`` is the innermost
+    SUBPART heading's number when it is numbered like a part (Title 43's
+    ``Subpart 1601``). ``granule`` is GovInfo's section token for ``number``.
+
+    ``nested`` sections sit inside another SECTION; ``revised`` ones inside
+    revised text or an effective-date note; ``reserved`` ones hold a RESERVED
+    element. Where a granule token recurs, the first un-nested copy (else the
+    first copy) is ``canonical``; ``repeated`` marks every copy of a token that
+    more than one un-nested SECTION prints. Split ``number`` for citation with
+    ``split_annual_cfr_section(number, part, subpart)``.
+    """
+
+    number: str
+    part: str | None
+    subpart: str | None
+    running_head: str | None
+    granule: str
+    nested: bool
+    revised: bool
+    reserved: bool
+    canonical: bool
+    repeated: bool
+
+
+@dataclass(slots=True)
+class _Division:
+    depth: int
+    heading: str | None = None
+    running_head: str | None = None
+    number: str | None = None
+
+
+@dataclass(slots=True)
+class _Section:
+    part: _Division | None
+    subpart: _Division | None
+    nested: bool
+    revised: bool
+    number: str | None = None
+    reserved: bool = False
+
+
 class _AnnualScan(IdentityXmlScan):
-    def __init__(self, identity: AnnualCfrSelection) -> None:
-        self.identity = identity
-        self.expected_root = "CFRGRANULE" if identity.section is not None else "CFRDOC"
+    def __init__(self, expected_root: str) -> None:
+        self.expected_root = expected_root
         self.header = (self.expected_root, "FDSYS")
         self.front = (self.expected_root, "FMTR", "TITLEPG")
         super().__init__(
@@ -45,12 +165,107 @@ class _AnnualScan(IdentityXmlScan):
             self.sections += 1
 
     def observe_text(self, text: str) -> None:
-        if not text.strip() or "SECTION" not in self.path:
+        # Once found, stop rebuilding the path per text node: a volume has millions.
+        if self.body_found or not text.strip() or "SECTION" not in self.path:
             return
         if any(tag in {"P", "FP", "PSPACE", "ENTRY", "ENT", "TD", "RESERVED"} for tag in self.path) or self.path[
             -2:
         ] == ("GPH", "GID"):
             self.body_found = True
+
+
+class _AncestryScan(_AnnualScan):
+    """Keep open PART, SUBPART and SECTION frames; capture only their heading and number text."""
+
+    def __init__(self) -> None:
+        super().__init__("CFRDOC")
+        self.divisions: dict[str, list[_Division]] = {"PART": [], "SUBPART": []}
+        self.open: list[_Section] = []
+        self.found: list[_Section] = []
+        self.revisions = 0
+        self.capture: tuple[_Division | _Section, str, int, list[str]] | None = None
+
+    def observe_start(self, tag: str, attributes: dict[str, str]) -> None:
+        super().observe_start(tag, attributes)
+        parent = self.stack[-2][0] if len(self.stack) > 1 else ""
+        if tag in self.divisions:
+            self.divisions[tag].append(_Division(len(self.stack)))
+        elif tag == "SECTION":
+            parts, subparts = self.divisions["PART"], self.divisions["SUBPART"]
+            part = parts[-1] if parts else None
+            subpart = subparts[-1] if subparts and (part is None or subparts[-1].depth > part.depth) else None
+            section = _Section(part, subpart, bool(self.open), self.revisions > 0)
+            self.open.append(section)
+            self.found.append(section)
+        elif tag in _REVISIONS:
+            self.revisions += 1
+        if parent == "SECTION" and tag == "RESERVED":
+            self.open[-1].reserved = True
+        if self.capture is not None:
+            return
+        target: _Division | _Section | None = None
+        if parent in self.divisions and (tag == "HD" or (tag == "EAR" and parent == "PART")):
+            target = self.divisions[parent][-1]
+        elif parent == "SECTION" and tag == "SECTNO":
+            target = self.open[-1]
+        field = {"HD": "heading", "EAR": "running_head", "SECTNO": "number"}.get(tag)
+        if target is not None and field is not None and getattr(target, field) is None:
+            self.capture = (target, field, len(self.stack), [])
+
+    def observe_text(self, text: str) -> None:
+        super().observe_text(text)
+        if self.capture is not None:
+            self.capture[3].append(text)
+
+    def observe_end(self, tag: str) -> None:
+        if self.capture is not None and self.capture[2] == len(self.stack):
+            target, field, _depth, pieces = self.capture
+            setattr(target, field, "".join(pieces))
+            if isinstance(target, _Division) and field == "heading":
+                match = _HEADINGS[self.stack[-2][0]].match(target.heading or "")
+                target.number = match[1] if match else None
+            self.capture = None
+        if tag in self.divisions:
+            self.divisions[tag].pop()
+        elif tag == "SECTION":
+            self.open.pop()
+        elif tag in _REVISIONS:
+            self.revisions -= 1
+
+
+def scan_annual_cfr_sections(xml: bytes, *, max_bytes: int = DEFAULT_MAX_BYTES) -> tuple[AnnualCfrSection, ...]:
+    """Every SECTION of one annual volume (CFRDOC) in document order, in one streaming pass.
+
+    Reads the heading, never the section number or granule id, for the part:
+    Title 43 numbers sections by subpart, Title 41's compound parts contain a
+    hyphen and Title 14 Part 241 prints ``19-8.1``. Nested and repeated copies
+    stay; ``canonical`` picks one per granule token. Identity is the
+    acquisition's job (``validate_annual_cfr_xml``); this refuses only a
+    non-volume root, nested document roots and unsafe or oversized XML.
+    """
+    scan = _AncestryScan()
+    scan.read(xml, max_bytes)
+    tokens = [annual_cfr_granule_token(section.number or "") for section in scan.found]
+    first: dict[str, int] = {}
+    outer = Counter(token for token, section in zip(tokens, scan.found, strict=True) if not section.nested)
+    for index, (token, section) in enumerate(zip(tokens, scan.found, strict=True)):
+        if token not in first or (not section.nested and scan.found[first[token]].nested):
+            first[token] = index
+    return tuple(
+        AnnualCfrSection(
+            section.number or "",
+            section.part.number if section.part else None,
+            section.subpart.number if section.subpart else None,
+            section.part.running_head if section.part else None,
+            token,
+            section.nested,
+            section.revised,
+            section.reserved,
+            first[token] == index,
+            outer[token] > 1,
+        )
+        for index, (token, section) in enumerate(zip(tokens, scan.found, strict=True))
+    )
 
 
 def _integer(value: str, label: str) -> int:
@@ -75,7 +290,7 @@ def validate_annual_cfr_xml(
     """
     if final_url != annual_cfr_xml_locator(identity):
         raise CfrSourceError("annual CFR response URL differs from the requested edition and scope")
-    scan = _AnnualScan(identity)
+    scan = _AnnualScan("CFRGRANULE" if identity.section is not None else "CFRDOC")
     scan.read(body, max_bytes)
     if not scan.body_found:
         raise CfrSourceError("annual CFR XML lacks source section content")

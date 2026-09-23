@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='utf-8'?>
+<CFRDOC xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CFRMergedXML.xsd">
+ <TITLE>
+  <CHAPTER>
+   <SUBCHAP TYPE="N">
+    <PART>
+     <EAR>Pt. 1</EAR>
+     <HD SOURCE="HED">PART 1-POSTAL POLICY (ARTICLE I)</HD>
+     <SECTION>
+      <SECTNO>§ 1.1</SECTNO>
+      <SUBJECT>Establishment of the U.S. Postal Service.</SUBJECT>
+     </SECTION>
+    </PART>
+   </SUBCHAP>
+  </CHAPTER>
+ </TITLE>
+</CFRDOC>

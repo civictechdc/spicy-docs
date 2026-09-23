@@ -80,6 +80,30 @@ Use `acquire_annual(AnnualCfrSelection(...))`, `acquire_ecfr_bulk(title)` or
 `acquire_ecfr_titles()` for the other routes. Pure validators accept retained
 XML plus the expected selection and final URL for offline checks.
 
+## Place annual sections under their parts
+
+`scan_annual_cfr_sections(xml)` reads one acquired annual volume (`CFRDOC`) in
+a single streaming pass and returns every SECTION in document order. Its part
+is the number in the innermost enclosing `PART` heading, because neither the
+printed section number nor the GovInfo granule id establishes it: Title 43
+numbers sections by subpart (§ 1601.0-1 is in Part 1600), Title 41's compound
+parts contain a hyphen (`50-201`) and Title 14 Part 241 prints `19-8.1`. The
+running head is kept for diagnostics only; some are wrong. A section under a
+PART that prints no heading, or outside every PART, has no part.
+
+Look a granule up by `granule` among the `canonical` sections. Nested copies
+(revised text under effective-date notes, one wrapper section in Title 41) stay
+in the result; the un-nested copy answers, and `repeated` marks numbers printed
+twice outside nesting. `split_annual_cfr_section(number, part, subpart)` gives
+the `section` and, for one citable section, its printed `citation`: Title 43's
+subpart-numbered sections cite as printed while their part stays the heading's.
+Ranges, publisher typos (`§ 206.253` under `PART 1206`) and unprefixed forms
+such as `Sec. 1-1` have none.
+
+Over the 262 retained 2025–2026 volumes, an independent lxml tree scan agrees
+on every section's number, nesting and enclosing PART heading; the receipt is in
+`corpora/supply-2026-09-02/receipts/cfr-section-ancestry-2026-09-23/`.
+
 ## Read dates and identity honestly
 
 `identity_basis` identifies native XML fields and fields supported only by the

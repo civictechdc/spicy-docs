@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='utf-8'?>
+<CFRDOC xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CFRMergedXML.xsd">
+ <BMTR>
+  <OMBNOS>
+   <SECTION>
+    <SECTNO>1.106</SECTNO>
+    <SUBJECT>OMB approval under the Paperwork Reduction Act.</SUBJECT>
+   </SECTION>
+  </OMBNOS>
+ </BMTR>
+</CFRDOC>

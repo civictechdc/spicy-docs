@@ -16,6 +16,7 @@ coverage. Full captures and acquisition receipts stay outside the repository.
 | `annual-title30-vol3-sec716-2.xml` | SpicyRegs commit `a6ab98aa35825ce993023ad9b237a28d04bb153e`, `sample-data/document-files/cfr-xml-short.xml` | Unchanged archived GovInfo section fixture; this archive does not establish current route availability. |
 | `annual-title1-edition.xml` | GovInfo 2025 Title 1 volume 1 package MODS, captured 2026-09-12 | Root extension, originInfo and titleInfo elements; nested constituents omitted. |
 | `annual-title1-2023-edition.xml` | GovInfo 2023 Title 1 volume 1 package MODS, captured 2026-09-12 | Same extraction; explicitly states `isCoverOnly=false`. |
+| `ancestry/CFR-2025-*.xml` | GovInfo 2025 annual volume XML named by package, fetched 2026-09-23; byte counts and SHA-256 in `corpora/fork-execution-2026-09-21/cfr-ancestry-2026-09-23/fetch.json` | The element path to each selected PART and SECTION only: PARTs keep EAR, HD and RESERVED, SUBPARTs HD, SECTIONs SECTNO, SUBJECT and RESERVED; whitespace-only text is re-indented. |
 
 The API title and roster source receipts are in RefSpec's
 `research/evidence/ecfr-authority-notes-2026-08-24/manifest.json`.
@@ -35,6 +36,11 @@ the edition type from their difference.
 Receipts are under `corpora/supply-2026-09-02/receipts/cfr-parser-probe-2026-09-12/`.
 
 MODS receipts are under `corpora/supply-2026-09-02/receipts/cfr-edition-type-2026-09-12/`.
+
+The `ancestry/` excerpts are cut by `cut_fixtures.py` in
+`corpora/supply-2026-09-02/receipts/cfr-section-ancestry-2026-09-23/`, which
+also retains the whole-population check of `scan_annual_cfr_sections` over the
+262 volumes (`population.py`, output `population.json`).
 The complete 2025 MODS is 1,342,199 bytes, SHA-256
 `6ae66a2ba6939c1c0c307199dcab3ba69aa1e607f3a4640dc58ba17b2aa4ceed`;
 the 2023 MODS is 1,342,245 bytes, SHA-256
