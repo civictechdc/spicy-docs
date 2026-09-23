@@ -16,6 +16,7 @@ import zipfile
 
 import httpx
 import pytest
+from loguru import logger
 
 from spicy_docs.sources.sam_extract import (
     SamBulkExtract,
@@ -175,6 +176,13 @@ IN_PROGRESS = {
     "type": "Still in Progress",
     "errorCode": "FSP",
 }
+# The download's real answer to an Accept that rules out its gzip, ready or not (2026-09-23).
+NOT_ACCEPTABLE = {"title": "Invalid Accept Header", "detail": "No acceptable representation"}
+
+
+def _admits_gzip(accept: str) -> bool:
+    ranges = {part.split(";")[0].strip().lower() for part in accept.split(",")}
+    return bool(ranges & {"*/*", "application/*", "application/x-gzip"})
 
 
 def _extract(*ueis: str, total: int | None = None) -> bytes:
@@ -183,7 +191,10 @@ def _extract(*ueis: str, total: int | None = None) -> bytes:
 
 
 class _Publisher:
-    """A MockTransport answering the trigger with SENTENCE and the download from ``downloads`` in turn."""
+    """A MockTransport answering the trigger with SENTENCE and the download from ``downloads`` in turn.
+
+    Like SAM, it refuses a download whose ``Accept`` rules out gzip with 406 before looking at the file.
+    """
 
     def __init__(self, *downloads: httpx.Response, trigger: httpx.Response | None = None):
         self.downloads = list(downloads)
@@ -194,6 +205,8 @@ class _Publisher:
         self.requests.append(request)
         if request.url.path.endswith("/entities"):
             return self.trigger
+        if not _admits_gzip(request.headers.get("Accept", "")):
+            return httpx.Response(406, json=NOT_ACCEPTABLE)
         return self.downloads.pop(0)
 
     def reader(self, **kwargs) -> SamBulkExtract:
@@ -218,7 +231,26 @@ def test_the_download_polls_through_the_in_progress_answer():
         httpx.Response(200, content=_extract("A", "B")),
     )
     assert _ueis(publisher.reader().records()) == ["A", "B"]
-    assert len(publisher.requests) == 4
+    assert [request.headers["Accept"] for request in publisher.requests] == ["application/json", "*/*", "*/*", "*/*"]
+
+
+def test_each_distinct_in_progress_detail_is_logged_once():
+    later = {**IN_PROGRESS, "detail": "Still writing"}
+    publisher = _Publisher(
+        *[httpx.Response(400, json=body) for body in (IN_PROGRESS, IN_PROGRESS, later)],
+        httpx.Response(200, content=_extract("A")),
+    )
+    logged: list[str] = []
+    sink = logger.add(logged.append, level="DEBUG", format="{level} {message}")
+    try:
+        assert _ueis(publisher.reader().records()) == ["A"]
+    finally:
+        logger.remove(sink)
+    assert [line.strip() for line in logged if "still generating" in line] == [
+        "DEBUG SAM extract still generating: File Processing in Progress. Please check again later",
+        "DEBUG SAM extract still generating: Still writing",
+    ]
+    assert not any("secret" in line or "token=" in line for line in logged)
 
 
 def test_any_other_400_refuses():

@@ -3,8 +3,9 @@
 The Entity Management API's asynchronous extract (``format=json``) answers the
 trigger with a plain-text sentence naming a download URL whose ``api_key`` is
 the literal ``REPLACE_WITH_API_KEY`` placeholder; the download answers HTTP
-400 with ``errorCode`` ``FSP`` while the file generates (both measured
-2026-09-23). The trigger states no count, so the downloaded file's own
+400 with ``errorCode`` ``FSP`` while the file generates and serves the file
+only as ``application/x-gzip`` (all measured 2026-09-23). The trigger states
+no count, so the downloaded file's own
 ``totalRecords`` is the selection's count, and a floor: the file is written while
 registrations change, so it may hold more (never fewer) registrations, each keyed
 by UEI and EFT indicator (:func:`registrations`). The key travels merged into each
@@ -34,15 +35,28 @@ from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 import httpx
 from loguru import logger
 
+from spicy_docs.transport.credentials import scrub_credential
 from spicy_docs.transport.retry import retry_http
 
 API = "https://api.sam.gov/entity-information/v4"
 API_KEY_PLACEHOLDER = "REPLACE_WITH_API_KEY"
 
-# The async extract may not be ready on the first GET: poll with a fixed
-# interval up to this many attempts before refusing the selection.
-EXTRACT_POLL_MAX = 60
-EXTRACT_POLL_INTERVAL = 10.0
+# Each request states what it accepts. The download serves only application/x-gzip and answers
+# 406 "Invalid Accept Header" to Accept: application/json whether or not the file is ready, so a
+# client-wide JSON Accept failed every scheduled spicy-regs run on its first poll (run 35907412992);
+# */* gets the in-progress 400 JSON and then the file (measured 2026-09-23).
+_TRIGGER_ACCEPT = {"Accept": "application/json"}
+_DOWNLOAD_ACCEPT = {"Accept": "*/*"}
+
+# The download answers "still generating" until the file is written. The 2026 registration-year
+# extract (147,256 rows, 71.5 MB gzip) was still generating 21 minutes after its trigger and ready
+# at the next poll, 46 minutes after it; when in between it finished is unmeasured (2026-09-23;
+# receipts in corpora/fork-execution-2026-09-21/sam-initial-load-2026-09-23/). The default waits
+# 25 minutes, 30 s apart, because the spicy-regs sam_entities job has 30 minutes in all
+# (_rollup.yml's timeout_minutes default) and the reader should refuse before the job is
+# cancelled; a caller with a longer job passes a larger ``poll_max``.
+EXTRACT_POLL_INTERVAL = 30.0
+EXTRACT_POLL_MAX = 51  # the first poll at once, the last 50 intervals (25 minutes) later
 MAX_RETRIES = 5
 DEFAULT_TIMEOUT = httpx.Timeout(120.0, connect=30.0)
 
@@ -186,15 +200,15 @@ def find_extract_download_url(payload: object) -> str | None:
     return walk(payload) or fallback
 
 
-def _still_generating(response: httpx.Response) -> bool:
-    """True for SAM's in-progress answer: HTTP 400 whose JSON body carries ``errorCode`` ``FSP``."""
+def _in_progress(response: httpx.Response) -> dict | None:
+    """SAM's in-progress answer, an HTTP 400 JSON body carrying ``errorCode`` ``FSP``; otherwise None."""
     if response.status_code != 400:
-        return False
+        return None
     try:
         body = response.json()
     except ValueError:
-        return False
-    return isinstance(body, dict) and body.get("errorCode") == "FSP"
+        return None
+    return body if isinstance(body, dict) and body.get("errorCode") == "FSP" else None
 
 
 def reinject_extract_key(link: str, api_key: str) -> str:
@@ -322,8 +336,10 @@ class SamBulkExtract:
 
     ``api_key`` is sent as a query parameter (the publisher's contract for the
     extract route); links returned by the publisher have it masked and are
-    re-injected with the real key on the SAM host only. ``max_records`` bounds
-    emitted records, not downloaded bytes. Records yielded before a refusal are
+    re-injected with the real key on the SAM host only. ``poll_max`` polls
+    ``poll_interval`` seconds apart bound the wait for the file (see
+    :data:`EXTRACT_POLL_MAX`). ``max_records`` bounds emitted records, not
+    downloaded bytes. Records yielded before a refusal are
     partial — callers must exhaust the iterator before writing output.
     """
 
@@ -364,12 +380,7 @@ class SamBulkExtract:
         """Trigger the extract, download it, and yield validated entities."""
         self._seen = 0
         # Extract download URLs commonly 302 to a signed blob URL.
-        with httpx.Client(
-            timeout=DEFAULT_TIMEOUT,
-            headers={"Accept": "application/json"},
-            follow_redirects=True,
-            transport=self.transport,
-        ) as client:
+        with httpx.Client(timeout=DEFAULT_TIMEOUT, follow_redirects=True, transport=self.transport) as client:
             url = extract_entities_url(registration_status=self.registration_status, year=self.year)
             trigger = _body(self._get(client, url))
             if isinstance(trigger, dict) and "entityData" in trigger:
@@ -396,7 +407,7 @@ class SamBulkExtract:
         return self.max_records is None or self._seen < self.max_records
 
     def _get(self, client: httpx.Client, url: str) -> httpx.Response:
-        """GET ``url`` with the key merged into its own query, under bounded retries.
+        """GET the trigger ``url`` for JSON with the key merged into its own query, under bounded retries.
 
         Passing ``params`` to httpx replaces a URL's query rather than extending it, which
         silently dropped every selection filter (measured 2026-09-23: the trigger answered
@@ -405,7 +416,7 @@ class SamBulkExtract:
         keyed = httpx.URL(url).copy_merge_params({"api_key": self.api_key})
 
         def attempt() -> httpx.Response:
-            response = client.get(keyed)
+            response = client.get(keyed, headers=_TRIGGER_ACCEPT)
             if response.status_code == 429 or response.status_code >= 500:
                 raise httpx.HTTPStatusError("retryable", request=response.request, response=response)
             if response.status_code != 200:
@@ -419,9 +430,10 @@ class SamBulkExtract:
     def _download_records(self, client: httpx.Client, download_url: str) -> tuple[int, list[dict]]:
         """Poll the extract download until ready, then defensively parse its bytes."""
         url = reinject_extract_key(download_url, self.api_key)
+        details: set[str] = set()
         for attempt in range(1, self.poll_max + 1):
             try:
-                response = client.get(url)
+                response = client.get(url, headers=_DOWNLOAD_ACCEPT)
             except httpx.HTTPError:
                 if attempt == self.poll_max:
                     raise SamExtractError("SAM extract transport retries exhausted") from None
@@ -429,7 +441,13 @@ class SamBulkExtract:
                 continue
             # The file may still be generating: SAM answers 400 with errorCode FSP ("Extract
             # File Generation is Still in Progress", measured 2026-09-23), and 202/404/429/5xx.
-            if _still_generating(response) or response.status_code in (202, 404, 429) or response.status_code >= 500:
+            progress = _in_progress(response)
+            if progress is not None:
+                detail = scrub_credential(str(progress.get("detail", "")), self.api_key).strip()[:200]
+                if detail not in details:
+                    details.add(detail)
+                    logger.debug("SAM extract still generating: {}", detail)
+            if progress is not None or response.status_code in (202, 404, 429) or response.status_code >= 500:
                 if attempt == self.poll_max:
                     raise SamExtractError("SAM extract did not finish within its poll budget")
                 self.sleep(self.poll_interval)
