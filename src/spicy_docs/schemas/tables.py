@@ -236,9 +236,9 @@ def usc_section_key(section: object) -> str | None:
     """A U.S. Code section as a join key: trimmed, lower-cased, and every dash spelling an ASCII hyphen.
 
     Case carries no identity in the Code, but the publishers disagree on it. The classification tables print ``199A``
-    and ``1400Z-1``, where RefSpec's oracle and the citation grammar key ``199a`` and ``1400z-1``. The release point
-    also spells a compound section with an en dash where the tables print a hyphen. This is RefSpec's
-    ``normalize_section``, restated in this leaf so a shaper and the grammar fold one way. ``None`` stays ``None``.
+    and ``1400Z-1``, where RefSpec's oracle keys ``199a`` and ``1400z-1``. The release point also spells a compound
+    section with an en dash where the tables print a hyphen. This is RefSpec's ``normalize_section``, restated in this
+    leaf so a shaper and a citation reader fold one way; B4's grammar adopts it. ``None`` stays ``None``.
     See ``docs/decisions.md``, "U.S. Code section join keys are lower-cased on both sides".
     """
     if section is None:

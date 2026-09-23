@@ -1878,7 +1878,18 @@ may not import `interpretation` (see [Tables](tables.md)), and
 `interpretation.citations` already imports `schemas.tables`, so a helper there
 would have made an import cycle. On this branch the lower-casing grammar does
 not exist yet. `document_citations` still keys through `citations.py` rule 001,
-which keeps the printed case. The grammar that lower-cases is B4's
+which keeps the printed case and dashes (`26-199A`, `26-1400Z–1`). Until B4
+lands, a consumer must fold the citation's section through `usc_section_key`
+before joining `{usc_title}-{usc_section_key}`, or it misses every citation
+printed with a capital. The grammar that lower-cases is B4's
 `citation_grammar._usc_section`, which has its own `_DASH_SPELLINGS`. When B4
 lands, its grammar should fold through `usc_section_key` and `DASH_SPELLINGS`
-so that only one fold remains.
+so that only one fold remains. B4's sort helper, also named
+`_usc_section_key`, is renamed then, because it returns an ordering tuple and
+not this key.
+
+**Repinning spicy-regs moves its data dictionary.** Both tables gain a
+column, so the repin regenerates `data_dictionary/catalog.json` and its
+`.sha256`, `src/spicy_regs/table_metadata.json`, and the
+`docs/tables/law_code_sections.md` and `docs/tables/table3_records.md` pages
+(`uv run spicy-regs-dict generate`).

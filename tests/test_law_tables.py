@@ -197,9 +197,15 @@ def test_the_section_key_folds_case_and_dashes_and_leaves_a_plain_number_alone()
     assert shape_table3_record(went_nowhere, page=page, seq=2, observed_at=OBSERVED_AT)["usc_section_key"] is None
 
 
+#: The nine dash code points RefSpec's ``normalize_section`` folds, spelled here
+#: rather than read from ``DASH_SPELLINGS`` so dropping one from it fails.
+NINE_DASHES = ("\u2010", "\u2011", "\u2012", "\u2013", "\u2014", "\u2015", "\u2212", "\x96", "\x97")
+
+
 def test_every_dash_spelling_folds_to_one_ascii_hyphen():
     """Each of the nine dash spellings, and surrounding whitespace, fold away; ``None`` stays ``None``."""
-    assert {usc_section_key(f" 1400Z{dash}1 ") for dash in DASH_SPELLINGS} == {"1400z-1"}
+    assert set(DASH_SPELLINGS) == set(NINE_DASHES)
+    assert {usc_section_key(f" 1400Z{dash}1 ") for dash in NINE_DASHES} == {"1400z-1"}
     assert usc_section_key(None) is None
 
 

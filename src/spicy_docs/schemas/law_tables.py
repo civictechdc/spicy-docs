@@ -7,7 +7,9 @@ twice on one page.  ``congress_bills.statutes_at_large_cite`` stays NULL on purp
 the laws rollup acquires once per law, so the host joins ``laws`` on ``bill_id`` at merge time.
 
 Both OLRC tables append ``usc_section_key``, the printed ``usc_section`` folded by ``tables.usc_section_key``, so a
-citation keyed ``31-5318a`` meets a row printed ``5318A`` without every consumer folding at join time.  It is last on
+key folded the same way (``31-5318a``) meets a row printed ``5318A``.  The citation side is not folded yet:
+``document_citations``' ``usc_section`` rule 001 keeps the printed case, so a consumer folds it through the same helper
+until B4's grammar, which lower-cases and adopts the helper, lands.  The key is last on
 purpose: spicy-regs' ``merge_contract_table`` re-reads the contract, and its ``merge_table`` selects a column a prior
 Parquet file lacks as ``CAST(NULL AS VARCHAR)`` (``test_merge_null_fills_columns_the_prior_table_lacks``), so rows
 published before the column carry NULL until their scope is captured again.
@@ -32,8 +34,9 @@ USLM_OUTCOMES = ("captured", "unavailable", "not_requested")
 
 #: Both OLRC tables' appended join key, described once.
 _USC_SECTION_KEY = (
-    "usc_section as a join key: lower-cased, with every dash spelling an ASCII hyphen, the fold the citation grammar "
-    "and RefSpec's section oracle key on. NULL where usc_section is, and on rows published before the column existed."
+    "usc_section as a join key: lower-cased, with every dash spelling an ASCII hyphen, as RefSpec's section oracle "
+    "keys it. Fold the other side the same way (schemas.tables.usc_section_key): document_citations' usc_section rule "
+    "001 keeps the printed case and dashes. NULL where usc_section is, and on rows published before the column existed."
 )
 
 LAWS = table_contract(
