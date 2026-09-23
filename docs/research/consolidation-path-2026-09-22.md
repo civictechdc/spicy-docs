@@ -94,6 +94,10 @@ repositories carries the repository name (decision 15 in the spicy-regs decision
 | B24 | spicy-regs | `bill_subjects` from BILLSTATUS (one request per bill today, silently stopping after 4 pages), the API only below the 108th Congress; adopt `match_member`, `parse_package_id().collection`, `parse_xml` and `load_integer_json` where spicy-regs re-implements them (in progress, wt/regs-gaps). | {SV} §11 (map P6, P14) | published subjects unchanged |
 | B25 | spicy-regs | The remaining map gaps: `enrich_pdf` through `RegulationsGovAttachmentAcquirer` (with B17); one versioned rulemaking-stage rule (proceedings vs lifecycles); A7 widened to `fr_docket_links.docket_id`; the vote version columns after the backfill; timetable dates, RSS `pubDate` and FEC id shapes through spicy-docs; a public capture hook and an FR record-id decoder; one watermark and one env helper for the seven and five copies. | {SV} §11 (map P3, P8–P11, P13, P14) | each copy deleted with a test |
 | B26 | spicy-docs, then each family | Table contracts and projections for the non-Congress families (lobbying, SAM, USAspending, CourtListener, FCC, FEC, agenda, GAO), which today have only spicy-regs `_shape` functions; gives D3 and D6 an identity source. | {SV} §11 (map P7) | every published table has a contract |
+| B27 | RefSpec | Use rulespec-conformance's release digest (`reference_release_digest.compute_digest`) instead of its copy in `atlas/model.py:125`, which differs on 4 of 11 control-character literals (latent); delete the unused shell-out in `release_graph.py:395`; keep the copy as a test oracle. | [survey](parsing-survey-2026-09-23.md) §11 | atlas digests unchanged on current data |
+| B28 | spicy-docs | Adopt rulespec-artifacts' v2 DocumentCapture provenance checks and delete `schemas/document_capture/provenance.py` (253 lines; accepts 4 malformed inputs rulespec rejects); move the seven captures, `PINS.json` and the family profiles to v2. | [survey](parsing-survey-2026-09-23.md) §11 | rulespec's retained replay reproduces the seven captures |
+| B29 | rulespec-extrapolator, after B4 | Read references with spicy-docs' grammar instead of spicysearch's query grammar (`references.py:19,69`; spicysearch 0.2.0 pinned, current 0.4.2); B4 first adds position-returning readers for public laws, Statutes at Large, executive orders, dockets and RINs. | [survey](parsing-survey-2026-09-23.md) §11 | spicysearch and DocSpec leave the extra's dependencies |
+| B30 | spicy-regs, spicyengine, RefSpec | One canonical-JSON helper (`rulespec_artifacts`; byte-identical on 2,204,970 of 2,204,970 values; keep the projection's copy, which digests floats) and one exported `verify_file_pin` for the five pinned-file hashers. | [survey](parsing-survey-2026-09-23.md) §11 | no identifier changes |
 | B19 | spicy-regs | Build `DERIVED_SCHEMAS` from the producers' column constants (18 of 26 entries repeat one) and declare identity beside each transform's `COLUMNS` (23 of 74 published tables have none in `table_metadata.json`); after B2, FR's list is `FEDERAL_REGISTER_COLUMNS + ("rin",)`. Gives D3 an identity source. | `src/spicy_regs/data_dictionary.py:250-648`; [survey](parsing-survey-2026-09-23.md) §9 | catalog bytes unchanged; every published table declares identity |
 
 ### Track C. Put a timer on it. Parallel, cheap.
@@ -159,6 +163,7 @@ republish every row once. Ruling 4 in §5 orders the two.
    D3). **Decided:** spicysearch for now; spicy-docs after D3.
 10. Whether DocSpec's Regulations.gov policy version moves so that `commentCloseDate` and the publication day use the Eastern rule (A13); it changes every stored deadline.
 11. Whether spicy-regs mints Federal Register document-number IRIs in RefSpec's rkaf space instead of `urn:spicy-regs:frdoc` (B20; 429,131 values).
+12. Where the IRI minters live (B20): spicy-docs as standard-library modules beside the grammar, which reaches spicy-regs at once, or Rulespec Core per REF-024, which would add `rulespec-conformance` (rdflib, pyshacl) to spicy-regs; the identifier shapes stay in spicy-docs either way.
 
 Rulings 5–9 were decided on 2026-09-23 by delegation, with reasons, as decisions
 17–21 in the spicy-regs decisions record (`docs/research/fork-delivery-decisions-2026-09-22.md`); the owner can overturn any of them.
@@ -252,13 +257,17 @@ Update one row per event; commit each update on its own.
 | B17 | proposed | §11 |
 | B18 | proposed | [survey](parsing-survey-2026-09-23.md) §9 |
 | B19 | proposed | [survey](parsing-survey-2026-09-23.md) §9 |
-| B20 | in progress (wt/iri) | [survey](parsing-survey-2026-09-23.md) §11 |
+| B20 | in progress (wt/iri, into spicy-docs); its home is ruling 12 | [survey](parsing-survey-2026-09-23.md) §11 |
 | B21 | proposed; after RefSpec repins | [survey](parsing-survey-2026-09-23.md) §11 |
 | B22 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
 | B23 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
 | B24 | in progress (wt/regs-gaps) | [survey](parsing-survey-2026-09-23.md) §11 |
 | B25 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
 | B26 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
+| B27 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
+| B28 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
+| B29 | proposed; after B4 | [survey](parsing-survey-2026-09-23.md) §11 |
+| B30 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
 | C1 | proposed | — |
 | C2 | proposed | — |
 | C3 | not before C1 | — |

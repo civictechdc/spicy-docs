@@ -349,6 +349,58 @@ stale (75 classes against 79; 9 commits behind).
 Scripts and outputs:
 `~/Work/corpora/fork-execution-2026-09-21/survey-validation-2026-09-23/metadata/`.
 
+## 11. Utilization audits (2026-09-23 evening)
+
+Four read-only scouts checked that the stack uses the parsing infrastructure it
+already has, in spicysearch, RefSpec, rulespec and spicy-docs. Scripts and
+outputs: `~/Work/corpora/fork-execution-2026-09-21/utilization-audit-2026-09-23/`.
+The plan carries the results as A13–A15 and B20–B30 with rulings 10–12.
+
+- **Regulations.gov day rule (A13).** Deadlines are stated as 23:59:59 Eastern
+  (03:59:59Z or 04:59:59Z); all 527,366 deadlines in the retained rulemaking
+  build are. DocSpec stores the UTC date, one day late on 1,458 of 1,458
+  sampled records; spicysearch's publication day is late on 78 of 5,368;
+  spicyengine's "through date X" filter omits documents closing on X. Only
+  spicy-regs `comment_periods` uses the Eastern day.
+- **RefSpec.** Its `iri_minting` is copied in spicy-regs (`_agenda_item_id`;
+  seven minters in `ontology/citations.py`), rulespec-projection and
+  spicysearch; RINs 38,403/38,403, CFR 9,331/9,331 and executive orders
+  1,541/1,541 agree, and 429,131 Federal Register numbers would move from
+  `urn:spicy-regs:frdoc` to the rkaf space (ruling 11). Its Unified Agenda
+  projection differs from spicy-regs' in whitespace only (1,562 CFR, 1,959
+  legal-authority, 1,373 timetable citations over 60 editions) except 98
+  records continued in `ADDITIONAL_INFO` that only RefSpec reads (B11 is a
+  move). Its two docket readers disagree by 17,016 joins (B22). The reverse
+  waste is larger: RefSpec re-writes readers spicy-docs ships (`parse_ecfr_titles`
+  50/50 titles agree; the CBO feed 1,058/1,058; the source-domain parsers;
+  four direct pypdf loops, eleven `HTMLParser` subclasses, eight `ElementTree`
+  parses, 42 `json.loads`) and copies one cache writer 28 times (B21).
+  RefSpec's BILLSTATUS table knows 31 of 102 published action codes and its
+  FEC party table 63 of 147; its `usc_section_oracle` finds 331 unresolvable
+  `document_citations` rows (A10's gate). Its CAGE pattern refuses 17 real
+  `I`-prefixed codes.
+- **spicysearch.** Nothing re-implements its query interpretation (Engine loads
+  it through an entry point; the MCP server offers SQL tools only). Its RIN
+  facet publishes 98 damaged values (A15); about 400 lines of `identifiers.py`
+  have had no caller since `0422da3`; `canonical.py` duplicates
+  `rulespec_artifacts` byte for byte on both sealed policies; its topics
+  derivation matches DocSpec's stored `sourceObservedTopics` on 542/542 (B23).
+- **rulespec.** No repository runs rulespec-projection or the extrapolator in
+  production, and no published table depends on them. RefSpec's copy of the
+  release digest differs from rulespec-conformance's on 4 of 11
+  control-character literals (B27, latent); spicy-docs' copy of the
+  DocumentCapture provenance checks accepts four malformed inputs rulespec
+  rejects (B28); the extrapolator reads references with spicysearch's query
+  grammar (B29); canonical JSON is copied in spicy-regs, spicyengine and
+  RefSpec, byte-identical on 2,204,970 values (B30). REF-024 puts identity
+  functions in Rulespec Core, which conflicts with moving the minters into
+  spicy-docs (ruling 12).
+- **spicy-regs map.** Every parse site is USES, COVERED or one of 21 gaps now
+  carried as A12 (widened), A14, B24, B25 and B26; the in-flight branches
+  delegate correctly except that the CFR builder must not swallow a credential
+  refusal and should call `acquire_annual` once the validator admits the two
+  refused volumes (A14).
+
 ## 10. Not verified
 
 - Whether the congress bill walk has already lost bills.
