@@ -18,6 +18,7 @@ RefSpec table, not an input of this repository."""
 from __future__ import annotations
 
 import re
+from dataclasses import replace
 
 import pytest
 
@@ -3961,3 +3962,83 @@ def test_a_range_keeps_its_far_end_in_the_four_places_it_was_losing_it() -> None
         row = parse_authority_citation(text)[0]
         assert (row.usc_section, row.usc_section_end) == (first, last), text
         assert row.parse_status == "ok", text
+
+
+# --------------------------------------------------------------------------- #
+# New in spicy-docs: Public Law and Statutes at Large occurrences in running
+# text, read through the tables the field reader reads them by.
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("(Pub. L. 104-13, 44 U.S.C. 3506)", [("104-13", "Pub. L. 104-13")]),
+        # A space after the dash, and an en dash the span keeps as printed.
+        ("Public Law 92- 463, notice is given", [("92-463", "Public Law 92- 463")]),
+        ("P.L. 118–63", [("118-63", "P.L. 118–63")]),
+        # The dot-for-dash damage the field reader already repairs.
+        ("Pub. L 103.311", [("103-311", "Pub. L 103.311")]),
+        # Every occurrence, not every distinct law.
+        ("P.L. 94-409 and P.L. 94-409", [("94-409", "P.L. 94-409"), ("94-409", "P.L. 94-409")]),
+        # Refused as the field reader refuses them.
+        ("Pub. L. 112-055", []),
+        ("Public Lands and Republic Law 5", []),
+    ],
+)
+def test_a_public_law_occurrence_is_located_in_running_text(text: str, expected: list) -> None:
+    """The span re-reads as the printed characters; the law is read as integers."""
+    found = citation_grammar.find_public_law_citations(text)
+    assert [(o.citation.public_law, o.text) for o in found] == expected
+    assert all(text[o.start : o.end] == o.text for o in found)
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("Pub. L. 107-347, 116 Stat 2962", [(116, None, 2962, None, True, "116 Stat 2962")]),
+        ("(Pub. L. 92-463; 86 Stat.770)", [(86, None, 770, None, True, "86 Stat.770")]),
+        ("113 Stat. 1501A-293", [(113, None, None, "1501A-293", None, "113 Stat. 1501A-293")]),
+        (
+            "114 Stat. 2763A-326 to 2763A-328 (2000)",
+            [(114, None, None, "2763A-326 to 2763A-328", None, "114 Stat. 2763A-326 to 2763A-328")],
+        ),
+        ("70A Stat. 157", [(None, "70A", 157, None, None, "70A Stat. 157")]),
+        ("Stat. of the Union and 12 State 45", []),
+    ],
+)
+def test_a_statutes_occurrence_is_located_in_running_text(text: str, expected: list) -> None:
+    """Volume and page as the field reader states them, with its neighbour verdict and a span covering the row."""
+    found = citation_grammar.find_statute_citations(text)
+    assert [
+        (
+            o.citation.statute_volume,
+            o.citation.statute_volume_text,
+            o.citation.statute_page,
+            o.citation.statute_page_text,
+            o.citation.statute_volume_matches_public_law,
+            o.text,
+        )
+        for o in found
+    ] == expected
+    assert all(text[o.start : o.end] == o.text for o in found)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Pub. L. 107-347, 116 Stat 2962, 44 U.S.C. 3501 note",
+        "Public Law 92- 463 and P.L. 94-409; 86 Stat. 770",
+        "113 Stat. 1501A-293, 70A Stat. 157 and Pub. L 103.311",
+        "PL 98-500 76 Stat. 816",
+    ],
+)
+def test_the_occurrence_readers_state_what_the_field_reader_states(text: str) -> None:
+    """One table, two readers: the rows the field reader states are the rows the occurrences carry."""
+    fields = parse_authority_citation(text)
+    for family, finder in (
+        ("public_law", citation_grammar.find_public_law_citations),
+        ("statute_at_large", citation_grammar.find_statute_citations),
+    ):
+        stated = {replace(row, parse_status="ok") for row in fields if row.authority_type == family}
+        located = {replace(o.citation, parse_status="ok") for o in finder(text)}
+        assert located == stated, (family, text)

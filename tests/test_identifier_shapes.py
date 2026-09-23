@@ -10,7 +10,8 @@ corpus's own witnesses to them, not invented inputs.
 Ported with the module from RefSpec ``tests/test_identifier_shapes.py`` at
 RefSpec ``4a680c81``, unchanged apart from the import path. The two tests that
 read RefSpec's built Agenda and Federal Register artifacts stay in RefSpec
-beside them.
+beside them. The tests for :func:`unpadded_federal_register_document_number`,
+which is new here, are at the end.
 """
 
 from __future__ import annotations
@@ -38,6 +39,7 @@ from spicy_docs.interpretation.identifier_shapes import (
     normalize_regsgov_identifier,
     normalize_rin,
     numbering_system,
+    unpadded_federal_register_document_number,
 )
 
 #: The dash spellings the module folds, restated here so the property tests
@@ -1476,3 +1478,74 @@ def test_a_prefix_shared_with_a_real_agency_is_left_alone() -> None:
     from spicy_docs.interpretation import identifier_shapes as shapes
 
     assert "PT" not in shapes._FERC_DOCKET_PREFIXES
+
+
+# --------------------------------------------------------------------------- #
+# New in spicy-docs: the unpadded comparison key and the rulemaking docket
+# spelling spicy-regs joins on (consolidation item A7, ruling 6).
+
+
+@pytest.mark.parametrize(
+    ("stated", "key"),
+    [
+        # The two spellings the plan names: Regulations.gov's padded
+        # ``fr_doc_num`` against the number the Register issued.
+        ("2010-02394", "2010-2394"),
+        ("E9-09366", "E9-9366"),
+        # Read off the published rule_targets' missing references: a bare
+        # legacy number, and an en-dash Regulations.gov typed.
+        ("06-00018", "06-18"),
+        ("2015\u201307390", "2015-7390"),
+        # A sequence that is all zeros keeps one digit rather than vanishing.
+        ("2010-00000", "2010-0"),
+        # Already unpadded, and folded like every other reader here.
+        ("2010-2394", "2010-2394"),
+        (" e9-09366 ", "E9-9366"),
+    ],
+)
+def test_a_document_number_reduces_to_its_unpadded_key(stated: str, key: str) -> None:
+    """The padding is presentation for the comparison, and the key is a fixed point."""
+    assert unpadded_federal_register_document_number(stated) == key
+    assert unpadded_federal_register_document_number(key) == key
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "SSA-2010-0037",  # a docket
+        "Docket No. SSA-2010-0037",
+        "1625-AA00",  # a RIN
+        "89 FR 12345",  # a citation, not a number
+        "2014-04654s",  # colophon damage the column itself carries
+        "E8-030520",  # a one-digit-prefix six-digit tail: refused by the shape, not guessed
+        "",
+        None,
+    ],
+)
+def test_only_a_document_number_has_a_key(value: object) -> None:
+    """A value no document-number form reads gets no key, so it can never join as one."""
+    assert unpadded_federal_register_document_number(value) is None
+
+
+def test_only_the_sequence_moves_and_the_key_is_taken_once() -> None:
+    """A correction keeps its year; its key falls below the correction form and so is not re-keyed."""
+    assert unpadded_federal_register_document_number("C1-2012-09978") == "C1-2012-9978"
+    assert unpadded_federal_register_document_number("C1-2012-9978") is None
+
+
+def test_the_key_is_compared_on_both_sides_and_refused_where_it_collides() -> None:
+    """Why the docstring prescribes the join it does, on the Register's own numbers.
+
+    The Register pads from 2013 on, so unpadding only the reference would
+    break an exact match; and two bare-legacy documents published months apart
+    share one key, so a key reaching both must be refused. Both specimens are
+    real ``document_number`` values in the Register's own column.
+    """
+    assert unpadded_federal_register_document_number("2016-00263") == "2016-263"
+    assert unpadded_federal_register_document_number("2016-263") == "2016-263"
+    assert unpadded_federal_register_document_number("94-0190") == unpadded_federal_register_document_number("94-190")
+
+
+def test_a_labelled_docket_is_read_behind_its_label() -> None:
+    """The rulemaking tables' own specimen: the FR docket column states the label."""
+    assert normalize_docket_reference("Docket No. SSA-2010-0037") == "SSA-2010-0037"

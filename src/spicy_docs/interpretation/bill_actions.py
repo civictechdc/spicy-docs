@@ -26,7 +26,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 
 from spicy_docs.interpretation.bill_stage import infer_stage_from_text
-from spicy_docs.interpretation.citations import CITATION_RULES_BY_NAME, bill_type_and_number
+from spicy_docs.interpretation.citations import bill_type_and_number
 
 
 class BillActionError(ValueError):
@@ -379,9 +379,15 @@ class PrintAction:
         return re.compile(self.pattern, re.IGNORECASE)
 
 
-#: The public-law spelling, imported rather than re-written: the citation rule
-#: already reads all four forms these prints set, including the Bluebook one.
-_PUBLIC_LAW = CITATION_RULES_BY_NAME["public_law"].pattern
+#: The public-law spelling this phrase vocabulary was measured with: all four
+#: forms these prints set, including the Bluebook one. It was the ``public_law``
+#: citation rule's pattern until that rule moved to the citation grammar
+#: (rule 002, 2026-09-23), and it moved here unchanged rather than following,
+#: because it is part of a sealed phrasing: :data:`PRINT_ACTION_RULE_SET_VERSION`
+#: digests it, and it reads a raw en dash (``P.L. 118–63``) that the grammar
+#: only reads after folding the text. The *key* a cite names is still the
+#: grammar's; this decides only whether a sentence says a bill became law.
+_PUBLIC_LAW = r"\bP(?:ub(?:lic)?)?\.?\s*L(?:aw)?\.?\s?(?:No\.\s?)?\d{1,3}[-–]\d{1,4}\b"
 
 #: The sealed vocabulary, **additions-only**: a key here is published in
 #: ``bill_committee_actions.print_phrasing``, so renaming or deleting one

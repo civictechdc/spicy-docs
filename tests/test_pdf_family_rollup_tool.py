@@ -15,8 +15,10 @@ from pathlib import Path
 
 import pytest
 
+from spicy_docs.interpretation.citations import CITATION_RULES_BY_NAME
 from tools.analysis.pdf_family_rollup import (
     JOIN_KEY_RULES,
+    MEASURED_001_RULES,
     STRUCTURE_RULES,
     committee_vocabulary,
     compact,
@@ -192,12 +194,19 @@ def test_the_recommendation_marker_reads_the_publishers_heading_not_a_verb() -> 
 
 
 def test_the_committed_sidecar_was_written_by_these_rules() -> None:
-    """The committed sidecar's spot-check and rule patterns match the code's current rules."""
+    """The committed sidecar's spot-check and rule patterns match the rules this tool runs.
+
+    The four the citation grammar reads are run here at the 001 the sidecar
+    recorded.
+    """
     sidecar = json.loads(SIDECAR.read_text())
+    recorded = {entry["name"]: entry["pattern"] for entry in sidecar["join_key_rules"]}
+    running = {rule.name: rule.pattern for rule in JOIN_KEY_RULES}
 
     assert sidecar["spot_check_failures"] == {}
-    assert [entry["name"] for entry in sidecar["join_key_rules"]] == [entry.name for entry in JOIN_KEY_RULES]
-    assert [entry["pattern"] for entry in sidecar["join_key_rules"]] == [entry.pattern for entry in JOIN_KEY_RULES]
+    assert list(recorded) == list(running)
+    assert {name for name in running if recorded[name] != running[name]} == set()
+    assert {name for name, rule in MEASURED_001_RULES.items() if CITATION_RULES_BY_NAME[name].reader is None} == set()
 
 
 def test_the_committed_sidecar_states_the_numbers_the_report_leads_with() -> None:

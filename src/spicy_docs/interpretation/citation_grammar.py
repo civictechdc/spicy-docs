@@ -75,9 +75,13 @@ data-side citation grammar (consolidation item B4 in
 that chose it is ``docs/research/parsing-survey-2026-09-23.md`` section 5). The
 source is RefSpec ``src/refspec/registry/citation_grammar.py`` at RefSpec
 ``4a680c81``, unchanged since ``c9cc5410`` and so byte-identical to what the
-survey measured at ``f83c0d7a``. Only this paragraph and ``ruff format``'s
-layout differ; every RefSpec test that exercises this module passed against
-this copy before it landed. The self-contained tests are ported to
+survey measured at ``f83c0d7a``. Beyond this paragraph and ``ruff format``'s
+layout, one thing is new here: :func:`find_public_law_citations` and
+:func:`find_statute_citations` locate those two families in running text,
+reading them through the same tables (``_PUBLIC_LAW_FORMS``,
+``_STATUTE_FAMILIES``) the field reader now reads them by. Every RefSpec test
+that exercises this module passed against this copy before it landed, before
+and after that change. The self-contained tests are ported to
 ``tests/test_citation_grammar.py``; the ones that read RefSpec's pinned inputs
 stay beside those inputs and run here once RefSpec imports this module back.
 ``refspec.registry.*`` names below are RefSpec modules that stay in RefSpec.
@@ -116,6 +120,7 @@ __all__ = [
     "ActRelativeCitation",
     "ActRelativeCitationOccurrence",
     "AuthorityCitation",
+    "AuthorityCitationOccurrence",
     "CfrCitation",
     "CfrCitationOccurrence",
     "CfrCitationRange",
@@ -133,6 +138,8 @@ __all__ = [
     "find_cfr_citations",
     "find_eo_compilation_locators",
     "find_local_clause_occurrences",
+    "find_public_law_citations",
+    "find_statute_citations",
     "find_usc_citations",
     "names_citation_structure",
     "normalize_popular_name",
@@ -2492,6 +2499,70 @@ def _statute_lettered_page(match: re.Match[str]) -> tuple[str, int]:
     return f"{base}-{leaf} to {base}-{end}", match.end("leaf_end")
 
 
+#: Both Public Law spellings, in the order the field reader reads them.
+_PUBLIC_LAW_FORMS: tuple[re.Pattern[str], ...] = (_PUBLIC_LAW, _PUBLIC_LAW_DOT)
+
+
+def _public_law_fields(match: re.Match[str]) -> dict[str, Any]:
+    """A Public Law match as the row it states: congress and number, each read as an integer."""
+
+    return {
+        "authority_type": "public_law",
+        "public_law": f"{int(match.group('congress'))}-{int(match.group('number'))}",
+    }
+
+
+type _VolumeVerdict = Callable[[re.Match[str]], bool | None]
+
+
+def _lettered_page_statute(match: re.Match[str], verdict: _VolumeVerdict) -> dict[str, Any]:
+    return {
+        "authority_type": "statute_at_large",
+        "statute_volume": int(match.group("volume")),
+        "statute_page_text": _statute_lettered_page(match)[0],
+        "statute_volume_matches_public_law": verdict(match),
+    }
+
+
+def _lettered_volume_statute(match: re.Match[str], _verdict: _VolumeVerdict) -> dict[str, Any]:
+    return {
+        "authority_type": "statute_at_large",
+        "statute_volume_text": match.group("volume").upper(),
+        "statute_page": int(match.group("page")),
+    }
+
+
+def _integer_statute(match: re.Match[str], verdict: _VolumeVerdict) -> dict[str, Any]:
+    return {
+        "authority_type": "statute_at_large",
+        "statute_volume": int(match.group("volume")),
+        "statute_page": int(match.group("page")),
+        "statute_volume_matches_public_law": verdict(match),
+    }
+
+
+#: The three Statutes families as ``(pattern, row fields, covered end)``, in
+#: the order they are read. Lettered pages are read before the integer
+#: grammar, which cannot reach them at all ("2763A" fails its boundary guard)
+#: — so the order is for the reader, not for correctness. A range tail's end
+#: leaf is carried in the page text and therefore covered; a tail the ordering
+#: rule declines is consumed, uncarried and uncovered, which keeps that row
+#: partial. Written once so the field reader and :func:`find_statute_citations`
+#: cannot read a family two ways.
+_STATUTE_FAMILIES: tuple[
+    tuple[
+        re.Pattern[str],
+        Callable[[re.Match[str], _VolumeVerdict], dict[str, Any]],
+        Callable[[re.Match[str]], int] | None,
+    ],
+    ...,
+] = (
+    (_STATUTE_LETTERED_PAGE, _lettered_page_statute, lambda match: _statute_lettered_page(match)[1]),
+    (_STATUTE_LETTERED_VOLUME, _lettered_volume_statute, None),
+    (_STATUTE_AT_LARGE, _integer_statute, None),
+)
+
+
 #: What may stand between a Public Law and the Statutes cite that belongs to
 #: it: punctuation, and the law's own approval date. Nothing else — a WORD
 #: between them is another citation's, and it is what separates "PL 92-500 76
@@ -2521,6 +2592,17 @@ def _congress_beside(text: str, public_laws: list[re.Match[str]], statute: re.Ma
         if match.end() <= statute.start() and _PUBLIC_LAW_TO_STATUTE.fullmatch(text[match.end() : statute.start()])
     ]
     return int(beside[0].group("congress")) if len(beside) == 1 else None
+
+
+def _statutes_volume_verdict(normalized: str, public_laws: list[re.Match[str]]) -> _VolumeVerdict:
+    """Judge a Statutes volume against the one Public Law standing beside it in ``normalized``."""
+
+    def verdict(match: re.Match[str]) -> bool | None:
+        return statutes_volume_matches_congress(
+            _congress_beside(normalized, public_laws, match), int(match.group("volume"))
+        )
+
+    return verdict
 
 
 def _spans_owning_their_comma(text: str) -> tuple[tuple[int, int], ...]:
@@ -3555,6 +3637,62 @@ def find_usc_citations(text: str) -> tuple[UscCitationOccurrence, ...]:
     return tuple(sorted(found, key=lambda item: (item.start, item.end)))
 
 
+@dataclass(frozen=True)
+class AuthorityCitationOccurrence:
+    """A Public Law or Statutes at Large citation with its exact, codepoint-indexed source slice."""
+
+    citation: AuthorityCitation
+    start: int
+    end: int
+    text: str
+
+
+def find_public_law_citations(text: str) -> tuple[AuthorityCitationOccurrence, ...]:
+    """Locate every Public Law a text cites, read by the patterns and fields the field reader uses.
+
+    Added in spicy-docs (2026-09-23) beside :func:`find_usc_citations` and
+    :func:`find_cfr_citations`, which already locate their families in running
+    text. The match runs over the dash-folded text, as the field reader's prose
+    pass does; the fold is one character for one, so every span indexes
+    ``text`` itself. Every occurrence is kept, repeated mentions included.
+    """
+    normalized = _normalize_dashes(text)
+    found = [
+        AuthorityCitationOccurrence(
+            AuthorityCitation(**_public_law_fields(match)),
+            match.start(),
+            match.end(),
+            text[match.start() : match.end()],
+        )
+        for pattern in _PUBLIC_LAW_FORMS
+        for match in pattern.finditer(normalized)
+    ]
+    return tuple(sorted(found, key=lambda item: (item.start, item.end)))
+
+
+def find_statute_citations(text: str) -> tuple[AuthorityCitationOccurrence, ...]:
+    """Locate every Statutes at Large page a text cites, by :data:`_STATUTE_FAMILIES`.
+
+    The companion of :func:`find_public_law_citations`, over the same folded
+    text. A lettered page's span covers exactly what its row carries, a range
+    tail included; each volume carries the same neighbour verdict the field
+    reader gives it, against the Public Laws this text states.
+    """
+    normalized = _normalize_dashes(text)
+    public_laws = [match for pattern in _PUBLIC_LAW_FORMS for match in pattern.finditer(normalized)]
+    verdict = _statutes_volume_verdict(normalized, public_laws)
+    found: list[AuthorityCitationOccurrence] = []
+    for pattern, fields, covered_end in _STATUTE_FAMILIES:
+        for match in pattern.finditer(normalized):
+            end = match.end() if covered_end is None else covered_end(match)
+            found.append(
+                AuthorityCitationOccurrence(
+                    AuthorityCitation(**fields(match, verdict)), match.start(), end, text[match.start() : end]
+                )
+            )
+    return tuple(sorted(found, key=lambda item: (item.start, item.end)))
+
+
 def parse_authority_citation(text: str) -> tuple[AuthorityCitation, ...]:
     """Read every legal authority in one string, with a status instead of silence.
 
@@ -3760,14 +3898,8 @@ def _parse_authority_citation(
     )
 
     public_law_matches: list[re.Match[str]] = []
-    for pattern in (_PUBLIC_LAW, _PUBLIC_LAW_DOT):
-        public_law_matches += _read(
-            pattern,
-            lambda m: {
-                "authority_type": "public_law",
-                "public_law": f"{int(m.group('congress'))}-{int(m.group('number'))}",
-            },
-        )
+    for pattern in _PUBLIC_LAW_FORMS:
+        public_law_matches += _read(pattern, _public_law_fields)
 
     # The one verdict that reads a NEIGHBOUR rather than its own match: a
     # Statutes volume is judged against the Public Law standing beside it,
@@ -3784,43 +3916,10 @@ def _parse_authority_citation(
     # The lettered-VOLUME reader is deliberately not a third caller: "70A
     # Stat." leaves ``statute_volume`` NULL because 70A is not volume 70, and
     # this relation judges the integer series.
-    def _volume_verdict(match: re.Match[str]) -> bool | None:
-        return statutes_volume_matches_congress(
-            _congress_beside(normalized, public_law_matches, match), int(match.group("volume"))
-        )
+    _volume_verdict = _statutes_volume_verdict(normalized, public_law_matches)
 
-    # Lettered pages are read before the integer grammar, which cannot reach
-    # them at all ("2763A" fails its boundary guard) — so the order is for the
-    # reader, not for correctness. A range tail's end leaf is carried in the
-    # page text and therefore covered; a tail the ordering rule declines is
-    # consumed, uncarried and uncovered, which keeps that row partial.
-    _read(
-        _STATUTE_LETTERED_PAGE,
-        lambda m: {
-            "authority_type": "statute_at_large",
-            "statute_volume": int(m.group("volume")),
-            "statute_page_text": _statute_lettered_page(m)[0],
-            "statute_volume_matches_public_law": _volume_verdict(m),
-        },
-        covered_end=lambda m: _statute_lettered_page(m)[1],
-    )
-    _read(
-        _STATUTE_LETTERED_VOLUME,
-        lambda m: {
-            "authority_type": "statute_at_large",
-            "statute_volume_text": m.group("volume").upper(),
-            "statute_page": int(m.group("page")),
-        },
-    )
-    _read(
-        _STATUTE_AT_LARGE,
-        lambda m: {
-            "authority_type": "statute_at_large",
-            "statute_volume": int(m.group("volume")),
-            "statute_page": int(m.group("page")),
-            "statute_volume_matches_public_law": _volume_verdict(m),
-        },
-    )
+    for pattern, fields, covered_end in _STATUTE_FAMILIES:
+        _read(pattern, lambda m, fields=fields: fields(m, _volume_verdict), covered_end=covered_end)
 
     for pattern in (_EXECUTIVE_ORDER_SPELLED, _EXECUTIVE_ORDER_ABBREVIATED):
         for match in pattern.finditer(normalized):

@@ -87,12 +87,13 @@ stack's canonical identifier shapes (consolidation item B4 in
 ``docs/research/consolidation-path-2026-09-22.md``). The source is RefSpec
 ``src/refspec/registry/identifier_shapes.py`` at RefSpec ``4a680c81``,
 unchanged since ``c9cc5410`` and so byte-identical to what the parsing survey
-measured at ``f83c0d7a``. Two cross-references now name this package and the
-layout is ``ruff format``'s; nothing else differs, and every RefSpec test that
-exercises this module passed against this copy before it landed. The
-self-contained tests are ported to ``tests/test_identifier_shapes.py``; the two
-that read RefSpec's built artifacts stay beside them. ``refspec.registry.*``
-names are RefSpec modules that stay in RefSpec.
+measured at ``f83c0d7a``. Two cross-references now name this package, the
+layout is ``ruff format``'s, and :func:`unpadded_federal_register_document_number`
+is new here; nothing else differs, and every RefSpec test that exercises this
+module passed against this copy before it landed. The self-contained tests are
+ported to ``tests/test_identifier_shapes.py``; the three that read RefSpec's
+built artifacts stay beside them. ``refspec.registry.*`` names are RefSpec
+modules that stay in RefSpec.
 """
 
 from __future__ import annotations
@@ -119,6 +120,7 @@ __all__ = [
     "normalize_regsgov_identifier",
     "normalize_rin",
     "numbering_system",
+    "unpadded_federal_register_document_number",
 ]
 
 # No identifier may start or end inside a longer token. The hyphen and
@@ -1073,6 +1075,54 @@ def corrected_rin(value: object, roster: Container[str]) -> tuple[str, str] | No
     if len(survivors) != 1:
         return None
     return survivors.pop(), "unique-roster-existence"
+
+
+#: The zero pad in front of a document number's sequence: the zeros after its
+#: last hyphen that still leave a digit behind them, so "2010-00000" keeps "0".
+#: Named outside the ``_FR_`` family on purpose: it is not a production, and
+#: ``test_no_federal_register_production_claims_another_ones_specimen``
+#: censuses every ``_FR_`` pattern as one.
+_SEQUENCE_ZERO_PAD = re.compile(r"(?<=-)0+(?=\d+$)")
+
+
+def unpadded_federal_register_document_number(value: object) -> str | None:
+    """The key a Federal Register document number is compared on: its sequence without zero padding.
+
+    ``2010-02394`` is ``2010-2394`` and the legacy ``E9-09366`` is ``E9-9366``;
+    only the digits after the last hyphen move, so ``C1-2012-09978`` keeps its
+    year. ``None`` for a value that is not a document number in any form this
+    module reads -- column-licensed (:func:`is_federal_register_document_number`)
+    or prose (the correction, republication and legacy forms) -- so a docket
+    or a RIN is never given a key. The key is taken once, from a number this
+    module reads, and need not itself be one: ``C1-2012-09978`` keys to
+    ``C1-2012-9978``, which the correction form's fixed five-digit tail
+    refuses (REF-054's deferred short-tail corrections), so the Register's own
+    ``C1-2012-9978`` has no key and joins only exactly.
+
+    **A comparison key, not an identifier.** The literal string stays the
+    identifier (:data:`FEDERAL_REGISTER_DOCUMENT_NUMBER`): the Office of the
+    Federal Register pads some years and not others, and its own
+    ``document_number`` column holds 135,264 padded numbers -- every modern
+    year from 2013 pads -- beside unpadded ones before it. Regulations.gov's
+    ``fr_doc_num`` pads where the Register did not, which is why 49,403
+    Federal Register references in the published ``rule_targets`` were
+    ``missing``; 40,340 of them name a held document once both sides are
+    unpadded, with no key reaching two documents (spicy-docs
+    ``docs/research/parsing-survey-2026-09-23.md`` section 2, item A7).
+
+    So a join reduces **both** sides to this key and tries the exact string
+    first: unpadding only the reference would break the 2013-onward matches
+    that are exact today. The key is not unique over the whole column: of
+    1,008,522 distinct document numbers measured 2026-09-23, five bare-legacy
+    pairs from 1994-1997 reduce to one key each (``94-0190`` and ``94-190``
+    are different documents, published 1994-04-26 and 1994-01-05), so a key
+    that reaches more than one held number is refused, not chosen between.
+    """
+
+    text = _folded_text(value)
+    if not (is_federal_register_document_number(text, column_licensed=True) or _FR_DOCUMENT.fullmatch(text)):
+        return None
+    return _SEQUENCE_ZERO_PAD.sub("", text)
 
 
 def normalize_regsgov_identifier(identifier: object) -> str | None:

@@ -1086,6 +1086,41 @@ and by how much. The committed sidecar was deliberately **not** regenerated —
 it is the measurement as run, and a re-run's timings would contradict the
 prose the report quotes from it.
 
+## The stack's citation grammar and identifier shapes live here
+
+RefSpec's `citation_grammar` and `identifier_shapes` are now
+`interpretation/citation_grammar.py` and `interpretation/identifier_shapes.py`
+(consolidation item B4, 2026-09-23). They import only the standard library,
+spicy-docs cannot import RefSpec (RefSpec depends on it), and RefSpec's pin
+cannot be installed beside spicy-regs', so the one place every repository can
+reach a shared grammar is here. They were chosen, not merely the first to
+move: five prose grammars were run over the same retained inputs and RefSpec's
+was right on every hand-read specimen but three range cases
+([parsing survey](research/parsing-survey-2026-09-23.md), section 5).
+The move kept behaviour exactly: every RefSpec test that exercises the two
+modules passes against these copies, and the module docstrings record the
+RefSpec path and commit. RefSpec keeps its copy until it repins, then imports
+these back; its receipts hash the grammar, so that repin moves their identity
+and must say so. spicysearch keeps its query grammar: it reads intent in a
+query, not a citation in a document (spicy-regs decision 14).
+
+What a later change must preserve:
+
+- **A grammar kind is keyed from what the grammar parsed.** `document_citations`'
+  `usc_section`, `cfr_section`, `public_law` and `statutes_at_large` read
+  through the grammar since their rule 002, so every key parses back to
+  itself, a range is its two endpoints, and a refusal publishes the key
+  unresolved instead of a malformed one. The grammar's refusals are respected,
+  not overridden here: fixing a refusal is a change to the grammar.
+- **The unpadded Federal Register number is a comparison key, never an
+  identifier.** The Register pads some years and not others and the literal
+  string is what it issued; `unpadded_federal_register_document_number` exists
+  so a join can meet Regulations.gov's padded spelling, and it reduces both
+  sides, tries the exact string first, and refuses a key that reaches two
+  documents.
+- **The RIN key stays `\d{4}-[A-Z]{2}\d{2}`.** The wider shapes admit only
+  damage or placeholders and are for detection alone.
+
 ## A Mirrulations key that produced no record is unresolved, never processed
 
 **2026-09-20**, closing candidate F2 of the
