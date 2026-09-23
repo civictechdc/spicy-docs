@@ -40,6 +40,14 @@ class Transport(httpx.MockTransport):
         )
 
 
+def next_page(fixture, field):
+    """The fixture page again with fresh ids, as the next page of the same walk would carry."""
+    page = json.loads(fixture)
+    for row in page["packages" if field == "packageId" else "granules"]:
+        row[field] += "-next"
+    return page
+
+
 @pytest.fixture(autouse=True)
 def no_retry_delay(monkeypatch):
     """Remove retry backoff waits."""
@@ -108,7 +116,7 @@ def test_walk_ends_only_when_counts_agree_and_zero_count_is_an_observation():
     """The walk ends only when counts agree, and a zero count is an observation."""
     first = json.loads(PUBLISHED)
     first["count"] = 4
-    second = json.loads(PUBLISHED)
+    second = next_page(PUBLISHED, "packageId")
     second["count"] = 4
     second["nextPage"] = None
     transport = Transport(json.dumps(first).encode(), json.dumps(second).encode())
@@ -119,3 +127,61 @@ def test_walk_ends_only_when_counts_agree_and_zero_count_is_an_observation():
     with GovInfoDiscoveryReader(budget=BUDGET, api_key=KEY, transport=Transport(json.dumps(empty).encode())) as source:
         pages = list(source.packages(published_url("1900-01-01", collections=["CFR"])))
     assert pages[0].declared_count == 0 and pages[0].records == ()
+
+
+def walk(field, *bodies):
+    """Every page a packages or granules walk yields before it ends or refuses, and the refusal if any."""
+    yielded = []
+    with GovInfoDiscoveryReader(
+        budget=BUDGET, api_key=KEY, transport=Transport(*(json.dumps(body).encode() for body in bodies))
+    ) as source:
+        if field == "packageId":
+            pages = source.packages(published_url("2025-01-01", "2025-01-31", collections=["CFR"], page_size=2))
+        else:
+            pages = source.granules(package_granules_url("CFR-2025-title1-vol1", page_size=2))
+        try:
+            yielded.extend(pages)  # keeps each page yielded before a refusal
+        except PagedJsonSourceError as error:
+            return yielded, error
+    return yielded, None
+
+
+@pytest.mark.parametrize("field,fixture", [("packageId", PUBLISHED), ("granuleId", GRANULES)])
+def test_a_walk_refuses_an_id_it_already_served_before_yielding_that_page(field, fixture):
+    """An id served again on a later page, or twice on one page, refuses; the pages before it stand."""
+    first, repeat = json.loads(fixture), json.loads(fixture)
+    first["count"] = repeat["count"] = 4
+    repeat["nextPage"] = None
+    yielded, error = walk(field, first, repeat)
+    assert len(yielded) == 1 and error is not None and f"repeats {field}" in str(error)
+    twice = json.loads(fixture)
+    rows = twice["packages" if field == "packageId" else "granules"]
+    rows[1][field] = rows[0][field]
+    twice["count"], twice["nextPage"] = 2, None
+    yielded, error = walk(field, twice)
+    assert yielded == [] and f"repeats {field}" in str(error)
+
+
+@pytest.mark.parametrize("field,fixture", [("packageId", PUBLISHED), ("granuleId", GRANULES)])
+@pytest.mark.parametrize("value", [None, "", " ", 7, "CFR-2025-title1-vol1 "])
+def test_a_walk_refuses_a_row_without_a_clean_id(field, fixture, value):
+    """A missing, blank, non-text or padded id refuses rather than standing in for a record."""
+    page = json.loads(fixture)
+    page["count"], page["nextPage"] = 2, None
+    page["packages" if field == "packageId" else "granules"][0][field] = value
+    yielded, error = walk(field, page)
+    assert yielded == [] and f"unpadded {field}" in str(error)
+
+
+@pytest.mark.parametrize("field,fixture", [("packageId", PUBLISHED), ("granuleId", GRANULES)])
+def test_a_walk_refuses_a_page_that_omits_its_count(field, fixture):
+    """GovInfo states a count on every page of these routes; a page without one refuses, on any page."""
+    first, second = json.loads(fixture), next_page(fixture, field)
+    first["count"] = 4
+    del second["count"]
+    second["nextPage"] = None
+    yielded, error = walk(field, first, second)
+    assert len(yielded) == 1 and "omitted its count" in str(error)
+    del first["count"]
+    yielded, error = walk(field, first)
+    assert yielded == [] and "omitted its count" in str(error)

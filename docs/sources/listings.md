@@ -425,7 +425,10 @@ live in the project env file: `API_GOV` for api.data.gov publishers and
   package was added or updated and equals the sitemap `lastmod`; it is not
   the MODS issued or ingested date. `/published` selects by issue date and
   narrows by `modifiedSince`. Page size is at most 1,000. The rate limit
-  observed was 36,000 requests per hour.
+  observed was 36,000 requests per hour. Every page states its `count`, and
+  `GovInfoDiscoveryReader.packages`/`granules` refuse a page without one and a
+  `packageId`/`granuleId` that is missing, padded or already served in the
+  walk; `spicy-docs-list` walks the raw route without those two checks.
 - LDA and CourtListener serve keyless requests at lower rate limits; a
   token raises them. CourtListener's cursor pagination requires `dateFiled`
   ordering, and `type=r` pages also state a `document_count`. Docket searches
