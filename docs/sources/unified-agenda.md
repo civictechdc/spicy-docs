@@ -29,13 +29,13 @@ edition_xml = result.capture.body  # retain in caller-owned storage
 
 ## Read retained metadata
 
-`spicy_docs.sources.unified_agenda_records.scan_unified_agenda_records` uses the
+`spicy_docs.sources.unified_agenda.records.scan_unified_agenda_records` uses the
 same bounded XML scanner as acquisition validation. Each record callback exposes
 selected fields in source order, including repeated containers, empty entries
 and unknown children within those fields.
 
 ```python
-from spicy_docs.sources.unified_agenda_records import scan_unified_agenda_records
+from spicy_docs.sources.unified_agenda.records import scan_unified_agenda_records
 
 records = []
 scan = scan_unified_agenda_records(edition_xml, on_record=records.append)
@@ -66,19 +66,55 @@ copies. Caller-retained records are outside that memory budget.
 
 Acquiring and then reading metadata scans the retained XML twice through the
 same implementation. Acquisition buffers only identity fields. Raw metadata
-reading captures the selected fields above. Source-byte repairs, whitespace
-collapse, citation normalization and continuation interpretation remain in
-receiving applications.
+reading captures the selected fields above and applies no repair or
+normalization; the projection below does both.
+
+## Project citations and timetables
+
+`project_unified_agenda_edition` reads one retained edition. It proves each
+record's identity the same way acquisition does. For each record it yields the
+CFR references, legal authorities, timetable entries and any legal-authority
+list continued in `ADDITIONAL_INFO`, beside the raw observation. SpicyRegs and
+RefSpec read these paths from it rather than keeping their own copies.
+
+```python
+from spicy_docs.sources.unified_agenda import UnifiedAgendaEdition
+from spicy_docs.sources.unified_agenda.projection import project_unified_agenda_edition
+
+records = []
+scan = project_unified_agenda_edition(edition_xml, edition=UnifiedAgendaEdition("202510"), on_record=records.append)
+first = records[0]
+print(first.rin, first.cfr_references, first.legal_authorities, first.timetable[0].date_text)
+agency = [field for field in first.record.fields if field.element.tag == "AGENCY"]  # raw fields stay reachable
+```
+
+- Every string has its whitespace runs collapsed to one space, and a lone
+  non-ASCII space is respelled as an ASCII one. Blank entries are dropped;
+  an absent or blank timetable child is `None`. `date_text` stays the
+  publisher's text, zero-day months included.
+- Every `CFR_LIST/CFR`, `LEGAL_AUTHORITY_LIST/LEGAL_AUTHORITY` and
+  `TIMETABLE_LIST/TIMETABLE` is read, and nothing else inside those lists.
+- The 2004 editions' `0x19` byte is repaired to `U+2019`, in memory and only
+  for those two editions. `scan.input_sha256` pins the bytes as served, and
+  `scan.repaired_bytes` counts the repairs.
+- A continuation is read only under a legal-authority continuation label. It
+  keeps that label and its family, runs to the next `^` paragraph mark, blank
+  line or other field's label, and is never split.
+
+The rules, their provenance and the counts behind them are in the
+[module](../../src/spicy_docs/sources/unified_agenda/projection.py). Over all
+60 retained editions the projection equals RefSpec's reader on every record
+(receipt `corpora/supply-2026-09-02/receipts/unified-agenda-projection-2026-09-23/`).
 
 ## Read the result correctly
 
 - `metadata.rins` lists every record's RIN in file order; record bodies stay
   in the retained bytes. Fall 2025 stated 3,954 records and a run date of
   2026-07-03.
-- Three publisher irregularities are recorded, not repaired: the `2012` file
-  name, the unpublished Spring 2012 edition, and one control byte in each 2004
-  edition that XML 1.0 forbids. The 2004 files are refused as malformed; the
-  exact bytes remain the caller's to repair downstream, which RefSpec does.
+- Three publisher irregularities are recorded: the `2012` file name, the
+  unpublished Spring 2012 edition, and one control byte in each 2004 edition
+  that XML 1.0 forbids. Acquisition and the raw reader refuse the 2004 files as
+  malformed; only the projection repairs a retained copy.
 - The capture of edition 202510 on 2026-09-14 matched the digest and byte
   length RefSpec had pinned independently.
 
