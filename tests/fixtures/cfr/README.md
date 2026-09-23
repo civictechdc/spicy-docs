@@ -16,6 +16,8 @@ coverage. Full captures and acquisition receipts stay outside the repository.
 | `annual-title30-vol3-sec716-2.xml` | SpicyRegs commit `a6ab98aa35825ce993023ad9b237a28d04bb153e`, `sample-data/document-files/cfr-xml-short.xml` | Unchanged archived GovInfo section fixture; this archive does not establish current route availability. |
 | `annual-title1-edition.xml` | GovInfo 2025 Title 1 volume 1 package MODS, captured 2026-09-12 | Root extension, originInfo and titleInfo elements; nested constituents omitted. |
 | `annual-title1-2023-edition.xml` | GovInfo 2023 Title 1 volume 1 package MODS, captured 2026-09-12 | Same extraction; explicitly states `isCoverOnly=false`. |
+| `annual-title34-vol4-combined.xml` | GovInfo 2025 Title 34 volume 4 XML, fetched 2026-09-23 (digest in `cfr-ancestry-2026-09-23/fetch.json`) | Title page, both CFRTITLE headings (Title 35 reserved) and the first section with its ancestry, one paragraph kept. |
+| `annual-title40-vol9-appendices.xml` | GovInfo 2025 Title 40 volume 9 XML, same fetch | Title page (`Part 60 (Appendices)`), title heading and the first APPENDIX with its ancestry, keeping the first EAR, HD, FP and P. |
 | `ancestry/CFR-2025-*.xml` | GovInfo 2025 annual volume XML named by package, fetched 2026-09-23; byte counts and SHA-256 in `corpora/fork-execution-2026-09-21/cfr-ancestry-2026-09-23/fetch.json` | The element path to each selected PART and SECTION only: PARTs keep EAR, HD and RESERVED, SUBPARTs HD, SECTIONs SECTNO, SUBJECT and RESERVED; whitespace-only text is re-indented. |
 
 The API title and roster source receipts are in RefSpec's
@@ -37,6 +39,9 @@ Receipts are under `corpora/supply-2026-09-02/receipts/cfr-parser-probe-2026-09-
 
 MODS receipts are under `corpora/supply-2026-09-02/receipts/cfr-edition-type-2026-09-12/`.
 
+The two `annual-title*-vol*-*.xml` excerpts are cut by `cut_fixtures.py` in
+`corpora/supply-2026-09-02/receipts/cfr-annual-validation-2026-09-23/`, beside
+the whole-population validation (`validate_population.py`, before and after).
 The `ancestry/` excerpts are cut by `cut_fixtures.py` in
 `corpora/supply-2026-09-02/receipts/cfr-section-ancestry-2026-09-23/`, which
 also retains the whole-population check of `scan_annual_cfr_sections` over the

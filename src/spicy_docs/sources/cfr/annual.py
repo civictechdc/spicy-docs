@@ -29,6 +29,11 @@ _HEADINGS = {
 _PRINTED_PART = re.compile(rf"({_PART_NUMBER})\.")
 _JOINED = re.compile(r"through|\bto\b|[—–,]", re.IGNORECASE)
 _REVISIONS = frozenset({"EFFDNOT", "EFFDNOTP", "REVTXT"})
+_TITLE_HEADING = re.compile(r"\s*Title\s+([0-9]+)(?=\s|[—–:-]|$)")
+# 40 CFR vol 9 prints `<PARTS>Part 60 (Appendices)</PARTS>` and no SECTION: its
+# source content is APPENDIX text, admitted only when the title page says so.
+_APPENDICES = re.compile(r"\(Appendices\)\s*$")
+_CONTENT = frozenset({"P", "FP", "PSPACE", "ENTRY", "ENT", "TD", "RESERVED"})
 
 
 def annual_cfr_granule_token(number: str) -> str:
@@ -145,6 +150,12 @@ class AnnualCfrSection:
 
 
 @dataclass(slots=True)
+class _PrintedTitle:
+    heading: str | None = None
+    sections: int = 0
+
+
+@dataclass(slots=True)
 class _Division:
     depth: int
     heading: str | None = None
@@ -169,16 +180,23 @@ class _AnnualScan(IdentityXmlScan):
         self.expected_root = expected_root
         self.header = (self.expected_root, "FDSYS")
         self.front = (self.expected_root, "FMTR", "TITLEPG")
+        self.heading = (self.expected_root, "TITLE", "CFRTITLE", "TITLEHD", "HD")
         super().__init__(
             {
                 *(self.header + (field,) for field in ("CFRTITLE", "CFRTITLETEXT", "VOL", "DATE")),
-                *(self.front + (field,) for field in ("TITLENUM", "SUBJECT", "REVISED", "DATE")),
-                (self.expected_root, "TITLE", "CFRTITLE", "TITLEHD", "HD"),
+                *(self.front + (field,) for field in ("TITLENUM", "SUBJECT", "PARTS", "REVISED", "DATE")),
+                self.heading,
                 (self.expected_root, "AMDDATE"),
                 (self.expected_root, "SECTION", "SECTNO"),
             }
         )
         self.sections = 0
+        # Title-page TITLENUMs followed by RESERVED, and the sections after each
+        # CFRTITLE heading: what `_requested_titles` needs to admit a combined volume.
+        self.reserved: list[str] = []
+        self.titles: list[_PrintedTitle] = []
+        self.appendices = False
+        self._front_last = ""
 
     def observe_start(self, tag: str, attributes: dict[str, str]) -> None:
         if len(self.stack) == 1 and tag != self.expected_root:
@@ -187,15 +205,30 @@ class _AnnualScan(IdentityXmlScan):
             raise CfrSourceError("annual CFR XML contains a nested document root")
         if tag == "SECTION":
             self.sections += 1
+            if self.titles:
+                self.titles[-1].sections += 1
+        elif tag == "CFRTITLE" and self.path == self.heading[:3]:
+            self.titles.append(_PrintedTitle())
+        elif len(self.stack) == len(self.front) + 1 and self.path[:-1] == self.front:
+            if tag == "RESERVED" and self._front_last == "TITLENUM":
+                self.reserved.append(self.values[(*self.front, "TITLENUM")][-1])
+            self._front_last = tag
 
     def observe_text(self, text: str) -> None:
         # Once found, stop rebuilding the path per text node: a volume has millions.
-        if self.body_found or not text.strip() or "SECTION" not in self.path:
+        if self.body_found or not text.strip():
             return
-        if any(tag in {"P", "FP", "PSPACE", "ENTRY", "ENT", "TD", "RESERVED"} for tag in self.path) or self.path[
-            -2:
-        ] == ("GPH", "GID"):
+        path = self.path
+        if "SECTION" not in path and not (self.appendices and "APPENDIX" in path):
+            return
+        if any(tag in _CONTENT for tag in path) or path[-2:] == ("GPH", "GID"):
             self.body_found = True
+
+    def observe_end(self, tag: str) -> None:
+        if tag == "HD" and len(self.stack) == len(self.heading) and self.path == self.heading:
+            self.titles[-1].heading = self.values[self.heading][-1]
+        elif tag == "PARTS" and self.path == (*self.front, "PARTS"):
+            self.appendices = _APPENDICES.search(self.values[self.path][-1]) is not None
 
 
 class _AncestryScan(_AnnualScan):
@@ -243,6 +276,7 @@ class _AncestryScan(_AnnualScan):
             self.capture[3].append(text)
 
     def observe_end(self, tag: str) -> None:
+        super().observe_end(tag)
         if self.capture is not None and self.capture[2] == len(self.stack):
             target, field, _depth, pieces = self.capture
             setattr(target, field, "".join(pieces))
@@ -297,6 +331,42 @@ def scan_annual_cfr_sections(xml: bytes, *, max_bytes: int = DEFAULT_MAX_BYTES) 
     )
 
 
+def _title_number(value: str) -> int:
+    match = _TITLE_HEADING.match(value)
+    if match is None:
+        raise CfrSourceError("annual CFR title heading lacks its title number")
+    return int(match[1])
+
+
+def _requested_titles(scan: _AnnualScan) -> list[int]:
+    """Title numbers from the title page and title headings, less reserved titles bound in with the volume's own.
+
+    2025 Title 34 vol 4 also prints Title 35: `<TITLENUM>Title 35</TITLENUM>
+    <RESERVED>[Reserved]</RESERVED>` on the title page and a last CFRTITLE
+    heading `Title 35 [Reserved]` with no section after it. A title marked that
+    way must print such a heading, and is then dropped; a second remaining title
+    in either place is refused. A lone blank value states nothing, as a missing
+    one does; a blank beside another value is refused.
+    """
+    reserved = {_title_number(value) for value in scan.reserved}
+    sections: dict[int, int] = {}
+    for title in scan.titles:
+        if title.heading is not None and title.heading.strip():
+            number = _title_number(title.heading)
+            sections[number] = sections.get(number, 0) + title.sections
+    if any(sections.get(number) != 0 for number in reserved):
+        raise CfrSourceError("annual CFR reserved title needs a heading with no section after it")
+    found = []
+    for values in (scan.values.get((*scan.front, "TITLENUM"), []), scan.values.get(scan.heading, [])):
+        if len(values) == 1 and not values[0].strip():
+            continue
+        numbers = [number for number in map(_title_number, values) if number not in reserved]
+        if len(numbers) > 1:
+            raise CfrSourceError("annual CFR XML repeats its title")
+        found += numbers
+    return found
+
+
 def _integer(value: str, label: str) -> int:
     value = value.strip()
     if re.fullmatch(r"[0-9]+", value) is None:
@@ -327,13 +397,7 @@ def validate_annual_cfr_xml(
     native_title = scan.field((*scan.header, "CFRTITLE"), required=granule)
     native_volume = scan.field((*scan.header, "VOL"), required=granule)
     title_numbers = [] if native_title is None else [_integer(native_title, "title")]
-    for path in [(*scan.front, "TITLENUM"), (scan.root, "TITLE", "CFRTITLE", "TITLEHD", "HD")]:
-        field = scan.field(path)
-        if field is not None:
-            match = re.match(r"\s*Title\s+([0-9]+)(?=\s|[—–:-]|$)", field)
-            if match is None:
-                raise CfrSourceError("annual CFR title heading lacks its title number")
-            title_numbers.append(int(match[1]))
+    title_numbers += _requested_titles(scan)
     if not title_numbers or any(number != identity.title for number in title_numbers):
         raise CfrSourceError("annual CFR native title differs from the request or is absent")
     volume = _integer(native_volume, "volume") if native_volume is not None else None

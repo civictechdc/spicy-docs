@@ -2,8 +2,9 @@
 
 Pins selector validation and publisher route spellings; roster currency and
 literal names; API, bulk and annual identity bases with contradiction refusals;
-error and empty-shape refusals; URL and XML-safety checks before acceptance; and
-table- or graphic-only sections as source content.
+error and empty-shape refusals; URL and XML-safety checks before acceptance;
+table- or graphic-only sections as source content; and the combined-title and
+appendix-only volumes admitted only on their title pages' word.
 """
 
 import json
@@ -273,6 +274,85 @@ def test_annual_granule_native_identity_contradictions_refuse(old, new):
     assert old in source
     with pytest.raises(CfrSourceError):
         annual(source.replace(old, new), section="716.2")
+
+
+def test_combined_volume_admits_the_reserved_title_it_also_prints():
+    """2025 Title 34 vol 4 also prints reserved Title 35; the requested title is still checked in both places."""
+    source = (FIXTURES / "annual-title34-vol4-combined.xml").read_bytes()
+    result = annual(source, title=34, volume=4)
+    assert (result.title, result.title_text) == (34, "Education")
+    with pytest.raises(CfrSourceError, match="differs"):
+        annual(source.replace(b"Title 34<", b"Title 33<"), title=34, volume=4)
+
+
+@pytest.mark.parametrize(
+    "old,new",
+    [
+        # Unmarked, Title 35 is a second title, not a reserved one.
+        (b"<RESERVED>[Reserved]</RESERVED>", b""),
+        # RESERVED marks only the TITLENUM it directly follows.
+        (b"<RESERVED>[Reserved]</RESERVED>", b"<CODE /><RESERVED>[Reserved]</RESERVED>"),
+        # A blank second value is not a missing one.
+        (b"<TITLENUM>Title 35</TITLENUM>", b"<TITLENUM> </TITLENUM>"),
+        (b"Title 35 [Reserved]</HD>", b" </HD>"),
+        # The requested title may not be the reserved one.
+        (b"<TITLENUM>Title 34</TITLENUM>", b"<TITLENUM>Title 34</TITLENUM><RESERVED>[Reserved]</RESERVED>"),
+        # The requested title printed twice is still a repeat.
+        (b"<TITLENUM>Title 35</TITLENUM>", b"<TITLENUM>Title 34</TITLENUM>"),
+        (b"Title 35 [Reserved]</HD>", b"Title 34</HD>"),
+    ],
+)
+def test_combined_volume_refuses_anything_but_one_requested_and_reserved_others(old, new):
+    """Another printed title must be marked reserved on the title page; the requested title prints once."""
+    source = (FIXTURES / "annual-title34-vol4-combined.xml").read_bytes()
+    assert old in source
+    with pytest.raises(CfrSourceError):
+        annual(source.replace(old, new), title=34, volume=4)
+
+
+@pytest.mark.parametrize("move", [True, False])
+def test_combined_volume_refuses_a_reserved_title_without_an_empty_heading(move):
+    """A reserved title must print its heading with no section after it; moved before the sections, or missing,
+    it is refused.
+    """
+    root = ET.fromstring((FIXTURES / "annual-title34-vol4-combined.xml").read_bytes())
+    title = root.find("TITLE")
+    assert title is not None
+    reserved = title.findall("CFRTITLE")[-1]
+    title.remove(reserved)
+    if move:
+        title.insert(list(title).index(title.find("SUBTITLE")), reserved)
+    with pytest.raises(CfrSourceError, match="reserved title needs a heading with no section after it"):
+        annual(ET.tostring(root), title=34, volume=4)
+
+
+def test_a_lone_blank_title_value_states_nothing_but_a_blank_beside_another_refuses():
+    """One blank TITLENUM or heading reads as absent, as before; a blank second one is refused, not dropped."""
+    source = (FIXTURES / "annual-title1-vol1.xml").read_bytes()
+    assert annual(source.replace(b"<TITLENUM>Title 1</TITLENUM>", b"<TITLENUM> </TITLENUM>")).title == 1
+    assert annual(source.replace("Title 1—General Provisions</HD>".encode(), b" </HD>")).title == 1
+    for old, new in [
+        (b"<TITLENUM>Title 1</TITLENUM>", b"<TITLENUM>Title 1</TITLENUM><TITLENUM> </TITLENUM>"),
+        (b"</CFRTITLE>", b"</CFRTITLE><CFRTITLE><TITLEHD><HD> </HD></TITLEHD></CFRTITLE>"),
+    ]:
+        assert old in source
+        with pytest.raises(CfrSourceError):
+            annual(source.replace(old, new))
+
+
+def test_appendix_only_volume_is_source_content_when_its_title_page_says_so():
+    """40 CFR vol 9 prints no SECTION; its `Part 60 (Appendices)` title page admits APPENDIX text instead."""
+    source = (FIXTURES / "annual-title40-vol9-appendices.xml").read_bytes()
+    assert b"<SECTION" not in source
+    assert annual(source, title=40, volume=9).title == 40
+    for parts in (b"Part 60", b"Part 60 (Appendices) and Part 61"):
+        with pytest.raises(CfrSourceError, match="section content"):
+            annual(source.replace(b"Part 60 (Appendices)", parts), title=40, volume=9)
+    # Appendix text elsewhere still does not stand in for sections.
+    volume = (FIXTURES / "annual-title1-vol1.xml").read_bytes()
+    no_sections = volume[: volume.index(b"<SECTION>")] + b"<APPENDIX><P>Appendix text</P></APPENDIX>"
+    with pytest.raises(CfrSourceError, match="section content"):
+        annual(no_sections + b"</PART></SUBCHAP></CHAPTER></TITLE></CFRDOC>")
 
 
 @pytest.mark.parametrize("reader", [api, annual, bulk])

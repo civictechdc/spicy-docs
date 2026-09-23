@@ -65,11 +65,22 @@ contract, not a measurement — and `list_route_url` refuses `from_datetime`/
 `to_datetime` on a route where `window_honored` is `False`, the same way it
 refuses `sort`.
 
+On `amendment` both bounds are exclusive: a record stamped exactly at
+`fromDateTime` or `toDateTime` is left out (measured 2026-09-23; other routes
+are unmeasured). Spell a window of whole UTC days with
+`utc_day_window(first, last)`, which opens one second before `first` and
+closes at the midnight after `last`; its docstring holds the measurement and
+receipt. `crsreport` returned nothing even for a one-second window around its
+own printed `updateDate`, so its window reads some other field. On a route
+whose rows print a date only (`bill`), inclusive bounds would make consecutive
+windows overlap on their boundary seconds, deduplicated by identity, never
+leave a gap.
+
 | Route | Path | Records key | Sort honored | Window honored | Fixture |
 | --- | --- | --- | --- | --- | --- |
 | `bill` | `bill/{congress}/{type}` | `bills` | yes | yes (default) | `congress-bill-list.json` |
 | `crsreport` | `crsreport` | `CRSReports` | no (legacy builder still sends it) | yes (default) | `congress-crsreport-list.json` |
-| `amendment` | `amendment/{congress}` | `amendments` | yes | yes (default) | `congress-amendment-list.json` |
+| `amendment` | `amendment/{congress}` | `amendments` | yes | yes (measured 2026-09-23) | `congress-amendment-list.json` |
 | `committee-bills` | `committee/{chamber}/{code}/bills` | `("committee-bills", "bills")` (nested; see below) | no (measured) | yes (measured) | `congress-committee-bills-list.json` |
 | `bill-actions` | `bill/{congress}/{type}/{number}/actions` | `actions` | no (measured) | no (measured) | `congress-bill-actions-list.json` |
 | `nomination` | `nomination/{congress}` | `nominations` | no | yes (default) | `congress-nomination-list.json` |
@@ -418,7 +429,10 @@ live in the project env file: `API_GOV` for api.data.gov publishers and
   package was added or updated and equals the sitemap `lastmod`; it is not
   the MODS issued or ingested date. `/published` selects by issue date and
   narrows by `modifiedSince`. Page size is at most 1,000. The rate limit
-  observed was 36,000 requests per hour.
+  observed was 36,000 requests per hour. Every page states its `count`, and
+  `GovInfoDiscoveryReader.packages`/`granules` refuse a page without one and a
+  `packageId`/`granuleId` that is missing, padded or already served in the
+  walk; `spicy-docs-list` walks the raw route without those two checks.
 - LDA and CourtListener serve keyless requests at lower rate limits; a
   token raises them. CourtListener's cursor pagination requires `dateFiled`
   ordering, and `type=r` pages also state a `document_count`. Docket searches

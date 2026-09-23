@@ -26,7 +26,10 @@ Date-window support (``window_honored``) got the same direct probe: a
 one-day-old window cut ``committee-bills``' declared count (honored) while
 leaving ``bill-actions`` at 59 either way (ignored). Every other route
 defaults to ``True`` as a carried-forward assumption, not a measurement --
-unlike ``sort_honored``, which is measured for every route.
+unlike ``sort_honored``, which is measured for every route. Bound
+inclusivity is measured on ``amendment`` only, where both bounds are
+exclusive; ``utc_day_window`` spells a whole-day window that is exact there
+and, on a route whose bounds are inclusive, overlaps rather than gaps.
 
 A list sorted by ``updateDate`` shifts while it is read, so one walk can serve
 its declared count and still skip records. ``CongressListingReader.pooled``
@@ -41,7 +44,7 @@ import math
 import re
 from collections.abc import Callable, Hashable, Iterator, Mapping
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime, time, timedelta
 from typing import TYPE_CHECKING, Any, Literal
 from urllib.parse import urlencode
 
@@ -78,6 +81,7 @@ CONGRESS_GOV = JsonPageFamily(
     count_path=("pagination", "count"),
 )
 _DATETIME = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z")
+_BOUND = "%Y-%m-%dT%H:%M:%SZ"
 
 
 def _datetime(value: str | None, name: str) -> str | None:
@@ -90,6 +94,35 @@ def _datetime(value: str | None, name: str) -> str | None:
     except ValueError as error:
         raise PagedJsonSourceError(f"{name} must be a valid UTC datetime") from error
     return value
+
+
+def utc_day_window(first: date | None, last: date | None) -> tuple[str | None, str | None]:
+    """``fromDateTime``/``toDateTime`` admitting every second of UTC days ``first`` through ``last``; None leaves a side open.
+
+    On ``amendment`` Congress.gov excludes a record stamped exactly at either
+    bound. Measured 2026-09-23 at three printed ``updateDate`` instants U (five
+    records): ``toDateTime=U`` and ``fromDateTime=U`` each drop them, ``U-1s`` to
+    ``U+1s`` returns them, and ``U`` to ``U`` returns nothing (receipt
+    ``supply-2026-09-02/receipts/congress-window-bounds-2026-09-23``). So the
+    window opens one second before ``first`` and closes at the midnight after
+    ``last``; there consecutive day windows meet with no gap or overlap at the
+    publisher's one-second stamps, where ``T00:00:00Z`` to ``T23:59:59Z`` would
+    drop both boundary seconds.
+
+    Other routes are unmeasured. ``crsreport`` returned nothing even for a
+    one-second window around its own printed ``updateDate``, so its window
+    reads some other field. Routes whose rows print a date only (``bill``) offer
+    no stamp to probe; if their bounds are inclusive, consecutive windows share
+    the boundary seconds, an overlap a caller dedupes by identity, never a gap.
+    """
+    for value, name in ((first, "first"), (last, "last")):
+        if value is not None and type(value) is not date:
+            raise PagedJsonSourceError(f"{name} must be a date")
+    if first is not None and last is not None and last < first:
+        raise PagedJsonSourceError("last precedes first")
+    start = None if first is None else (datetime.combine(first, time()) - timedelta(seconds=1)).strftime(_BOUND)
+    end = None if last is None else datetime.combine(last + timedelta(days=1), time()).strftime(_BOUND)
+    return start, end
 
 
 def _query(
