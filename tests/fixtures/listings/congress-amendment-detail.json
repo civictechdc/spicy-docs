@@ -1,0 +1,51 @@
+{
+    "amendment": {
+        "actions": {
+            "count": 2,
+            "url": "https://api.congress.gov/v3/amendment/119/samdt/3000/actions?format=json"
+        },
+        "amendedBill": {
+            "congress": 119,
+            "number": "3944",
+            "originChamber": "House",
+            "originChamberCode": "H",
+            "title": "Military Construction and Veterans Affairs, Agriculture, and Legislative Branch Appropriations Act, 2026",
+            "type": "HR",
+            "updateDateIncludingText": "2026-07-27",
+            "url": "https://api.congress.gov/v3/bill/119/hr/3944?format=json"
+        },
+        "chamber": "Senate",
+        "congress": 119,
+        "cosponsors": {
+            "count": 1,
+            "countIncludingWithdrawnCosponsors": 1,
+            "url": "https://api.congress.gov/v3/amendment/119/samdt/3000/cosponsors?format=json"
+        },
+        "number": "3000",
+        "sponsors": [
+            {
+                "bioguideId": "B001277",
+                "firstName": "Richard",
+                "fullName": "Sen. Blumenthal, Richard [D-CT]",
+                "lastName": "Blumenthal",
+                "party": "D",
+                "state": "CT",
+                "url": "https://api.congress.gov/v3/member/B001277?format=json"
+            }
+        ],
+        "submittedDate": "2025-07-23T04:00:00Z",
+        "textVersions": {
+            "count": 1,
+            "url": "https://api.congress.gov/v3/amendment/119/samdt/3000/text?format=json"
+        },
+        "type": "SAMDT",
+        "updateDate": "2025-07-24T18:44:32Z"
+    },
+    "request": {
+        "amendmentNumber": "3000",
+        "amendmentType": "samdt",
+        "congress": "119",
+        "contentType": "application/json",
+        "format": "json"
+    }
+}

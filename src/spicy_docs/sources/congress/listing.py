@@ -194,6 +194,19 @@ LIST_ROUTES: dict[str, CongressListRoute] = {
     "amendment": CongressListRoute(
         "amendment", "amendment/{congress}", "amendments", optional_params=frozenset({"congress"}), sort_honored=True
     ),
+    # One amendment by its number, answered as a bare object under "amendment"
+    # (measured 2026-09-23, amendment/119/samdt/3000). It states what the list
+    # route omits -- sponsors, amendedBill/amendedAmendment, chamber,
+    # submittedDate -- and omits latestAction and description, which the list
+    # states, so a host overlays it on the list record.
+    "amendment-detail": CongressListRoute(
+        "amendment-detail",
+        "amendment/{congress}/{amdt_type}/{number}",
+        "amendment",
+        sort_honored=False,
+        window_honored=False,
+        single_record=True,
+    ),
     "committee-bills": CongressListRoute(
         "committee-bills",
         "committee/{chamber}/{code}/bills",
@@ -463,7 +476,17 @@ _KWARG_FOR_PARAM = {
     "law_type": "law_type",
     "system_code": "system_code",
     "bioguide_id": "bioguide_id",
+    "amdt_type": "amendment_type",
 }
+
+#: Congress.gov's amendment types, as the amendment routes spell them.
+AMENDMENT_TYPES = frozenset({"hamdt", "samdt", "suamdt"})
+
+
+def _amendment_type_param(value: str | None) -> str:
+    if value not in AMENDMENT_TYPES:
+        raise PagedJsonSourceError("amendment_type must be hamdt, samdt or suamdt")
+    return value
 
 
 def _chamber_param(value: str | None) -> str:
@@ -549,6 +572,7 @@ _VALIDATE_PARAM: dict[str, Callable[[object], str]] = {
     # reusing the validator keeps that one check in one place.
     "system_code": _committee_code_param,
     "bioguide_id": _bioguide_id_param,
+    "amdt_type": _amendment_type_param,
 }
 
 
@@ -618,6 +642,7 @@ def list_route_url(
     law_type: str | None = None,
     system_code: str | None = None,
     bioguide_id: str | None = None,
+    amendment_type: str | None = None,
     from_datetime: str | None = None,
     to_datetime: str | None = None,
     limit: int = MAX_LIMIT,
@@ -648,6 +673,7 @@ def list_route_url(
         "law_type": law_type,
         "system_code": system_code,
         "bioguide_id": bioguide_id,
+        "amdt_type": amendment_type,
     }
     path = _route_path(route, values)
     query = _query(from_datetime=from_datetime, to_datetime=to_datetime, limit=limit, sort=sort)

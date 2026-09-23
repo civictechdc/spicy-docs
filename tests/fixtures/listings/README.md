@@ -309,6 +309,7 @@ for the key before it was saved (`scrub_credential`); neither carried it.
 | Fixture | Request | Bytes | SHA-256 | Transformation |
 | --- | --- | --- | --- | --- |
 | `congress-hearing-detail.json` | GET https://api.congress.gov/v3/hearing/119/house/64431 | 1,396 | `90187189e5e3d73ad8089eedace2aa5b31dd121f0f857309ad884f17c4c0e614` | Complete, unchanged response; one record, a bare object under `hearing`, carrying `associatedMeeting.eventId` 119003 and `formats[]` whose stem is `CHRG-119hhrg64431`. |
+| `congress-amendment-detail.json` | GET https://api.congress.gov/v3/amendment/119/samdt/3000 | 1,770 | `1557b07ff9bda9fdc62f40c33a820a1c988339eebbe716594d40f0ea80d213da` | Complete, unchanged response (2026-09-23); one record, a bare object under `amendment`, carrying `sponsors`, `amendedBill` (119 HR 3944), `chamber` and `submittedDate` 2025-07-23T04:00:00Z, and no `latestAction` or `description`, which the list route states. |
 | `congress-committee-meeting-detail-119003.json` | GET https://api.congress.gov/v3/committee-meeting/119/house/119003 | 36,297 | `a43cb372471870d0926748f542eafcb24756c206b6e013621d1cc31c1cc9a69f` | Complete, unchanged response; a Hearing (not a Markup like 119565) with `hearingTranscript` naming jackets 63019 and 64431, 3 witnesses, 9 witness documents, 70 meeting documents and no related bills. |
 
 `hearing-detail` is the route these two established: `hearing/{congress}/{chamber}/{number}`
