@@ -887,17 +887,19 @@ def parts_mods(*constituents: str, root: str = "") -> bytes:
 
 PART_1 = constituent([f"{PACKAGE}-pt1"], number="1")
 PART_2 = constituent([f"{PACKAGE}-pt2"], number="2", granule_class="OTHERPART")
+PART_3 = constituent([f"{PACKAGE}-pt3"], granule_class="OTHERPART")
 ROOT_HTM = f'<url access="raw object" displayLabel="HTML rendition">{BODY_URL}</url>'
 
 
 def test_the_synthetic_record_the_refusals_start_from_is_read() -> None:
-    """Two numbered parts, a suffix-only later part, and an unsuffixed Part 1 the root restates all read."""
+    """Two numbered parts, parts 1 to 3 with a suffix-only later part, and an unsuffixed Part 1 the root restates
+    all read.
+    """
     assert [(part.part_id, part.part_number) for part in parts_of(parts_mods(PART_1, PART_2))] == [
         (f"{PACKAGE}-pt1", 1),
         (f"{PACKAGE}-pt2", 2),
     ]
-    later = constituent([f"{PACKAGE}-pt3"], granule_class="OTHERPART")
-    assert [part.part_number for part in parts_of(parts_mods(PART_1, later))] == [1, 3]
+    assert [part.part_number for part in parts_of(parts_mods(PART_1, PART_2, PART_3))] == [1, 2, 3]
     unsuffixed = constituent([PACKAGE], number="1")
     assert [part.part_id for part in parts_of(parts_mods(unsuffixed, PART_2, root=ROOT_HTM))] == [
         PACKAGE,
@@ -923,8 +925,12 @@ def test_the_synthetic_record_the_refusals_start_from_is_read() -> None:
         (parts_mods(constituent([f"{PACKAGE}-pt1"], granule_class=None)), "granuleClass"),
         (parts_mods(PART_1, PART_1), "one part_id for two parts"),
         (parts_mods(constituent([PACKAGE], number="1"), PART_1), "one part_number for two parts"),
-        # A body the root offers that no part states belongs to none of them.
+        # Parts numbered other than exactly 1 to N: the report would be published missing a part.
+        (parts_mods(PART_1, PART_3), "numbers its parts 1, 3, missing 2"),
+        (parts_mods(PART_2), "numbers its parts 2, missing 1"),
+        # A body the root offers, or states at a stem that is not its own, that no part states belongs to none of them.
         (parts_mods(PART_1, PART_2, root=ROOT_HTM), "no part states"),
+        (parts_mods(PART_1, PART_2, root=ROOT_HTM.replace(f"{PACKAGE}.htm", f"{PACKAGE}-pt3.htm")), "no part states"),
     ],
 )
 def test_a_constituent_that_is_not_a_consistent_part_of_this_package_is_refused(body: bytes, message: str) -> None:

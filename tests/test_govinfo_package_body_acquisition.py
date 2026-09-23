@@ -24,6 +24,7 @@ from spicy_docs.sources.govinfo.body_acquisition import (
     GovInfoFormatNotOfferedError,
     GovInfoPackageBody,
     GovInfoPackageUnavailableError,
+    GovInfoPartsOverBudgetError,
     GovInfoRenditionAddressError,
 )
 from spicy_docs.transport import retry
@@ -395,12 +396,25 @@ def test_one_unavailable_part_refuses_the_whole_package() -> None:
     assert (context["stage"], context["partId"], context["requestCount"]) == ("body", f"{MULTIPART}-pt2", 4)
 
 
-def test_every_part_spends_the_one_request_budget() -> None:
-    """``2 + P`` requests: a budget of three reaches the first part and refuses the second."""
+def test_a_record_stating_more_parts_than_the_budget_fetches_is_refused_before_any_body() -> None:
+    """``2 + P`` requests: a budget of three cannot fetch two parts, so no body is requested, and the refusal is
+    typed as the budget's, which every run would repeat, rather than a transient exhaustion.
+    """
     transport = multipart_transport(MULTIPART, **{f"{MULTIPART}-pt1": HTML_BODY})
-    with pytest.raises(GovInfoBodySourceError, match="request budget"):
+    with pytest.raises(GovInfoPartsOverBudgetError, match="need 4 requests") as caught:
         acquire_parts(transport, MULTIPART, budget=replace(BUDGET, max_requests=3))
-    assert len(transport.urls) == 3
+    assert len(transport.urls) == 2
+    assert (caught.value.required_requests, caught.value.max_requests) == (4, 3)
+
+
+def test_a_retry_that_spends_a_parts_request_is_a_transient_budget_refusal() -> None:
+    """Every part spends the one budget, retries included: a budget sized for two parts runs out on a retry, untyped."""
+    attempts = iter([reply(b"", status=503), HTML_BODY])
+    transport = multipart_transport(MULTIPART, **{f"{MULTIPART}-pt1": lambda: next(attempts)()})
+    with pytest.raises(GovInfoBodySourceError, match="exhausted its total request budget") as caught:
+        acquire_parts(transport, MULTIPART, budget=replace(BUDGET, max_requests=4))
+    assert not isinstance(caught.value, GovInfoPartsOverBudgetError)
+    assert len(transport.urls) == 4
 
 
 def test_a_collection_that_states_no_parts_is_refused_by_acquire_parts() -> None:

@@ -1309,6 +1309,9 @@ def test_a_multi_part_report_is_one_row_per_part_and_its_blocks_key_under_their_
     ]
     assert [reports.key(row) for row in rows] == [(package, f"{package}-pt1"), (package, f"{package}-pt2")]
     assert [row["part_number"] for row in rows] == ["1", "2"]
+    # A body naming no part would shape a NULL half-identity, which a merge drops without a word.
+    with pytest.raises(ValueError, match="names no report part"):
+        shape_committee_report(replace(template, part=None))
     block = parse_agency_blocks("SECTION 1. SHORT TITLE.\n\nThis Act may be cited.")[0]
     keys = [
         sections.key(sections.checked(shape_report_section(block, package_id=package, part_id=part.part_id, seq=0)))

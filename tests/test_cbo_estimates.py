@@ -486,13 +486,21 @@ class _Summary:
     last_modified = "2023-05-12T00:00:00Z"
 
 
+class _Part:
+    """A report published in one part: the part is the package's own stem, and unnumbered."""
+
+    part_id = "CRPT-118hrpt53"
+    part_number = None
+
+
 class _Body:
-    """The three things ``_package_row`` reads, and nothing this test does not need."""
+    """The three things ``_package_row`` reads and the part the row is, and nothing this test does not need."""
 
     identity = _Identity()
     summary = _Summary()
     body_capture = _Capture()
     format = "htm"
+    part = _Part()
 
     class body:
         media_type = "text/html"

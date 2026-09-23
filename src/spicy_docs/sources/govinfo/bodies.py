@@ -1387,10 +1387,12 @@ def _report_parts(parsed: GovInfoModsPackage, identity: PackageIdentity, root: R
     (``CRPT-119hrpt494``), whose root repeats Part 1's renditions.
 
     Nothing about a part is inferred: each states its own id, number and
-    renditions, one id or one number stated twice is refused, and so is a
-    rendition at the root that no part states, which would be a body the
-    package offers that belongs to none of its parts. ``O(C * R)`` over the
-    constituents and their renditions.
+    renditions, one id or one number stated twice is refused, so is a set of
+    numbers other than exactly 1 to N (a lone ``-pt2``, or parts 1 and 3,
+    would publish a report missing a part), and so is a rendition at the root
+    that no part states, which would be a body the package offers that belongs
+    to none of its parts. ``O(C * R)`` over the constituents and their
+    renditions.
     """
     if _GRAMMARS[identity.collection].part is None:
         return ()
@@ -1401,6 +1403,13 @@ def _report_parts(parsed: GovInfoModsPackage, identity: PackageIdentity, root: R
         values = [getattr(part, field) for part in parts]
         if len(set(values)) != len(values):
             raise GovInfoBodySourceError(f"GovInfo package MODS states one {field} for two parts")
+    numbers = {part.part_number for part in parts}
+    missing = sorted(set(range(1, max(numbers) + 1)) - numbers)
+    if missing:
+        raise GovInfoBodySourceError(
+            f"GovInfo package MODS numbers its parts {', '.join(map(str, sorted(numbers)))}, "
+            f"missing {', '.join(map(str, missing))}"
+        )
     stated = {part.body_locator(name) for part in parts for name in part.offered_formats}
     at_root = {root.body_locator(name) for name in root.offered_formats} | {url for _, url in root.moved_renditions}
     if not at_root <= stated:
@@ -1589,8 +1598,8 @@ def validate_package_body(
 ) -> PackageBodyIdentity:
     """Prove a bounded body against its locator, media type and native magic.
 
-    ``part_id`` is the part the MODS stated (``PackageModsIdentity.part_id``),
-    whose stem is then the locator.
+    ``part_id`` is the part the bytes are (``ReportPart.part_id``), whose stem
+    is then the locator; the package id itself names the package's own stem.
     """
     identity = _identity(package)
     exact, body_format, media_type = _validate_body(

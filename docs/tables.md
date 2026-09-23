@@ -828,13 +828,14 @@ the move itself is pending).
   (`CRPT-119hrpt1`), and `CRPT-119hrpt494` states its unsuffixed Part 1 the
   same way, so on those rows `part_id` equals `package_id`. A blank marker, the
   way `treaties.suffix` spells an unpartitioned treaty, was rejected: it would
-  be a value no record states, it would spell `CRPT-119hrpt494`'s real Part 1
-  the same as a report with no parts, and it could not be checked against the
-  URL the body came from.
+  be a value no record states, and it could not be checked against the URL the
+  body came from.
 - **`part_number` is what the record numbers.** 1 and 2 on `CRPT-119hrpt455`,
   1 on `CRPT-119hrpt811`'s lone `-pt1`, and NULL on a report published in one
   part, whose record states no number. It is not identity: NULL there is a fact,
-  not a gap.
+  not a gap. Neither column says how many parts a package has:
+  `(CRPT-119hrpt811-pt1, 1)` has the shape of `CRPT-119hrpt455`'s Part 1, so a
+  reader counts a package's rows to tell a lone part from Part 1 of two.
 - **A package's part rows are replaced as a set.** The acquisition checkpoint
   stays keyed by package: one read yields every part
   (`GovInfoBodyAcquirer.acquire_parts`, all or nothing), and a host removes
@@ -850,6 +851,24 @@ the move itself is pending).
   `None` there.
 - **`REPORT_SECTION_READER_VERSION` is `report-headings-002`.** Hosts carry it
   in their read checkpoint, so every report is re-read into part rows.
+- **A host adopts all of it in the release that vendors it.** The shapers no
+  longer take the old call: `shape_report_section` requires `part_id`, and
+  `shape_committee_report` raises `ValueError` for a body that names no part
+  rather than emit a NULL `part_id`. A merge that keeps only rows whose
+  identity is wholly non-null would drop that row without a word, and it drops
+  every prior row too, since rows published before the column existed read
+  `part_id` as NULL. So in the same release a host:
+  1. passes each `acquire_parts` result's `part.part_id` to both shapers;
+  2. backfills the prior rows of both tables with
+     `part_id = COALESCE(part_id, package_id)`, which is right for every report
+     published in one part and for `CRPT-119hrpt494`'s Part 1;
+  3. merges `committee_reports`, like `report_sections`, with
+     `replace_parents=("package_id", <evaluated packages>)`. The one prior row
+     the backfill spells wrong, a lone `-pt1` part read before this move, is
+     then replaced when the reader-version bump re-reads its package, rather
+     than kept beside the corrected row.
+
+  Until the owner confirms decision 29 this move is held out of 0.31.0.
 
 Over every retained CRPT package MODS (148 distinct records, 145 packages, all
 read, none refused; receipt

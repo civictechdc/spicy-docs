@@ -644,10 +644,13 @@ was:
   it must be 1: that is the one measured use (`CRPT-119hrpt494`).
 - **Its class agrees with its number.** `granuleClass` is `FIRSTPART` on part 1
   and `OTHERPART` on every later part, as on every record measured.
-- **No part twice, and no body that belongs to no part.** Two constituents
-  stating one id or one number are refused, and so is a rendition at the root
-  that no part states. `CRPT-119hrpt494`'s root repeats Part 1's renditions,
-  which is allowed because Part 1's stem is the package's.
+- **Every part once, and no body that belongs to no part.** Two constituents
+  stating one id or one number are refused, and so are part numbers other than
+  exactly 1 to N: a lone `-pt2`, or parts 1 and 3, would publish a report
+  missing a part, and the refusal names the missing numbers. So is a rendition
+  at the root, offered or at a stem that is not the root's, that no part
+  states. `CRPT-119hrpt494`'s root repeats Part 1's renditions, which is
+  allowed because Part 1's stem is the package's.
 - **Each part's renditions are its own.** Read from the constituent's own
   `location` and proved at `granule_body_locator(package, part_id, format)`,
   with the same offered/moved/other split the root uses.
@@ -672,6 +675,15 @@ It returns one `GovInfoPackageBody` per part, each naming its `part`, with
 preferred rendition, redirects, or runs out of budget refuses the package,
 with the part named in the refusal context's `partId`, because a host replaces
 a package's part rows as a set and half a report is never a result.
+
+**A caller sizes its budget per part.** `max_requests` must cover `2 + P` for
+the largest `P` it will meet, plus retries. A record stating more parts than
+the budget can ever fetch is refused after the MODS and before any body
+request, as `GovInfoPartsOverBudgetError`, which carries `required_requests`
+and `max_requests`. That refusal repeats on every run until the budget grows,
+so a caller must not read it as transient; a budget that covers `2 + P` but
+runs out on a retry is the ordinary `request-budget-exhausted` refusal, which
+the next run may clear.
 
 `acquire` is unchanged in what it fetches: the root's rendition, at the stem
 of the part the root states. Its result now names that part (`result.part`,
@@ -766,6 +778,7 @@ through `acquire(package_id)`.
 | `GovInfoFormatNotOfferedError` | The package or granule stated its renditions and none was preferred. It carries `offered_formats`; no body request was made. |
 | `GovInfoBodySourceError` | Identity or shape failed: a `packageId`, `granuleId`, `collectionCode` or `accessId` that differs, a report part whose id, number or class disagrees, a final URL that differs, a wrong media type, an empty body, a PDF without its magic, or a bound exceeded. |
 | `GovInfoRenditionAddressError` | The package or granule states a preferred format at an address this module does not derive. The publisher's own URL is on the error. Disagreement, not absence; no body request was made. |
+| `GovInfoPartsOverBudgetError` | `acquire_parts` only: the record states more parts than `max_requests` can fetch (`2 + P`). It carries `required_requests` and `max_requests`; no body request was made. Not transient: the same budget refuses the same record every run. |
 | `GovInfoBodySourceError` naming the error page | The publisher's error page arrived as a 200. Its bytes are retained; it is a refusal, never absence. |
 | `CredentialRefusedError` | HTTP 401/403, or a keyed response echoing the key. Stop the operation; do not continue with another route, package or granule. |
 

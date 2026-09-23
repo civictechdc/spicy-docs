@@ -295,12 +295,18 @@ def shape_committee_report(
     """One ``committee_reports`` row from one acquired part of a CRPT package.
 
     ``body`` is one result of ``GovInfoBodyAcquirer.acquire_parts``; its ``part`` names the row's part, and a body
-    naming none shapes a NULL ``part_id`` that ``COMMITTEE_REPORTS.key`` refuses.  ``estimate`` is the
+    naming none is refused: a NULL ``part_id`` is half an identity, which a merge keeping only whole identities would
+    drop without a word.  ``estimate`` is the
     ``interpretation.cbo_estimates.CboEstimateFinding`` read over this part's text, or ``None`` where no rule was run --
     which lands NULL throughout rather than as ``false``, because "not read" and "the cover declares no estimate" are
     different answers.  ``recital_bill_id`` is passed in rather than derived here because reading a printed designator
     into a bill key is the ``interpretation`` package's vocabulary.
     """
+    part = getattr(body, "part", None)
+    if part is None:
+        raise ValueError(
+            f"{body.identity.package_id} names no report part; shape committee_reports rows from acquire_parts results"
+        )
     row = _package_row(
         body,
         type_column="report_type",
@@ -310,7 +316,6 @@ def shape_committee_report(
         text_sha256=text_sha256,
     )
     span = None if estimate is None else estimate.letter_span
-    part = getattr(body, "part", None)
     row |= {
         "estimate_rule": text(None if estimate is None else estimate.rule),
         "estimate_rule_version": text(None if estimate is None else estimate.rule_version),
@@ -325,8 +330,8 @@ def shape_committee_report(
         "letter_signatory": text(None if estimate is None else estimate.signatory),
         "estimate_absence_reason": text(None if estimate is None else estimate.absence_reason),
         "estimate_absence_rule": text(None if estimate is None else estimate.absence_rule),
-        "part_id": text(None if part is None else part.part_id),
-        "part_number": text(None if part is None else part.part_number),
+        "part_id": text(part.part_id),
+        "part_number": text(part.part_number),
     }
     return row
 

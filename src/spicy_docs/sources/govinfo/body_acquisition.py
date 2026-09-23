@@ -76,10 +76,11 @@ class GovInfoBodyBudget:
     """Per-acquisition request/byte bounds and per-client request-start pacing.
 
     ``max_requests`` covers the summary, the MODS, the body and every retry on
-    both clients. The timeout bounds transport waits, not total elapsed time.
-    A zero start interval explicitly disables pacing; a nonzero one meters each
-    client separately, so the keyed API host and the keyless content host are
-    paced apart, as they are answered apart.
+    both clients; ``acquire_parts`` needs ``2 + P`` for a report of ``P`` parts,
+    so a caller sizes it per part. The timeout bounds transport waits, not
+    total elapsed time. A zero start interval explicitly disables pacing; a
+    nonzero one meters each client separately, so the keyed API host and the
+    keyless content host are paced apart, as they are answered apart.
     """
 
     max_requests: int
@@ -172,6 +173,21 @@ class GovInfoFormatNotOfferedError(GovInfoBodySourceError):
         )
         self.offered_formats = tuple(offered)
         self.preference = tuple(preference)
+
+
+class GovInfoPartsOverBudgetError(GovInfoBodySourceError):
+    """The record states more parts than the request budget can fetch; no body request was made.
+
+    Not transient: the same record refuses under the same budget on every run,
+    so the caller grows ``max_requests`` rather than retrying.
+    """
+
+    def __init__(self, label: str, *, parts: int, max_requests: int) -> None:
+        super().__init__(
+            f"{label} states {parts} parts, which need {2 + parts} requests; the request budget allows {max_requests}"
+        )
+        self.required_requests = 2 + parts
+        self.max_requests = max_requests
 
 
 class GovInfoRenditionAddressError(GovInfoBodySourceError):
@@ -327,10 +343,12 @@ class GovInfoBodyAcquirer:
 
         A one-part report whose MODS states its part in place of the package
         stem (``mods.part_id``) is read at that part's stem, the only address
-        its record names. The result's ``part`` names the part the bytes are:
-        a record listing several parts is read at its root, which is its Part
-        1 (CRPT-119hrpt494), and ``mods.parts`` lists the rest.
-        ``acquire_parts`` reads them all.
+        its record names. The result's ``part`` names the part the bytes are.
+        A record listing several parts is read at its root only where the root
+        restates a part's renditions -- CRPT-119hrpt494's Part 1, at the
+        package stem, with ``mods.parts`` listing the rest; CRPT-119hrpt455's
+        root states none, so it is refused as offering no format.
+        ``acquire_parts`` reads every part.
 
         ``max_bytes`` may narrow the body allowance for this call, never raise
         it. Every refusal carries its capture, the stage it failed at and this
@@ -350,7 +368,9 @@ class GovInfoBodyAcquirer:
 
         One summary and one MODS, then one body per part in ``mods.parts``
         order, each the first preferred rendition that part offers: ``2 + P``
-        requests from the one budget. A report published in one part is one
+        requests from the one budget. A record stating more parts than the
+        budget can fetch is refused before any body request
+        (``GovInfoPartsOverBudgetError``). A report published in one part is one
         body, exactly what ``acquire`` returns. A format is chosen for every
         part before any body is requested, and any refusal refuses the whole
         package: a host replaces a package's part rows as a set, so half a
@@ -408,6 +428,10 @@ class GovInfoBodyAcquirer:
             if every_part:
                 if not mods.parts:
                     raise GovInfoBodySourceError(f"GovInfo {identity.collection} records state no parts to acquire")
+                if 2 + len(mods.parts) > budget.max_requests:
+                    raise GovInfoPartsOverBudgetError(
+                        identity.package_id, parts=len(mods.parts), max_requests=budget.max_requests
+                    )
                 targets = [(part, part.offered_formats, part.moved_renditions) for part in mods.parts]
             else:
                 # The root's renditions were proved at the stem of the part its record states there.
@@ -646,5 +670,6 @@ __all__ = [
     "GovInfoGranuleBody",
     "GovInfoPackageBody",
     "GovInfoPackageUnavailableError",
+    "GovInfoPartsOverBudgetError",
     "GovInfoRenditionAddressError",
 ]

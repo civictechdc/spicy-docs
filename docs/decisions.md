@@ -1791,9 +1791,25 @@ refuses a NULL identity part, so a report in one part needs a value. The record
 already states one: its root names the granule's `accessId`, and it is the
 package id (`CRPT-119hrpt1`). `CRPT-119hrpt494` spells its real, numbered Part 1
 the same way. Taking the publisher's id means `part_id` is always a value some
-record states, always the stem of `requested_url`, and never the same spelling
-for "Part 1 of two" and "no parts": `part_number` (1 against NULL) says which.
-The `treaties.suffix` blank would have been none of those.
+record states and always the stem of `requested_url`; the `treaties.suffix`
+blank would have been neither. But `part_id` and `part_number` do not say how
+many parts a package has. On the package-id spelling `part_number` separates Part 1 of two
+(`CRPT-119hrpt494`, 1) from a report in one part (NULL), but the eight packages
+whose one part is spelled `-pt1` are `(CRPT-119hrpt811-pt1, 1)`, the same shape
+as `CRPT-119hrpt455`'s Part 1. A reader tells Part 1 of two from a lone part by
+counting the package's rows.
+
+**A host adopts it in the release that vendors it.** `shape_report_section`
+now requires `part_id` and `shape_committee_report` refuses a body that names
+no part, so a host that vendors this without adopting it breaks, and a host
+that adopts only the shapers loses rows: its merge keeps only whole
+identities, and every prior row reads `part_id` as NULL. In the same release a
+host passes `part_id`, backfills prior rows with
+`COALESCE(part_id, package_id)`, and merges `committee_reports` with
+`replace_parents` by package, as it already merges `report_sections`
+([Table contracts](tables.md#a-multi-part-committee-report-is-one-row-per-part)).
+That is why this branch is held out of 0.31.0 until the owner confirms
+decision 29.
 
 **Why not read two parts as one package.** Joining the parts' text under the
 package id would publish two bodies, two digests and two CBO findings as one,
