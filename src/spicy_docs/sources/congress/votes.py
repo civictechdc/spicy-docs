@@ -36,6 +36,12 @@ against what was requested (``VoteMenuIdentityError`` on a mismatch) and a
 well-formed file with zero listed votes refused rather than returned as an
 empty success. ``locator_from_menu_entry`` turns one row into the
 ``VoteLocator`` that resolves its full tally and roster.
+
+**The vote day.** Each publisher prints the day it voted in its own spelling
+(Clerk ``8-Sep-2025``; Senate ``January 9, 2025,  02:54 PM``), both in Eastern
+local time. ``vote_day`` reads either into an ISO date and is the one owner of
+that rule; ``RollCallVote.day`` exposes it, and a record whose printed date it
+cannot read refuses at parse time rather than publishing a day it guessed.
 """
 
 from __future__ import annotations
@@ -43,7 +49,9 @@ from __future__ import annotations
 import re
 from collections import Counter
 from collections.abc import Callable, Mapping
+from contextlib import suppress
 from dataclasses import dataclass
+from datetime import date
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Literal
 from xml.etree.ElementTree import Element
@@ -126,6 +134,34 @@ _VOTE_NORMALIZATION: Mapping[str, NormalizedVote] = MappingProxyType(
         "no": "nay",
         "present": "present",
         "not voting": "not_voting",
+    }
+)
+
+
+# Each chamber's own spelling of the day it voted: the Clerk's ``action-date``
+# (``8-Sep-2025``) and the Senate's ``vote_date`` (``January 9, 2025,  02:54 PM``,
+# a doubled space before the time), measured unchanged back to each archive's
+# floor (docs/sources/congress-votes.md, "Vote day"). The Senate's clock is
+# matched only so a malformed one refuses; the day is the printed (Eastern)
+# day, never converted through UTC. English month names are looked up here
+# rather than read by ``strptime``'s ``%b``/``%B``, which follow the process's
+# ``LC_TIME`` locale (the reason ``bulk_status`` gives for its own month table).
+_MONTH_NAMES = (
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+)  # fmt: skip
+_DAY_SPELLINGS: Mapping[str, tuple[re.Pattern[str], Mapping[str, int]]] = MappingProxyType(
+    {
+        "house": (
+            re.compile(r"(?P<day>[0-9]{1,2})-(?P<month>[A-Z][a-z]{2})-(?P<year>[0-9]{4})"),
+            {name[:3]: number for number, name in enumerate(_MONTH_NAMES, start=1)},
+        ),
+        "senate": (
+            re.compile(
+                r"(?P<month>[A-Z][a-z]+) (?P<day>[0-9]{1,2}), (?P<year>[0-9]{4}),\s+(?:1[0-2]|0?[1-9]):[0-5][0-9] [AP]M"
+            ),
+            {name: number for number, name in enumerate(_MONTH_NAMES, start=1)},
+        ),
     }
 )
 
@@ -325,6 +361,31 @@ def locator_from_recorded_vote_url(url: str) -> VoteLocator:
     raise VoteSourceError(f"{url!r} is not a recognized Clerk or Senate roll-call vote url")
 
 
+def vote_day(chamber: str, literal: str | None) -> str | None:
+    """The chamber's own printed vote date as an ISO day (``YYYY-MM-DD``); ``None`` when the file prints none.
+
+    The day is the one the chamber voted on, in Eastern local time, so it sorts
+    chronologically where the literal does not (``'10-Jan-2025'`` sorts before
+    ``'9-Sep-2024'``). It is not the day of the UTC instant Congress.gov's
+    ``recordedVotes`` reference states, which runs a day ahead for an evening
+    vote. A printed date in any other spelling refuses (``VoteSourceError``, a
+    ``ValueError``) rather than guessing a day.
+    """
+    spelling = _DAY_SPELLINGS.get(chamber)
+    if spelling is None:
+        raise VoteSourceError(f"chamber must be 'house' or 'senate', got {chamber!r}")
+    text = (literal or "").strip()
+    if not text:
+        return None
+    pattern, months = spelling
+    match = pattern.fullmatch(text)
+    month = months.get(match["month"]) if match else None
+    if match is not None and month is not None:
+        with suppress(ValueError):  # a day its month does not have (``29-Feb-2025``) refuses below
+            return date(int(match["year"]), month, int(match["day"])).isoformat()
+    raise VoteSourceError(f"{chamber} vote date {literal!r} is not the chamber's own spelling")
+
+
 def normalize_vote(value: str) -> NormalizedVote:
     """Map a publisher-spelled vote value to the shared vocabulary; the raw spelling is kept beside it on ``MemberVote``."""
     key = " ".join(value.split()).casefold()
@@ -422,7 +483,9 @@ class RollCallVote:
     breakdown the totals-by-vote row summarizes. A Clerk candidate election
     instead keeps every literal candidate label and count in ``tallies`` and
     sets ``tally_kind="candidates"``; its named member choices have no ordinary
-    normalized position.
+    normalized position. ``date`` is the publisher's literal and ``day`` its
+    ISO reading (``vote_day``); a record whose ``date`` cannot be read refuses
+    at construction, so every parsed vote either states a day or states none.
     """
 
     publisher: Publisher
@@ -466,6 +529,13 @@ class RollCallVote:
     # ``document`` remains populated only for an unambiguous single document.
     documents: tuple[VoteDocument, ...] = ()
     amendments: tuple[VoteAmendment, ...] = ()
+
+    def __post_init__(self) -> None:
+        vote_day(self.chamber, self.date)
+
+    @property
+    def day(self) -> str | None:
+        return vote_day(self.chamber, self.date)
 
     def vote_key(self) -> VoteKey:
         return _as_vote_key(self.chamber, self.congress, self.session, self.roll_number)
@@ -1134,4 +1204,5 @@ __all__ = [
     "parse_senate_vote_menu",
     "senate_url",
     "senate_vote_menu_url",
+    "vote_day",
 ]

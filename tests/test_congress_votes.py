@@ -84,8 +84,8 @@ CLERK_MINIMAL = (
 SENATE_MINIMAL = (
     b'<?xml version="1.0" encoding="UTF-8"?><roll_call_vote>'
     b"<congress>119</congress><session>1</session><congress_year>2025</congress_year>"
-    b"<vote_number>1</vote_number><vote_date>January 3, 2025</vote_date>"
-    b"<modify_date>January 4, 2025</modify_date>"
+    b"<vote_number>1</vote_number><vote_date>January 3, 2025,  12:00 PM</vote_date>"
+    b"<modify_date>January 4, 2025,  12:00 PM</modify_date>"
     b"<vote_question_text>On Passage</vote_question_text>"
     b"<vote_document_text>A bill.</vote_document_text>"
     b"<vote_result_text>Passed (1-0)</vote_result_text>"

@@ -125,7 +125,7 @@ ROLL_CALL_VOTES = table_contract(
         "chamber": "house or senate.",
         "session": "The session number within that Congress.",
         "roll_number": "The roll-call number within that session.",
-        "vote_date": "The date of the roll call; the merge prefers the larger value.",
+        "vote_date": "The chamber's literal date; sorts as text, not by time (see `vote_day`).",
         "source_url": "The publisher's own URL for this roll call.",
         "question": "The question put to the chamber, as the publisher states it.",
         "result": "The stated result of the roll call.",
@@ -146,6 +146,12 @@ ROLL_CALL_VOTES = table_contract(
         "tally_kind": "positions for ordinary totals, candidates for native named-choice totals; NULL on legacy or linkage-only rows.",
         "documents_json": "Ordered Senate document objects with native congress, type, number, name, title and short_title; [] for captured votes without documents, NULL for legacy or linkage-only rows. Numbers retain publisher spelling, including nomination suffixes; this does not assert a matched bill or nomination.",
         "amendments_json": "Ordered Senate amendment objects with native number, to_amendment_number, to_amendment_to_amendment_number, to_document_number, to_document_short_title and purpose; [] for captured votes without amendments, NULL for legacy or linkage-only rows. Repeated empty-ID blocks remain separate observations; no document pairing is inferred.",
+        "vote_day": (
+            "The chamber's own printed vote date as an ISO day (YYYY-MM-DD) in Eastern local time, which sorts where "
+            "vote_date does not and is never the UTC day of a Congress.gov recordedVotes date; NULL where the file "
+            "prints no date, on linkage-only rows, and on rows published before this column until a host backfills "
+            "them."
+        ),
     },
 )
 
@@ -174,7 +180,7 @@ MEMBER_VOTES = table_contract(
         "state": "The member's state as the roll-call source states it.",
         "position": "The member's position exactly as the publisher spelled it (Yea, Aye, Not Voting...).",
         "position_normalized": "That position folded onto yea, nay, present or not_voting; NULL for a named candidate choice.",
-        "vote_date": "The date of the roll call; the merge prefers the larger value.",
+        "vote_date": "The chamber's literal date; sorts as text, not by time (see roll_call_votes `vote_day`).",
     },
 )
 
@@ -337,6 +343,10 @@ def shape_roll_call_vote(
     result, date and source_url are read unless the caller overrides them, so a linkage-only row leaves them NULL.
     ``tally`` is folded here rather than on the source record, and ``action_index``/``conflict_count`` are passed in
     because ``VoteMatch`` carries neither.
+
+    ``vote_day`` is the record's own ``day``, which the source reader parses from the chamber's printed date; this
+    stdlib leaf cannot re-read a literal, so it is NULL wherever ``vote_date`` is not that record's own date -- a
+    ``VoteKey`` whose date falls back to the match's UTC instant, or a caller's differing override.
     """
     tally_kind = getattr(vote, "tally_kind", None)
     counts = {} if tally_kind == "candidates" else folded_tally(tally)
@@ -396,6 +406,7 @@ def shape_roll_call_vote(
         "tally_kind": text(tally_kind),
         "documents_json": documents_json,
         "amendments_json": amendments_json,
+        "vote_day": getattr(vote, "day", None) if vote_date in (None, getattr(vote, "date", None)) else None,
     }
 
 
