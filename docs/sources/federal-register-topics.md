@@ -1,7 +1,9 @@
 # Federal Register topics
 
 Use `read_fr_topics(payload)` from `spicy_docs.sources.federal_register.topics`
-for retained `topics.json` bytes. `FrTopicsAcquirer` fetches the same fixed
+for retained `topics.json` bytes.
+
+`FrTopicsAcquirer` fetches the same fixed
 endpoint with an explicit `FrTopicsBudget` and optional HTTP transport.
 It returns exact captured bytes plus the parsed observations; callers retain
 the bytes and capture history.

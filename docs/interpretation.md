@@ -3,6 +3,7 @@
 `spicy_docs.interpretation` holds the shared logic that reads publisher facts
 and decides something about them. Acquisition and publisher-format parsing stay
 in `spicy_docs.sources`; the tables these rules populate are hosted elsewhere.
+
 Every module is pure: no network, no database, no clock except an injected one.
 Inputs are this repository's own dataclasses or plain mappings shaped like the
 published tables, and every output is a frozen record naming the rule that fired
