@@ -65,12 +65,16 @@ contract, not a measurement — and `list_route_url` refuses `from_datetime`/
 `to_datetime` on a route where `window_honored` is `False`, the same way it
 refuses `sort`.
 
-Both bounds are exclusive: a record stamped exactly at `fromDateTime` or
-`toDateTime` is left out (measured on `amendment`, 2026-09-23). Spell a window
-of whole UTC days with `utc_day_window(first, last)`, which opens one second
-before `first` and closes at the midnight after `last`; its docstring holds
-the measurement and receipt. `crsreport` did not select its own printed
-`updateDate` at a fine window, so the rule is unmeasured there.
+On `amendment` both bounds are exclusive: a record stamped exactly at
+`fromDateTime` or `toDateTime` is left out (measured 2026-09-23; other routes
+are unmeasured). Spell a window of whole UTC days with
+`utc_day_window(first, last)`, which opens one second before `first` and
+closes at the midnight after `last`; its docstring holds the measurement and
+receipt. `crsreport` returned nothing even for a one-second window around its
+own printed `updateDate`, so its window reads some other field. On a route
+whose rows print a date only (`bill`), inclusive bounds would make consecutive
+windows overlap on their boundary seconds, deduplicated by identity, never
+leave a gap.
 
 | Route | Path | Records key | Sort honored | Window honored | Fixture |
 | --- | --- | --- | --- | --- | --- |

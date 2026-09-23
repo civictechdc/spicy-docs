@@ -26,8 +26,10 @@ Date-window support (``window_honored``) got the same direct probe: a
 one-day-old window cut ``committee-bills``' declared count (honored) while
 leaving ``bill-actions`` at 59 either way (ignored). Every other route
 defaults to ``True`` as a carried-forward assumption, not a measurement --
-unlike ``sort_honored``, which is measured for every route. Both bounds are
-exclusive; ``utc_day_window`` spells a whole-day window accordingly.
+unlike ``sort_honored``, which is measured for every route. Bound
+inclusivity is measured on ``amendment`` only, where both bounds are
+exclusive; ``utc_day_window`` spells a whole-day window that is exact there
+and, on a route whose bounds are inclusive, overlaps rather than gaps.
 
 A list sorted by ``updateDate`` shifts while it is read, so one walk can serve
 its declared count and still skip records. ``CongressListingReader.pooled``
@@ -97,16 +99,21 @@ def _datetime(value: str | None, name: str) -> str | None:
 def utc_day_window(first: date | None, last: date | None) -> tuple[str | None, str | None]:
     """``fromDateTime``/``toDateTime`` admitting every second of UTC days ``first`` through ``last``; None leaves a side open.
 
-    Congress.gov excludes a record stamped exactly at either bound. Measured
-    2026-09-23 on ``amendment`` at three printed ``updateDate`` instants U (five
+    On ``amendment`` Congress.gov excludes a record stamped exactly at either
+    bound. Measured 2026-09-23 at three printed ``updateDate`` instants U (five
     records): ``toDateTime=U`` and ``fromDateTime=U`` each drop them, ``U-1s`` to
     ``U+1s`` returns them, and ``U`` to ``U`` returns nothing (receipt
     ``supply-2026-09-02/receipts/congress-window-bounds-2026-09-23``). So the
     window opens one second before ``first`` and closes at the midnight after
-    ``last``, and consecutive day windows meet with no gap or overlap at the
-    publisher's one-second stamps; ``T00:00:00Z`` to ``T23:59:59Z`` would drop
-    both ends' boundary seconds. ``crsreport`` did not select its own printed
-    stamps even at +/-10 min, so this measurement does not cover that route.
+    ``last``; there consecutive day windows meet with no gap or overlap at the
+    publisher's one-second stamps, where ``T00:00:00Z`` to ``T23:59:59Z`` would
+    drop both boundary seconds.
+
+    Other routes are unmeasured. ``crsreport`` returned nothing even for a
+    one-second window around its own printed ``updateDate``, so its window
+    reads some other field. Routes whose rows print a date only (``bill``) offer
+    no stamp to probe; if their bounds are inclusive, consecutive windows share
+    the boundary seconds, an overlap a caller dedupes by identity, never a gap.
     """
     for value, name in ((first, "first"), (last, "last")):
         if value is not None and type(value) is not date:
