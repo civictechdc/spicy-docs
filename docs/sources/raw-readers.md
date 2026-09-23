@@ -86,6 +86,28 @@ and byte mismatches abort, and it yields exact bytes without the record-shape
 check `iter_records` applies. Concurrent GETs use a bounded queue. Closing
 iteration cancels queued work; running calls finish under their transport limits.
 
+**Derived comment text.** Mirrulations publishes its own attachment text under
+`derived-data/<agency>/<docket>/mirrulations/extracted_txt/comments_extracted_text/<tool>/`.
+
+- `list_docket_derived_text(resource, agency, docket_id)` lists that prefix once
+  for every tool and returns a `CommentDerivedText` per comment: one tool, chosen
+  by the pinned `DERIVED_TEXT_TOOLS` order (the measurement is beside it), the
+  tools that were available, and `DerivedAttachment(attachment, tool, key, size,
+  etag)` records in numeric order. An attachment the chosen tool lacks is not
+  filled from another tool; `only_in_other_tools` names the numbers another tool has.
+- A key outside the layout means the comments may be incomplete, so the docket
+  is refused. `strict=False` returns the readable comments and the rest as
+  `unrecognized_keys`; a caller that passes it must check that field before
+  treating a missing comment as one without text.
+- `fetch_derived_text(resource, comment)` adds each attachment's `sha256` and
+  UTF-8 `text`, with GETs pinned to the listed ETags and capped at
+  `DEFAULT_MAX_OBJECT_BYTES` (16 MiB) unless `max_bytes=` says otherwise. The
+  measured sample held three larger `pdfminer` objects, up to 57.5 MB.
+- `to_json()` gives the provenance, without the text, as plain JSON values.
+- A 401/403 raises `MirrulationsAccessRefusedError`. Other listing failures, keys
+  outside the layout (in strict mode), oversized, changed or vanished objects and
+  size mismatches also raise, so no failure is returned as a comment without text.
+
 ## CourtListener
 
 [`courtlistener_bulk.py`](../../src/spicy_docs/sources/courtlistener/bulk.py)

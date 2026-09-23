@@ -11,6 +11,11 @@ into schema-shaped records is the job of the
 :class:`~spicy_regs.transforms.extract.ExtractRecords` transform, which stays
 in spicy-regs.
 
+``list_docket_derived_text`` and ``fetch_derived_text`` read the mirror's own
+comment-attachment text (``derived-data``): one tool per comment, attachments in
+numeric order, each with its key, size, ETag and digest. Which status that text
+earns downstream is the caller's vocabulary, not this module's.
+
 Recovery follows the package's fetcher rules (``AGENTS.md``):
 
 1. A 401/403 while listing agency objects or fetching one aborts the run as
@@ -24,14 +29,16 @@ Recovery follows the package's fetcher rules (``AGENTS.md``):
 4. Reasons are scrubbed before they are truncated, logged, or retained.
 """
 
+import hashlib
 import random
 import re
 import time
 from collections import deque
 from collections.abc import Callable, Iterable, Iterator, Sized
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
+from functools import partial
 from itertools import chain
 from json import loads
 from threading import Lock
@@ -128,6 +135,17 @@ def _iter_objects(bucket: Any, prefix: str) -> Iterator[Any]:
     except ClientError as error:
         _raise_if_access_refused(error, prefix)
         raise
+
+
+def _listed_pin(summary: Any) -> tuple[str, int | None]:
+    """A listed object's ETag and size, refusing a listing that cannot pin the later GET."""
+    etag = getattr(summary, "e_tag", None)
+    if not isinstance(etag, str) or not etag:
+        raise ValueError(f"Mirrulations listing lacks an ETag for {summary.key}")
+    size = getattr(summary, "size", None)
+    if size is not None and (isinstance(size, bool) or not isinstance(size, int) or size < 0):
+        raise ValueError(f"Mirrulations listing size is invalid for {summary.key}")
+    return etag, size
 
 
 def iter_json_files(
@@ -452,6 +470,28 @@ def _retry_transient[DownloadResult](key: str, operation: Callable[[], DownloadR
             )
             time.sleep(delay)
     raise AssertionError("unreachable")
+
+
+#: The largest object a pinned GET reads unless its caller says otherwise; the
+#: ``s3_resource`` read timeout is sized for it.
+DEFAULT_MAX_OBJECT_BYTES: Final = 16 * 1024 * 1024
+
+
+def _pinned_get(
+    s3_resource: Any, bucket: str, key: str, etag: str, size: int | None, *, max_bytes: int
+) -> DownloadedObject:
+    """GET one listed object pinned to its ETag, within ``max_bytes`` and at its listed size.
+
+    A listed size over the cap is refused before any request. Transport failures
+    retry through ``_retry_transient``; every other failure raises.
+    """
+    if size is not None and size > max_bytes:
+        raise ValueError(f"{key} exceeds the {max_bytes} byte cap")
+    get = partial(download_object_bytes, s3_resource, bucket, key, if_match=etag, max_bytes=max_bytes)
+    downloaded = _retry_transient(key, get)
+    if size is not None and size != len(downloaded.content):
+        raise ValueError(f"Mirrulations listed size differs from bytes for {key}")
+    return downloaded
 
 
 #: Enough of an answer to act on, short enough that a receipt can print it whole.
@@ -801,7 +841,7 @@ class MirrulationsReader(Reader):
     def iter_source_objects(
         self,
         *,
-        max_bytes: int = 16 * 1024 * 1024,
+        max_bytes: int = DEFAULT_MAX_OBJECT_BYTES,
     ) -> Iterator[MirrulationsSourceObject]:
         """Capture ordered listing membership and ETag-pinned bytes for every object.
 
@@ -833,30 +873,16 @@ class MirrulationsReader(Reader):
                 if previous_key is not None and key <= previous_key:
                     raise ValueError("Mirrulations listing keys are not strictly ordered")
                 previous_key = key
-                etag = getattr(summary, "e_tag", None)
-                if not isinstance(etag, str) or not etag:
-                    raise ValueError(f"Mirrulations listing lacks an ETag for {key}")
-                listed_size = getattr(summary, "size", None)
-                if listed_size is not None and (
-                    isinstance(listed_size, bool) or not isinstance(listed_size, int) or listed_size < 0
-                ):
-                    raise ValueError(f"Mirrulations listing size is invalid for {key}")
-                yield key, etag, listed_size
+                yield key, *_listed_pin(summary)
 
         def get(entry: tuple[str, str, int | None]) -> DownloadedObject:
-            key, etag, _listed_size = entry
-            return _retry_transient(
-                key,
-                lambda: download_object_bytes(self.s3_resource, self.bucket, key, if_match=etag, max_bytes=max_bytes),
-            )
+            return _pinned_get(self.s3_resource, self.bucket, *entry, max_bytes=max_bytes)
 
         workers = max(1, self.download_workers)
         with ThreadPoolExecutor(max_workers=workers) as executor:
-            for (key, etag, listed_size), downloaded in _bounded_ordered_results(
+            for (key, etag, _listed_size), downloaded in _bounded_ordered_results(
                 executor, listed_entries(), get, workers
             ):
-                if listed_size is not None and listed_size != len(downloaded.content):
-                    raise ValueError(f"Mirrulations listed size differs from bytes for {key}")
                 yield MirrulationsSourceObject(
                     key=key,
                     etag=etag,
@@ -1067,3 +1093,180 @@ def reader_factory(
         )
 
     return read
+
+
+# Mirrulations publishes its own text extraction of comment attachments beside
+# the raw records: one object per tool, comment and attachment number.
+DERIVED_PREFIX: Final = "derived-data"
+
+#: Extraction tools, most preferred first. Every comment takes its text from one
+#: tool. Measured 2026-09-23 over 278 dockets: the complete listings of 238
+#: (every docket with a published 10+-attachment comment, and 40 random published
+#: ones; 100,515 objects) and the tool folders of 40 random dockets of any year,
+#: 347 LISTs in all. Only ``pypdf`` and ``pdfminer`` exist in any of them. The
+#: listed objects lean recent (``pypdf`` 77,931, ``pdfminer`` 22,584), while the
+#: any-year dockets are mostly ``pdfminer``-only (28 of 40; one ``pypdf``, 11
+#: none). 2 of 100,513 listed attachments carry both tools, differing in
+#: whitespace alone. ``pypdf`` leads because it is the mirror's current tool --
+#: each mixed docket's ``pdfminer`` objects date from one 2025-04-13/14 pass, its
+#: ``pypdf`` objects from 2025-07 on -- and because ``pdfminer`` left 1,446
+#: zero-byte objects and ``(cid:N)`` glyph placeholders in 4 of 60 sampled
+#: texts, ``pypdf`` neither. A tool outside this tuple ranks after it, by name.
+#: Receipt: ``~/Work/corpora/supply-2026-09-02/receipts/mirrulations-derived-text-tools-2026-09-23/``.
+DERIVED_TEXT_TOOLS: Final = ("pypdf", "pdfminer")
+
+# ``<comment_id>_attachment_<n>_extracted.txt``; ids never contain the marker.
+# ``[0-9]``, not ``\d``: ``int`` would read other scripts' digits as a number.
+_DERIVED_NAME = re.compile(r"(?P<comment_id>[^/]+)_attachment_(?P<attachment>[0-9]+)_extracted\.txt")
+
+
+def comments_extracted_prefix(agency: str, docket_id: str) -> str:
+    """The one prefix holding a docket's comment-attachment text from every tool.
+
+    An empty or ``/``-containing agency or docket would name another prefix and
+    list nothing, so it is refused.
+    """
+    for name, value in (("agency", agency), ("docket_id", docket_id)):
+        if not value or "/" in value:
+            raise ValueError(f"{name} must be one nonempty path segment, not {value!r}")
+    return f"{DERIVED_PREFIX}/{agency}/{docket_id}/mirrulations/extracted_txt/comments_extracted_text/"
+
+
+@dataclass(frozen=True, slots=True)
+class DerivedAttachment:
+    """One attachment's extracted-text object; ``sha256`` and ``text`` are set once fetched."""
+
+    attachment: int
+    tool: str
+    key: str
+    size: int | None
+    etag: str
+    sha256: str | None = None
+    text: str | None = None
+
+    def to_json(self) -> dict[str, Any]:
+        """The provenance as a plain mapping; the text is the payload and stays out."""
+        return {
+            "attachment": self.attachment,
+            "tool": self.tool,
+            "key": self.key,
+            "size": self.size,
+            "etag": self.etag,
+            "sha256": self.sha256,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class CommentDerivedText:
+    """One comment's attachments from its chosen tool, in attachment-number order.
+
+    ``available_tools`` lists, in preference order, every tool that has text for
+    the comment; ``tool`` is the first. Numbers the chosen tool lacks are never
+    filled from another tool: ``only_in_other_tools`` names those another tool
+    has, and numbers no tool has (an attachment the mirror did not extract) are
+    simply absent.
+    """
+
+    comment_id: str
+    tool: str
+    available_tools: tuple[str, ...]
+    attachments: tuple[DerivedAttachment, ...]
+    only_in_other_tools: tuple[int, ...] = ()
+
+    def to_json(self) -> dict[str, Any]:
+        """The selection and each attachment's provenance as plain JSON values."""
+        return {
+            "comment_id": self.comment_id,
+            "tool": self.tool,
+            "available_tools": list(self.available_tools),
+            "attachments": [attachment.to_json() for attachment in self.attachments],
+            "only_in_other_tools": list(self.only_in_other_tools),
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class DocketDerivedText:
+    """A docket's comments with derived text, and the listed keys the layout does not explain."""
+
+    comments: dict[str, CommentDerivedText]
+    unrecognized_keys: tuple[str, ...] = ()
+
+
+def _tool_rank(tool: str) -> tuple[int, str]:
+    """Sort key: pinned tools in their order, then any other tool by name."""
+    known = DERIVED_TEXT_TOOLS.index(tool) if tool in DERIVED_TEXT_TOOLS else len(DERIVED_TEXT_TOOLS)
+    return known, tool
+
+
+def list_docket_derived_text(
+    s3_resource: Any, agency: str, docket_id: str, *, bucket: str = BUCKET, strict: bool = True
+) -> DocketDerivedText:
+    """List one docket's derived comment text once and choose one tool per comment.
+
+    One paginated listing covers every tool. Attachments order by number, so
+    ``_attachment_2_`` precedes ``_attachment_10_`` although S3 lists them the
+    other way round. A 401/403 raises :class:`MirrulationsAccessRefusedError` and
+    any other listing failure propagates: an unlisted docket is not a docket
+    without text. Two keys naming one tool, comment and number
+    (``_attachment_1_`` and ``_attachment_01_``) refuse the docket, since either
+    could be the attachment's text.
+
+    A key outside the layout means ``comments`` may be incomplete -- the mirror
+    may have moved its text -- so ``strict`` (the default) refuses the docket.
+    ``strict=False`` returns the comments it could read and the keys it could
+    not, for a caller that inspects ``unrecognized_keys`` itself.
+    """
+    prefix = comments_extracted_prefix(agency, docket_id)
+    by_comment: dict[str, dict[str, dict[int, DerivedAttachment]]] = {}
+    unrecognized: list[str] = []
+    for summary in _iter_objects(s3_resource.Bucket(bucket), prefix):
+        tool, _, name = summary.key[len(prefix) :].partition("/")
+        match = _DERIVED_NAME.fullmatch(name)
+        if not tool or match is None:
+            unrecognized.append(summary.key)
+            continue
+        etag, size = _listed_pin(summary)
+        record = DerivedAttachment(int(match["attachment"]), tool, summary.key, size, etag)
+        numbered = by_comment.setdefault(match["comment_id"], {}).setdefault(tool, {})
+        if record.attachment in numbered:
+            raise ValueError(f"{numbered[record.attachment].key} and {record.key} name the same attachment")
+        numbered[record.attachment] = record
+    if strict and unrecognized:
+        raise ValueError(f"{len(unrecognized)} keys under {prefix} are outside the layout, first {unrecognized[0]}")
+
+    comments: dict[str, CommentDerivedText] = {}
+    for comment_id, by_tool in by_comment.items():
+        available = tuple(sorted(by_tool, key=_tool_rank))
+        chosen = by_tool[available[0]]
+        elsewhere = {number for tool in available[1:] for number in by_tool[tool]} - chosen.keys()
+        comments[comment_id] = CommentDerivedText(
+            comment_id,
+            available[0],
+            available,
+            tuple(chosen[number] for number in sorted(chosen)),
+            tuple(sorted(elsewhere)),
+        )
+    return DocketDerivedText(comments, tuple(unrecognized))
+
+
+def fetch_derived_text(
+    s3_resource: Any,
+    comment: CommentDerivedText,
+    *,
+    bucket: str = BUCKET,
+    max_bytes: int = DEFAULT_MAX_OBJECT_BYTES,
+) -> CommentDerivedText:
+    """Fetch the chosen attachments, pinned to their listed ETags, adding digest and text.
+
+    Transport failures retry as in the exact reader. An object listed or served
+    over ``max_bytes``, a changed or vanished object, bytes that differ from the
+    listed size, and a 401/403 raise rather than drop an attachment from the
+    comment's text. ``sha256`` names the bytes as served; ``text`` decodes them
+    as UTF-8, replacing undecodable bytes.
+    """
+    fetched = []
+    for record in comment.attachments:
+        content = _pinned_get(s3_resource, bucket, record.key, record.etag, record.size, max_bytes=max_bytes).content
+        text = content.decode("utf-8", "replace")
+        fetched.append(replace(record, sha256=hashlib.sha256(content).hexdigest(), text=text))
+    return replace(comment, attachments=tuple(fetched))
