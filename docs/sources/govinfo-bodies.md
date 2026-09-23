@@ -620,14 +620,31 @@ writes the package's record in one of three shapes (measured 2026-09-23):
 The first shape is how GovInfo writes every package that holds one granule: it
 flattens that granule's record into the package root. For a single-part report
 the granule id is the package id, so nothing shows. When the one granule is a
-numbered part, `validate_package_mods` admits its `accessId` only if it is
-exactly this package's `-pt{N}`, its `extension` states `granuleClass`, the
-package's own `accessId` is stated too, and no second part is. Only CRPT's
-grammar allows parts (`PackageGrammar.parts`). The renditions are then proved at
-the part's stem, which is `granule_body_locator(package, part, format)`. A
-package-stem URL in such a record would read as moved. The row a caller
-publishes keeps the package id; the part's stem is in `requested_url`, and the
-summary title says `Part 1-`.
+part, `validate_package_mods` admits its `accessId` only if all of these hold:
+
+- it is exactly this package's id plus its grammar's part suffix,
+  `PackageGrammar.part`. Only CRPT has one, and it is `-pt1`, the only spelling
+  a root was measured stating. A lone `-pt2` at the root is refused.
+- its own `extension` states `granuleClass` `FIRSTPART`.
+- the package's own `accessId` is stated too.
+- the record states no `relatedItem type="constituent"`. A Part 2 listed beside
+  the flattened Part 1, the way `CRPT-119hrpt494` lists its `-pt2`, means the
+  package holds more than that one part, so the record is refused rather than
+  read as the whole report.
+
+The renditions are then proved at the part's stem, which is
+`granule_body_locator(package, part, format)`. A package-stem URL in such a
+record would read as moved.
+
+**What `part_id` guarantees.** `mods.part_id` and `body.part_id` guarantee that
+the bytes are that part's own file, at the address the publisher's record
+names for it. They do not guarantee that the part is the whole report: a Part 2
+can be published later under the same package, and the record then changes
+shape. Downstream tables carry only the package id today. A
+`committee_reports` row for `CRPT-119hrpt811` is keyed on the package, the
+part's stem is visible only in `requested_url`, and the title says `Part 1-`.
+How parts should be represented in the report tables is a pending contract
+ruling, not something this reader decides.
 
 The other two shapes are unchanged on purpose. Reading one part of a
 two-part package as the package would publish half a report under the

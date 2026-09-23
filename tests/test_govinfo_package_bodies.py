@@ -688,10 +688,15 @@ def test_a_report_with_two_parts_states_no_rendition_at_its_root() -> None:
 
 
 def part_mods(
-    part: str, *, package: str = PACKAGE, collection: str = "CRPT", granule_class: bool = True, extra: str = ""
+    part: str,
+    *,
+    package: str = PACKAGE,
+    collection: str = "CRPT",
+    granule_class: str | None = "FIRSTPART",
+    extra: str = "",
 ) -> bytes:
     """A flattened one-part record: the package's own extension, then its granule's."""
-    marker = "<granuleClass>FIRSTPART</granuleClass>" if granule_class else ""
+    marker = f"<granuleClass>{granule_class}</granuleClass>" if granule_class else ""
     return (
         '<mods xmlns="http://www.loc.gov/mods/v3">'
         f"<extension><collectionCode>{collection}</collectionCode><accessId>{package}</accessId></extension>"
@@ -708,7 +713,11 @@ def part_mods(
         (part_mods(f"{PACKAGE}-pt0"), PACKAGE, "accessId differs"),
         (part_mods(f"{PACKAGE}-part1"), PACKAGE, "accessId differs"),
         (part_mods(f"{PACKAGE}-pt1a"), PACKAGE, "accessId differs"),
-        (part_mods(f"{PACKAGE}-pt1", granule_class=False), PACKAGE, "accessId differs"),
+        (part_mods(f"{PACKAGE}-pt1", granule_class=None), PACKAGE, "accessId differs"),
+        (part_mods(f"{PACKAGE}-pt1", granule_class="OTHERPART"), PACKAGE, "accessId differs"),
+        # A later part alone at the root is not the package's part 1, whatever its class says.
+        (part_mods(f"{PACKAGE}-pt2"), PACKAGE, "accessId differs"),
+        (part_mods(f"{PACKAGE}-pt2", granule_class="OTHERPART"), PACKAGE, "accessId differs"),
         (
             part_mods("CHRG-119hhrg64242-pt1", package="CHRG-119hhrg64242", collection="CHRG"),
             "CHRG-119hhrg64242",
@@ -720,7 +729,7 @@ def part_mods(
                 extra=f"<extension><granuleClass>OTHERPART</granuleClass><accessId>{PACKAGE}-pt2</accessId></extension>",
             ),
             PACKAGE,
-            "more than one part",
+            "accessId differs",
         ),
         (
             f'<mods xmlns="http://www.loc.gov/mods/v3"><extension><granuleClass>FIRSTPART</granuleClass>'
@@ -730,18 +739,50 @@ def part_mods(
         ),
     ],
 )
-def test_only_this_packages_own_numbered_part_is_admitted(body: bytes, package: str, message: str) -> None:
-    """Another report's part, an unnumbered or unmarked one, a second part, or a record naming no package refuse."""
+def test_only_this_packages_own_part_1_is_admitted(body: bytes, package: str, message: str) -> None:
+    """Another report's part, a later or unmarked part, a second part, or a record naming no package refuse."""
     with pytest.raises(GovInfoBodySourceError, match=message):
         validate_package_mods(body, package=package, final_url=package_mods_locator(package), max_bytes=10_000)
 
 
+#: CRPT-119hrpt494's Part 2 as its package MODS states it (retained 2026-09-21,
+#: ``sha256:8ba1ed0f…``), cut to the constituent's identity and renditions and
+#: re-keyed to CRPT-119hrpt811: what that record would carry if its Part 2 were
+#: listed beside the flattened Part 1.
+PART_2_CONSTITUENT = (
+    '<relatedItem type="constituent" ID="id-hr811p2" xlink:href="https://www.govinfo.gov/metadata/granule/'
+    f'{PART_PACKAGE}/{PART_PACKAGE}-pt2/mods.xml">'
+    "<location>"
+    '<url access="raw object" displayLabel="PDF rendition">'
+    f"https://www.govinfo.gov/content/pkg/{PART_PACKAGE}/pdf/{PART_PACKAGE}-pt2.pdf</url>"
+    '<url access="raw object" displayLabel="HTML rendition">'
+    f"https://www.govinfo.gov/content/pkg/{PART_PACKAGE}/html/{PART_PACKAGE}-pt2.htm</url>"
+    "</location>"
+    f"<extension><granuleClass>OTHERPART</granuleClass><accessId>{PART_PACKAGE}-pt2</accessId></extension>"
+    "</relatedItem>"
+)
+
+
+def test_a_part_at_the_root_with_a_constituent_part_beside_it_is_refused() -> None:
+    """A root Part 1 beside a constituent Part 2 is refused: the flattened part would read as the whole report."""
+    body = PART_MODS.replace(b"</mods>", PART_2_CONSTITUENT.encode() + b"</mods>")
+    with pytest.raises(GovInfoBodySourceError, match="constituents beside it"):
+        validate_package_mods(
+            body, package=PART_PACKAGE, final_url=package_mods_locator(PART_PACKAGE), max_bytes=200_000
+        )
+
+
 @pytest.mark.parametrize(
-    ("package", "part"), [(PACKAGE, "CRPT-119hrpt2-pt1"), ("CHRG-119hhrg64242", "CHRG-119hhrg64242-pt1")]
+    ("package", "part"),
+    [
+        (PACKAGE, "CRPT-119hrpt2-pt1"),
+        (PACKAGE, f"{PACKAGE}-pt2"),
+        ("CHRG-119hhrg64242", "CHRG-119hhrg64242-pt1"),
+    ],
 )
 def test_a_part_locator_is_only_this_packages_own_part(package: str, part: str) -> None:
-    """The locator derives no stem for another package's part or for a collection with no measured parts."""
-    with pytest.raises(GovInfoBodySourceError, match="not a numbered part"):
+    """The locator derives no stem for another package's part, a later part, or a collection with no measured part."""
+    with pytest.raises(GovInfoBodySourceError, match="not a part"):
         package_body_locator(package, "htm", part_id=part)
 
 

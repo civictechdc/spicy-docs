@@ -27,7 +27,13 @@ from spicy_docs.reading.json_input import load_decimal_json
 from spicy_docs.sources.congress.bill_status import BILL_TYPES
 from spicy_docs.sources.govinfo.discovery import API
 from spicy_docs.sources.govinfo.error_page import check_not_error_page
-from spicy_docs.sources.govinfo.mods import MODS_NAMESPACE, GovInfoModsError, ModsRecord, parse_govinfo_mods
+from spicy_docs.sources.govinfo.mods import (
+    MODS_NAMESPACE,
+    GovInfoModsError,
+    GovInfoModsPackage,
+    ModsRecord,
+    parse_govinfo_mods,
+)
 from spicy_docs.transport.source_acquirer import check_final_url, check_payload
 
 CONTENT = "https://www.govinfo.gov"
@@ -136,16 +142,16 @@ class PackageGrammar:
     2026-09-20). It lives beside the pattern so a collection states everything
     about itself in one place and no check has to assume the two agree.
 
-    ``parts`` says whether this collection's package record can state one
-    numbered part, ``{package id}-pt{N}``, in place of its own stem (see
-    ``validate_package_mods``). Measured on CRPT alone, so no other collection
-    claims it.
+    ``part`` is the suffix after the package id that names the one part a
+    package record's root may state in place of its own stem (see
+    ``validate_package_mods``), or ``None`` where no record was measured
+    stating one.
     """
 
     pattern: re.Pattern[str]
     example: str
     collection_code: str
-    parts: bool = False
+    part: re.Pattern[str] | None = None
 
 
 _GRAMMARS: dict[str, PackageGrammar] = {
@@ -153,7 +159,11 @@ _GRAMMARS: dict[str, PackageGrammar] = {
         re.compile(rf"(?P<congress>{_CONGRESS})(?P<type>hrpt|srpt|erpt)(?P<number>{_NUMBER})"),
         "119hrpt1",
         "CRPT",
-        parts=True,
+        # Only part 1: every one-part record measured 2026-09-23 names
+        # ``-pt1`` at its root (CRPT-119hrpt811, CRPT-112hrpt38 and six
+        # more). A later part (``-pt2``) appears only as a constituent, which
+        # is never read as the package.
+        part=re.compile(r"-pt1"),
     ),
     "CHRG": PackageGrammar(
         re.compile(rf"(?P<congress>{_CONGRESS})(?P<type>hhrg|shrg|jhrg)(?P<number>{_JACKET})"), "119hhrg64242", "CHRG"
@@ -629,10 +639,11 @@ class PackageModsIdentity:
     #: (``interpretation/hearing_bill_links.py``); ``None`` for a collection
     #: whose records state none, which every sampled CRPT record does.
     held_date: str | None = None
-    #: The one numbered part (``CRPT-119hrpt811-pt1``) the root states in
-    #: place of the package's own stem, or ``None``. A granule of this
-    #: package, never a package id: ``offered_formats`` were proved at its
-    #: stem, which is where the package's body is fetched from.
+    #: The part 1 (``CRPT-119hrpt811-pt1``) the root states in place of the
+    #: package's own stem, or ``None``. A granule of this package, never a
+    #: package id: ``offered_formats`` were proved at its stem, which is where
+    #: the package's body is fetched from. It says whose file the bytes are,
+    #: not that the part is the whole report.
     part_id: str | None = None
 
     @property
@@ -1002,35 +1013,30 @@ def _format(name: object) -> BodyFormat:
     return PACKAGE_BODY_FORMATS[name]
 
 
-# A multi-part report's parts are its granules, spelled ``{package id}-pt{N}``
-# (measured 2026-09-23: CRPT-119hrpt811-pt1, CRPT-119hrpt455-pt2,
-# CRPT-108hrpt24-pt2). The package id never carries the suffix.
-_PART_SUFFIX = re.compile(rf"-pt{_NUMBER}")
-
-
 def _is_part_of(identity: PackageIdentity, value: object) -> bool:
-    """Whether ``value`` is a numbered part of this package, in a collection whose records state one."""
+    """Whether ``value`` is this package's id followed by its collection's part suffix."""
+    part = _GRAMMARS[identity.collection].part
     return (
-        _GRAMMARS[identity.collection].parts
+        part is not None
         and isinstance(value, str)
         and value.startswith(identity.package_id)
-        and _PART_SUFFIX.fullmatch(value, len(identity.package_id)) is not None
+        and part.fullmatch(value, len(identity.package_id)) is not None
     )
 
 
 def package_body_locator(package: PackageIdentity | str, format: str, *, part_id: str | None = None) -> str:
     """Return the keyless rendition locator in ``O(I)`` time.
 
-    ``part_id`` is the numbered part a one-part report's record states in place
-    of the package's own stem (``PackageModsIdentity.part_id``); the rendition
-    is then that part's, which is a granule's address. Only this package's own
-    part is accepted.
+    ``part_id`` is the part a one-part report's record states in place of the
+    package's own stem (``PackageModsIdentity.part_id``); the rendition is
+    then that part's, which is a granule's address. Only this package's own
+    part, spelled as its grammar's ``part``, is accepted.
     """
     identity = _identity(package)
     body_format = _format(format)
     if part_id is not None:
         if not _is_part_of(identity, part_id):
-            raise GovInfoBodySourceError(f"{part_id!r} is not a numbered part of {identity.package_id}")
+            raise GovInfoBodySourceError(f"{part_id!r} is not a part of {identity.package_id}")
         return granule_body_locator(identity, part_id, format)
     package_id = identity.package_id
     return f"{CONTENT}/content/pkg/{package_id}/{body_format.folder}/{package_id}.{body_format.extension}"
@@ -1218,8 +1224,8 @@ def validate_package_mods(
     another file type, another host) is recorded verbatim and means nothing
     about this fetch.
 
-    One accessId other than the package's own is admitted: the numbered part
-    a one-part report states in place of its stem (``_stated_part``). The
+    One accessId other than the package's own is admitted: the part 1 a
+    one-part report states in place of its stem (``_stated_part``). The
     renditions are then proved at that part's stem, and ``part_id`` says so.
     """
     identity = _identity(package)
@@ -1238,7 +1244,7 @@ def validate_package_mods(
     access_ids = tuple(element.text.strip() for element in root.fields("extension", "accessId"))
     if not access_ids:
         raise GovInfoBodySourceError("GovInfo package MODS states no accessId")
-    part_id = _stated_part(root, identity)
+    part_id = _stated_part(parsed, identity)
     if identity.package_id not in access_ids or any(
         value not in (identity.package_id, part_id) for value in access_ids
     ):
@@ -1271,8 +1277,8 @@ def validate_package_mods(
     )
 
 
-def _stated_part(root: ModsRecord, identity: PackageIdentity) -> str | None:
-    """The numbered part a one-part report's root states beside the package's own accessId, or ``None``.
+def _stated_part(parsed: GovInfoModsPackage, identity: PackageIdentity) -> str | None:
+    """The part 1 a one-part report's root states beside the package's own accessId, or ``None``.
 
     GovInfo writes a package that holds one granule by flattening the
     granule's record into the package root: a second root ``extension``
@@ -1287,21 +1293,27 @@ def _stated_part(root: ModsRecord, identity: PackageIdentity) -> str | None:
     type="constituent"`` and no rendition at its root, so nothing here reads
     it.
 
-    So an accessId counts as a part only when it is this package's numbered
-    part and its extension also states ``granuleClass``; anything else is left
-    for the caller's accessId check to refuse, and two parts at one root are
-    refused here.
+    So an accessId counts as the part only when it is this package's part 1
+    (its grammar's ``part``) and its own extension states ``granuleClass``
+    ``FIRSTPART``; anything else is left for the caller's accessId check to
+    refuse, a later part included. The flattened shape means the package
+    holds that one granule and nothing else, so a record that also states any
+    constituent -- a Part 2 published beside it, the way CRPT-119hrpt494
+    states its ``-pt2`` -- is refused here rather than read as the whole
+    package.
     """
-    parts = {
+    stated = [
         value
-        for extension in map(ModsRecord, root.fields("extension"))
-        if extension.fields("granuleClass")
+        for extension in map(ModsRecord, parsed.package.fields("extension"))
+        if any(element.text.strip() == "FIRSTPART" for element in extension.fields("granuleClass"))
         for element in extension.fields("accessId")
         if _is_part_of(identity, value := element.text.strip())
-    }
-    if len(parts) > 1:
-        raise GovInfoBodySourceError("GovInfo package MODS states more than one part at its root")
-    return next(iter(parts), None)
+    ]
+    if not stated:
+        return None
+    if parsed.constituents:
+        raise GovInfoBodySourceError("GovInfo package MODS states a part at its root and constituents beside it")
+    return stated[0]
 
 
 def validate_granule_mods(
