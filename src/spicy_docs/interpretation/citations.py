@@ -65,9 +65,15 @@ MONTHS: tuple[str, ...] = (
 )
 
 #: A bill designator, then a separator, then the number.  Both halves were
-#: re-derived from measured false positives (module docstring).
+#: re-derived from measured false positives (module docstring).  The first
+#: guard refuses a designator right after a letter and a period -- ``U.S.``,
+#: and since 002 ``R.S. 2477`` (a Revised Statutes section) and ``W.S.
+#: 11-6-302`` (Wyoming's), which read as Senate bills. It is the guard
+#: ``release_matching``'s own alternation carried when this rule replaced it
+#: (consolidation item A9): over the survey's 143,964 retained texts it
+#: removed those 9 matches and no other.
 CONGRESS_CHAMBER = (
-    r"(?<!U\.)(?<!U\.\s)(?<![A-Za-z])"
+    r"(?<![A-Za-z]\.)(?<!U\.\s)(?<![A-Za-z])"
     r"(?:H\.?\s?R|H\.?\s?J\.?\s?Res|H\.?\s?Con\.?\s?Res|H\.?\s?Res"
     r"|S\.?\s?J\.?\s?Res|S\.?\s?Con\.?\s?Res|S\.?\s?Res|S)"
 )
@@ -510,7 +516,7 @@ class CitationRule:
 CITATION_RULES: tuple[CitationRule, ...] = (
     CitationRule(
         name="bill_number",
-        version="001",
+        version="002",
         pattern=rf"{CONGRESS_CHAMBER}[.\s]\s?\d{{1,5}}\b",
         target_table="congress_bills",
         target_key_shape="bill_id: {congress}-{bill_type}-{number}, from the caller's stated Congress",
@@ -524,6 +530,8 @@ CITATION_RULES: tuple[CitationRule, ...] = (
             "HR974",
             "S4601",
             "ANALYSIS. 12",
+            "R.S. 2477",
+            "W.S. 11-6-302",
         ),
         note="chamber designator plus number; the Congress must come from the document's own date or index row",
         target=_bill_target,

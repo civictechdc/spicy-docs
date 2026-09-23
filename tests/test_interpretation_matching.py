@@ -1,7 +1,7 @@
 """Vote, release, member and interest-area matching: the corrected behaviours, measured.
 
 Pins the sealed recorded-vote shape and roll-number index with its refusals and
-conflicts, release patterns compiled once per bill, member precedence
+conflicts, release mentions read by the shared bill-number rule, member precedence
 (bioguide, LIS crosswalk, then name) with term-ended members excluded, and
 keyword matching under the InnoDB index's token bounds. Ends end-to-end on
 parsed BILLSTATUS fixtures.
@@ -218,8 +218,8 @@ def test_two_sources_disagreeing_on_a_vote_are_kept_as_a_conflict() -> None:
 # --- release matching ---
 
 
-def test_release_matching_compiles_one_pattern_per_bill(monkeypatch: pytest.MonkeyPatch) -> None:
-    """One pattern is compiled per bill and reused across releases, never rebuilt per release-bill pair."""
+def test_release_matching_compiles_nothing_per_bill_or_per_release(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The shared bill-number rule is compiled once, at import; no bill and no release compiles another."""
     bills = tuple(BillIdentity(119, "hr", number) for number in range(1, 201))
     releases = tuple(Release(f"release-{index}", f"Chairman statement on H.R. {index + 1}") for index in range(500))
 
@@ -233,14 +233,28 @@ def test_release_matching_compiles_one_pattern_per_bill(monkeypatch: pytest.Monk
 
     monkeypatch.setattr(re, "compile", counting_compile)
     patterns = compile_bill_patterns(bills)
-    assert compiles == 200
-
-    compiles = 0
     matches = match_releases(releases, patterns)
     # BillTrax rebuilt a pattern per (release, bill) pair: 500 x 200 here.
     assert compiles == 0
     assert len(matches) == 500
     assert matches[0].bill == BillIdentity(119, "hr", 1)
+
+
+@pytest.mark.parametrize(
+    ("title", "bill"),
+    [
+        # Survey item A9: a Congressional Record page, a paragraph label and a
+        # U.S. Code section are not Senate bills, and a possessive is not a
+        # designator. Each was a key the 001 alternation read.
+        ("Remarks at CR S4530 on the floor", BillIdentity(119, "s", 4530)),
+        ("See paragraph S9 of the agreement", BillIdentity(119, "s", 9)),
+        ("Amends 42 U.S.C. S300f", BillIdentity(119, "s", 300)),
+        ("The President's 2027 budget request", BillIdentity(119, "s", 2027)),
+    ],
+)
+def test_what_is_not_a_bill_number_names_no_bill(title: str, bill: BillIdentity) -> None:
+    """The shared rule needs a separator and the designator's capitals, so none of these names a bill."""
+    assert match_releases((Release("r", title),), compile_bill_patterns((bill,)))[0].bill is None
 
 
 def test_a_release_with_no_description_still_matches_on_its_title() -> None:

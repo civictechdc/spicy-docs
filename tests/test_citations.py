@@ -161,18 +161,19 @@ def test_every_rule_states_a_version_a_merge_can_order(rule) -> None:
 
 
 def test_the_rules_whose_published_keys_changed_moved_their_version() -> None:
-    """Seven rules have changed which keys they publish, and each moved its version.
+    """Eight rules have changed which keys they publish, and each moved its version.
 
     ``rin``, ``docket_number`` and ``us_reports_cite`` gained a target reader:
     each had been publishing its measurement-comparison form --
     ``RIN3133AF97`` rather than the ``3133-AF97``
     ``regulation_id_numbers_json`` holds. The four grammar kinds moved to the
-    citation grammar at 002, which respells, splits and newly reads keys. In
-    every case the procedure applied: move the version, re-pin the digest,
-    re-pin the fixture counts.
+    citation grammar at 002, which respells, splits and newly reads keys.
+    ``bill_number`` 002 refuses a designator after a letter and a period
+    (``R.S. 2477``). In every case the procedure applied: move the version,
+    re-pin the digest, re-pin the fixture counts.
     """
     moved = {rule.name for rule in CITATION_RULES if rule.version != "001"}
-    assert moved == {"rin", "docket_number", "us_reports_cite", *GRAMMAR_KINDS}
+    assert moved == {"rin", "docket_number", "us_reports_cite", "bill_number", *GRAMMAR_KINDS}
     assert {rule.name for rule in CITATION_RULES if rule.reader is not None} == set(GRAMMAR_KINDS)
     assert {CITATION_RULES_BY_NAME[kind].version for kind in GRAMMAR_KINDS} == {"002"}
 
@@ -188,7 +189,7 @@ def test_the_rule_set_version_is_pinned_to_these_rules() -> None:
     passed the whole suite, since a reject that is no longer asserted cannot
     fail.
     """
-    assert CITATION_RULE_SET_VERSION == "3e37cb2c193a"
+    assert CITATION_RULE_SET_VERSION == "1a0aac6065b6"
 
 
 def test_the_stored_kinds_are_every_rule_that_reaches_a_key() -> None:

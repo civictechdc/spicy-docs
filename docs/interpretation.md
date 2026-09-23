@@ -21,7 +21,7 @@ rather than buried in control flow.
 | `money_bills` | a bill title, its identity, and referral signals from `BillStatus.committees` system codes | `MoneyBillFinding` (kind, subcommittee, fiscal year, rule, reason codes) |
 | `bill_signals` | normalized document text and candidate catalog rows | `ExtractedSignals` (with `title_source`) and ranked `BillMatch` records, each signal reported with its weight and score |
 | `vote_matching` | `BillAction.recorded_votes`, and House vote `legislationType`/`legislationNumber` | `RecordedVoteReferences` (references plus per-entry refusals), a `VoteIndex` with conflicts, and one `VoteMatch` per vote |
-| `release_matching` | committee RSS items (title, and description where a feed sends one) and bill identities | one compiled `BillPattern` per bill, and `ReleaseMatch` naming the field the mention was found in |
+| `release_matching` | committee RSS items (title, and description where a feed sends one) and bill identities | one `BillPattern` entry per bill, and `ReleaseMatch` naming the field the mention was found in; mentions are read by `citations`' `bill_number` rule |
 | `member_matching` | a bioguide id, a Senate LIS id or a sponsor display string, the legislators crosswalk, and a `MemberIndex` built once from published member rows | `MemberMatch` (bioguide, rule, score) |
 | `interest_areas` | a reader's keyword list and parsed bill sections | `SectionMatch` (excerpt, area, matched keywords, rule, relevance) |
 | `version_kind` | a bill version's `version_code` slug and, for the size heuristic, its extracted section count or body byte length | `VersionKindFinding` (kind, the rule that fired, section count, body bytes); `version_kind` is a thin wrapper returning just the kind |
@@ -75,12 +75,14 @@ old outcome beside the new one.
 - **Vote matching reads structured references.** The regex over vote question
   text could not match any Senate bill. `recordedVotes` on the bill's own action
   is the join, and the House vote route states the legislation in two fields.
-- **Release matching compiles one pattern per bill, once**, built from that
-  bill's own type with the number escaped and bounded. The source rebuilt a
-  pattern per (release, bill) pair and offered the bare number as an
-  alternative, so bill 1 matched any `1`. Matching runs field by field, title
-  first, and reports which field matched, because one of the two feeds sends no
-  description at all.
+- **Release matching reads a mention once per field**, with the shared
+  `bill_number` citation rule, and looks the number up exactly as written. The
+  source rebuilt a pattern per (release, bill) pair and offered the bare number
+  as an alternative, so bill 1 matched any `1`; the port's own per-type
+  alternation (`RELEASE_MATCH_RULE_VERSION` 001) still read `CR S4530` as a
+  Senate bill, which the shared rule does not. Matching runs field by field,
+  title first, and reports which field matched, because one of the two feeds
+  sends no description at all.
 - **Member matching prefers identifiers.** Bioguide, then LIS through the
   crosswalk, then the name; the name path strips the bracketed
   party/state/district block and reads the surname before the comma, and always

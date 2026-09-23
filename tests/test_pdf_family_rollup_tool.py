@@ -196,8 +196,10 @@ def test_the_recommendation_marker_reads_the_publishers_heading_not_a_verb() -> 
 def test_the_committed_sidecar_was_written_by_these_rules() -> None:
     """The committed sidecar's spot-check and rule patterns match the rules this tool runs.
 
-    The four the citation grammar reads are run here at the 001 the sidecar
-    recorded.
+    One has moved since, and by one guard only: ``bill_number`` 002 refuses a
+    designator after a letter and a period (``R.S. 2477``) where 001 refused
+    it after ``U.`` alone. The four the citation grammar reads are run here at
+    the 001 the sidecar recorded.
     """
     sidecar = json.loads(SIDECAR.read_text())
     recorded = {entry["name"]: entry["pattern"] for entry in sidecar["join_key_rules"]}
@@ -205,7 +207,8 @@ def test_the_committed_sidecar_was_written_by_these_rules() -> None:
 
     assert sidecar["spot_check_failures"] == {}
     assert list(recorded) == list(running)
-    assert {name for name in running if recorded[name] != running[name]} == set()
+    assert {name for name in running if recorded[name] != running[name]} == {"bill_number"}
+    assert recorded["bill_number"].replace("(?<!U\\.)(?<!U", "(?<![A-Za-z]\\.)(?<!U", 1) == running["bill_number"]
     assert {name for name, rule in MEASURED_001_RULES.items() if CITATION_RULES_BY_NAME[name].reader is None} == set()
 
 
