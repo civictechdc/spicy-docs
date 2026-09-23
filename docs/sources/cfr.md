@@ -130,6 +130,14 @@ The receipt is in
 exact response URL. A subset may omit its title; an annual volume may omit its
 volume number. Those native fields remain `None`.
 
+Two annual volume shapes pass only on the publisher's own statement. 2025 Title
+34 vol 4 also prints reserved Title 35: its title page follows that `TITLENUM`
+with `RESERVED`, and no section follows its heading; any other second title is
+refused. 40 CFR vol 9 prints no `SECTION`; its title page reads `Part 60
+(Appendices)`, and only then does `APPENDIX` text count as source content. With
+both, all 262 retained 2025 volumes validate; the receipt is in
+`corpora/supply-2026-09-02/receipts/cfr-annual-validation-2026-09-23/`.
+
 The requested API date is not an amendment date. An annual edition can also
 carry an older printed revision. Keep both dates; their difference produces no
 warning and does not establish the publication type.
