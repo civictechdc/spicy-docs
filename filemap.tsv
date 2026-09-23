@@ -117,6 +117,7 @@ src/spicy_docs/interpretation/gemini_call.py	Adapter: a Gemini client as the ``M
 src/spicy_docs/interpretation/hearing_bill_links.py	Which bills a hearing was held on, per source, with the rule that said so.	src
 src/spicy_docs/interpretation/identifier_shapes.py	Catalog identifier shapes: RIN, Federal Register documents, dockets.	src
 src/spicy_docs/interpretation/interest_areas.py	Match a reader's interest-area keywords against bill section bodies.	src
+src/spicy_docs/interpretation/iri_minting.py	The minting layer: shapes in, one canonical ``urn:rkaf`` identifier out.	src
 src/spicy_docs/interpretation/member_matching.py	Resolve a sponsor or voter reference to one member of Congress.	src
 src/spicy_docs/interpretation/model_call.py	The one injected model seam the two model-backed interpretation modules share.	src
 src/spicy_docs/interpretation/money_bills.py	Money-bill classification from a bill's title and its committee referrals.	src
@@ -411,6 +412,7 @@ tests/test_cfr_capture_example.py	The runnable capture example retains exact byt
 tests/test_cfr_edition.py	Publisher flags classify editions; body dates cannot establish cover-only status.	test
 tests/test_cfr_sources.py	CFR request locators and response checks retain source dates and refuse false identity.	test
 tests/test_cfr_subject_index.py	CFR subject-index HTML: literal source markup, anomalies and original-byte positions.	test
+tests/test_cfr_zero_parts.py	Part zero is published and fits the existing Rulespec identifier space.	test
 tests/test_citation_grammar.py	The single citation grammar, and the two defects the port fixed.	test
 tests/test_citations.py	The citation rules and the two activity reports they are pinned on.	test
 tests/test_cli_list_pages.py	One command walks any registered list route: exact page blobs, receipt rows, and refusals that exit non-zero.	test
@@ -499,6 +501,7 @@ tests/test_interpretation_gemini_call.py	The Gemini adapter: the request it buil
 tests/test_interpretation_matching.py	Vote, release, member and interest-area matching: the corrected behaviours, measured.	test
 tests/test_interpretation_model_backed.py	Section classification and bill summaries: sealed prompts, injected model, kept provenance.	test
 tests/test_interpretation_money_bills.py	Money-bill classification: the eighteen ported BillTrax cases plus the rule and reason-code contract.	test
+tests/test_iri_minting.py	The minting layer, each rule pinned by the evidence that bought it.	test
 tests/test_json_records.py	The shared JSON record reader: frozen-parser parity, exact record slices, and named refusals.	test
 tests/test_law_tables.py	Enacted-law rows: the citation reaches the row only through a proved join.	test
 tests/test_lda_and_courtlistener_search.py	LDA and CourtListener list routes: URL builders, optional token credentials, and page continuations.	test

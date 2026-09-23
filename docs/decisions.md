@@ -1170,6 +1170,55 @@ What a later change must preserve:
   2026-09-20 sidecar it wrote, and the MODS re-check runs on the same rules,
   so both receipts stay reproducible while the product's rules move.
 
+## The stack's identifier minting lives beside the shapes
+
+RefSpec's `iri_minting` is now `interpretation/iri_minting.py` (2026-09-23).
+spicy-regs, rulespec-projection and spicysearch each re-implement RIN, CFR,
+executive-order, Federal Register and docket minting, and spicy-regs decision
+28 puts the minters here, beside the identifier shapes they refuse over, not in
+Rulespec Core: spicy-docs is the one place all of them can import. REF-024
+(RefSpec `docs/decisions.md`) still assigns identity functions to Rulespec
+Core. Decision 28 proposes narrowing that clause so Core owns the lexical
+spaces and spicy-docs' tests hold its minters to them; that amendment awaits
+the owner's confirmation, and REF-024 is not amended.
+
+Behaviour is RefSpec `4a680c81`'s but for three dockets. Over 3,966,225
+paired calls (RefSpec's pinned Federal Register and Unified Agenda columns,
+every literal in its minting, zero-part and shape tests, and fuzz) the two
+minters' outputs, `ValueError` messages included, are byte-identical except
+the dockets this repository's column docket reader newly reads since
+2026-09-23, those ending in a `-RULE`-family token:
+`GIPSA-2008-FGIS-0002-NONRULEMAKING`, `GIPSA-2010-FGIS-0014-NONRULEMAKING` and
+`Docket #GIPSA-2010-FGIS-0014-NONRULEMAKING` mint here and are refused there.
+The last is real, the one such value in the pinned Federal Register
+`docket_ids_json`. The minter wraps that reader and adds no opinion of its
+own, so RefSpec's expectation at `tests/test_identifier_shapes.py:365` moves
+when it adopts the module. The module docstring records the RefSpec path and
+commit.
+
+What a later change must preserve:
+
+- **The partner namespace stays `refspec`.** It is spelled into every
+  `urn:rkaf:partner:refspec:` identifier already minted.
+- **Both copied tables are checked only in RefSpec, once it adopts.**
+  `_FR_COLLISION_VERDICTS` restates the seven REF-066 rows of RefSpec's
+  `hand_validated_interpretations`, whose census, witnesses and audit stay
+  there, and `IDENTIFIER_SPACES` restates the compiled profiles in RefSpec's
+  vendored `rulespec-conformance` wheel. spicy-docs can read neither source:
+  RefSpec is not a dependency, the wheel deliberately is not
+  (`tests/releases/test_compatibility.py`), and `rulespec-artifacts`, which
+  is, carries no identifier space. RefSpec's adoption therefore adds a test
+  holding its collision table equal to the imported `_FR_COLLISION_VERDICTS`,
+  and points `test_the_minted_spaces_are_the_contract_verbatim` at the
+  imported `IDENTIFIER_SPACES`. A new collision lands in RefSpec's evidence
+  first and must then be carried here.
+- **spicy-regs' adoption is a question of timing only.** Its decision 27
+  chose these rkaf spaces and the deletion of `urn:spicy-regs:frdoc`, having found
+  that no published spicy-regs column carries that prefix; its one writer,
+  `federal_register_identifier` (`ontology/citations.py`), has no build
+  caller. The RIN, CFR and executive-order minters agree with spicy-regs' on
+  every measured value but two en-dash RINs, which only this one mints.
+
 ## A Mirrulations key that produced no record is unresolved, never processed
 
 **2026-09-20**, closing candidate F2 of the

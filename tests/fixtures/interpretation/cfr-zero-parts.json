@@ -1,0 +1,190 @@
+{
+  "label_basis": "Publisher XML PART 0 headings and first sections; shape/identity evidence, not applicability or existence in other editions.",
+  "cases": [
+    {
+      "title": 15,
+      "part": "0",
+      "head": "PART 0 [RESERVED]",
+      "opening_and_head": "<DIV5 N=\"0\" TYPE=\"PART\" VOLUME=\"1\">\n<HEAD>PART 0 [RESERVED] \n\n\n\n\n\n\n</HEAD>",
+      "section_count": 0,
+      "first_section": null,
+      "source": {
+        "path": "/Users/mikewolfd/Work/RefSpec/output/ecfr-title-xml-2026-08-24/title-15.xml",
+        "sha256": "f7cfb411ed8cd090598dcc9fdb14acd269f09f0167c1a2e508ac90fe42e4b0fe",
+        "date": "2026-08-18",
+        "url": "https://www.ecfr.gov/api/versioner/v1/full/2026-08-18/title-15.xml",
+        "start_byte": 233,
+        "end_byte": 315,
+        "part_sha256": "09fb28b18ad8ae3a3812de668c0e3f4c0dad856e6a9dbf068f8fb3e1afea5606"
+      }
+    },
+    {
+      "title": 16,
+      "part": "0",
+      "head": "PART 0—ORGANIZATION",
+      "opening_and_head": "<DIV5 N=\"0\" TYPE=\"PART\" VOLUME=\"1\">\n<HEAD>PART 0—ORGANIZATION\n</HEAD>",
+      "section_count": 20,
+      "first_section": {
+        "number": "0.1",
+        "head": "§ 0.1   The Commission.",
+        "first_paragraph": "The Federal Trade Commission is an independent administrative agency that was organized in 1915 pursuant to the Federal Trade Commission Act of 1914 (38 Stat. 717, as amended; 15 U.S.C. 41-58). It is responsible for the administration of a variety of statutes that, in general, are designed to promote competition and to protect the public from unfair and deceptive acts and practices in the advertising and marketing of goods and services. It is composed of five members appointed by the President and confirmed by the Senate for terms of seven years.\n"
+      },
+      "source": {
+        "path": "/Users/mikewolfd/Work/RefSpec/output/ecfr-title-xml-2026-08-24/title-16.xml",
+        "sha256": "86217ac9cad88c597ad42afee9e34a18c7c2617b82ded046faeafc1ca55a191a",
+        "date": "2026-08-18",
+        "url": "https://www.ecfr.gov/api/versioner/v1/full/2026-08-18/title-16.xml",
+        "start_byte": 334,
+        "end_byte": 19847,
+        "part_sha256": "6b5d4ee934ce9fdb80a06d9335db26c71c1f719d476003ca3d92e1e17f1bc728"
+      }
+    },
+    {
+      "title": 19,
+      "part": "0",
+      "head": "PART 0—TRANSFERRED OR DELEGATED AUTHORITY",
+      "opening_and_head": "<DIV5 N=\"0\" TYPE=\"PART\" VOLUME=\"1\">\n<HEAD>PART 0—TRANSFERRED OR DELEGATED AUTHORITY \n</HEAD>",
+      "section_count": 2,
+      "first_section": {
+        "number": "0.1",
+        "head": "§ 0.1   Customs revenue function regulations issued under the authority of the Departments of the Treasury and Homeland Security.",
+        "first_paragraph": "(a) Regulations requiring signatures of Treasury and Homeland Security. (1) By Treasury Department Order No. 100-16, set forth in the appendix to this part, the Secretary of the Treasury has delegated to the Secretary of Homeland Security the authority to prescribe all CBP regulations relating to customs revenue functions, except that the Secretary of the Treasury retains the sole authority to approve such CBP regulations concerning subject matters listed in paragraph 1(a)(i) of the order. Regulations for which the Secretary of the Treasury retains the sole authority to approve will be signed by the Secretary of Homeland Security (or his or her DHS delegate), and by the Secretary of the Treasury (or his or her Treasury delegate) to indicate approval. \n"
+      },
+      "source": {
+        "path": "/Users/mikewolfd/Work/RefSpec/output/ecfr-title-xml-2026-08-24/title-19.xml",
+        "sha256": "5e33e9206fe5440f6b49d390ef5b9a77939c39b063012851155d53fa4c5adf73",
+        "date": "2026-08-12",
+        "url": "https://www.ecfr.gov/api/versioner/v1/full/2026-08-12/title-19.xml",
+        "start_byte": 283,
+        "end_byte": 10874,
+        "part_sha256": "6f895ba9db285163b3bde93702c7f6976efd1b530ca5cdc18cc7151161f1e1c2"
+      }
+    },
+    {
+      "title": 24,
+      "part": "0",
+      "head": "PART 0—STANDARDS OF CONDUCT",
+      "opening_and_head": "<DIV5 N=\"0\" TYPE=\"PART\" VOLUME=\"1\">\n<HEAD>PART 0—STANDARDS OF CONDUCT\n\n\n</HEAD>",
+      "section_count": 1,
+      "first_section": {
+        "number": "0.1",
+        "head": "§ 0.1   Cross-reference to employees ethical conduct standards and financial disclosure regulations.",
+        "first_paragraph": "Employees of the Department of Housing and Urban Development (Department) are subject to the executive branch-wide standards of ethical conduct at 5 CFR part 2635, the Department's regulation at 5 CFR part 7501 which supplements the executive branch-wide standards, and the executive branch-wide financial disclosure regulation at 5 CFR part 2634. \n"
+      },
+      "source": {
+        "path": "/Users/mikewolfd/Work/RefSpec/output/ecfr-title-xml-2026-08-24/title-24.xml",
+        "sha256": "024bed569f1da4f62f07e3bc9dc9b57e3b87fd988ba57da9de9ecde6b57a1b21",
+        "date": "2026-08-20",
+        "url": "https://www.ecfr.gov/api/versioner/v1/full/2026-08-20/title-24.xml",
+        "start_byte": 269,
+        "end_byte": 1002,
+        "part_sha256": "cff28a0b7930dd92c4455535fa3d085091b695bbbcafe89642e6ea5265bb03a2"
+      }
+    },
+    {
+      "title": 28,
+      "part": "0",
+      "head": "PART 0—ORGANIZATION OF THE DEPARTMENT OF JUSTICE",
+      "opening_and_head": "<DIV5 N=\"0\" TYPE=\"PART\" VOLUME=\"1\">\n<HEAD>PART 0—ORGANIZATION OF THE DEPARTMENT OF JUSTICE\n</HEAD>",
+      "section_count": 199,
+      "first_section": {
+        "number": "0.1",
+        "head": "§ 0.1   Organizational units.",
+        "first_paragraph": "The Department of Justice shall consist of the following principal organizational units:\n"
+      },
+      "source": {
+        "path": "/Users/mikewolfd/Work/RefSpec/output/ecfr-title-xml-2026-08-24/title-28.xml",
+        "sha256": "8b9a1456852e1bb2cc1faabf4c2937576498aafdadb16564133598236a79a8a4",
+        "date": "2026-08-20",
+        "url": "https://www.ecfr.gov/api/versioner/v1/full/2026-08-20/title-28.xml",
+        "start_byte": 218,
+        "end_byte": 415557,
+        "part_sha256": "10cfdf0fbd89dff5f7699649bb8584727cc062dbc0a8e0f43d2f33a90bd75869"
+      }
+    },
+    {
+      "title": 29,
+      "part": "0",
+      "head": "PART 0—ETHICS AND CONDUCT OF DEPARTMENT OF LABOR EMPLOYEES",
+      "opening_and_head": "<DIV5 N=\"0\" TYPE=\"PART\" VOLUME=\"1\">\n<HEAD>PART 0—ETHICS AND CONDUCT OF DEPARTMENT OF LABOR EMPLOYEES\n</HEAD>",
+      "section_count": 12,
+      "first_section": {
+        "number": "0.735-1",
+        "head": "§ 0.735-1   Cross-references to employee ethical conduct standards, financial disclosure regulations and other ethics regulations.",
+        "first_paragraph": "Employees of the Department of Labor (Department) are subject to the executive branch-wide standards of ethical conduct at 5 CFR part 2635, the Department's regulations at 5 CFR part 5201 which supplement the executive branch-wide standards, the executive branch financial disclosure regulations at 5 CFR part 2634, the conflicts of interest regulations at 5 CFR part 2640, and the post employment regulations at 5 CFR part 2641.\n"
+      },
+      "source": {
+        "path": "/Users/mikewolfd/Work/RefSpec/output/ecfr-title-xml-2026-08-24/title-29.xml",
+        "sha256": "dffae01d0b7fc8ba9f34499c317265e62e2156ff39940b14050b07a5b73a7024",
+        "date": "2026-08-04",
+        "url": "https://www.ecfr.gov/api/versioner/v1/full/2026-08-04/title-29.xml",
+        "start_byte": 209,
+        "end_byte": 9810,
+        "part_sha256": "9fd861d43f8e6f17bb92fd349c355239b010b3a8dc9ee6809846d997d27d86ab"
+      }
+    },
+    {
+      "title": 31,
+      "part": "0",
+      "head": "PART 0—DEPARTMENT OF THE TREASURY EMPLOYEE RULES OF CONDUCT",
+      "opening_and_head": "<DIV5 N=\"0\" TYPE=\"PART\" VOLUME=\"1\">\n<HEAD>PART 0—DEPARTMENT OF THE TREASURY EMPLOYEE RULES OF CONDUCT\n</HEAD>",
+      "section_count": 24,
+      "first_section": {
+        "number": "0.101",
+        "head": "§ 0.101   Purpose.",
+        "first_paragraph": "The regulations in this part prescribe procedures and standards of conduct that are appropriate to the particular functions and activities of the Department of the Treasury (Department).\n\n\n"
+      },
+      "source": {
+        "path": "/Users/mikewolfd/Work/RefSpec/output/ecfr-title-xml-2026-08-24/title-31.xml",
+        "sha256": "a5372204f5914f392e080b24ecd030096b4f863655501f3dc759b52af97711b6",
+        "date": "2026-08-14",
+        "url": "https://www.ecfr.gov/api/versioner/v1/full/2026-08-14/title-31.xml",
+        "start_byte": 238,
+        "end_byte": 18154,
+        "part_sha256": "884ee24ae4ef87d4cff506d93a93a174cf1816e01ef6b9d81073f6004215440f"
+      }
+    },
+    {
+      "title": 38,
+      "part": "0",
+      "head": "PART 0—VALUES, STANDARDS OF ETHICAL CONDUCT, AND RELATED RESPONSIBILITIES",
+      "opening_and_head": "<DIV5 N=\"0\" TYPE=\"PART\" VOLUME=\"1\">\n<HEAD>PART 0—VALUES, STANDARDS OF ETHICAL CONDUCT, AND RELATED RESPONSIBILITIES\n</HEAD>",
+      "section_count": 10,
+      "first_section": {
+        "number": "0.600",
+        "head": "§ 0.600   General.",
+        "first_paragraph": "This section describes the Core Values, Characteristics, and Customer Experience Principles that serve as internal guidelines for employees of the Department of Veterans Affairs (VA). These Core Values, Characteristics, and Customer Experience Principles define VA employees, articulate what VA stands for, and underscore its moral obligation to veterans, their families, and other beneficiaries. They are intended to establish one overarching set of guidelines that apply to all VA Administrations and staff offices, confirming the values already instilled in many VA employees and enforcing their commitment to provide the best experience possible to veterans, servicemembers, their families, caregivers, and survivors.\n"
+      },
+      "source": {
+        "path": "/Users/mikewolfd/Work/RefSpec/output/ecfr-title-xml-2026-08-24/title-38.xml",
+        "sha256": "732dda75806f9349c6ad06b7a90840c82d02a1e5490056950f1d5f120b7304bf",
+        "date": "2026-08-10",
+        "url": "https://www.ecfr.gov/api/versioner/v1/full/2026-08-10/title-38.xml",
+        "start_byte": 243,
+        "end_byte": 19007,
+        "part_sha256": "8f6b8d302aac369776b05aa2314890e94e10bcc05737a7f25d964c854e950588"
+      }
+    },
+    {
+      "title": 47,
+      "part": "0",
+      "head": "PART 0—COMMISSION ORGANIZATION",
+      "opening_and_head": "<DIV5 N=\"0\" TYPE=\"PART\" VOLUME=\"1\">\n<HEAD>PART 0—COMMISSION ORGANIZATION\n</HEAD>",
+      "section_count": 136,
+      "first_section": {
+        "number": "0.1",
+        "head": "§ 0.1   The Commission.",
+        "first_paragraph": "The Federal Communications Commission is composed of five (5) members who are appointed by the president subject to confirmation by the Senate. Normally, one Commissioner is appointed or reappointed each year, for a term of five (5) years.\n"
+      },
+      "source": {
+        "path": "/Users/mikewolfd/Work/RefSpec/output/ecfr-title-xml-2026-08-24/title-47.xml",
+        "sha256": "3172d24f91ce82265053499f600dff0cb2e99f5d8ae7ad8d407bb1cefeb6c029",
+        "date": "2026-08-13",
+        "url": "https://www.ecfr.gov/api/versioner/v1/full/2026-08-13/title-47.xml",
+        "start_byte": 311,
+        "end_byte": 387701,
+        "part_sha256": "addf047ca26181c22e5f846610eb9ae90cc9c9575eeba2fe839dd08d41332f39"
+      }
+    }
+  ]
+}
