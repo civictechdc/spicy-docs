@@ -8,10 +8,15 @@ implementations through their own `uv` projects over the same retained inputs.
 Their scripts and outputs are retained in
 `~/Work/corpora/fork-execution-2026-09-21/parsing-survey-2026-09-23/`. Claims
 marked **re-derived** were checked again by a second method before being
-written here. The rest are single measurements; file and line cites were read
-on the trees of that day and should be re-read before acting.
+written here. The rest are single measurements. File and line cites were read
+on spicy-docs `5d8c396`, spicy-regs `5780702`, RefSpec `f83c0d7a`, DocSpec
+`2cdde74`, spicyengine `31f7959`, spicysearch `b150fdd` and rulespec
+`23d5f2d9`; re-read them before acting.
 
-The survey adds items A5–A12 and B6–B12 to the plan and runs B4's bakeoff.
+The survey adds items A5–A12 and B6–B12 to the plan, runs B4's bakeoff and adds
+rulings 5–7. The fork's output ledger and backlog (spicy-regs
+`docs/research/fork-output-ledger-2026-09-21.md` and `docs/fork-generation.md`)
+record which published tables each item touches.
 
 ## 1. Where shared parsing can live
 
@@ -232,13 +237,15 @@ comment texts) in the search analyzer, not the published column.
 
 ## 8. Rulings this adds
 
-1. `cfr_ref` for title 43's subpart-numbered sections: NULL, or the printed
-   citation (`43-1601.0-1`) with part 1600.
-2. Whether `rule_targets`, `proceedings` and `comment_periods` admit
+Numbered as in the plan's §5.
+
+5. `cfr_ref` for title 43's subpart-numbered sections: NULL, or the printed
+   citation (`43-1601.0-1`) with part 1600 (A8).
+6. Whether `rule_targets`, `proceedings` and `comment_periods` admit
    label-derived dockets and unpadded FR numbers. It changes three published
-   tables and their actor ids.
-3. The comment text status when no extraction record exists, and which
-   Mirrulations tool wins when several extracted one attachment.
+   tables and their actor ids (A7, A12).
+7. The comment text status when no extraction record exists, and which
+   Mirrulations tool wins when several extracted one attachment (A6).
 
 ## 9. Not verified
 

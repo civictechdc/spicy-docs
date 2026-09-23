@@ -104,7 +104,8 @@ republish every row once. Ruling 4 in §5 orders the two.
 - Week one: A1–A4, C1, D1, D2.
 - Week two: B1, B2, D3.
 - Week three: B3, D4, D5, C2.
-- After: B4 and B5 behind the bakeoff; C3 behind C1's numbers.
+- After: B4 and B5, now that the bakeoff has run (survey §5); C3 behind C1's
+  numbers.
 - From the survey: A5 first (a credential in logs), then A6–A11 as quiet bugs;
   B6–B11 before B12, which is large and changes DocSpec output.
 - PM01's remaining steps sit before or after D3, as ruling 4 decides.
@@ -207,7 +208,12 @@ Update one row per event; commit each update on its own.
 ## 10. Baseline trees and sources
 
 Validated 2026-09-22 against: spicy-docs `6673fa3`, spicy-regs `bf35bc9`,
-DocSpec `d66aebb`, spicyengine `056cb04`, spicysearch `66a0eb1`.
+DocSpec `d66aebb`, spicyengine `056cb04`, spicysearch `66a0eb1`. The
+2026-09-23 survey read spicy-docs `5d8c396`, spicy-regs `5780702`, RefSpec
+`f83c0d7a`, DocSpec `2cdde74`, spicyengine `31f7959`, spicysearch `b150fdd` and
+rulespec `23d5f2d9`. The fork's output ledger and backlog (spicy-regs
+`docs/research/fork-output-ledger-2026-09-21.md`, `docs/fork-generation.md`)
+track which published tables items A5–A12 touch.
 
 - DuckDB iceberg extension, catalogs and writing.
   <https://duckdb.org/docs/current/core_extensions/iceberg/catalogs>
