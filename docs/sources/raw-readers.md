@@ -93,13 +93,20 @@ iteration cancels queued work; running calls finish under their transport limits
   for every tool and returns a `CommentDerivedText` per comment: one tool, chosen
   by the pinned `DERIVED_TEXT_TOOLS` order (the measurement is beside it), the
   tools that were available, and `DerivedAttachment(attachment, tool, key, size,
-  etag)` records in numeric order. An attachment the chosen tool lacks stays
-  absent. Keys outside the layout come back as `unrecognized_keys`.
+  etag)` records in numeric order. An attachment the chosen tool lacks is not
+  filled from another tool; `only_in_other_tools` names the numbers another tool has.
+- A key outside the layout means the comments may be incomplete, so the docket
+  is refused. `strict=False` returns the readable comments and the rest as
+  `unrecognized_keys`; a caller that passes it must check that field before
+  treating a missing comment as one without text.
 - `fetch_derived_text(resource, comment)` adds each attachment's `sha256` and
-  UTF-8 `text`, with GETs pinned to the listed ETags.
+  UTF-8 `text`, with GETs pinned to the listed ETags and capped at
+  `DEFAULT_MAX_OBJECT_BYTES` (16 MiB) unless `max_bytes=` says otherwise. The
+  measured sample held three larger `pdfminer` objects, up to 57.5 MB.
 - `to_json()` gives the provenance, without the text, as plain JSON values.
-- A 401/403 raises `MirrulationsAccessRefusedError`. Other listing failures,
-  changed objects and size mismatches raise; none reads as a comment without text.
+- A 401/403 raises `MirrulationsAccessRefusedError`. Other listing failures, keys
+  outside the layout (in strict mode), oversized, changed or vanished objects and
+  size mismatches also raise, so no failure is returned as a comment without text.
 
 ## CourtListener
 

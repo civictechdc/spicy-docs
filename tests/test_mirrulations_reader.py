@@ -6,7 +6,7 @@ aborting with typed errors and no manifest key, unresolved and requested-empty
 observations that stay retryable across runs, credential scrubbing, and the S3
 resource's retry and connection-pool configuration. The derived comment text
 reader is pinned for numeric attachment order, one pinned-order tool per
-comment, missing attachments, stray keys, refusals, and ETag-pinned fetches.
+comment, missing attachments, stray keys, refusals, and capped, ETag-pinned fetches.
 """
 
 from collections.abc import Iterable
@@ -1524,9 +1524,38 @@ def _listing_order(store: dict[str, bytes]) -> dict[str, bytes]:
     return dict(sorted(store.items()))
 
 
+class _ListingResource(_FakeS3Resource):
+    """Records each listed prefix and lists every object with overridden summary metadata."""
+
+    def __init__(self, store: dict[str, bytes], **summary: object) -> None:
+        super().__init__(store)
+        self.listed: list[str] = []
+        self._summary = summary
+
+    def Bucket(self, name: str) -> _FakeBucket:
+        bucket = super().Bucket(name)
+        filter_objects = bucket.objects.filter
+
+        def listing(Prefix: str):
+            self.listed.append(Prefix)
+            for obj in filter_objects(Prefix=Prefix):
+                for attribute, value in self._summary.items():
+                    setattr(obj, attribute, value)
+                yield obj
+
+        bucket.objects.filter = listing
+        return bucket
+
+
+def _one_comment(resource: _FakeS3Resource, comment: str = "0001"):
+    from spicy_docs.sources.mirrulations import list_docket_derived_text
+
+    return list_docket_derived_text(resource, AGENCY, DERIVED_DOCKET).comments[f"{DERIVED_DOCKET}-{comment}"]
+
+
 def test_derived_text_orders_attachments_by_number_not_listing_order() -> None:
     """A comment's attachments come back 1, 2, 10 with their listed provenance, text not yet fetched."""
-    from spicy_docs.sources.mirrulations import DerivedAttachment, list_docket_derived_text
+    from spicy_docs.sources.mirrulations import DerivedAttachment
 
     store = _listing_order({_derived_key("pypdf", "0001", n): f"part {n}".encode() for n in (1, 2, 10)})
     assert [key.rsplit("_attachment_", 1)[1] for key in store] == [
@@ -1535,15 +1564,13 @@ def test_derived_text_orders_attachments_by_number_not_listing_order() -> None:
         "2_extracted.txt",
     ]
 
-    comment = list_docket_derived_text(_FakeS3Resource(store), AGENCY, DERIVED_DOCKET).comments[
-        f"{DERIVED_DOCKET}-0001"
-    ]
+    comment = _one_comment(_FakeS3Resource(store))
 
     assert comment.attachments == tuple(
         DerivedAttachment(n, "pypdf", key, len(store[key]), f'"etag:{key}"')
         for n, key in ((n, _derived_key("pypdf", "0001", n)) for n in (1, 2, 10))
     )
-    assert (comment.tool, comment.available_tools) == ("pypdf", ("pypdf",))
+    assert (comment.tool, comment.available_tools, comment.only_in_other_tools) == ("pypdf", ("pypdf",), ())
 
 
 def test_derived_text_takes_one_tool_per_comment_in_pinned_order() -> None:
@@ -1575,28 +1602,31 @@ def test_derived_text_takes_one_tool_per_comment_in_pinned_order() -> None:
     }
 
 
-def test_derived_text_leaves_missing_attachments_missing() -> None:
-    """A number the chosen tool lacks stays absent, even when another tool has it."""
+def test_derived_text_records_attachments_only_another_tool_has() -> None:
+    """A number the chosen tool lacks is not filled from another tool; it is named, and gaps no tool fills stay silent."""
     from spicy_docs.sources.mirrulations import list_docket_derived_text
 
     store = _listing_order(
         {
             _derived_key("pypdf", "0001", 1): b"one",
-            _derived_key("pypdf", "0001", 3): b"three",
+            _derived_key("pypdf", "0001", 4): b"four",
+            _derived_key("pdfminer", "0001", 1): b"one again",
             _derived_key("pdfminer", "0001", 2): b"two",
+            _derived_key("docling", "0001", 3): b"three",
         }
     )
 
     comments = list_docket_derived_text(_FakeS3Resource(store), AGENCY, DERIVED_DOCKET).comments
 
     comment = comments[f"{DERIVED_DOCKET}-0001"]
-    assert [(a.tool, a.attachment) for a in comment.attachments] == [("pypdf", 1), ("pypdf", 3)]
-    assert comment.available_tools == ("pypdf", "pdfminer")
+    assert [(a.tool, a.attachment) for a in comment.attachments] == [("pypdf", 1), ("pypdf", 4)]
+    assert comment.available_tools == ("pypdf", "pdfminer", "docling")
+    assert comment.only_in_other_tools == (2, 3)
     assert f"{DERIVED_DOCKET}-0002" not in comments
 
 
-def test_derived_text_lists_the_docket_prefix_once_and_keeps_unexplained_keys() -> None:
-    """One listing covers every tool; keys outside the layout are returned, not dropped or guessed at."""
+def test_derived_text_lists_the_docket_prefix_once_and_refuses_unexplained_keys_by_default() -> None:
+    """One listing covers every tool; a key outside the layout refuses the docket unless the caller opts out."""
     from spicy_docs.sources.mirrulations import comments_extracted_prefix, list_docket_derived_text
 
     prefix = comments_extracted_prefix(AGENCY, DERIVED_DOCKET)
@@ -1604,6 +1634,8 @@ def test_derived_text_lists_the_docket_prefix_once_and_keeps_unexplained_keys() 
         f"{prefix}README.txt",
         f"{prefix}pypdf/notes.txt",
         f"{prefix}pypdf/nested/{DERIVED_DOCKET}-0009_attachment_1_extracted.txt",
+        # Fullwidth digits: ``\d`` would accept them and ``int`` would read attachment 1.
+        f"{prefix}pypdf/{DERIVED_DOCKET}-0008_attachment_１_extracted.txt",
     ]
     store = _listing_order(
         {
@@ -1613,25 +1645,29 @@ def test_derived_text_lists_the_docket_prefix_once_and_keeps_unexplained_keys() 
             **dict.fromkeys(stray, b"?"),
         }
     )
-    listed: list[str] = []
+    resource = _ListingResource(store)
 
-    class _CountingResource(_FakeS3Resource):
-        def Bucket(self, name: str) -> _FakeBucket:
-            bucket = super().Bucket(name)
-            filter_objects = bucket.objects.filter
+    with pytest.raises(ValueError, match=r"4 keys under .* are outside the layout"):
+        list_docket_derived_text(resource, AGENCY, DERIVED_DOCKET)
+    docket = list_docket_derived_text(resource, AGENCY, DERIVED_DOCKET, strict=False)
 
-            def counting_filter(Prefix: str):
-                listed.append(Prefix)
-                return filter_objects(Prefix=Prefix)
-
-            bucket.objects.filter = counting_filter
-            return bucket
-
-    docket = list_docket_derived_text(_CountingResource(store), AGENCY, DERIVED_DOCKET)
-
-    assert listed == [prefix]
+    assert resource.listed == [prefix, prefix]
     assert sorted(docket.comments) == [f"{DERIVED_DOCKET}-0001", f"{DERIVED_DOCKET}-0002"]
     assert docket.unrecognized_keys == tuple(sorted(stray))
+
+
+@pytest.mark.parametrize(
+    ("agency", "docket_id"), [("", DERIVED_DOCKET), ("EPA/x", DERIVED_DOCKET), (AGENCY, ""), (AGENCY, "EPA/2022")]
+)
+def test_derived_text_refuses_a_segment_that_names_another_prefix(agency: str, docket_id: str) -> None:
+    """An empty or slash-containing agency or docket is refused before anything is listed."""
+    from spicy_docs.sources.mirrulations import list_docket_derived_text
+
+    resource = _ListingResource({})
+
+    with pytest.raises(ValueError, match="one nonempty path segment"):
+        list_docket_derived_text(resource, agency, docket_id)
+    assert resource.listed == []
 
 
 def test_derived_text_refuses_two_keys_for_one_attachment() -> None:
@@ -1644,12 +1680,42 @@ def test_derived_text_refuses_two_keys_for_one_attachment() -> None:
         list_docket_derived_text(_FakeS3Resource(store), AGENCY, DERIVED_DOCKET)
 
 
+@pytest.mark.parametrize(
+    ("summary", "message"),
+    [({"e_tag": None}, "lacks an ETag"), ({"size": -1}, "size is invalid"), ({"size": True}, "size is invalid")],
+)
+def test_derived_text_refuses_a_listing_that_cannot_pin_its_get(summary: dict, message: str) -> None:
+    """A missing ETag or an invalid size refuses the docket, as in the exact reader."""
+    from spicy_docs.sources.mirrulations import list_docket_derived_text
+
+    resource = _ListingResource({_derived_key("pypdf", "0001", 1): b"a"}, **summary)
+
+    with pytest.raises(ValueError, match=message):
+        list_docket_derived_text(resource, AGENCY, DERIVED_DOCKET)
+
+
+def test_derived_text_accepts_a_listing_without_size() -> None:
+    """A size the listing omits is recorded as unknown; the fetch still pins the ETag and caps the body."""
+    from spicy_docs.sources.mirrulations import fetch_derived_text
+
+    key = _derived_key("pypdf", "0001", 1)
+    resource = _ListingResource({key: b"text"}, size=None)
+    comment = _one_comment(resource)
+
+    assert comment.attachments[0].size is None
+    assert fetch_derived_text(resource, comment).attachments[0].text == "text"
+    with pytest.raises(ValueError, match="exceeds the 3 byte cap"):
+        fetch_derived_text(resource, comment, max_bytes=3)
+
+
+@pytest.mark.parametrize("after_first", [False, True])
 @pytest.mark.parametrize(("status", "refused"), [(403, True), (500, False)])
-def test_derived_text_listing_failure_is_never_an_empty_docket(status: int, refused: bool) -> None:
-    """A refusal raises the typed error; any other listing failure propagates rather than read as no text."""
+def test_derived_text_listing_failure_is_never_an_empty_docket(status: int, refused: bool, after_first: bool) -> None:
+    """A refusal raises the typed error and any other failure propagates, on the first page or a later one."""
     from spicy_docs.sources.mirrulations import MirrulationsAccessRefusedError, list_docket_derived_text
 
-    resource = _RefusingListingResource({_derived_key("pypdf", "0001", 1): b"a"}, status, after_first=False)
+    store = {_derived_key("pypdf", "0001", 1): b"a", _derived_key("pypdf", "0002", 1): b"b"}
+    resource = _RefusingListingResource(store, status, after_first=after_first)
 
     with pytest.raises(MirrulationsAccessRefusedError if refused else ClientError) as raised:
         list_docket_derived_text(resource, AGENCY, DERIVED_DOCKET)
@@ -1661,12 +1727,12 @@ def test_derived_text_fetch_pins_etags_and_records_digest_and_text() -> None:
     import hashlib
     import json
 
-    from spicy_docs.sources.mirrulations import fetch_derived_text, list_docket_derived_text
+    from spicy_docs.sources.mirrulations import fetch_derived_text
 
     contents = {1: "café".encode(), 2: b"", 10: b"bad \xff byte"}
     store = _listing_order({_derived_key("pypdf", "0001", n): body for n, body in contents.items()})
     resource = _FakeS3Resource(store)
-    listed = list_docket_derived_text(resource, AGENCY, DERIVED_DOCKET).comments[f"{DERIVED_DOCKET}-0001"]
+    listed = _one_comment(resource)
 
     fetched = fetch_derived_text(resource, listed)
 
@@ -1689,29 +1755,57 @@ def test_derived_text_fetch_pins_etags_and_records_digest_and_text() -> None:
             }
             for a in fetched.attachments
         ],
+        "only_in_other_tools": [],
     }
 
 
-def test_derived_text_fetch_refuses_changed_objects_and_refusals() -> None:
-    """A changed ETag, a size unlike the listing and a 401/403 raise instead of dropping an attachment."""
+def test_derived_text_fetch_refuses_an_object_listed_over_the_cap_before_any_get() -> None:
+    """The default cap is the module's object bound, applied to the listed size before a request is made."""
+    from spicy_docs.sources.mirrulations import DEFAULT_MAX_OBJECT_BYTES, fetch_derived_text
+
+    store = {_derived_key("pypdf", "0001", 1): b"small"}
+    over_default = _ListingResource(store, size=DEFAULT_MAX_OBJECT_BYTES + 1)
+    over_given = _FakeS3Resource(store)
+
+    with pytest.raises(ValueError, match=f"exceeds the {DEFAULT_MAX_OBJECT_BYTES} byte cap"):
+        fetch_derived_text(over_default, _one_comment(over_default))
+    with pytest.raises(ValueError, match="exceeds the 4 byte cap"):
+        fetch_derived_text(over_given, _one_comment(over_given), max_bytes=4)
+    assert over_default.get_requests == over_given.get_requests == []
+
+
+def test_derived_text_fetch_retries_a_transient_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A read timeout retries through the shared backoff and the attachment still arrives."""
+    from spicy_docs.sources import mirrulations
+
+    monkeypatch.setattr(mirrulations.time, "sleep", lambda _seconds: None)
+    key = _derived_key("pypdf", "0001", 1)
+    resource = _TransientFlakyResource({key: b"text"}, [key], fail_first_n=1, exc_factory=_read_timeout)
+
+    fetched = mirrulations.fetch_derived_text(resource, _one_comment(resource))
+
+    assert fetched.attachments[0].text == "text"
+    assert resource.attempts[key] == 2
+
+
+def test_derived_text_fetch_refuses_changed_vanished_and_refused_objects() -> None:
+    """A changed ETag, a size unlike the listing, a 404 and a 401/403 raise instead of dropping an attachment."""
     from dataclasses import replace
 
-    from spicy_docs.sources.mirrulations import (
-        MirrulationsAccessRefusedError,
-        fetch_derived_text,
-        list_docket_derived_text,
-    )
+    from spicy_docs.sources.mirrulations import MirrulationsAccessRefusedError, fetch_derived_text
 
     key = _derived_key("pypdf", "0001", 1)
     store = {key: b"text"}
-    comment = list_docket_derived_text(_FakeS3Resource(store), AGENCY, DERIVED_DOCKET).comments[
-        f"{DERIVED_DOCKET}-0001"
-    ]
+    comment = _one_comment(_FakeS3Resource(store))
     (attachment,) = comment.attachments
 
     with pytest.raises(ValueError, match="precondition failed"):
         fetch_derived_text(_FakeS3Resource(store), replace(comment, attachments=(replace(attachment, etag='"stale"'),)))
-    with pytest.raises(ValueError, match="listed at 99"):
-        fetch_derived_text(_FakeS3Resource(store), replace(comment, attachments=(replace(attachment, size=99),)))
+    with pytest.raises(ValueError, match="listed size differs from bytes"):
+        fetch_derived_text(_FakeS3Resource(store), replace(comment, attachments=(replace(attachment, size=3),)))
+    vanished = _RefusingResource(store, {key: 404})
+    with pytest.raises(ClientError):
+        fetch_derived_text(vanished, comment)
+    assert vanished.attempts[key] == 1  # a 404 is not transient
     with pytest.raises(MirrulationsAccessRefusedError):
         fetch_derived_text(_RefusingResource(store, {key: 403}), comment)
