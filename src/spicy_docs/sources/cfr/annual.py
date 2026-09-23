@@ -27,7 +27,7 @@ _HEADINGS = {
     for tag in ("PART", "SUBPART")
 }
 _PRINTED_PART = re.compile(rf"({_PART_NUMBER})\.")
-_RANGE = re.compile(r"§§|through|[—–,]", re.IGNORECASE)
+_JOINED = re.compile(r"through|\bto\b|[—–,]", re.IGNORECASE)
 _REVISIONS = frozenset({"EFFDNOT", "EFFDNOTP", "REVTXT"})
 
 
@@ -55,11 +55,12 @@ class AnnualCfrSectionNumber:
     is its own leading part (1601 for ``1601.0-1``), ``None`` for unprefixed
     forms such as ``Section 01`` and ``Sec. 1-1``. ``section`` is the number
     less its heading ``{part}.`` prefix when it has one, else the whole number.
-    ``range`` marks ``§§``, ``through``, dash- and comma-joined and
-    repeated-prefix spans (``§ 1.404(a)-4-1.404(a)-7``). ``mismatch`` marks a
-    printed part that is neither the heading part nor the enclosing subpart's
-    number: publisher typos (``§ 206.253`` under ``PART 1206``) and Title 14
-    Part 241's ``19-8.1``. ``citation`` is ``number`` when it cites one section
+    ``range`` marks two numbers joined by ``through``, ``to``, a dash or a
+    comma, and repeated-prefix spans (``§ 1.404(a)-4-1.404(a)-7``); the double
+    sign alone does not (``§§ 2.188`` is one section), but after it any hyphen
+    joins (``§§ 97-97.106``). ``mismatch`` marks a printed part that is neither
+    the heading part nor the enclosing subpart's number: publisher typos
+    (``§ 206.253`` under ``PART 1206``) and Title 14 Part 241's ``19-8.1``. ``citation`` is ``number`` when it cites one section
     under a known heading part, else ``None``. Title 43 numbers sections by
     subpart (§ 1601.0-1 in ``PART 1600``, ``Subpart 1601``); its printed number
     is the citation while the part stays 1600. A numbered subpart counts only at
@@ -93,7 +94,8 @@ def split_annual_cfr_section(number: str, part: str | None, subpart: str | None)
     # A later number restating a part prefix is a span (`§ 141.15-141.19`,
     # `1509.203-1519.204` under PART 1519); any `-N.` is not: `109-38.301-1.50`.
     rest = bare[printed.end() :] if printed else ""
-    spans = _RANGE.search(number) is not None or any(f"-{p}." in rest for p in (printed_part, part, series) if p)
+    joined = _JOINED.search(number) is not None or ("§§" in number and "-" in bare)
+    spans = joined or any(f"-{p}." in rest for p in (printed_part, part, series) if p)
     mismatch = printed_part is not None and part is not None and printed_part not in (part, series)
     citation = bare if printed_part is not None and part is not None and not spans and not mismatch else None
     joins = citation is not None and "(" not in citation
