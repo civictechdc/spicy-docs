@@ -252,11 +252,12 @@ src/spicy_docs/sources/congress/listing.py	Explicit Congress.gov v3 list operati
 src/spicy_docs/sources/congress/press_releases.py	Appropriations committee press releases: two keyless RSS 2.0 feeds, one per chamber.	src
 src/spicy_docs/sources/congress/record_communications.py	Read the House executive communications one Congressional Record issue printed.	src
 src/spicy_docs/sources/congress/votes.py	House Clerk and Senate LIS roll-call vote XML: the tally source `roll_call_votes` and `member_votes` need.	src
-src/spicy_docs/sources/courtlistener/__init__.py	CourtListener raw readers: bulk PostgreSQL/CSV streams, S3 listings and search.	src
+src/spicy_docs/sources/courtlistener/__init__.py	CourtListener raw readers: bulk PostgreSQL/CSV streams, parallel local decoding, S3 listings and search.	src
 src/spicy_docs/sources/courtlistener/bulk.py	Stream CourtListener's published CSV dumps for keyless opinion text.	src
 src/spicy_docs/sources/courtlistener/csv.py	Bounded decoding of CourtListener's PostgreSQL CSV export.	src
 src/spicy_docs/sources/courtlistener/http.py	HTTP admission for one CourtListener object and its conditional resumes.	src
 src/spicy_docs/sources/courtlistener/listing.py	Pure parsing of CourtListener's bulk-object listing and filename conventions.	src
+src/spicy_docs/sources/courtlistener/local.py	Decode a retained CourtListener export in record-aligned pieces, parsed by DuckDB in parallel.	src
 src/spicy_docs/sources/courtlistener/search.py	CourtListener v4 search: RECAP dockets and opinion clusters, page by page with exact evidence.	src
 src/spicy_docs/sources/fcc_ecfs.py	FCC ECFS proceedings and filings: offset walks over explicit date windows with exact evidence.	src
 src/spicy_docs/sources/fec/__init__.py	Official FEC metadata and separately selected asset acquisition.	src
@@ -428,6 +429,7 @@ tests/test_courtlistener_bulk.py	Hermetic tests for the CourtListener bulk-dump 
 tests/test_courtlistener_csv.py	Known-answer cases for the publisher's explicit PostgreSQL CSV dialect.	test
 tests/test_courtlistener_http.py	Read real bzip2 bodies through controlled HTTP responses and retry failures.	test
 tests/test_courtlistener_listing.py	Exact publisher metadata and complete live listing traversal, without network access.	test
+tests/test_courtlistener_local.py	Record-aligned pieces parsed by DuckDB, held to the reference decoder on the publisher's dialect.	test
 tests/test_cross_filing_census.py	Fixture coverage for the ``tools/analysis/cross_filing_census.py`` receipt helper (SD-16, SD-17).	test
 tests/test_crs_files.py	A CRS report file is one explicit version, proved by its media type, magic and final URL.	test
 tests/test_docs_index.py	Every source guide and top-level guide is reachable from ``docs/README.md`` (E5).	test

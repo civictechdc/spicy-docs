@@ -277,6 +277,24 @@ def _ends_with_stream_end(tail: bytes) -> bool:
     )
 
 
+def check_whole_bzip2_file(path: Path) -> int:
+    """Refuse at either end what ``bz2`` refuses, and return the file size.
+
+    indexed_bzip2 reads a file that is not bzip2 as empty and ignores bytes after the last stream,
+    so a parallel pass checks the magic and the closing end-of-stream marker before it starts.
+    """
+    size = path.stat().st_size
+    with path.open("rb") as handle:
+        head = handle.read(4)
+        handle.seek(max(0, size - 11))
+        tail = handle.read()
+    if len(head) < 4 or head[:3] != b"BZh" or head[3:4] not in b"123456789":
+        raise OSError("Invalid data stream")
+    if not _ends_with_stream_end(tail):
+        raise EOFError("CourtListener bulk: incomplete bzip2 member at source EOF, or bytes after the last one")
+    return size
+
+
 def _parallel_decompression_available() -> bool:
     try:
         import indexed_bzip2  # noqa: F401
@@ -299,15 +317,7 @@ class _ParallelLocalStream(io.RawIOBase):
     def __init__(self, path: Path, *, threads: int) -> None:
         import indexed_bzip2
 
-        self._size = path.stat().st_size
-        with path.open("rb") as handle:
-            head = handle.read(4)
-            handle.seek(max(0, self._size - 11))
-            tail = handle.read()
-        if len(head) < 4 or head[:3] != b"BZh" or head[3:4] not in b"123456789":
-            raise OSError("Invalid data stream")
-        if not _ends_with_stream_end(tail):
-            raise EOFError("CourtListener bulk: incomplete bzip2 member at source EOF, or bytes after the last one")
+        self._size = check_whole_bzip2_file(path)
         self._source = indexed_bzip2.open(str(path), parallelization=threads)
         self.compressed_bytes = 0
         self.decompressed_bytes = 0

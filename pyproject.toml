@@ -14,9 +14,9 @@ dependencies = [
 acquisition = ["boto3", "httpx", "loguru", "tqdm"]
 # Captured comment Parquet parsing/full replay and flat-table publication.
 public-table = ["polars", "pyarrow"]
-# A full pass over a retained CourtListener export decompresses its bzip2 blocks on
-# every core (courtlistener/bulk.py); without it the reader stays single-threaded.
-courtlistener-local = ["indexed-bzip2>=1.7,<2"]
+# A full pass over a retained CourtListener export: bzip2 decompressed on every core
+# (bulk.py), and record-aligned pieces parsed by DuckDB in parallel into Arrow (local.py).
+courtlistener-local = ["duckdb>=1.5.5,<2", "indexed-bzip2>=1.7,<2", "pyarrow"]
 # Retained publisher HTML whose source fields lack a structured representation.
 html = ["beautifulsoup4==4.14.3"]
 # PDF/image decoding is shared; select recognition providers separately.
@@ -41,7 +41,8 @@ dev = [
     # Optional canonical-JSON accelerator; Rulespec falls back to json.dumps.
     # Consumers install it directly because the artifacts wheel has no extra.
     "msgspec>=0.18,<1",
-    # Tests verify direct Parquet reads with DuckDB; runtime code does not use it.
+    # Tests verify direct Parquet reads with DuckDB; at runtime only the
+    # courtlistener-local extra uses it.
     "duckdb",
     "pytest",
     "ruff",

@@ -151,30 +151,41 @@ The raw reader does not hash or retain the downloaded object for the caller.
 ### Full passes over a retained export
 
 A network pass is bounded by the bucket (about 1.75 MiB/s). A retained local
-original is bounded by the reader: on the 54.6 GB `opinions` export,
-single-threaded bzip2 and CSV decoding ran at 26 MB/s, near five hours. Two
-changes, measured 2026-09-22 on that export, bring it near an hour:
+original is bounded by decoding: single-threaded, the 54.6 GB `opinions` export
+ran at 26 MB/s, near five hours. With the `courtlistener-local` extra there are
+two faster routes, both measured on that export on 2026-09-22.
 
-- The decoder's quoted-text fast path now takes backslash escape pairs with it.
-  Opinion HTML escapes every attribute quote, and each one used to drop into the
-  per-character loop (73% of the pass). Output is unchanged; parsing alone went
-  from 56 to 113 MB/s.
-- With the `courtlistener-local` extra, a full pass over a local file decompresses
-  on every core through indexed_bzip2 (`decompression_threads`, 0 = all). The
-  first bytes and the closing end-of-stream marker are checked so a file that is
-  not bzip2, or that is truncated or followed by other bytes, is refused as `bz2`
-  refuses it. Together: 127 MB/s of text.
+**The streaming reader, sped up.** The strict decoder's quoted-text fast path now
+takes backslash escape pairs with it (output unchanged; 56 to 113 MB/s of parsing),
+and a full pass over a local file decompresses on every core through
+indexed_bzip2 (`decompression_threads`, 0 = all), after checking the magic and the
+closing end-of-stream marker so what `bz2` refuses is still refused. Together:
+127 MB/s, about an hour. Bounded passes and network streams keep the
+single-threaded path and its exact compressed-byte accounting.
 
-Bounded passes (`max_records`, `max_compressed_bytes`) and network streams keep
-the single-threaded path, whose exact compressed offsets they report; a parallel
-pass reports `compressed_bytes` as the file size once it has read the whole file.
+**Record-aligned pieces.**
+[`CourtListenerLocalDump`](../../src/spicy_docs/sources/courtlistener/local.py)
+yields Arrow batches of string columns in file order. With `FORCE_QUOTE *`, a
+newline followed by an unescaped quote and a digit can only start a record (its
+numeric `id`); on the first 6.0 GB the 134,310 such points were exactly the
+records. The text is cut there into pieces of about 256 MB, each written under the
+header line to a temporary file and parsed by DuckDB, several at a time. On those
+6.0 GB, DuckDB over the pieces parsed 2,277 MB/s against the reference decoder's
+137 MB/s, with identical values, NULLs and empty strings, so decompression becomes
+the limit.
 
-Faster third-party parsers were measured and rejected on this dialect. DuckDB
-fed through a pipe keeps every buffer it has read and ran out of memory 160 GB
-into the export; in its default parallel mode it also guessed a record start
-inside a long quoted field and refused a valid record. pyarrow's CSV reader
-accepts unterminated quotes, doubled quotes and text after a closing quote
-without error. Polars has no backslash escape at all.
+DuckDB is used only this way because the other ways failed on this export:
+through a pipe it keeps every buffer and ran out of memory 160 GB in; its parallel
+scan guessed a record start inside a long quoted field and refused a valid record;
+and scanning sequentially it drops an unterminated last record without error. It
+also accepts text `FORCE_QUOTE *` cannot produce (a lone backslash inside quotes,
+a quote in an unquoted field). So each piece is scanned sequentially, its row count
+must equal the dialect's count of record starts in it, and its opening 1 MiB is
+decoded by `iter_postgres_csv` too and must match. `tests/test_courtlistener_local.py`
+mutation-checks each guard and pins that the value check samples each piece's
+opening rather than every record. pyarrow's CSV reader was also measured and
+rejected: it accepts unterminated and doubled quotes; polars has no backslash
+escape.
 
 ### Reuse listing rules through the installed wheel
 
@@ -214,7 +225,7 @@ copies; the wheel API alone does not establish adoption.
 ## Change and check
 
 ```sh
-uv run --frozen pytest -q tests/test_mirrulations_reader.py tests/test_courtlistener_bulk.py tests/test_courtlistener_listing.py tests/test_courtlistener_csv.py
+uv run --frozen pytest -q tests/test_mirrulations_reader.py tests/test_courtlistener_bulk.py tests/test_courtlistener_listing.py tests/test_courtlistener_csv.py tests/test_courtlistener_local.py
 ```
 
 Add a focused transport/parsing fixture. Preserve each reader's actual failure
