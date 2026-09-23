@@ -20,61 +20,59 @@ Parquet read through a DuckDB view, so a typed value is spelled exactly once, in
 
 ## The tables
 
-`TABLE_CONTRACTS` holds all thirty-nine by name. Each carries its columns in
+`TABLE_CONTRACTS` holds every contract by name. Each carries its columns in
 publish order, its identity, its source or processing version column, a
 one-sentence grain, and one sentence per column for the host's data dictionary.
 The version column's meaning determines whether its values can be ordered;
 the column name alone does not establish freshness.
 
-**Both totals on this page are derived, so recompute rather than add to them**:
-the table count is `len(TABLE_CONTRACTS)` and the column total is
-`sum(len(c.columns) for c in TABLE_CONTRACTS.values())`. Each is spelled in
-exactly one place here — this paragraph and the sentence below the table — and
-once more in [the docs index](README.md).
+This page states no counts, which went stale here before: ask
+`len(TABLE_CONTRACTS)` for the tables and `len(contract.columns)` for a
+table's columns.
 
-| Table | Grain | Identity | Version column | Columns | Supplier |
-| --- | --- | --- | --- | --- | --- |
-| `congress_bills` | One row per bill or resolution, as one BILLSTATUS document states it. | `bill_id` | `update_date` | 50 | `interpretation.bill_family` |
-| `bill_actions` | One row per action entry in a bill's BILLSTATUS document, in publisher order. | `bill_id`, `action_index` | `action_date` | 14 | `interpretation.bill_family` |
-| `bill_committees` | One row per committee or subcommittee a bill reached, as its BILLSTATUS document names it. | `bill_id`, `system_code` | `snapshot_update_date` | 10 | `interpretation.bill_family` |
-| `bill_publisher_summaries` | One row per CRS summary the publisher states on a bill, at the version and action it describes. | `bill_id`, `summary_version_code`, `action_date` | `update_date` | 7 | `interpretation.bill_family` |
-| `cbo_cost_estimates` | One row per bill and CBO publication the bill's BILLSTATUS document names as a cost estimate of it. | `bill_id`, `publication_id` | `pub_date` | 16 | `interpretation.bill_family` |
-| `bill_versions` | One row per printing of a bill, per source that supplied it. | `bill_id`, `version_code`, `source` | `version_date` | 35 | `interpretation.bill_family` |
-| `bill_sections` | One row per content-bearing node of one bill version, in document order. | `bill_id`, `version_code`, `source`, `match_path`, `body_index` | `version_date` | 18 | `interpretation.bill_family` |
-| `section_diffs` | One row per compared pair of consecutive printings of one bill. | `bill_id`, `from_version_code`, `from_source`, `to_version_code`, `to_source` | `to_version_date` | 19 | `interpretation.bill_family` |
-| `section_diff_items` | One row per settled correspondence in one version-pair comparison. | `bill_id`, `from_version_code`, `from_source`, `to_version_code`, `to_source`, `seq` | none | 29 | `interpretation.bill_family` |
-| `financial_changes` | One row per aligned pair of dollar figures in a section whose amounts changed. | `bill_id`, `from_version_code`, `from_source`, `to_version_code`, `to_source`, `seq`, `amount_index` | none | 12 | `interpretation.bill_family` |
-| `section_classifications` | One row per label a model assigned to one section of one printing. | `bill_id`, `version_code`, `source`, `match_path`, `body_index`, `label` | `completed_at` | 14 | `interpretation.bill_family` |
-| `bill_summaries` | One row per plain-language summary of one printing of a bill. | `bill_id`, `version_code`, `source` | `completed_at` | 15 | `interpretation.bill_family` |
-| `diff_summaries` | One row per model-written summary of the change between two printings of a bill. | `bill_id`, `from_version_code`, `from_source`, `to_version_code`, `to_source` | `completed_at` | 17 | `interpretation.bill_family` |
-| `public_activity_events` | One row per change detected between two runs of the bill family. | `bill_id`, `event_type`, `subject_id`, `occurred_at` | `detected_at` | 6 | `schemas.activity_events` |
-| `amendments` | One row per amendment, as the Congress.gov amendment list route states it. | `congress`, `amendment_type`, `amendment_number` | `update_date` | 18 | `sources.congress.listing` (`amendment`) |
-| `press_releases` | One row per item in one appropriations committee press-release feed capture. | `release_id` | `observed_at` | 34 | `sources.congress.press_releases` |
-| `roll_call_votes` | One row per roll call: the publisher's own tally, and the bill it refers to. | `congress`, `chamber`, `session`, `roll_number` | `vote_date` | 24 | `sources.congress.votes` |
-| `member_votes` | One row per member's position on one roll call. | `congress`, `chamber`, `session`, `roll_number`, `member_key` | `vote_date` | 14 | `sources.congress.votes` |
-| `members` | One row per legislator in one capture of the community crosswalk. | `bioguide_id` | `observed_at` | 18 | `sources.legislators` |
-| `member_terms` | One row per term a legislator served, in the crosswalk's own order. | `bioguide_id`, `term_index` | `observed_at` | 9 | `sources.legislators` |
-| `committee_reports` | One row per captured GovInfo committee report package, with the CBO estimate it reprints or refuses. | `package_id` | `last_modified` | 32 | `sources.govinfo.body_acquisition`, `interpretation.cbo_estimates` |
-| `report_sections` | One row per heading block parsed out of one committee report's text. | `package_id`, `seq` | `last_modified` | 13 | `sources.agency_reports.report_blocks` |
-| `hearing_transcripts` | One row per captured GovInfo hearing transcript package. | `package_id` | `last_modified` | 20 | `sources.govinfo.body_acquisition`, `sources.congress.listing` (`hearing-detail`) |
-| `house_communications` | One row per House executive communication: the Congress.gov house-communication routes where the publisher decomposes it, the Congressional Record entry it printed where the publisher does not. | `congress`, `communication_type`, `number` | `update_date` | 32 | `sources.congress.listing` (`house-communication`, `house-communication-detail`), `sources.congress.record_communications`, `interpretation.communication_rin` |
-| `committee_meetings` | One row per scheduled committee meeting, as the Congress.gov committee-meeting routes state it. | `congress`, `chamber`, `event_id` | `update_date` | 27 | `sources.congress.listing` (`committee-meeting`, `committee-meeting-detail`) |
-| `record_issues` | One row per daily Congressional Record issue, which is also one legislative day per chamber named. | `volume`, `issue` | `update_date` | 17 | `sources.congress.listing` (`daily-congressional-record`, `daily-congressional-record-detail`) |
-| `treaties` | One row per treaty document, as the Congress.gov treaty routes state it. | `congress_received`, `number`, `suffix` | `update_date` | 24 | `sources.congress.listing` (`treaty`, `treaty-detail`) |
-| `nominations` | One row per nomination or part, as the Congress.gov nomination list route states it. | `congress`, `citation` | `update_date` | 13 | `sources.congress.listing` (`nomination`) |
-| `laws` | One row per enacted law the Congress.gov law list route states, with its PLAW USLM citation where captured. | `congress`, `law_type`, `number` | `update_date` | 27 | `schemas.law_tables` |
-| `law_code_sections` | One row per line of one OLRC per-Congress classification table: a Code place one public law section touched. | `congress`, `session`, `seq` | `observed_at` | 19 | `schemas.law_tables` |
-| `table3_records` | One row per classification record on one act's OLRC Table III page. | `act_key`, `seq` | `observed_at` | 14 | `schemas.law_tables` |
-| `committees` | One row per committee or subcommittee the Congress.gov committee list route states, with its detail record where captured. | `system_code` | `update_date` | 21 | `schemas.roster_tables` |
-| `committee_assignments` | One row per member per committee or subcommittee seat a chamber roster file lists today. | `congress`, `system_code`, `bioguide_id` | `observed_at` | 20 | `schemas.roster_tables` |
-| `document_citations` | One row per occurrence of one cited key in one document's text: the key, the exact text that named it, and the character span it was read at. | `document_key`, `text_sha256`, `cite_kind`, `target_key`, `span_start` | `rule_version` | 17 | `schemas.document_citation_tables`, `interpretation.citations` |
-| `house_activity_reports` | One row per end-of-Congress House committee activity report package, with what its print adds. | `package_id` | `last_modified` | 36 | `schemas.document_citation_tables`, `sources.govinfo.bodies` |
-| `budget_volumes` | One row per published volume of the President's budget, with what its print adds to its own index. | `package_id` | `last_modified` | 34 | `schemas.budget_volume_tables`, `sources.govinfo.bodies` |
-| `senate_expenditures` | One row per ruled row of one ruled table on one page of a Report of the Secretary of the Senate, with the cells exactly as the print states them and the roles its own header band names. | `package_id`, `file_name`, `page`, `table_ordinal`, `row_ordinal`, `text_sha256` | `extraction_rule_version` | 35 | `schemas.senate_expenditure_tables` |
-| `bill_committee_actions` | One row per action phrase a committee print states about one bill it names in the same sentence: the print's own phrasing, what it maps to, and how reliable the pairing is. | `document_key`, `text_sha256`, `bill_id`, `print_phrasing`, `span_start` | `rule_set_version` | 27 | `schemas.bill_action_tables`, `interpretation.bill_actions` |
-| `hearing_bill_links` | One row per bill one source states a hearing was held on or noticed for: the pair, the source that stated it, and the committee-and-date key the statement was checked against. | `package_id`, `bill_id`, `link_source` | `link_rule_version` | 12 | `schemas.hearing_bill_link_tables`, `interpretation.hearing_bill_links`, `sources.congress.house_committee_repository` |
+| Table | Grain | Identity | Version column | Supplier |
+| --- | --- | --- | --- | --- |
+| `congress_bills` | One row per bill or resolution, as one BILLSTATUS document states it. | `bill_id` | `update_date` | `interpretation.bill_family` |
+| `bill_actions` | One row per action entry in a bill's BILLSTATUS document, in publisher order. | `bill_id`, `action_index` | `action_date` | `interpretation.bill_family` |
+| `bill_committees` | One row per committee or subcommittee a bill reached, as its BILLSTATUS document names it. | `bill_id`, `system_code` | `snapshot_update_date` | `interpretation.bill_family` |
+| `bill_publisher_summaries` | One row per CRS summary the publisher states on a bill, at the version and action it describes. | `bill_id`, `summary_version_code`, `action_date` | `update_date` | `interpretation.bill_family` |
+| `cbo_cost_estimates` | One row per bill and CBO publication the bill's BILLSTATUS document names as a cost estimate of it. | `bill_id`, `publication_id` | `pub_date` | `interpretation.bill_family` |
+| `bill_versions` | One row per printing of a bill, per source that supplied it. | `bill_id`, `version_code`, `source` | `version_date` | `interpretation.bill_family` |
+| `bill_sections` | One row per content-bearing node of one bill version, in document order. | `bill_id`, `version_code`, `source`, `match_path`, `body_index` | `version_date` | `interpretation.bill_family` |
+| `section_diffs` | One row per compared pair of consecutive printings of one bill. | `bill_id`, `from_version_code`, `from_source`, `to_version_code`, `to_source` | `to_version_date` | `interpretation.bill_family` |
+| `section_diff_items` | One row per settled correspondence in one version-pair comparison. | `bill_id`, `from_version_code`, `from_source`, `to_version_code`, `to_source`, `seq` | none | `interpretation.bill_family` |
+| `financial_changes` | One row per aligned pair of dollar figures in a section whose amounts changed. | `bill_id`, `from_version_code`, `from_source`, `to_version_code`, `to_source`, `seq`, `amount_index` | none | `interpretation.bill_family` |
+| `section_classifications` | One row per label a model assigned to one section of one printing. | `bill_id`, `version_code`, `source`, `match_path`, `body_index`, `label` | `completed_at` | `interpretation.bill_family` |
+| `bill_summaries` | One row per plain-language summary of one printing of a bill. | `bill_id`, `version_code`, `source` | `completed_at` | `interpretation.bill_family` |
+| `diff_summaries` | One row per model-written summary of the change between two printings of a bill. | `bill_id`, `from_version_code`, `from_source`, `to_version_code`, `to_source` | `completed_at` | `interpretation.bill_family` |
+| `public_activity_events` | One row per change detected between two runs of the bill family. | `bill_id`, `event_type`, `subject_id`, `occurred_at` | `detected_at` | `schemas.activity_events` |
+| `amendments` | One row per amendment, as the Congress.gov amendment list route states it. | `congress`, `amendment_type`, `amendment_number` | `update_date` | `sources.congress.listing` (`amendment`) |
+| `press_releases` | One row per item in one appropriations committee press-release feed capture. | `release_id` | `observed_at` | `sources.congress.press_releases` |
+| `roll_call_votes` | One row per roll call: the publisher's own tally, and the bill it refers to. | `congress`, `chamber`, `session`, `roll_number` | `vote_date` | `sources.congress.votes` |
+| `member_votes` | One row per member's position on one roll call. | `congress`, `chamber`, `session`, `roll_number`, `member_key` | `vote_date` | `sources.congress.votes` |
+| `members` | One row per legislator in one capture of the community crosswalk. | `bioguide_id` | `observed_at` | `sources.legislators` |
+| `member_terms` | One row per term a legislator served, in the crosswalk's own order. | `bioguide_id`, `term_index` | `observed_at` | `sources.legislators` |
+| `committee_reports` | One row per captured GovInfo committee report package, with the CBO estimate it reprints or refuses. | `package_id` | `last_modified` | `sources.govinfo.body_acquisition`, `interpretation.cbo_estimates` |
+| `report_sections` | One row per heading block parsed out of one committee report's text. | `package_id`, `seq` | `last_modified` | `sources.agency_reports.report_blocks` |
+| `hearing_transcripts` | One row per captured GovInfo hearing transcript package. | `package_id` | `last_modified` | `sources.govinfo.body_acquisition`, `sources.congress.listing` (`hearing-detail`) |
+| `house_communications` | One row per House executive communication: the Congress.gov house-communication routes where the publisher decomposes it, the Congressional Record entry it printed where the publisher does not. | `congress`, `communication_type`, `number` | `update_date` | `sources.congress.listing` (`house-communication`, `house-communication-detail`), `sources.congress.record_communications`, `interpretation.communication_rin` |
+| `committee_meetings` | One row per scheduled committee meeting, as the Congress.gov committee-meeting routes state it. | `congress`, `chamber`, `event_id` | `update_date` | `sources.congress.listing` (`committee-meeting`, `committee-meeting-detail`) |
+| `record_issues` | One row per daily Congressional Record issue, which is also one legislative day per chamber named. | `volume`, `issue` | `update_date` | `sources.congress.listing` (`daily-congressional-record`, `daily-congressional-record-detail`) |
+| `treaties` | One row per treaty document, as the Congress.gov treaty routes state it. | `congress_received`, `number`, `suffix` | `update_date` | `sources.congress.listing` (`treaty`, `treaty-detail`) |
+| `nominations` | One row per nomination or part, as the Congress.gov nomination list route states it. | `congress`, `citation` | `update_date` | `sources.congress.listing` (`nomination`) |
+| `laws` | One row per enacted law the Congress.gov law list route states, with its PLAW USLM citation where captured. | `congress`, `law_type`, `number` | `update_date` | `schemas.law_tables` |
+| `law_code_sections` | One row per line of one OLRC per-Congress classification table: a Code place one public law section touched. | `congress`, `session`, `seq` | `observed_at` | `schemas.law_tables` |
+| `table3_records` | One row per classification record on one act's OLRC Table III page. | `act_key`, `seq` | `observed_at` | `schemas.law_tables` |
+| `committees` | One row per committee or subcommittee the Congress.gov committee list route states, with its detail record where captured. | `system_code` | `update_date` | `schemas.roster_tables` |
+| `committee_assignments` | One row per member per committee or subcommittee seat a chamber roster file lists today. | `congress`, `system_code`, `bioguide_id` | `observed_at` | `schemas.roster_tables` |
+| `document_citations` | One row per occurrence of one cited key in one document's text: the key, the exact text that named it, and the character span it was read at. | `document_key`, `text_sha256`, `cite_kind`, `target_key`, `span_start` | `rule_version` | `schemas.document_citation_tables`, `interpretation.citations` |
+| `house_activity_reports` | One row per end-of-Congress House committee activity report package, with what its print adds. | `package_id` | `last_modified` | `schemas.document_citation_tables`, `sources.govinfo.bodies` |
+| `budget_volumes` | One row per published volume of the President's budget, with what its print adds to its own index. | `package_id` | `last_modified` | `schemas.budget_volume_tables`, `sources.govinfo.bodies` |
+| `senate_expenditures` | One row per ruled row of one ruled table on one page of a Report of the Secretary of the Senate, with the cells exactly as the print states them and the roles its own header band names. | `package_id`, `file_name`, `page`, `table_ordinal`, `row_ordinal`, `text_sha256` | `extraction_rule_version` | `schemas.senate_expenditure_tables` |
+| `bill_committee_actions` | One row per action phrase a committee print states about one bill it names in the same sentence: the print's own phrasing, what it maps to, and how reliable the pairing is. | `document_key`, `text_sha256`, `bill_id`, `print_phrasing`, `span_start` | `rule_set_version` | `schemas.bill_action_tables`, `interpretation.bill_actions` |
+| `hearing_bill_links` | One row per bill one source states a hearing was held on or noticed for: the pair, the source that stated it, and the committee-and-date key the statement was checked against. | `package_id`, `bill_id`, `link_source` | `link_rule_version` | `schemas.hearing_bill_link_tables`, `interpretation.hearing_bill_links`, `sources.congress.house_committee_repository` |
 
-Eight hundred and nineteen columns in all, each with its own sentence.
+Every column carries its own sentence.
 
 ### Version equality and replacement
 
@@ -91,9 +89,10 @@ A publisher date orders rows only in a sortable spelling.
 `roll_call_votes.vote_date` and `member_votes.vote_date` keep each chamber's
 literal (`8-Sep-2025`), which sorts lexicographically, not by time; the
 appended `roll_call_votes.vote_day` is its ISO reading
-([vote day](sources/congress-votes.md#vote-day)). A host that moves its merge
-onto `vote_day` must backfill it first: rows published before the column
-existed carry NULL.
+([vote day](sources/congress-votes.md#vote-day)). Rows published before the
+column existed carry NULL until a host backfills them, so until then neither a
+merge ordered on `vote_day` nor a join from `bill_vote_references` through
+`vote_id` to `vote_day` is complete; the version column stays `vote_date`.
 
 The current SpicyRegs `transforms.table_merge.merge_table` already ranks fresh
 rows before prior rows (`_src DESC` before the version). Its same-input
@@ -138,7 +137,7 @@ timestamps cannot establish that this correction has run.
 
 ## The bill family is one pass
 
-Thirteen of the thirty-nine tables come out of a single call to
+Every table `BillFamilyTables` carries comes out of a single call to
 `build_bill_family`, in an order where no step reads a table an earlier step
 published:
 

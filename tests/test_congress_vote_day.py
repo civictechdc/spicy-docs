@@ -125,6 +125,12 @@ def test_an_absent_or_blank_date_is_no_day_not_a_refusal(chamber, literal):
         ("house", "2025-01-03"),
         ("house", "29-Feb-2025"),  # not a real day
         ("senate", "January 9, 2025,  13:54 PM"),
+        # The pattern matches but the month is not in the chamber's table: every
+        # retained Senate body spells the month in full, every Clerk body in three letters.
+        ("house", "8-Foo-2025"),
+        ("senate", "Sept 9, 2025,  02:54 PM"),
+        ("senate", "Sep 9, 2025,  02:54 PM"),
+        ("house", "8-September-2025"),
     ],
 )
 def test_an_unrecognized_spelling_refuses_rather_than_guessing(chamber, literal):
@@ -141,6 +147,12 @@ def test_a_record_whose_printed_date_cannot_be_read_refuses_at_parse_time():
     body = CLERK_240.replace(b"<action-date>8-Sep-2025</action-date>", b"<action-date>2025-09-08</action-date>")
     with pytest.raises(VoteSourceError, match="not the chamber's own spelling"):
         parse_clerk_vote(body, CLERK_240_LOCATOR)
+    senate = (FIXTURES / "senate-vote-119-1-00001.xml").read_bytes()
+    printed = b"<vote_date>January 9, 2025,  02:54 PM</vote_date>"
+    assert senate.count(printed) == 1
+    for unreadable in (b"<vote_date>2025-01-09</vote_date>", b"<vote_date>Sept 9, 2025,  02:54 PM</vote_date>"):
+        with pytest.raises(VoteSourceError, match="not the chamber's own spelling"):
+            parse_senate_vote(senate.replace(printed, unreadable), VoteLocator("senate", 119, 1, 1))
 
 
 def test_a_linkage_only_row_never_takes_its_day_from_the_references_utc_instant():

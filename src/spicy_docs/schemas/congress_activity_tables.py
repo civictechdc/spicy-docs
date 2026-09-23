@@ -125,7 +125,7 @@ ROLL_CALL_VOTES = table_contract(
         "chamber": "house or senate.",
         "session": "The session number within that Congress.",
         "roll_number": "The roll-call number within that session.",
-        "vote_date": "The date of the roll call; the merge prefers the larger value.",
+        "vote_date": "The chamber's literal date; sorts as text, not by time (see `vote_day`).",
         "source_url": "The publisher's own URL for this roll call.",
         "question": "The question put to the chamber, as the publisher states it.",
         "result": "The stated result of the roll call.",
@@ -149,7 +149,8 @@ ROLL_CALL_VOTES = table_contract(
         "vote_day": (
             "The chamber's own printed vote date as an ISO day (YYYY-MM-DD) in Eastern local time, which sorts where "
             "vote_date does not and is never the UTC day of a Congress.gov recordedVotes date; NULL where the file "
-            "prints no date and on linkage-only or legacy rows."
+            "prints no date, on linkage-only rows, and on rows published before this column until a host backfills "
+            "them."
         ),
     },
 )
@@ -179,7 +180,7 @@ MEMBER_VOTES = table_contract(
         "state": "The member's state as the roll-call source states it.",
         "position": "The member's position exactly as the publisher spelled it (Yea, Aye, Not Voting...).",
         "position_normalized": "That position folded onto yea, nay, present or not_voting; NULL for a named candidate choice.",
-        "vote_date": "The date of the roll call; the merge prefers the larger value.",
+        "vote_date": "The chamber's literal date; sorts as text, not by time (see roll_call_votes `vote_day`).",
     },
 )
 

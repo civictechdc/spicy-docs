@@ -160,6 +160,10 @@ is the one owner of that rule; `RollCallVote.day` exposes it, and
   always been accepted without `action-date`.
 - A printed date in any other spelling refuses (`VoteSourceError`), so the
   record is never built with a guessed day.
+- Rows published before `vote_day` existed carry NULL until a host backfills
+  them, so a join from `bill_vote_references` through `vote_id` to `vote_day`,
+  or a merge ordered on it, is complete only after that backfill; the version
+  column stays `vote_date` until then.
 - The day is the chamber's own, never converted through UTC. Congress.gov's
   `recordedVotes` date is a UTC instant whose day runs one later for an
   evening vote: 91 of the 847 vote–date pairs in the live
