@@ -507,7 +507,7 @@ tests/test_markup_events.py	Markup reading: source text, byte spans, callback in
 tests/test_mirrulations_reader.py	MirrulationsReader over a fake in-memory S3 resource.	test
 tests/test_observation_census.py	Fixture coverage for the ``tools/analysis/observation_census.py`` receipt helper.	test
 tests/test_optional_dependencies.py	Core operations and setup failures with optional imports unavailable.	test
-tests/test_paged_json.py	The shared paged-JSON reader: exact page capture, credential handling and traversal refusals.	test
+tests/test_paged_json.py	The shared paged-JSON reader: exact page capture, credential handling, traversal refusals and pooled walks.	test
 tests/test_pdf_family_rollup_tool.py	The PDF-family rollup's rules and the sidecar the report is written from.	test
 tests/test_pdf_yield_mods_recheck_tool.py	The MODS recheck's readings and the sidecar the report is written from.	test
 tests/test_public_table.py	Source-native-backed public Parquet and DuckDB behavior.	test

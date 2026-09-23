@@ -2,7 +2,8 @@
 
 The publisher's bracketed bounds are instants at ``00:00:00Z``, so an inclusive
 caller window ending on day E is sent as ``[lte]E+1``; see the module docstring
-for the live measurement behind that.
+for the live measurement behind that. ECFS states no count, so a pooled walk of
+a window pools against a total its host supplies.
 """
 
 import json
@@ -12,7 +13,7 @@ from urllib.parse import quote
 import httpx
 import pytest
 
-from spicy_docs.reading.paged_json import PagedJsonBudget, PagedJsonSourceError
+from spicy_docs.reading.paged_json import PagedJsonBudget, PagedJsonSourceError, WalkPass, pool_walks
 from spicy_docs.sources.fcc_ecfs import FCC_ECFS, FccEcfsReader, filings_url, proceedings_url
 from spicy_docs.transport import retry
 
@@ -112,3 +113,27 @@ def test_pinned_pages_parse_and_the_walk_advances_by_offset():
         pages = list(source.proceedings(proceedings_url(created_from="2026-01-01", created_to="2026-01-31", limit=2)))
     assert [len(p.records) for p in pages] == [2, 1] and pages[1].next_url is None
     assert [str(c.url).rsplit("offset=", 1)[1] for c in transport.calls] == ["0", "2"]
+
+
+def test_fcc_pools_a_window_until_its_aggregate_count():
+    """A window that repeats one filing and skips another is pooled by ``id_submission`` against its host's count.
+
+    Ported from spicy-regs' ``test_reference_source_failures``. The host reads
+    the window's total from the ``aggregations`` ECFS answers beside the rows
+    (spicy-regs ``_COUNTED_BY``, moving here with B7); this test supplies it.
+    """
+    first = {"id_submission": "f1", "date_received": "2026-09-08T23:56:03Z"}
+    second = {"id_submission": "f2", "date_received": "2026-09-08T04:47:28Z"}
+    transport = Transport(
+        json.dumps({"filing": [first, first]}).encode(), json.dumps({"filing": [second, first]}).encode()
+    )
+    url = filings_url(received_from="2026-09-08", received_to="2026-09-08", limit=250, descending=False)
+    window_count = 2
+    with FccEcfsReader(budget=BUDGET, api_key=KEY, transport=transport) as source:
+        result = pool_walks(
+            lambda _index: WalkPass(tuple(r for page in source.filings(url) for r in page.records), window_count),
+            key=lambda filing: filing["id_submission"],
+            label="FCC ECFS filings",
+        )
+    assert sorted(filing["id_submission"] for filing in result.records) == ["f1", "f2"]
+    assert len(transport.calls) == 2

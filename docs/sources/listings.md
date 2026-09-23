@@ -262,13 +262,102 @@ applies one rule everywhere:
   Continuations are re-encoded before they are requested so the requested and
   final URLs agree; Congress.gov spells `sort=updateDate desc` with a raw
   space, and the raw form stays in the retained page.
-- The declared count may not change between pages, the observed total may not
-  exceed it, and at the publisher's terminal page the two must agree.
+- The declared count may not change between pages (`DeclaredCountChanged`),
+  the observed total may not exceed it, and at the publisher's terminal page
+  the two must agree (`DeclaredCountMismatch`). Both carry their two numbers,
+  so a host never matches the message.
   Reaching `max_pages` with a continuation outstanding is a refusal, not an
   end. Pages already yielded remain partial observations.
 - 404 and 410 raise `PagedJsonUnavailableError` with the capture; 401 and 403
   abort with `CredentialRefusedError`; 429 and 5xx retry within the request
   budget, and exhaustion is not absence.
+
+## Pool a list that shifts while it is read
+
+An offset walk over a list that reorders mid-read can repeat one record and
+skip another while serving exactly its declared count: the 119th Congress
+amendments walk served 7,066 rows but 7,013 distinct amendments on
+2026-09-23. `pool_walks` in `reading/paged_json.py` repeats whole walks,
+keyed by a caller's identity key, and settles on the first of:
+
+- **A clean walk.** No repeated identity and a distinct count equal to the
+  declared total. A record moving in the order skips one only by repeating
+  another; a population change can skip one without a repeat, and the reader
+  refuses it only when it moves the total (see the known limits).
+- **A full pool.** The identities of every walk since the declared total last
+  changed, keeping the newest version by the caller's `version`, number
+  exactly the declared total. A changed total starts a new pool, and a walk
+  whose total changes mid-walk (`DeclaredCountChanged`) is spent and pooling
+  restarts after it.
+
+A query still unsettled after `max_passes` (default 4) raises
+`IncompleteWalkError` with `declared`, `distinct`, `passes` and `restarted`;
+a pool larger than `declared` names that as records replaced under an
+unchanged total.
+
+**Known limits.** Both come from a deletion offset by an insertion, which
+leaves every total unchanged, and a test pins each.
+
+- Within one walk, the per-page count check proves an equal count, not an
+  unchanged population. Ascending, a deletion in the part already read and an
+  insertion in the part not yet read cancel their shifts: the walk serves the
+  deleted record, skips a live one and settles clean. Descending, the walk
+  misses the new record instead, which a later window reaches, so prefer
+  descending order.
+- Between walks, the pool keeps the deleted record. If every pooled walk
+  skipped one live record, the deleted record fills its slot and the pool
+  settles wrong; otherwise the pool overfills and the query refuses.
+
+`CongressListingReader.pooled` varies the page size per walk (250, 237, 223)
+and alternates `updateDate desc` and `asc` where the route honors `sort`, so
+each walk's page boundaries fall on other records. With fixed boundaries a walk
+tends to skip what the last one skipped. The evidence is a simulation through
+the real reader, and it is conditional on its model: 250 a page, tied
+`updateDate` stamps in groups of 1 to 17 reshuffled on every request (about 56
+skips a walk), three walks unless stated, 30 queries a case, list sizes of
+7,000, 7,004, 7,066 and 7,100.
+
+- A churning list settled in all 30 queries at every size with varied
+  boundaries, in 2.1 to 2.4 walks. With fixed boundaries it depended on the
+  size, 0 of 30 at 7,000 and 30 of 30 at 7,066, as did spicy-regs'
+  `pool_passes`; on a route that ignores `sort` it settled 2 to 4 of 30.
+- After a changed total, varied boundaries need a fourth walk: growth then
+  quiet, or a deletion before walk 2, settled 13 to 25 of 30 at three walks
+  and 30 of 30 at four (measured at 7,000 and 7,066), so `max_passes`
+  defaults to four. None settled wrong; spicy-regs published the deleted
+  record in 7 to 30 of 30.
+- The cost is the second known limit: a replacement before walk 2 settled
+  wrong in 3 to 12 of 30 with varied boundaries and 0 to 10 with fixed ones,
+  refusing otherwise. A replacement during a clean walk settled wrong in 10 to
+  16 of 30 under every rule tried.
+
+The receipt, with the script, is
+`supply-2026-09-02/receipts/pooled-walk-simulation-2026-09-23/`.
+
+The key must name what identifies a record, never its content. A key over the
+whole record never settles once records carry fields that change between
+walks: FCC ECFS proceedings do (`last_30_days`, `total_filing_count`), and one
+`id_proceeding` can carry more than one document, so key them by content that
+excludes the changing fields. A `version` must be present and comparable, or
+the walk refuses.
+
+For example:
+
+```python
+route = LIST_ROUTES["amendment"]
+with CongressListingReader(budget=budget, api_key=key) as congress:
+    pooled = congress.pooled(
+        route,
+        list_route_url(route, congress=119),
+        key=lambda row: (row["congress"], row["type"].lower(), row["number"]),
+        version=lambda row: row["updateDate"],
+    )
+    print(pooled.declared, len(pooled.records), pooled.passes)
+```
+
+A publisher that states its total elsewhere, such as FCC ECFS's aggregations,
+passes `pool_walks` a function returning one `WalkPass(records, declared)` per
+walk.
 
 ## Use the routes
 
