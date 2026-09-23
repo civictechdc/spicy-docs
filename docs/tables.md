@@ -124,6 +124,14 @@ live `build_congress_bills.COLUMNS` a host already publishes: other repositories
 pin that prefix by digest, so it is frozen on purpose and every new column is
 appended.
 
+`law_code_sections` and `table3_records` append `usc_section_key`: the
+printed `usc_section` lower-cased, with every dash spelling an ASCII hyphen
+(`schemas.tables.usc_section_key`). That is the spelling the citation grammar
+and RefSpec's section oracle key on, so a citation's `usc_section` key joins
+`{usc_title}-{usc_section_key}` and never the printed column. Rows published
+before the column carry NULL until their scope is captured again
+([decision](decisions.md#us-code-section-join-keys-are-lower-cased-on-both-sides)).
+
 `report_sections` preserves the source heading in its appended `heading`
 column. The older `agency_label` and `agency_key` columns remain in place but
 are NULL: the heading splitter does not resolve agency identities. Actual
