@@ -87,8 +87,10 @@ if TYPE_CHECKING:
 MAX_PAGE_BYTES = 64 * 1024 * 1024
 DEFAULT_MAX_PAGE_BYTES = 16 * 1024 * 1024
 DEFAULT_MAX_PAGES = 100
-# Whole walks a pooled enumeration may spend on one query; spicy-regs' CRS and ECFS hosts used three.
-DEFAULT_POOL_PASSES = 3
+# Whole walks a pooled enumeration may spend on one query. Four, not spicy-regs' three: after a changed total
+# restarts the pool, simulated queries settled 13-25 of 30 at three walks and 30 of 30 at four, none wrong
+# (docs/sources/listings.md); a clean walk still settles in one.
+DEFAULT_POOL_PASSES = 4
 # Query parameter names publishers accept credentials under; they must never appear in a retained URL.
 CREDENTIAL_QUERY_NAMES = frozenset({"api_key", "apikey", "api-key", "key", "token", "access_token"})
 type NextKind = Literal["url", "page-number", "offset"]

@@ -754,12 +754,13 @@ def test_a_record_that_changes_between_passes_stays_one_identity_under_a_key():
             ([{"id": 1, "filings": 1}, {"id": 1, "filings": 1}, {"id": 3}], 3),
             ([{"id": 2}, {"id": 1, "filings": 2}, {"id": 1, "filings": 2}], 3),
             ([{"id": 3}, {"id": 3}, {"id": 1, "filings": 3}], 3),
+            ([{"id": 2}, {"id": 2}, {"id": 1, "filings": 4}], 3),
         )
 
     result = pooled(churning())
     assert (sorted(ids(result)), result.passes) == ([1, 2, 3], 2)
     assert {r["id"]: r for r in result.records}[1]["filings"] == 2
-    with pytest.raises(IncompleteWalkError, match="pooled 5 records, more than the 3 declared"):
+    with pytest.raises(IncompleteWalkError, match="pooled 6 records, more than the 3 declared"):
         pooled(churning(), key=lambda record: json.dumps(record, sort_keys=True))
 
 
@@ -780,12 +781,12 @@ def test_a_clean_walk_drops_what_earlier_walks_saw_and_it_did_not():
 def test_a_replacement_nothing_skips_overfills_the_pool_and_refuses():
     """X is replaced by Z at an unchanged total and no walk is clean, so the pool holds 4 against 3.
 
-    Pass 3 has 3 distinct identities but repeats one, so it is not clean on its
-    own either (a count-less family can serve more rows than its total).
+    Passes 3 and 4 have 3 distinct identities but repeat one, so neither is clean
+    on its own (a count-less family can serve more rows than its total).
     """
-    walks = Walks((["X", "A", "A"], 3), (["Z", "B", "B"], 3), (["A", "B", "Z", "Z"], 3))
+    walks = Walks((["X", "A", "A"], 3), (["Z", "B", "B"], 3), (["A", "B", "Z", "Z"], 3), (["Z", "Z", "A", "B"], 3))
     message = (
-        "pooled 4 records, more than the 3 declared, after 3 passes; records were replaced under an unchanged total"
+        "pooled 4 records, more than the 3 declared, after 4 passes; records were replaced under an unchanged total"
     )
     with pytest.raises(IncompleteWalkError, match=message) as raised:
         pooled(walks)
@@ -817,16 +818,23 @@ def test_a_total_that_moves_mid_walk_discards_the_pool_even_when_it_moves_back()
     the same total; pass 4 is clean.
     """
     walks = Walks((["X", "A", "A"], 3), moved(3, 4), (["B", "A", "A"], 3), (["Z", "A", "B"], 3))
-    result = pooled(walks, max_passes=4)
+    result = pooled(walks)
     assert (ids(result), result.passes) == (["Z", "A", "B"], 4)
 
 
 @pytest.mark.parametrize(
     "passes,restarted",
     [
-        pytest.param([moved(3, 4), moved(4, 5), moved(5, 6)], 3, id="moves-mid-walk"),
+        pytest.param([moved(3, 4), moved(4, 5), moved(5, 6), moved(6, 7)], 4, id="moves-mid-walk"),
         pytest.param(
-            [(["A", "A", "B"], 4), (["C", "C", "D", "E"], 5), (["F", "F", "A", "B", "C"], 6)], 0, id="grows-between"
+            [
+                (["A", "A", "B"], 4),
+                (["C", "C", "D", "E"], 5),
+                (["F", "F", "A", "B", "C"], 6),
+                (["G", "G", "A", "B", "C", "D"], 7),
+            ],
+            0,
+            id="grows-between",
         ),
     ],
 )
@@ -835,17 +843,17 @@ def test_continuous_growth_refuses_after_its_passes(passes, restarted):
     with pytest.raises(IncompleteWalkError) as raised:
         pooled(walks)
     error = raised.value
-    assert (error.declared, error.passes, error.restarted) == (6, 3, restarted)
-    assert walks.asked == [0, 1, 2]
+    assert (error.declared, error.passes, error.restarted) == (7, 4, restarted)
+    assert walks.asked == [0, 1, 2, 3]
 
 
 def test_a_query_still_short_after_its_bounded_passes_refuses_naming_the_numbers():
     """Ported from spicy-regs' amendments refusal: every pass repeats #1, so the pool never reaches 2."""
-    walks = Walks(*[([1, 1], 2)] * 3)
-    with pytest.raises(IncompleteWalkError, match="Example: pooled 1 of 2 declared records after 3 passes") as raised:
+    walks = Walks(*[([1, 1], 2)] * 4)
+    with pytest.raises(IncompleteWalkError, match="Example: pooled 1 of 2 declared records after 4 passes") as raised:
         pooled(walks)
-    assert walks.asked == [0, 1, 2]
-    assert (raised.value.declared, raised.value.distinct, raised.value.passes) == (2, 1, 3)
+    assert walks.asked == [0, 1, 2, 3], "the default bound is four walks"
+    assert (raised.value.declared, raised.value.distinct, raised.value.passes) == (2, 1, 4)
     assert isinstance(raised.value, PagedJsonSourceError)
 
 

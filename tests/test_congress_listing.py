@@ -1204,7 +1204,7 @@ def test_amendments_pool_opposite_sort_passes_until_the_declared_count():
 
 
 def test_amendments_refuse_a_walk_that_never_reaches_its_declared_count():
-    """Ported from spicy-regs: four passes (its ``POOLED_SORTS``) that each repeat one amendment refuse."""
+    """Ported from spicy-regs: four passes (its ``POOLED_SORTS``, now the default bound) that each repeat one refuse."""
     samdt1 = AMENDMENTS[0]
     transport = Transport(*[_list_page("amendments", [samdt1, samdt1], 2)] * 4)
     route = LIST_ROUTES["amendment"]
@@ -1212,7 +1212,7 @@ def test_amendments_refuse_a_walk_that_never_reaches_its_declared_count():
         CongressListingReader(budget=BUDGET, api_key=KEY, transport=transport) as source,
         pytest.raises(IncompleteWalkError, match="pooled 1 of 2 declared"),
     ):
-        source.pooled(route, list_route_url(route, congress=119), key=_amendment_key, max_passes=4)
+        source.pooled(route, list_route_url(route, congress=119), key=_amendment_key)
     assert _sorts(transport) == ["updateDate desc", "updateDate asc"] * 2
     assert _limits(transport) == ["250", "237", "223", "250"]
 

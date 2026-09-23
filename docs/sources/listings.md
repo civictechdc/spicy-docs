@@ -290,7 +290,7 @@ keyed by a caller's identity key, and settles on the first of:
   whose total changes mid-walk (`DeclaredCountChanged`) is spent and pooling
   restarts after it.
 
-A query still unsettled after `max_passes` (default 3) raises
+A query still unsettled after `max_passes` (default 4) raises
 `IncompleteWalkError` with `declared`, `distinct`, `passes` and `restarted`;
 a pool larger than `declared` names that as records replaced under an
 unchanged total.
@@ -323,8 +323,9 @@ skips a walk), three walks unless stated, 30 queries a case, list sizes of
   `pool_passes`; on a route that ignores `sort` it settled 2 to 4 of 30.
 - After a changed total, varied boundaries need a fourth walk: growth then
   quiet, or a deletion before walk 2, settled 13 to 25 of 30 at three walks
-  and 30 of 30 at four (measured at 7,000 and 7,066). None settled wrong;
-  spicy-regs published the deleted record in 7 to 30 of 30.
+  and 30 of 30 at four (measured at 7,000 and 7,066), so `max_passes`
+  defaults to four. None settled wrong; spicy-regs published the deleted
+  record in 7 to 30 of 30.
 - The cost is the second known limit: a replacement before walk 2 settled
   wrong in 3 to 12 of 30 with varied boundaries and 0 to 10 with fixed ones,
   refusing otherwise. A replacement during a clean walk settled wrong in 10 to
