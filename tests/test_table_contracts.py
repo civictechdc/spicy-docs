@@ -66,6 +66,7 @@ from spicy_docs.sources.congress.record_communications import parse_record_commu
 from spicy_docs.sources.congress.votes import VoteLocator, parse_clerk_vote, parse_senate_vote
 from spicy_docs.sources.govinfo.bodies import (
     PackageBodyIdentity,
+    package_mods_locator,
     parse_package_id,
     validate_package_body,
     validate_package_mods,
@@ -731,6 +732,7 @@ def _package_body(package_id: str) -> GovInfoPackageBody:
             body=payload,
         )
 
+    mods = validate_package_mods(mods_bytes, package=CRPT, final_url=mods_url, max_bytes=1_000_000)
     return GovInfoPackageBody(
         identity=identity,
         format="htm",
@@ -740,10 +742,7 @@ def _package_body(package_id: str) -> GovInfoPackageBody:
             validate_package_summary(summary_bytes, package=CRPT, final_url=summary_url, max_bytes=1_000_000),
             identity=identity,
         ),
-        mods=replace(
-            validate_package_mods(mods_bytes, package=CRPT, final_url=mods_url, max_bytes=1_000_000),
-            identity=identity,
-        ),
+        mods=replace(mods, identity=identity),
         body=body_identity,
         summary_capture=capture(summary_url, summary_bytes, "application/json"),
         mods_capture=capture(mods_url, mods_bytes, "application/xml"),
@@ -756,6 +755,8 @@ def _package_body(package_id: str) -> GovInfoPackageBody:
             timeout_seconds=5.0,
             min_request_interval_seconds=0.0,
         ),
+        # A hearing states no parts; the report is its own one part.
+        part=mods.parts[0] if package_id == CRPT else None,
     )
 
 
@@ -780,7 +781,7 @@ def _report_cases() -> list[ShapedCase]:
                 estimate=estimate,
                 recital_bill_id=recital_bill_id(estimate, 118),
             ),
-            (CRPT,),
+            (CRPT, CRPT),
         ),
         _case(
             "hearing_transcripts",
@@ -797,8 +798,8 @@ def _report_cases() -> list[ShapedCase]:
         cases.append(
             _case(
                 "report_sections",
-                shape_report_section(block, package_id=CRPT, seq=seq, last_modified=OBSERVED_AT),
-                (CRPT, str(seq)),
+                shape_report_section(block, package_id=CRPT, part_id=CRPT, seq=seq, last_modified=OBSERVED_AT),
+                (CRPT, CRPT, str(seq)),
             )
         )
     return cases
@@ -1282,6 +1283,38 @@ def test_every_citation_row_of_both_reports_keys_uniquely() -> None:
         _, rows, _, _ = _activity_rows(package)
         keys = [contract.key(contract.checked(row)) for row in rows]
         assert len(set(keys)) == len(keys) > 250
+
+
+def test_a_multi_part_report_is_one_row_per_part_and_its_blocks_key_under_their_part() -> None:
+    """CRPT-119hrpt455's two parts are two report rows, and block 0 of each is its own section row (decision 29).
+
+    The record is the publisher's; each part row reuses the captured CRPT body under that part, since the contract
+    reads the part off the acquisition result and nothing off the bytes.
+    """
+    package = "CRPT-119hrpt455"
+    mods_bytes = (FIXTURES / f"govinfo_bodies/mods-{package}.xml").read_bytes()
+    mods = validate_package_mods(
+        mods_bytes, package=package, final_url=package_mods_locator(package), max_bytes=1_000_000
+    )
+    template = _package_body(package)
+    reports, sections = TABLE_CONTRACTS["committee_reports"], TABLE_CONTRACTS["report_sections"]
+    rows = [
+        reports.checked(
+            shape_committee_report(
+                replace(template, mods=mods, part=part, body=replace(template.body, part_id=part.part_id)),
+                bill_id=f"119-hr-{part.primary_bill.number}",
+            )
+        )
+        for part in mods.parts
+    ]
+    assert [reports.key(row) for row in rows] == [(package, f"{package}-pt1"), (package, f"{package}-pt2")]
+    assert [row["part_number"] for row in rows] == ["1", "2"]
+    block = parse_agency_blocks("SECTION 1. SHORT TITLE.\n\nThis Act may be cited.")[0]
+    keys = [
+        sections.key(sections.checked(shape_report_section(block, package_id=package, part_id=part.part_id, seq=0)))
+        for part in mods.parts
+    ]
+    assert len(set(keys)) == 2
 
 
 def test_every_hearing_bill_link_row_keys_uniquely_and_the_sources_do_not_collide() -> None:

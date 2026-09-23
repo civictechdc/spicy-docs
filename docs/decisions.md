@@ -1773,3 +1773,29 @@ every current-year estimate — have no text route at all; their index rows
 still carry the bill, the stage, the date and the locator, and the figures are
 recorded as absent. Under the retain-value rule that is a capability with a
 measured limit, not a gap to hide.
+
+## A multi-part committee report is one row per part, keyed on the publisher's granule id
+
+Decision 29, delegated 2026-09-23; the owner's one-line confirmation of the
+identity move itself is pending. `committee_reports` moves from `(package_id)`
+to `(package_id, part_id)` and `report_sections` from `(package_id, seq)` to
+`(package_id, part_id, seq)`; the host's acquisition checkpoint stays keyed by
+package, because one read yields every part and a package's part rows are
+replaced as a set. `REPORT_SECTION_READER_VERSION` moves to
+`report-headings-002` so every report is re-read into part rows. Behavior and
+measurements: [Table contracts](tables.md#a-multi-part-committee-report-is-one-row-per-part)
+and [multi-part reports](sources/govinfo-bodies.md#multi-part-committee-reports).
+
+**The single-part spelling is the package id, not a blank.** `TableContract.key`
+refuses a NULL identity part, so a report in one part needs a value. The record
+already states one: its root names the granule's `accessId`, and it is the
+package id (`CRPT-119hrpt1`). `CRPT-119hrpt494` spells its real, numbered Part 1
+the same way. Taking the publisher's id means `part_id` is always a value some
+record states, always the stem of `requested_url`, and never the same spelling
+for "Part 1 of two" and "no parts": `part_number` (1 against NULL) says which.
+The `treaties.suffix` blank would have been none of those.
+
+**Why not read two parts as one package.** Joining the parts' text under the
+package id would publish two bodies, two digests and two CBO findings as one,
+and `CRPT-119hrpt494`'s Part 2 is a supplemental report correcting Part 1's
+committee votes, not a continuation of it.

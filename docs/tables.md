@@ -52,8 +52,8 @@ table's columns.
 | `member_votes` | One row per member's position on one roll call. | `congress`, `chamber`, `session`, `roll_number`, `member_key` | `vote_date` | `sources.congress.votes` |
 | `members` | One row per legislator in one capture of the community crosswalk. | `bioguide_id` | `observed_at` | `sources.legislators` |
 | `member_terms` | One row per term a legislator served, in the crosswalk's own order. | `bioguide_id`, `term_index` | `observed_at` | `sources.legislators` |
-| `committee_reports` | One row per captured GovInfo committee report package, with the CBO estimate it reprints or refuses. | `package_id` | `last_modified` | `sources.govinfo.body_acquisition`, `interpretation.cbo_estimates` |
-| `report_sections` | One row per heading block parsed out of one committee report's text. | `package_id`, `seq` | `last_modified` | `sources.agency_reports.report_blocks` |
+| `committee_reports` | One row per published part of a captured GovInfo committee report package, with the CBO estimate it reprints or refuses. | `package_id`, `part_id` | `last_modified` | `sources.govinfo.body_acquisition`, `interpretation.cbo_estimates` |
+| `report_sections` | One row per heading block parsed out of one committee report part's text. | `package_id`, `part_id`, `seq` | `last_modified` | `sources.agency_reports.report_blocks` |
 | `hearing_transcripts` | One row per captured GovInfo hearing transcript package. | `package_id` | `last_modified` | `sources.govinfo.body_acquisition`, `sources.congress.listing` (`hearing-detail`) |
 | `house_communications` | One row per House executive communication: the Congress.gov house-communication routes where the publisher decomposes it, the Congressional Record entry it printed where the publisher does not. | `congress`, `communication_type`, `number` | `update_date` | `sources.congress.listing` (`house-communication`, `house-communication-detail`), `sources.congress.record_communications`, `interpretation.communication_rin` |
 | `committee_meetings` | One row per scheduled committee meeting, as the Congress.gov committee-meeting routes state it. | `congress`, `chamber`, `event_id` | `update_date` | `sources.congress.listing` (`committee-meeting`, `committee-meeting-detail`) |
@@ -401,8 +401,8 @@ rollup estimated.
   Congress shows as a discrepancy rather than a confidently wrong `bill_id`.
   Measured zero on both packages.
 
-  It overlaps `committee_reports` on seven columns under the same `package_id`
-  identity — `package_id`, `congress`, `title`, `date_issued`,
+  It overlaps `committee_reports` on seven columns under the same
+  `package_id` — `package_id`, `congress`, `title`, `date_issued`,
   `last_modified`, `text_sha256` and, but for a rename, the page count — and
   spells the first six identically so a host can join the two.
   `committee_reports` is the generic captured-package row; this is the
@@ -808,6 +808,57 @@ the report is a different package: 61 of the 1,368 scored bills carry more than
 one estimate and 28 of those also carry a report, so one reprinted letter could
 not be attributed to one of them without guessing. The relation is therefore a
 join on the bill, which both sides state.
+
+## A multi-part committee report is one row per part
+
+A report filed in parts is one GovInfo package whose parts are granules, each
+with its own body ([multi-part reports](sources/govinfo-bodies.md#multi-part-committee-reports)).
+`committee_reports` publishes **one row per published part**, keyed
+`(package_id, part_id)`, and `report_sections` keys its blocks
+`(package_id, part_id, seq)`, with `seq` counting within the part. Both
+columns are appended; `part_number` is appended beside `part_id` on the report
+row only, since a block reaches it through its parent. This is an owner-ruled
+identity move (decision 29, delegated 2026-09-23; the owner's confirmation of
+the move itself is pending).
+
+- **`part_id` is the publisher's granule id, never a marker.** It is the
+  `accessId` the record states for the part and the file stem its body was
+  read at, so `requested_url` ends in `/{part_id}.{extension}` on every row. A
+  report published in one part states its granule id as the package id
+  (`CRPT-119hrpt1`), and `CRPT-119hrpt494` states its unsuffixed Part 1 the
+  same way, so on those rows `part_id` equals `package_id`. A blank marker, the
+  way `treaties.suffix` spells an unpartitioned treaty, was rejected: it would
+  be a value no record states, it would spell `CRPT-119hrpt494`'s real Part 1
+  the same as a report with no parts, and it could not be checked against the
+  URL the body came from.
+- **`part_number` is what the record numbers.** 1 and 2 on `CRPT-119hrpt455`,
+  1 on `CRPT-119hrpt811`'s lone `-pt1`, and NULL on a report published in one
+  part, whose record states no number. It is not identity: NULL there is a fact,
+  not a gap.
+- **A package's part rows are replaced as a set.** The acquisition checkpoint
+  stays keyed by package: one read yields every part
+  (`GovInfoBodyAcquirer.acquire_parts`, all or nothing), and a host removes
+  the package's prior part rows before merging the fresh ones, the scope
+  `report_sections` already replaces by package. A package gains a part without
+  changing identity: `CRPT-119hrpt494`'s Part 2 was printed 2026-09-08 and the
+  package's `last_modified` moved to 2026-09-11, so discovery re-reads it.
+- **Summary facts repeat on each part row.** `title`, `date_issued` and
+  `last_modified` are the package's; `format` through `text_sha256` and the
+  estimate columns are the part's own. The bill a host passes should be the
+  part's (`part.primary_bill`): a multi-part package's root states no `<bill>`
+  (`CRPT-119hrpt455`, `-119hrpt494`), so the package-level `primary_bill` is
+  `None` there.
+- **`REPORT_SECTION_READER_VERSION` is `report-headings-002`.** Hosts carry it
+  in their read checkpoint, so every report is re-read into part rows.
+
+Over every retained CRPT package MODS (148 distinct records, 145 packages, all
+read, none refused; receipt
+`receipts/multipart-reports-2026-09-23/parts/population.json`), 141 packages
+publish one row and 4 publish two (`CRPT-108hrpt24`, `-119hrpt455`,
+`-119hrpt494`, `-119hrpt620`). Of the 141, 133 have `part_id` equal to
+`package_id` and 8 have a `-pt1` part (`CRPT-112hrpt11`, `-112hrpt38`,
+`-112hrpt141`, `-119hrpt468`, `-119hrpt483`, `-119hrpt577`, `-119hrpt621`,
+`-119hrpt811`).
 
 ## What is still a preserved NULL
 
