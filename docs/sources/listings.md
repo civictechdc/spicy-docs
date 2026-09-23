@@ -65,11 +65,18 @@ contract, not a measurement — and `list_route_url` refuses `from_datetime`/
 `to_datetime` on a route where `window_honored` is `False`, the same way it
 refuses `sort`.
 
+Both bounds are exclusive: a record stamped exactly at `fromDateTime` or
+`toDateTime` is left out (measured on `amendment`, 2026-09-23). Spell a window
+of whole UTC days with `utc_day_window(first, last)`, which opens one second
+before `first` and closes at the midnight after `last`; its docstring holds
+the measurement and receipt. `crsreport` did not select its own printed
+`updateDate` at a fine window, so the rule is unmeasured there.
+
 | Route | Path | Records key | Sort honored | Window honored | Fixture |
 | --- | --- | --- | --- | --- | --- |
 | `bill` | `bill/{congress}/{type}` | `bills` | yes | yes (default) | `congress-bill-list.json` |
 | `crsreport` | `crsreport` | `CRSReports` | no (legacy builder still sends it) | yes (default) | `congress-crsreport-list.json` |
-| `amendment` | `amendment/{congress}` | `amendments` | yes | yes (default) | `congress-amendment-list.json` |
+| `amendment` | `amendment/{congress}` | `amendments` | yes | yes (measured 2026-09-23) | `congress-amendment-list.json` |
 | `committee-bills` | `committee/{chamber}/{code}/bills` | `("committee-bills", "bills")` (nested; see below) | no (measured) | yes (measured) | `congress-committee-bills-list.json` |
 | `bill-actions` | `bill/{congress}/{type}/{number}/actions` | `actions` | no (measured) | no (measured) | `congress-bill-actions-list.json` |
 | `nomination` | `nomination/{congress}` | `nominations` | no | yes (default) | `congress-nomination-list.json` |

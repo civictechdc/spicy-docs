@@ -8,6 +8,7 @@ walks that alternate order only where the route honors ``sort``.
 """
 
 import json
+from datetime import UTC, date, datetime
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
@@ -34,6 +35,7 @@ from spicy_docs.sources.congress.listing import (
     bill_list_url,
     crs_report_list_url,
     list_route_url,
+    utc_day_window,
 )
 from spicy_docs.transport import retry
 from spicy_docs.transport.credentials import read_api_key
@@ -274,6 +276,42 @@ def test_list_urls_are_explicit_and_bounded():
         "https://api.congress.gov/v3/crsreport?format=json&limit=250&sort=updateDate+asc"
     )
     assert MAX_LIMIT == 250
+
+
+def test_a_day_window_admits_every_second_of_its_days_under_exclusive_bounds():
+    """Congress.gov drops a stamp equal to either bound, so a window opens a second early and closes at the next
+    midnight; consecutive day windows then admit each boundary second exactly once.
+    """
+    assert utc_day_window(date(2026, 9, 15), date(2026, 9, 15)) == ("2026-09-14T23:59:59Z", "2026-09-16T00:00:00Z")
+    assert utc_day_window(date(2025, 12, 31), date(2026, 1, 1)) == ("2025-12-30T23:59:59Z", "2026-01-02T00:00:00Z")
+    assert utc_day_window(None, date(2026, 9, 15)) == (None, "2026-09-16T00:00:00Z")
+    assert utc_day_window(date(2026, 9, 15), None) == ("2026-09-14T23:59:59Z", None)
+    assert utc_day_window(None, None) == (None, None)
+
+    def admits(window, stamp):  # the measured rule: both bounds exclusive
+        return window[0] < stamp < window[1]
+
+    days = [utc_day_window(date(2026, 9, day), date(2026, 9, day)) for day in (14, 15, 16)]
+    for stamp in ["2026-09-15T00:00:00Z", "2026-09-15T00:00:01Z", "2026-09-15T23:59:59Z", "2026-09-16T00:00:00Z"]:
+        assert sum(admits(window, stamp) for window in days) == 1
+    first, end = utc_day_window(date(2026, 9, 15), date(2026, 9, 15))
+    assert list_route_url(LIST_ROUTES["amendment"], congress=119, from_datetime=first, to_datetime=end).endswith(
+        "&fromDateTime=2026-09-14T23%3A59%3A59Z&toDateTime=2026-09-16T00%3A00%3A00Z"
+    )
+
+
+@pytest.mark.parametrize(
+    "first,last",
+    [
+        (date(2026, 9, 2), date(2026, 9, 1)),
+        (datetime(2026, 9, 1, tzinfo=UTC), None),
+        (None, "2026-09-01"),
+    ],
+)
+def test_a_day_window_refuses_reversed_days_and_non_dates(first, last):
+    """Reversed days, datetimes and strings are refused rather than spelled."""
+    with pytest.raises(PagedJsonSourceError):
+        utc_day_window(first, last)
 
 
 @pytest.mark.parametrize(
