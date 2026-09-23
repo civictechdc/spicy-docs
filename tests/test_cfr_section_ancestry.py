@@ -276,6 +276,22 @@ def test_split_reads_every_printed_form(printed, part, subpart, expected):
 
 
 @pytest.mark.parametrize(
+    "printed,part,single",
+    [
+        ("§§\u20092.188", "2", True),  # 37 CFR vol 1 prints one section with the double sign
+        ("§§\u200971.24-71.25", "71", False),
+        ("§§\u200988.2 through 88.3", "88", False),
+        ("§§\u200997-97.106", "97", False),
+    ],
+)
+def test_double_sign_alone_does_not_make_a_range(printed, part, single):
+    """``§§`` before one number is one citable section; two numbers joined after it stay a range."""
+    parts = split_annual_cfr_section(printed, part, None)
+    assert parts.range is not single
+    assert (parts.citation, parts.citation_joins) == ((parts.number, True) if single else (None, False))
+
+
+@pytest.mark.parametrize(
     "printed,token",
     [
         ("§\u20091.401(k)-1", "1-401k-1"),
