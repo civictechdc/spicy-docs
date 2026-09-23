@@ -14,8 +14,14 @@ from urllib.parse import parse_qs, urlsplit
 import httpx
 import pytest
 
-from spicy_docs.reading.paged_json import DeclaredCountMismatch, PagedJsonBudget, PagedJsonSourceError
+from spicy_docs.reading.paged_json import (
+    DeclaredCountMismatch,
+    IncompleteWalkError,
+    PagedJsonBudget,
+    PagedJsonSourceError,
+)
 from spicy_docs.sources.congress.listing import (
+    API,
     BILLS_KEY,
     CONGRESS_GOV,
     CRS_REPORTS_KEY,
@@ -1144,16 +1150,20 @@ def test_table_driven_route_walks_one_live_page(route_name):
 AMENDMENTS = json.loads(ROUTE_FIXTURE_BYTES["amendment"])["amendments"]
 
 
-def _list_page(records_key, records, count):
-    return json.dumps({records_key: records, "pagination": {"count": count}}).encode()
+def _list_page(records_key, records, count, next_url=None):
+    return json.dumps({records_key: records, "pagination": {"count": count, "next": next_url}}).encode()
 
 
 def _amendment_key(record):
     return (record["congress"], record["type"].lower(), record["number"])
 
 
+def _sorts(transport):
+    return [parse_qs(urlsplit(str(call.url)).query).get("sort", [None])[0] for call in transport.calls]
+
+
 def test_amendments_pool_opposite_sort_passes_until_the_declared_count():
-    """A pass that repeats one amendment and skips another still serves the declared rows; pooling catches it.
+    """A pass that repeats one amendment and skips another still serves the declared rows; the next pass catches it.
 
     Ported from spicy-regs' ``test_incremental_rollups``. ``amendment`` honors
     ``sort``, so passes alternate ``updateDate`` order, starting descending when
@@ -1162,9 +1172,7 @@ def test_amendments_pool_opposite_sort_passes_until_the_declared_count():
     samdt1, samdt2, hamdt1 = AMENDMENTS
     newer = {**samdt2, "updateDate": "2026-02-01T00:00:00Z"}
     transport = Transport(
-        _list_page("amendments", [samdt1, samdt2, samdt2], 3),
-        _list_page("amendments", [hamdt1, newer, samdt1], 3),
-        _list_page("amendments", [samdt1, samdt2, hamdt1], 3),
+        _list_page("amendments", [samdt1, samdt2, samdt2], 3), _list_page("amendments", [hamdt1, newer, samdt1], 3)
     )
     route = LIST_ROUTES["amendment"]
     with CongressListingReader(budget=BUDGET, api_key=KEY, transport=transport) as source:
@@ -1182,40 +1190,81 @@ def test_amendments_pool_opposite_sort_passes_until_the_declared_count():
     assert {record["number"] + record["type"]: record["updateDate"] for record in result.records}["2SAMDT"] == (
         "2026-02-01T00:00:00Z"
     )
-    assert (result.declared, result.passes) == (3, 3)
-    sorts = [parse_qs(urlsplit(str(call.url)).query)["sort"] for call in transport.calls]
-    assert sorts == [["updateDate desc"], ["updateDate asc"], ["updateDate desc"]]
+    assert (result.declared, result.passes) == (3, 2)
+    assert _sorts(transport) == ["updateDate desc", "updateDate asc"]
+
+
+def test_amendments_refuse_a_walk_that_never_reaches_its_declared_count():
+    """Ported from spicy-regs: four passes (its ``POOLED_SORTS``) that each repeat one amendment refuse."""
+    samdt1 = AMENDMENTS[0]
+    transport = Transport(*[_list_page("amendments", [samdt1, samdt1], 2)] * 4)
+    route = LIST_ROUTES["amendment"]
+    with (
+        CongressListingReader(budget=BUDGET, api_key=KEY, transport=transport) as source,
+        pytest.raises(IncompleteWalkError, match="pooled 1 of 2 declared"),
+    ):
+        source.pooled(route, list_route_url(route, congress=119), key=_amendment_key, max_passes=4)
+    assert _sorts(transport) == ["updateDate desc", "updateDate asc"] * 2
 
 
 def test_crs_pools_a_shifted_walk_until_its_declared_count():
-    """``crsreport`` ignores ``sort``, so every pass repeats the one request; pooling still reaches both reports.
+    """``crsreport`` ignores ``sort``, so the second pass repeats the one request; pooling reaches both reports.
 
     Ported from spicy-regs' ``test_reference_source_failures``.
     """
     first, second = json.loads(CRS)["CRSReports"][:2]
-    transport = Transport(
-        _list_page("CRSReports", [first, first], 2),
-        _list_page("CRSReports", [second, first], 2),
-        _list_page("CRSReports", [first, second], 2),
-    )
+    transport = Transport(_list_page("CRSReports", [first, first], 2), _list_page("CRSReports", [second, first], 2))
     url = crs_report_list_url(limit=MAX_LIMIT)
     with CongressListingReader(budget=BUDGET, api_key=KEY, transport=transport) as source:
         result = source.pooled(LIST_ROUTES["crsreport"], url, key=lambda report: report["id"])
     assert sorted(report["id"] for report in result.records) == ["LSB11481", "R49346"]
-    assert [str(call.url) for call in transport.calls] == [url] * 3
+    assert [str(call.url) for call in transport.calls] == [url] * 2
 
 
 def test_a_pooled_walk_starts_from_the_order_its_query_names():
-    transport = Transport(*[_list_page("amendments", AMENDMENTS, 3)] * 2)
+    samdt1, samdt2, _hamdt1 = AMENDMENTS
+    transport = Transport(
+        _list_page("amendments", [samdt1, samdt1, samdt2], 3), _list_page("amendments", AMENDMENTS, 3)
+    )
     route = LIST_ROUTES["amendment"]
     with CongressListingReader(budget=BUDGET, api_key=KEY, transport=transport) as source:
         source.pooled(route, list_route_url(route, congress=119, sort="updateDate asc"), key=_amendment_key)
-    sorts = [parse_qs(urlsplit(str(call.url)).query)["sort"] for call in transport.calls]
-    assert sorts == [["updateDate asc"], ["updateDate desc"]]
+    assert _sorts(transport) == ["updateDate asc", "updateDate desc"]
 
 
-def test_a_pooled_pass_that_disagrees_with_its_count_refuses_the_whole_walk():
-    """A pass is a whole walk: its own terminal refusal is not evidence to pool, it ends the enumeration."""
+@pytest.mark.parametrize(
+    "query,message",
+    [("sort=updateDate+sideways", "sort must be"), ("sort=updateDate+asc&sort=updateDate+desc", "repeats its sort")],
+)
+def test_a_pooled_walk_refuses_a_sort_it_cannot_alternate(query, message):
+    transport = Transport()
+    with (
+        CongressListingReader(budget=BUDGET, api_key=KEY, transport=transport) as source,
+        pytest.raises(PagedJsonSourceError, match=message),
+    ):
+        source.pooled(LIST_ROUTES["amendment"], f"{API}/amendment/119?limit=3&{query}", key=_amendment_key)
+    assert transport.calls == []
+
+
+def test_a_pass_whose_count_moves_mid_walk_is_retried_within_the_pass_bound():
+    """Pass 2's second page declares 4, not 3: the reader refuses that walk, and pass 3 is clean at 4."""
+    samdt1, samdt2, hamdt1 = AMENDMENTS
+    added = {**hamdt1, "number": "2"}
+    transport = Transport(
+        _list_page("amendments", [samdt1, samdt1, samdt2], 3),
+        _list_page("amendments", [samdt1], 3, f"{API}/amendment/119?sort=updateDate+asc&offset=1&limit=1"),
+        _list_page("amendments", [samdt2], 4),
+        _list_page("amendments", [added, *AMENDMENTS], 4),
+    )
+    route = LIST_ROUTES["amendment"]
+    with CongressListingReader(budget=BUDGET, api_key=KEY, transport=transport) as source:
+        result = source.pooled(route, list_route_url(route, congress=119), key=_amendment_key)
+    assert (len(result.records), result.declared, result.passes) == (4, 4, 3)
+    assert _sorts(transport) == ["updateDate desc", "updateDate asc", "updateDate asc", "updateDate desc"]
+
+
+def test_a_pooled_pass_that_disagrees_with_its_count_at_its_end_refuses_the_whole_walk():
+    """A terminal mismatch is not churn (``committee/119`` over-declares), so it is not retried."""
     transport = Transport(_list_page("amendments", AMENDMENTS[:2], 3))
     route = LIST_ROUTES["amendment"]
     with (

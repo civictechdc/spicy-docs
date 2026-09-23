@@ -4,8 +4,9 @@ Pins that a key travels only as a header and page bytes are kept verbatim, that
 declared counts, continuations and content types are checked (empty success is
 not absence), and the four walk kinds -- URL next, POST page number, offset and
 boolean has-next -- with their bounds and refusals. The pooled-walk tests pin the
-stop rule (the counted identities equal the declared total and the last pass
-found nothing new), the uncorroborated-identity rule and the pass bound.
+two settling rules (a clean walk alone, or a pool since the declared total last
+changed), the restart on a total that moves mid-walk, the pass bound and the
+known limit.
 """
 
 import json
@@ -15,6 +16,7 @@ import httpx
 import pytest
 
 from spicy_docs.reading.paged_json import (
+    DeclaredCountChanged,
     DeclaredCountMismatch,
     IncompleteWalkError,
     JsonPageFamily,
@@ -568,7 +570,7 @@ def test_the_committee_bills_wrapper_key_refuses_without_single_record():
         source.page(URL, records_key="committee-bills")
 
 
-# --- the whole-walk count check ------------------------------------------------
+# --- the whole-walk count checks ------------------------------------------------
 
 NEXT = "https://api.example.gov/v1/things?limit=2&offset=2"
 
@@ -593,6 +595,16 @@ def test_a_terminal_count_disagreement_is_typed_and_carries_both_numbers():
     assert (context["operation"], context["declaredCount"], context["observedCount"]) == ("traversal", 6, 4)
 
 
+def test_a_declared_count_that_moves_mid_walk_is_typed_and_carries_both_totals():
+    transport = Transport(response(page([{"id": 1}], count=2, next_url=NEXT)), response(page([{"id": 2}], count=5)))
+    with reader(transport) as source, pytest.raises(DeclaredCountChanged) as raised:
+        list(source.pages(URL, records_key="things"))
+    error = raised.value
+    assert (error.declared, error.changed_to) == (2, 5)
+    assert str(error) == "Example declared count changed during the traversal"
+    assert error.paged_json_acquisition["operation"] == "traversal"
+
+
 @pytest.mark.parametrize(
     "responses,max_pages",
     [
@@ -606,8 +618,8 @@ def test_a_terminal_count_disagreement_is_typed_and_carries_both_numbers():
         pytest.param((response(page([{"id": 1}], count=3, next_url=NEXT)),), 1, id="page-bound"),
     ],
 )
-def test_every_other_traversal_refusal_is_not_a_count_mismatch(responses, max_pages):
-    """Only a terminal disagreement is typed: a walk cut short or inconsistent is never read past as one."""
+def test_every_other_traversal_refusal_is_not_a_terminal_count_mismatch(responses, max_pages):
+    """Only a terminal disagreement is a mismatch: a walk cut short or inconsistent is never read past as one."""
     transport = Transport(*responses)
     with reader(transport) as source, pytest.raises(PagedJsonSourceError) as raised:
         list(source.pages(URL, records_key="things", max_pages=max_pages))
@@ -618,9 +630,10 @@ def test_every_other_traversal_refusal_is_not_a_count_mismatch(responses, max_pa
 
 
 class Walks:
-    """Serves ``(records, declared)`` passes in order as ``pool_walks``' ``walk``, recording each pass asked for.
+    """Serves passes in order as ``pool_walks``' ``walk``, recording each pass asked for.
 
-    A bare value stands for ``{"id": value}``.
+    A pass is ``(records, declared)``, a bare record value standing for
+    ``{"id": value}``, or a ``DeclaredCountChanged`` the pass raises mid-walk.
     """
 
     def __init__(self, *passes):
@@ -629,135 +642,222 @@ class Walks:
 
     def __call__(self, index):
         self.asked.append(index)
-        records, declared = self.passes[index]
+        walked = self.passes[index]
+        if isinstance(walked, DeclaredCountChanged):
+            raise walked
+        records, declared = walked
         return WalkPass(tuple(r if isinstance(r, dict) else {"id": r} for r in records), declared)
 
 
+def moved(declared, changed_to):
+    return DeclaredCountChanged(
+        "Example declared count changed during the traversal", declared=declared, changed_to=changed_to
+    )
+
+
 def pooled(walks, **kwargs):
-    return pool_walks(walks, key=lambda record: record["id"], label="Example", **kwargs)
+    kwargs.setdefault("key", lambda record: record["id"])
+    return pool_walks(walks, label="Example", **kwargs)
 
 
 def ids(result):
     return [record["id"] for record in result.records]
 
 
-def test_a_clean_walk_is_trusted_only_once_a_second_pass_confirms_it():
-    """Stability compares a pass with earlier ones, so even a walk with no repeats costs two passes."""
+def test_a_clean_walk_stands_alone():
+    """No repeated identity and a distinct count equal to the declared total: nothing was skipped, one pass."""
     walks = Walks(([1, 2], 2), ([2, 1], 2))
     result = pooled(walks)
-    assert (ids(result), result.declared, result.passes, result.uncorroborated) == ([1, 2], 2, 2, 0)
-    assert walks.asked == [0, 1]
+    assert (ids(result), result.declared, result.passes) == ([1, 2], 2, 1)
+    assert walks.asked == [0]
 
 
-def test_opposite_passes_pool_a_walk_that_repeats_one_record_and_skips_another():
+def test_a_walk_that_repeats_one_record_and_skips_another_settles_on_the_next_clean_walk():
     """Every pass serves the declared row count; only identities show the skip, and the newest version wins.
 
-    Ported from spicy-regs' amendments test: pass 1 repeats #2 and skips #3. Pass 2
-    reaches all three but found #3, so a third pass must find nothing new.
+    Ported from spicy-regs' amendments test: pass 1 repeats #2 and skips #3;
+    pass 2 is clean, and the version pass 1 saw of #2 is older.
     """
     walks = Walks(
         ([1, {"id": 2, "updateDate": "2026-01-01"}, {"id": 2, "updateDate": "2026-01-01"}], 3),
         ([3, {"id": 2, "updateDate": "2026-02-01"}, 1], 3),
-        ([1, {"id": 2, "updateDate": "2026-01-15"}, 3], 3),
     )
     result = pooled(walks, version=lambda record: record.get("updateDate", ""))
-    assert sorted(ids(result)) == [1, 2, 3] and result.passes == 3
+    assert (sorted(ids(result)), result.passes) == ([1, 2, 3], 2)
     assert {r["id"]: r.get("updateDate") for r in result.records}[2] == "2026-02-01", "the newest version is kept"
 
 
-def test_without_a_version_the_latest_observation_wins_and_a_tied_version_goes_to_the_later():
-    walks = Walks(([{"id": 1, "v": "b", "n": 1}], 1), ([{"id": 1, "v": "a", "n": 2}], 1))
-    assert pooled(walks).records == ({"id": 1, "v": "a", "n": 2},)
-    walks = Walks(([{"id": 1, "v": "b", "n": 1}], 1), ([{"id": 1, "v": "a", "n": 2}], 1))
-    assert pooled(walks, version=lambda record: record["v"]).records == ({"id": 1, "v": "b", "n": 1},)
-    walks = Walks(([{"id": 1, "v": "a", "n": 1}], 1), ([{"id": 1, "v": "a", "n": 2}], 1))
-    assert pooled(walks, version=lambda record: record["v"]).records == ({"id": 1, "v": "a", "n": 2},)
-
-
-def test_a_record_that_changes_between_passes_stays_one_identity():
-    """Keyed by the whole record (spicy-regs' ECFS proceedings), a changed record counted twice and never settled."""
-    walks = Walks(([{"id": 1, "closed": None}, 2], 2), ([{"id": 1, "closed": "2024-12-09"}, 2], 2))
+def test_walks_that_are_never_clean_settle_when_their_pool_reaches_the_declared_total():
+    walks = Walks(([1, 2, 2], 3), ([3, 3, 1], 3))
     result = pooled(walks)
-    assert ids(result) == [1, 2] and result.records[0]["closed"] == "2024-12-09"
+    assert (sorted(ids(result)), result.passes) == ([1, 2, 3], 2)
 
 
-def test_a_record_deleted_between_passes_cannot_fill_the_slot_of_one_every_pass_skipped():
-    """The stale-record rule: an identity only one pass observed never counts.
+def test_a_record_both_same_direction_passes_skip_is_pooled_from_the_opposite_pass():
+    """Desc passes 1 and 3 put page boundaries on the same records and both skip C; asc pass 2 saw it.
 
-    Pass 1 sees X and repeats Y, skipping Z; X is then deleted, and pass 2 repeats
-    Y and skips Z again. Pooling by count, ``{X, Y}`` met the declared 2 after
-    pass 2 and published X without Z. Here X is never corroborated, Z arrives in
-    pass 3 and is corroborated by pass 4, which finds nothing new.
+    Counting only identities two passes saw would never count C, and refused this
+    query at every pass bound the churn allowed.
     """
-    passes = (["X", "Y", "Y"], 3), (["Y", "Y"], 2), (["Z", "Y"], 2), (["Y", "Z"], 2)
-    result = pooled(Walks(*passes), max_passes=4)
-    assert (ids(result), result.uncorroborated, result.passes) == (["Y", "Z"], 1, 4)
-    with pytest.raises(IncompleteWalkError) as raised:
-        pooled(Walks(*passes))
-    error = raised.value
-    assert (error.declared, error.distinct, error.corroborated, error.passes, error.stable) == (2, 3, 1, 3, False)
-
-
-def test_an_identity_two_passes_observed_still_counts_when_the_last_pass_skips_it():
-    """Corroboration survives a later skip: A is seen by passes 1 and 2 and skipped by pass 3."""
-    walks = Walks((["A", "B", "B"], 3), (["C", "B", "A"], 3), (["C", "C", "B"], 3))
+    walks = Walks((["A", "A", "G", "G"], 4), (["G", "C", "A", "A"], 4), (["A", "F", "G", "G"], 4))
     result = pooled(walks)
-    assert (sorted(ids(result)), result.passes, result.uncorroborated) == (["A", "B", "C"], 3, 0)
+    assert (sorted(ids(result)), result.passes) == (["A", "C", "F", "G"], 3)
+
+
+def _versions_of_one(version):
+    """Record 1 is observed twice, in two passes, before record 2 completes the pool."""
+    walks = Walks(
+        ([{"id": 1, "v": "b", "n": 1}, {"id": 1, "v": "b", "n": 1}], 2),
+        ([{"id": 1, "v": "a", "n": 2}, {"id": 1, "v": "a", "n": 2}], 2),
+        ([{"id": 2, "v": "a"}, {"id": 2, "v": "a"}], 2),
+    )
+    return {record["id"]: record for record in pooled(walks, version=version).records}[1]["n"]
+
+
+def test_without_a_version_the_latest_observation_wins_and_a_tied_version_goes_to_the_later():
+    assert _versions_of_one(None) == 2
+    assert _versions_of_one(lambda record: record["v"]) == 1, "the greater version is kept"
+    assert _versions_of_one(lambda record: "same") == 2, "a tie goes to the later observation"
+
+
+@pytest.mark.parametrize(
+    "version,message",
+    [
+        (lambda record: None, "Example served a record with no version"),
+        (lambda record: record["missing"], "Example could not read a record's version"),
+        (lambda record: record["v"], "Example served versions that do not compare"),
+    ],
+)
+def test_a_version_that_is_missing_or_does_not_compare_refuses(version, message):
+    walks = Walks(([{"id": 1, "v": "2026-01-01"}, {"id": 1, "v": 20260101}], 2))
+    with pytest.raises(PagedJsonSourceError, match=message):
+        pooled(walks, version=version)
+
+
+def test_a_record_that_changes_between_passes_stays_one_identity_under_a_key():
+    """Keyed by id, a proceeding whose filing count moves is one record; keyed by its whole JSON it never settles.
+
+    spicy-regs keyed FCC ECFS proceedings by their whole document; the pool then
+    grows by one identity per changed proceeding per pass.
+    """
+
+    def churning():
+        return Walks(
+            ([{"id": 1, "filings": 1}, {"id": 1, "filings": 1}, {"id": 3}], 3),
+            ([{"id": 2}, {"id": 1, "filings": 2}, {"id": 1, "filings": 2}], 3),
+            ([{"id": 3}, {"id": 3}, {"id": 1, "filings": 3}], 3),
+        )
+
+    result = pooled(churning())
+    assert (sorted(ids(result)), result.passes) == ([1, 2, 3], 2)
+    assert {r["id"]: r for r in result.records}[1]["filings"] == 2
+    with pytest.raises(IncompleteWalkError, match="pooled 5 of 3 declared"):
+        pooled(churning(), key=lambda record: json.dumps(record, sort_keys=True))
+
+
+def test_a_deletion_that_lowers_the_total_starts_a_new_pool():
+    """X is deleted after pass 1, whose pool would otherwise fill the slot of B, which passes 1 and 2 skip."""
+    walks = Walks((["X", "A", "A"], 3), (["A", "A"], 2), (["B", "A"], 2))
+    result = pooled(walks)
+    assert (ids(result), result.passes) == (["B", "A"], 3)
+
+
+def test_a_clean_walk_drops_what_earlier_walks_saw_and_it_did_not():
+    """X is replaced by Z at an unchanged total, so the pool overfills; a clean walk is the whole list."""
+    walks = Walks((["X", "A", "A"], 3), (["Z", "B", "B"], 3), (["A", "B", "Z"], 3))
+    result = pooled(walks)
+    assert (ids(result), result.passes) == (["A", "B", "Z"], 3)
+
+
+def test_a_replacement_nothing_skips_overfills_the_pool_and_refuses():
+    """X is replaced by Z at an unchanged total and no walk is clean, so the pool holds 4 against 3.
+
+    Pass 3 has 3 distinct identities but repeats one, so it is not clean on its
+    own either (a count-less family can serve more rows than its total).
+    """
+    walks = Walks((["X", "A", "A"], 3), (["Z", "B", "B"], 3), (["A", "B", "Z", "Z"], 3))
+    with pytest.raises(IncompleteWalkError, match="pooled 4 of 3 declared"):
+        pooled(walks)
+
+
+def test_known_limit_a_deletion_offset_by_an_insertion_that_later_walks_skip_settles_wrong():
+    """Pinned so a fix is noticed: X is deleted and Z inserted between passes, and pass 2 skips Z.
+
+    The total stays 3, so the pool keeps pass 1's X; ``{X, A, B}`` matches the
+    total and the walk settles with X and without Z. No comparison of identity
+    sets against a count sees it.
+    """
+    walks = Walks((["X", "A", "A"], 3), (["B", "A", "A"], 3))
+    assert sorted(ids(pooled(walks))) == ["A", "B", "X"]
+
+
+def test_a_pass_whose_total_moves_mid_walk_is_spent_and_pooling_restarts():
+    """Growth then quiet: pass 1 sees the total move from 3 to 4, then two dirty passes pool to 4."""
+    walks = Walks(moved(3, 4), (["D", "A", "A", "B"], 4), (["C", "C", "D", "A"], 4))
+    result = pooled(walks)
+    assert (sorted(ids(result)), result.declared, result.passes) == (["A", "B", "C", "D"], 4, 3)
+
+
+def test_a_total_that_moves_mid_walk_discards_the_pool_even_when_it_moves_back():
+    """During pass 2, Z is inserted (3 to 4) and then X deleted (back to 3); pass 3 skips Z.
+
+    Pass 1's X must not carry into pass 3's pool, where it would fill Z's slot at
+    the same total; pass 4 is clean.
+    """
+    walks = Walks((["X", "A", "A"], 3), moved(3, 4), (["B", "A", "A"], 3), (["Z", "A", "B"], 3))
+    result = pooled(walks, max_passes=4)
+    assert (ids(result), result.passes) == (["Z", "A", "B"], 4)
+
+
+@pytest.mark.parametrize(
+    "passes,restarted",
+    [
+        pytest.param([moved(3, 4), moved(4, 5), moved(5, 6)], 3, id="moves-mid-walk"),
+        pytest.param(
+            [(["A", "A", "B"], 4), (["C", "C", "D", "E"], 5), (["F", "F", "A", "B", "C"], 6)], 0, id="grows-between"
+        ),
+    ],
+)
+def test_continuous_growth_refuses_after_its_passes(passes, restarted):
+    walks = Walks(*passes)
+    with pytest.raises(IncompleteWalkError) as raised:
+        pooled(walks)
+    error = raised.value
+    assert (error.declared, error.passes, error.restarted) == (6, 3, restarted)
+    assert walks.asked == [0, 1, 2]
 
 
 def test_a_query_still_short_after_its_bounded_passes_refuses_naming_the_numbers():
     """Ported from spicy-regs' amendments refusal: every pass repeats #1, so the pool never reaches 2."""
     walks = Walks(*[([1, 1], 2)] * 3)
-    with pytest.raises(IncompleteWalkError, match="3 passes observed 1 distinct records against 2 declared") as raised:
+    with pytest.raises(IncompleteWalkError, match="Example: pooled 1 of 2 declared records after 3 passes") as raised:
         pooled(walks)
     assert walks.asked == [0, 1, 2]
+    assert (raised.value.declared, raised.value.distinct, raised.value.passes) == (2, 1, 3)
     assert isinstance(raised.value, PagedJsonSourceError)
 
 
-def test_a_count_met_while_the_last_pass_still_finds_records_does_not_settle():
-    """Settling needs the last pass to find nothing new, not just the corroborated count.
-
-    ``x`` is corroborated by passes 1 and 2 and then deleted; ``n`` is created and
-    first seen by pass 3. The corroborated ``{a, b, x}`` meets the declared 3, but
-    publishing it would keep ``x`` and lose ``n``.
-    """
-    walks = Walks((["a", "a", "x"], 3), (["a", "b", "x"], 3), (["a", "b", "n"], 3))
-    with pytest.raises(IncompleteWalkError, match="last pass still found records") as raised:
-        pooled(walks)
-    error = raised.value
-    assert (error.corroborated, error.distinct, error.declared, error.stable) == (3, 4, 3, False)
-
-
-def test_a_corroborated_record_the_publisher_stopped_listing_refuses_rather_than_publishing():
-    """Two passes saw ``a``; the third serves 2 declared without it, so the pool is one over and never settles."""
-    walks = Walks((["a", "b", "b"], 3), (["a", "b", "c"], 3), (["b", "c"], 2))
-    with pytest.raises(IncompleteWalkError) as raised:
-        pooled(walks)
-    assert (raised.value.corroborated, raised.value.declared, raised.value.stable) == (3, 2, True)
-
-
-def test_an_empty_query_settles_on_two_empty_passes():
-    """A declared zero is an observation, confirmed like any other."""
-    result = pooled(Walks(([], 0), ([], 0)))
-    assert (result.records, result.declared, result.passes) == ((), 0, 2)
+def test_an_empty_query_is_a_clean_walk():
+    """A declared zero with nothing served is an observation, not absence, and settles like any clean walk."""
+    result = pooled(Walks(([], 0)))
+    assert (result.records, result.declared, result.passes) == ((), 0, 1)
 
 
 @pytest.mark.parametrize("identity", [None, "", "  ", True, 1.5, {"id": 1}, (), ("119", ""), ("119", None)])
 def test_a_record_without_a_usable_identity_key_refuses(identity):
     """A missing identity would collapse every such record into one; a record is never its own key."""
-    walk = Walks(([{"id": identity}], 1), ([{"id": identity}], 1))
     with pytest.raises(PagedJsonSourceError, match="Example served a record without a usable identity key"):
-        pooled(walk)
+        pooled(Walks(([{"id": identity}], 1)))
 
 
 def test_identity_keys_may_be_strings_integers_or_tuples_of_them():
-    walks = Walks(([{"id": ("119", "samdt", 3)}, {"id": 7}], 2), ([{"id": 7}, {"id": ("119", "samdt", 3)}], 2))
+    walks = Walks(([{"id": ("119", "samdt", 3)}, {"id": 7}], 2))
     assert ids(pooled(walks)) == [("119", "samdt", 3), 7]
 
 
-@pytest.mark.parametrize("max_passes", [1, 0, True, "3"])
-def test_a_pass_bound_that_cannot_reach_stability_is_refused(max_passes):
-    with pytest.raises(ValueError, match="at least 2"):
+@pytest.mark.parametrize("max_passes", [0, -1, True, "3"])
+def test_a_pass_bound_must_be_a_positive_integer(max_passes):
+    with pytest.raises(ValueError, match="positive integer"):
         pooled(Walks(), max_passes=max_passes)
 
 

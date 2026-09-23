@@ -262,10 +262,10 @@ applies one rule everywhere:
   Continuations are re-encoded before they are requested so the requested and
   final URLs agree; Congress.gov spells `sort=updateDate desc` with a raw
   space, and the raw form stays in the retained page.
-- The declared count may not change between pages, the observed total may not
-  exceed it, and at the publisher's terminal page the two must agree; a
-  terminal disagreement raises `DeclaredCountMismatch` with `declared` and
-  `observed`, so a host never matches the message.
+- The declared count may not change between pages (`DeclaredCountChanged`),
+  the observed total may not exceed it, and at the publisher's terminal page
+  the two must agree (`DeclaredCountMismatch`). Both carry their two numbers,
+  so a host never matches the message.
   Reaching `max_pages` with a continuation outstanding is a refusal, not an
   end. Pages already yielded remain partial observations.
 - 404 and 410 raise `PagedJsonUnavailableError` with the capture; 401 and 403
@@ -277,18 +277,33 @@ applies one rule everywhere:
 An offset walk over a list that reorders mid-read can repeat one record and
 skip another while serving exactly its declared count: the 119th Congress
 amendments walk served 7,066 rows but 7,013 distinct amendments on
-2026-09-23. `pool_walks` in `reading/paged_json.py` repeats whole walks and
-pools them by a caller's identity key (a key, never the whole record), keeping
-the newest version by a caller's `version`:
+2026-09-23. `pool_walks` in `reading/paged_json.py` repeats whole walks,
+keyed by a caller's identity key, and settles on the first of:
 
-- An identity counts once two walks have observed it. One only a single walk
-  observed is dropped: no walk can tell a record it skipped from one deleted
-  since, and a deleted record must not fill a skipped record's slot.
-- The walks settle when the counted identities equal the latest declared total
-  and the latest walk found nothing new, so a query costs at least two walks.
-- A query still short, over or unsettled after `max_passes` (default 3) raises
-  `IncompleteWalkError` with `declared`, `distinct`, `corroborated` and
-  `passes`.
+- **A clean walk.** No repeated identity and a distinct count equal to the
+  declared total. A skip needs a repeat unless the population changes
+  mid-walk, and the reader refuses a total that changes mid-walk.
+- **A full pool.** The identities of every walk since the declared total last
+  changed, keeping the newest version by the caller's `version`, number
+  exactly the declared total. A changed total starts a new pool, and a walk
+  whose total changes mid-walk (`DeclaredCountChanged`) is spent and pooling
+  restarts after it.
+
+A query still unsettled after `max_passes` (default 3) raises
+`IncompleteWalkError` with `declared`, `distinct` and `passes`.
+
+**Known limit.** A deletion offset by an insertion leaves the total unchanged,
+so the pool keeps the deleted record. If every walk in the pool skipped one
+live record, the inserted one or any other, the deleted record fills its slot
+and the pool settles wrong. A test pins this. When no live record is skipped
+by every walk, the pool overfills and the query refuses instead.
+
+The key must name what identifies a record, never its content. A key over the
+whole record never settles once records carry fields that change between
+walks: FCC ECFS proceedings do (`last_30_days`, `total_filing_count`), and one
+`id_proceeding` can carry more than one document, so key them by content that
+excludes the changing fields. A `version` must be present and comparable, or
+the walk refuses.
 
 `CongressListingReader.pooled` alternates `updateDate desc` and `asc` between
 walks where the route honors `sort`, and repeats the one request elsewhere:

@@ -23,17 +23,27 @@ while it is read (Congress.gov sorted by ``updateDate``, CRS, FCC ECFS) can
 repeat one record and skip another while serving exactly the declared total:
 the 119th Congress amendments walk served its declared 7,066 rows but 7,013
 distinct amendments (spicy-regs ``build_amendments``, 2026-09-23). A terminal
-disagreement raises ``DeclaredCountMismatch`` with both numbers; agreement proves
-only the row count. ``pool_walks`` repeats whole walks of one query and pools
-them by a caller's identity key, keeping each identity's newest version. An
-identity counts once two walks have observed it. The walks settle when the
-counted identities equal the latest walk's declared total and the latest walk
-observed no identity for the first time, so never in fewer than two walks. One
-walk alone cannot tell a record it skipped from one deleted since, so an
-identity only one walk observed is neither counted nor returned: a record
-deleted between walks cannot fill the slot of one every walk skipped. Queries
-still short, over or unsettled after ``max_passes`` raise
-``IncompleteWalkError``.
+disagreement raises ``DeclaredCountMismatch`` and a total that moves mid-walk
+``DeclaredCountChanged``, each carrying both numbers; agreement proves only the
+row count. ``pool_walks`` repeats whole walks of one query, keyed by a caller's
+identity, and settles on the first of two things:
+
+- **A clean walk stands alone.** A walk with no repeated identity whose
+  distinct count equals its declared total is the list: a skip needs a repeat
+  unless the population changes mid-walk, and a changed total is refused.
+- **Otherwise the walks since the declared total last changed are pooled**,
+  keeping each identity's newest version, until the pool holds exactly the
+  declared total. A changed total starts a new pool, so a record deleted
+  without replacement cannot fill a skipped record's slot, and a walk whose
+  total changes mid-walk is spent and pooling restarts after it.
+
+**Known limit:** a deletion offset by an insertion leaves the total unchanged,
+so the pool keeps the deleted record. If every walk in the pool skipped one
+live record -- the inserted one or any other -- the deleted record fills its
+slot and the pool settles wrong; no comparison of identity sets against a
+count can see that, and a test pins it. When no live record is skipped by
+every walk the pool overfills instead and the query refuses. A query still
+unsettled after ``max_passes`` raises ``IncompleteWalkError``.
 """
 
 from __future__ import annotations
@@ -95,28 +105,32 @@ class DeclaredCountMismatch(PagedJsonSourceError):
         self.observed = observed
 
 
-class IncompleteWalkError(PagedJsonSourceError):
-    """Pooled walks ended with their corroborated identities off the declared total, or still finding new ones.
+class DeclaredCountChanged(PagedJsonSourceError):
+    """The publisher's declared total moved between two pages of one walk: the population changed under it."""
 
-    ``distinct`` is every identity any pass observed; ``corroborated`` those at
-    least two passes observed, the ones compared with ``declared``.
+    def __init__(self, message: str, *, declared: int, changed_to: int) -> None:
+        super().__init__(message)
+        self.declared = declared
+        self.changed_to = changed_to
+
+
+class IncompleteWalkError(PagedJsonSourceError):
+    """Pooled walks ran out of passes before a clean walk or a pool matching the declared total.
+
+    ``declared`` is the latest total the publisher stated; ``distinct`` the
+    identities pooled since it last changed; ``restarted`` the passes spent on a
+    total that changed mid-walk.
     """
 
-    def __init__(
-        self, label: str, *, declared: int, distinct: int, corroborated: int, passes: int, stable: bool
-    ) -> None:
-        message = (
-            f"{label}: {passes} passes observed {distinct:,} distinct records against {declared:,} declared, "
-            f"{corroborated:,} of them in at least two passes"
-        )
-        if not stable:
-            message += "; the last pass still found records no earlier pass had"
+    def __init__(self, label: str, *, declared: int, distinct: int, passes: int, restarted: int) -> None:
+        message = f"{label}: pooled {distinct:,} of {declared:,} declared records after {passes} passes"
+        if restarted:
+            message += f"; {restarted} of them saw the declared count change mid-walk"
         super().__init__(message)
         self.declared = declared
         self.distinct = distinct
-        self.corroborated = corroborated
         self.passes = passes
-        self.stable = stable
+        self.restarted = restarted
 
 
 def normalize_url(url: str, *, drop: frozenset[str] = frozenset()) -> str:
@@ -540,7 +554,13 @@ class PagedJsonReader(SourceAcquirer):
                 if declared is None:
                     declared = page.declared_count
                 elif exact and page.declared_count != declared:
-                    raise refuse("declared count changed during the traversal")
+                    raise traced(
+                        DeclaredCountChanged(
+                            f"{self.family.label} declared count changed during the traversal",
+                            declared=declared,
+                            changed_to=page.declared_count,
+                        )
+                    )
             observed += len(page.records)
             if exact and declared is not None and observed > declared:
                 raise refuse("returned more records than it declared")
@@ -609,16 +629,11 @@ class WalkPass:
 
 @dataclass(frozen=True, slots=True)
 class PooledWalk:
-    """What pooled walks agreed on: one record per corroborated identity, its newest version, first-observed first.
-
-    ``uncorroborated`` counts the identities only one pass observed, which are
-    neither counted nor among ``records`` (module docstring).
-    """
+    """What pooled walks settled on: one record per identity, its newest version, first-observed first."""
 
     records: tuple[Mapping[str, Any], ...]
     declared: int
     passes: int
-    uncorroborated: int
 
 
 def _identity(value: object, label: str) -> Hashable:
@@ -635,6 +650,17 @@ def _identity(value: object, label: str) -> Hashable:
     return value
 
 
+def _stamp(version: Callable[[Mapping[str, Any]], Any], record: Mapping[str, Any], label: str) -> Any:
+    """A record's version; one that cannot be read, or is ``None``, refuses rather than ranking arbitrarily."""
+    try:
+        value = version(record)
+    except (KeyError, TypeError) as error:
+        raise PagedJsonSourceError(f"{label} could not read a record's version") from error
+    if value is None:
+        raise PagedJsonSourceError(f"{label} served a record with no version")
+    return value
+
+
 def pool_walks(
     walk: Callable[[int], WalkPass],
     *,
@@ -643,47 +669,60 @@ def pool_walks(
     max_passes: int = DEFAULT_POOL_PASSES,
     label: str,
 ) -> PooledWalk:
-    """Repeat whole walks of one query, pooled by ``key``, until they settle on the declared total.
+    """Repeat whole walks of one query, keyed by ``key``, until one is clean or they pool to the declared total.
 
     ``walk(index)`` runs pass ``index`` (from 0) to its terminal page; a caller
     alternates the order by index where the publisher honors it
-    (``CongressListingReader.pooled``). ``version`` orders one identity's
-    observations: the greatest is kept, a tie going to the later one, and
-    without it the latest observation wins. The settling and corroboration
-    rules are the module docstring's. Each pass is O(records) and at most
-    ``max_passes`` run; a query that does not settle raises ``IncompleteWalkError``.
+    (``CongressListingReader.pooled``). ``version`` ranks one identity's
+    observations -- the greatest is kept, a tie going to the later one --
+    and must give a non-``None`` value that compares; without it the latest
+    observation wins. The settling rules and their known limit are the
+    module docstring's. Each pass is O(records) and at most ``max_passes``
+    run; a query that does not settle raises ``IncompleteWalkError``.
+
+    ``key`` names what identifies a record, never its content: a key over the
+    whole record never settles once records carry fields that change between
+    walks. FCC ECFS proceedings do (``last_30_days``, ``total_filing_count``)
+    and one ``id_proceeding`` can carry more than one document, so key them by
+    content that excludes the changing fields.
     """
-    if isinstance(max_passes, bool) or not isinstance(max_passes, int) or max_passes < 2:
-        raise ValueError("max_passes must be an integer of at least 2: settling compares a pass with earlier ones")
-    kept: dict[Hashable, tuple[Mapping[str, Any], Any]] = {}
-    sightings: dict[Hashable, int] = {}  # passes that observed each identity, however often each did
-    last_pass: dict[Hashable, int] = {}
+    if isinstance(max_passes, bool) or not isinstance(max_passes, int) or max_passes < 1:
+        raise ValueError("max_passes must be a positive integer")
+    pool: dict[Hashable, tuple[Mapping[str, Any], Any]] = {}
+    pooled_total: int | None = None  # the declared total the pool was gathered under
+    stated = 0  # the latest total the publisher stated
+    restarted = 0
     for index in range(max_passes):
-        walked = walk(index)
+        try:
+            walked = walk(index)
+        except DeclaredCountChanged as error:
+            # The population moved under this pass: spend it, and pool afresh from the next.
+            pool.clear()
+            pooled_total, stated = None, error.changed_to
+            restarted += 1
+            continue
         if not isinstance(walked, WalkPass):
             raise TypeError("walk must return a WalkPass")
-        found_new = False
+        stated = walked.declared
+        if stated != pooled_total:
+            pool.clear()
+            pooled_total = stated
+        observed: dict[Hashable, None] = {}  # this pass's identities, first-observed first
         for record in walked.records:
             identity = _identity(key(record), label)
-            if last_pass.get(identity) != index:
-                found_new = found_new or identity not in last_pass
-                sightings[identity] = sightings.get(identity, 0) + 1
-                last_pass[identity] = index
-            stamp = None if version is None else version(record)
-            held = kept.get(identity)
-            if held is None or version is None or stamp >= held[1]:
-                kept[identity] = (record, stamp)
-        # Once the latest pass finds nothing new, every identity it observed is corroborated, so
-        # the corroborated set is the latest pass plus what at least two passes agree it skipped.
-        corroborated = [identity for identity in kept if sightings[identity] > 1]
-        if index and not found_new and len(corroborated) == walked.declared:
-            records = tuple(kept[identity][0] for identity in corroborated)
-            return PooledWalk(records, walked.declared, index + 1, len(kept) - len(corroborated))
-    raise IncompleteWalkError(
-        label,
-        declared=walked.declared,
-        distinct=len(kept),
-        corroborated=len(corroborated),
-        passes=max_passes,
-        stable=not found_new,
-    )
+            observed[identity] = None
+            stamp = None if version is None else _stamp(version, record, label)
+            held = pool.get(identity)
+            if held is not None and version is not None:
+                try:
+                    older = stamp < held[1]
+                except TypeError as error:
+                    raise PagedJsonSourceError(f"{label} served versions that do not compare") from error
+                if older:
+                    continue
+            pool[identity] = (record, stamp)
+        if len(observed) == len(walked.records) == stated:
+            return PooledWalk(tuple(pool[identity][0] for identity in observed), stated, index + 1)
+        if len(pool) == stated:
+            return PooledWalk(tuple(record for record, _ in pool.values()), stated, index + 1)
+    raise IncompleteWalkError(label, declared=stated, distinct=len(pool), passes=max_passes, restarted=restarted)
