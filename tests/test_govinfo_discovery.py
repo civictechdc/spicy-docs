@@ -154,6 +154,18 @@ def test_a_walk_refuses_an_id_it_already_served_before_yielding_that_page(field,
     repeat["nextPage"] = None
     yielded, error = walk(field, first, repeat)
     assert len(yielded) == 1 and error is not None and f"repeats {field}" in str(error)
+    context = error.paged_json_acquisition
+    assert context == {
+        "operation": "traversal",
+        "family": "govinfo",
+        "url": yielded[0].next_url,
+        "requestBody": None,
+        "pageIndex": 1,
+        "recordsKey": "packages" if field == "packageId" else "granules",
+        "singleRecord": False,
+        "observedCount": 4,
+        "declaredCount": 4,
+    }
     twice = json.loads(fixture)
     rows = twice["packages" if field == "packageId" else "granules"]
     rows[1][field] = rows[0][field]
@@ -171,6 +183,7 @@ def test_a_walk_refuses_a_row_without_a_clean_id(field, fixture, value):
     page["packages" if field == "packageId" else "granules"][0][field] = value
     yielded, error = walk(field, page)
     assert yielded == [] and f"unpadded {field}" in str(error)
+    assert (error.paged_json_acquisition["operation"], error.paged_json_acquisition["pageIndex"]) == ("traversal", 0)
 
 
 @pytest.mark.parametrize("field,fixture", [("packageId", PUBLISHED), ("granuleId", GRANULES)])
@@ -182,6 +195,9 @@ def test_a_walk_refuses_a_page_that_omits_its_count(field, fixture):
     second["nextPage"] = None
     yielded, error = walk(field, first, second)
     assert len(yielded) == 1 and "omitted its count" in str(error)
+    context = error.paged_json_acquisition
+    assert (context["operation"], context["pageIndex"], context["declaredCount"]) == ("traversal", 1, None)
+    assert context["url"] == yielded[0].next_url
     del first["count"]
     yielded, error = walk(field, first)
     assert yielded == [] and "omitted its count" in str(error)

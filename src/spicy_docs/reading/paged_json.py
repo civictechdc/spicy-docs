@@ -520,6 +520,32 @@ class PagedJsonReader(SourceAcquirer):
         )
         return page
 
+    def _trace_traversal(
+        self,
+        error: PagedJsonSourceError,
+        *,
+        url: str,
+        body: Mapping[str, Any] | None,
+        page_index: int,
+        records_key: str | tuple[str, ...],
+        single_record: bool,
+        observed: int,
+        declared: int | None,
+    ) -> PagedJsonSourceError:
+        """Attach where a traversal refused, so it explains itself the way a page refusal does."""
+        error.__dict__[self.context_key] = {
+            "operation": "traversal",
+            "family": self.family.name,
+            "url": url,
+            "requestBody": dict(body) if body is not None else None,
+            "pageIndex": page_index,
+            "recordsKey": records_key,
+            "singleRecord": single_record,
+            "observedCount": observed,
+            "declaredCount": declared,
+        }
+        return error
+
     def _count_is_exact(self, url: str, declared_count: int | None) -> bool:
         """Whether the selected operation promises an exact count for its first response."""
         return self.family.count_kind == "exact"
@@ -549,19 +575,16 @@ class PagedJsonReader(SourceAcquirer):
         index = 0
 
         def traced(error: PagedJsonSourceError) -> PagedJsonSourceError:
-            # Traversal refusals explain themselves the way page refusals do.
-            error.__dict__[self.context_key] = {
-                "operation": "traversal",
-                "family": self.family.name,
-                "url": url,
-                "requestBody": dict(body) if body is not None else None,
-                "pageIndex": index,
-                "recordsKey": records_key,
-                "singleRecord": single_record,
-                "observedCount": observed,
-                "declaredCount": declared,
-            }
-            return error
+            return self._trace_traversal(
+                error,
+                url=url,
+                body=body,
+                page_index=index,
+                records_key=records_key,
+                single_record=single_record,
+                observed=observed,
+                declared=declared,
+            )
 
         def refuse(message: str) -> PagedJsonSourceError:
             return traced(PagedJsonSourceError(f"{self.family.label} {message}"))

@@ -148,24 +148,37 @@ class GovInfoDiscoveryReader(PagedJsonReader):
 
     def packages(self, url: str, *, max_pages: int = DEFAULT_MAX_PAGES) -> Iterator[JsonPage]:
         """Walk a ``published`` or ``collections`` query; each ``packageId`` once, every page counted."""
-        return _identified(self.pages(url, records_key=PACKAGES_KEY, max_pages=max_pages), "packageId")
+        return self._identified(self.pages(url, records_key=PACKAGES_KEY, max_pages=max_pages), "packageId")
 
     def granules(self, url: str, *, max_pages: int = DEFAULT_MAX_PAGES) -> Iterator[JsonPage]:
         """Walk a package's granules; each ``granuleId`` once, every page counted."""
-        return _identified(self.pages(url, records_key=GRANULES_KEY, max_pages=max_pages), "granuleId")
+        return self._identified(self.pages(url, records_key=GRANULES_KEY, max_pages=max_pages), "granuleId")
 
+    def _identified(self, pages: Iterable[JsonPage], field: str) -> Iterator[JsonPage]:
+        """Refuse, before yielding it, a page without a count or with a missing, padded or repeated ``field``."""
+        seen: set[str] = set()
+        observed = 0
+        for page in pages:
+            observed += len(page.records)
+            if page.declared_count is None:
+                raise self._refuse(page, observed, f"{page.records_key} page omitted its count")
+            for record in page.records:
+                value = record.get(field)
+                if not isinstance(value, str) or not value.strip() or value != value.strip():
+                    raise self._refuse(page, observed, f"list row requires a nonempty, unpadded {field}")
+                if value in seen:
+                    raise self._refuse(page, observed, f"walk repeats {field} {value}")
+                seen.add(value)
+            yield page
 
-def _identified(pages: Iterable[JsonPage], field: str) -> Iterator[JsonPage]:
-    """Refuse, before yielding it, a page without a count or with a missing, padded or repeated ``field``."""
-    seen: set[str] = set()
-    for page in pages:
-        if page.declared_count is None:
-            raise PagedJsonSourceError(f"GovInfo {page.records_key} page omitted its count")
-        for record in page.records:
-            value = record.get(field)
-            if not isinstance(value, str) or not value.strip() or value != value.strip():
-                raise PagedJsonSourceError(f"GovInfo list row requires a nonempty, unpadded {field}")
-            if value in seen:
-                raise PagedJsonSourceError(f"GovInfo walk repeats {field} {value}")
-            seen.add(value)
-        yield page
+    def _refuse(self, page: JsonPage, observed: int, message: str) -> PagedJsonSourceError:
+        return self._trace_traversal(
+            PagedJsonSourceError(f"{GOVINFO.label} {message}"),
+            url=page.capture.requested_url,
+            body=page.request_body,
+            page_index=page.page_index,
+            records_key=page.records_key,
+            single_record=False,
+            observed=observed,
+            declared=page.declared_count,
+        )
