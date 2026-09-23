@@ -344,14 +344,23 @@ def _requested_titles(scan: _AnnualScan) -> list[int]:
     2025 Title 34 vol 4 also prints Title 35: `<TITLENUM>Title 35</TITLENUM>
     <RESERVED>[Reserved]</RESERVED>` on the title page and a last CFRTITLE
     heading `Title 35 [Reserved]` with no section after it. A title marked that
-    way is dropped; a second remaining title in either place is refused.
+    way must print such a heading, and is then dropped; a second remaining title
+    in either place is refused. A lone blank value states nothing, as a missing
+    one does; a blank beside another value is refused.
     """
     reserved = {_title_number(value) for value in scan.reserved}
-    if any(_title_number(title.heading) in reserved for title in scan.titles if title.heading and title.sections):
-        raise CfrSourceError("annual CFR reserved title prints sections")
+    sections: dict[int, int] = {}
+    for title in scan.titles:
+        if title.heading is not None and title.heading.strip():
+            number = _title_number(title.heading)
+            sections[number] = sections.get(number, 0) + title.sections
+    if any(sections.get(number) != 0 for number in reserved):
+        raise CfrSourceError("annual CFR reserved title needs a heading with no section after it")
     found = []
     for values in (scan.values.get((*scan.front, "TITLENUM"), []), scan.values.get(scan.heading, [])):
-        numbers = [number for number in map(_title_number, filter(str.strip, values)) if number not in reserved]
+        if len(values) == 1 and not values[0].strip():
+            continue
+        numbers = [number for number in map(_title_number, values) if number not in reserved]
         if len(numbers) > 1:
             raise CfrSourceError("annual CFR XML repeats its title")
         found += numbers

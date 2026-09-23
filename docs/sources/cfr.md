@@ -132,8 +132,8 @@ volume number. Those native fields remain `None`.
 
 Two annual volume shapes pass only on the publisher's own statement. 2025 Title
 34 vol 4 also prints reserved Title 35: its title page follows that `TITLENUM`
-with `RESERVED`, and no section follows its heading; any other second title is
-refused. 40 CFR vol 9 prints no `SECTION`; its title page reads `Part 60
+directly with `RESERVED`, and it prints a heading with no section after it; any
+other second title, or a blank beside a title, is refused. 40 CFR vol 9 prints no `SECTION`; its title page reads `Part 60
 (Appendices)`, and only then does `APPENDIX` text count as source content. With
 both, all 262 retained 2025 volumes validate; the receipt is in
 `corpora/supply-2026-09-02/receipts/cfr-annual-validation-2026-09-23/`.
