@@ -49,6 +49,40 @@ them. The MODS states HTML, PDF and XML renditions, all at the standard
 already derives, so no new locator code was needed for this collection --
 only the grammar entry.
 
+## Multi-part committee reports
+
+Captured 2026-09-23. `CRPT-119hrpt811` was the one report the spicy-regs
+committee-reports rollup refused that day. The other two show the same shape in
+the 112th Congress and the two-part shape the reader still refuses.
+
+| Fixture | Publisher response | Bytes | SHA-256 |
+| --- | --- | --- | --- |
+| `summary-CRPT-119hrpt811.json` | [`packages/CRPT-119hrpt811/summary`](https://api.govinfo.gov/packages/CRPT-119hrpt811/summary), keyed with `X-Api-Key` | 1,293 | `e2c404c897f6c98b43308c462094c7d6e255e37eaee364fd256a84bc23cec34f` |
+| `mods-CRPT-119hrpt811.xml` | [`packages/CRPT-119hrpt811/mods`](https://api.govinfo.gov/packages/CRPT-119hrpt811/mods), keyed with `X-Api-Key` | 26,279 | `aba0227068f60977bb1ee98d58add159064bb2b38e7b235e70b8673de7b3e125` |
+| `mods-CRPT-112hrpt38.xml` | [`packages/CRPT-112hrpt38/mods`](https://api.govinfo.gov/packages/CRPT-112hrpt38/mods), keyed with `X-Api-Key` | 13,932 | `ddc18b4eef1895e89576f623def42712f91e24a0d00f9b4f971a8bf6d88f6fc0` |
+| `mods-CRPT-119hrpt455.xml` | [`packages/CRPT-119hrpt455/mods`](https://api.govinfo.gov/packages/CRPT-119hrpt455/mods), keyed with `X-Api-Key` | 24,549 | `290e09efb3f28d77e3e23cd379d8e826e8894ef444aea0fd383377a210d86c59` |
+
+The summary came from the rollup's own requalification capture; the three
+MODS came from a probe of 21 bounded GETs. Both receipts are under the supply corpus:
+`receipts/multipart-reports-2026-09-23/` (`ledger.jsonl`, `raw/`) and
+`fork-execution-2026-09-21/reports-requalification-2026-09-23/`. The same probe
+measured the other routes:
+
+- `packages/CRPT-119hrpt811/granules` lists one granule, `CRPT-119hrpt811-pt1`,
+  class `FIRSTPART`. Its granule summary states `packageId` `CRPT-119hrpt811`.
+- `content/pkg/CRPT-119hrpt811/pdf/CRPT-119hrpt811.pdf` (the package stem)
+  answers `302` to `/error`. `html/CRPT-119hrpt811-pt1.htm` (the part's stem)
+  answers `200` `text/html`, 215,968 bytes.
+- The granule MODS route for `CRPT-119hrpt811-pt1` returns the package's record
+  again, identical element for element. So does the route for
+  `CRPT-119hrpt455-pt1`. Neither states a host.
+- `CRPT-119hrpt468`, `-483`, `-577`, `-621`, `CRPT-112hrpt141` and
+  `CRPT-112hrpt11` are shaped like `CRPT-119hrpt811`. `CRPT-119hrpt620` and
+  `CRPT-108hrpt24` are shaped like `CRPT-119hrpt455`. The package stem of
+  `CRPT-119hrpt455` also redirects.
+- `collections/CRPT` walks of the 116th and 113th Congress House reports listed
+  722 and 734 package ids, and none carried a `-pt` suffix.
+
 ## Granule bodies for the daily Record (B2)
 
 `CREC-2026-09-18` is a three-page issue (the day this fixture set was

@@ -1,8 +1,9 @@
 """Package-id grammar, locators and body identity rules, offline.
 
-The three CRPT-119hrpt1 fixtures are exact publisher responses; the synthetic
-cases cover shapes the publisher answered on other packages (a BILLS download
-block, a USLM rendition) and the refusals themselves.
+The three CRPT-119hrpt1 fixtures are exact publisher responses, as are the
+multi-part report records (CRPT-119hrpt811, CRPT-112hrpt38, CRPT-119hrpt455);
+the synthetic cases cover shapes the publisher answered on other packages (a
+BILLS download block, a USLM rendition) and the refusals themselves.
 """
 
 from __future__ import annotations
@@ -21,6 +22,7 @@ from spicy_docs.sources.govinfo.bodies import (
     PACKAGE_BODY_FORMATS,
     GovInfoBodySourceError,
     ModsBill,
+    granule_body_locator,
     package_body_locator,
     package_mods_locator,
     package_summary_locator,
@@ -40,6 +42,12 @@ SUMMARY_URL = f"https://api.govinfo.gov/packages/{PACKAGE}/summary"
 MODS_URL = f"https://api.govinfo.gov/packages/{PACKAGE}/mods"
 BODY_URL = f"https://www.govinfo.gov/content/pkg/{PACKAGE}/html/{PACKAGE}.htm"
 ERROR_PAGE = b'<html><a href="https://www.govinfo.gov/error">Page Not Found</a></html>'
+
+#: A multi-part report with only its part 1 published (fixture README).
+PART_PACKAGE = "CRPT-119hrpt811"
+PART = f"{PART_PACKAGE}-pt1"
+PART_SUMMARY = (FIXTURES / f"summary-{PART_PACKAGE}.json").read_bytes()
+PART_MODS = (FIXTURES / f"mods-{PART_PACKAGE}.xml").read_bytes()
 
 CPRT_PACKAGE = "CPRT-118HPRT57104"
 CPRT_SUMMARY = (FIXTURES / f"summary-{CPRT_PACKAGE}.json").read_bytes()
@@ -148,6 +156,8 @@ def test_each_collection_grammar_keeps_the_publishers_own_parts(package_id: str,
         ("GPO-CRPT-116hrpt562", "collection is unsupported"),
         ("CHRG-119xhrg64242", "grammar"),
         ("CRPT-119hrpt0", "grammar"),
+        # A report's part is a granule of its package, never a package id.
+        ("CRPT-119hrpt811-pt1", "grammar"),
         ("CPRT-118hprt57104", "grammar"),  # lower-case: not the measured spelling
         ("BILLS-119hr1", "grammar"),
         ("CREC-2026-01-02-p3", "grammar"),
@@ -625,6 +635,124 @@ def test_a_constituent_access_id_names_a_granule_not_this_package() -> None:
     ).encode()
     mods = validate_package_mods(body, package=PACKAGE, final_url=MODS_URL, max_bytes=10_000)
     assert mods.access_ids == (PACKAGE,)
+    assert mods.part_id is None
+
+
+@pytest.mark.parametrize("package", [PART_PACKAGE, "CRPT-112hrpt38"])
+def test_a_one_part_report_is_read_at_the_part_its_root_states(package: str) -> None:
+    """A multi-part report with one part published states that part beside its own accessId and is read there.
+
+    Two real records fifteen years apart, so the shape is not one Congress's: the package's one granule is
+    flattened into the root, which then names the part and states renditions only at the part's stem.
+    """
+    body = (FIXTURES / f"mods-{package}.xml").read_bytes()
+    mods = validate_package_mods(body, package=package, final_url=package_mods_locator(package), max_bytes=200_000)
+    part = f"{package}-pt1"
+    assert mods.access_ids == (package, part)
+    assert mods.part_id == part
+    assert mods.offered_formats == ("pdf", "htm")
+    assert mods.moved_renditions == () and mods.other_renditions == ()
+    assert package_body_locator(package, "htm", part_id=part) == granule_body_locator(package, part, "htm")
+    assert package_body_locator(package, "htm", part_id=part).endswith(f"/content/pkg/{package}/html/{part}.htm")
+
+
+def test_the_package_not_the_part_is_what_the_summary_and_record_name() -> None:
+    """The summary and the record's first accessId name the package; the part is its granule, in its title."""
+    summary = validate_package_summary(
+        PART_SUMMARY, package=PART_PACKAGE, final_url=package_summary_locator(PART_PACKAGE), max_bytes=10_000
+    )
+    mods = validate_package_mods(
+        PART_MODS, package=PART_PACKAGE, final_url=package_mods_locator(PART_PACKAGE), max_bytes=200_000
+    )
+    assert summary.identity.package_id == mods.access_ids[0] == PART_PACKAGE
+    assert summary.title is not None and summary.title.startswith("Part 1-")
+    # The flattened granule's extension is the one that states what the report is about.
+    assert mods.primary_bill == ModsBill(
+        congress=119, bill_type="HR", number="2317", context="PRIMARY", normalized_bill_type="hr"
+    )
+    assert [committee.authority_id for committee in mods.committees] == ["hsii00"]
+
+
+def test_a_report_with_two_parts_states_no_rendition_at_its_root() -> None:
+    """A package holding two parts states each as a constituent and offers nothing at its root.
+
+    Reading one of them as the package would publish half a report under the package's identity, so this stays
+    the ``GovInfoFormatNotOfferedError`` the acquirer already raises; which row a part gets is a contract choice.
+    """
+    package = "CRPT-119hrpt455"
+    body = (FIXTURES / f"mods-{package}.xml").read_bytes()
+    mods = validate_package_mods(body, package=package, final_url=package_mods_locator(package), max_bytes=200_000)
+    assert mods.access_ids == (package,)
+    assert mods.part_id is None
+    assert (mods.offered_formats, mods.moved_renditions, mods.other_renditions) == ((), (), ())
+
+
+def part_mods(
+    part: str, *, package: str = PACKAGE, collection: str = "CRPT", granule_class: bool = True, extra: str = ""
+) -> bytes:
+    """A flattened one-part record: the package's own extension, then its granule's."""
+    marker = "<granuleClass>FIRSTPART</granuleClass>" if granule_class else ""
+    return (
+        '<mods xmlns="http://www.loc.gov/mods/v3">'
+        f"<extension><collectionCode>{collection}</collectionCode><accessId>{package}</accessId></extension>"
+        f"<extension>{marker}<accessId>{part}</accessId></extension>{extra}</mods>"
+    ).encode()
+
+
+@pytest.mark.parametrize(
+    ("body", "package", "message"),
+    [
+        (part_mods("CRPT-119hrpt2-pt1"), PACKAGE, "accessId differs"),
+        # A longer report number is another report, not a part of this one.
+        (part_mods("CRPT-119hrpt11-pt1"), PACKAGE, "accessId differs"),
+        (part_mods(f"{PACKAGE}-pt0"), PACKAGE, "accessId differs"),
+        (part_mods(f"{PACKAGE}-part1"), PACKAGE, "accessId differs"),
+        (part_mods(f"{PACKAGE}-pt1a"), PACKAGE, "accessId differs"),
+        (part_mods(f"{PACKAGE}-pt1", granule_class=False), PACKAGE, "accessId differs"),
+        (
+            part_mods("CHRG-119hhrg64242-pt1", package="CHRG-119hhrg64242", collection="CHRG"),
+            "CHRG-119hhrg64242",
+            "accessId differs",
+        ),
+        (
+            part_mods(
+                f"{PACKAGE}-pt1",
+                extra=f"<extension><granuleClass>OTHERPART</granuleClass><accessId>{PACKAGE}-pt2</accessId></extension>",
+            ),
+            PACKAGE,
+            "more than one part",
+        ),
+        (
+            f'<mods xmlns="http://www.loc.gov/mods/v3"><extension><granuleClass>FIRSTPART</granuleClass>'
+            f"<accessId>{PACKAGE}-pt1</accessId></extension></mods>".encode(),
+            PACKAGE,
+            "accessId differs",
+        ),
+    ],
+)
+def test_only_this_packages_own_numbered_part_is_admitted(body: bytes, package: str, message: str) -> None:
+    """Another report's part, an unnumbered or unmarked one, a second part, or a record naming no package refuse."""
+    with pytest.raises(GovInfoBodySourceError, match=message):
+        validate_package_mods(body, package=package, final_url=package_mods_locator(package), max_bytes=10_000)
+
+
+@pytest.mark.parametrize(
+    ("package", "part"), [(PACKAGE, "CRPT-119hrpt2-pt1"), ("CHRG-119hhrg64242", "CHRG-119hhrg64242-pt1")]
+)
+def test_a_part_locator_is_only_this_packages_own_part(package: str, part: str) -> None:
+    """The locator derives no stem for another package's part or for a collection with no measured parts."""
+    with pytest.raises(GovInfoBodySourceError, match="not a numbered part"):
+        package_body_locator(package, "htm", part_id=part)
+
+
+def test_a_part_body_is_proved_at_the_parts_stem_and_not_the_packages() -> None:
+    """A part's body is proved at the part's locator; arriving at the package stem is a different URL."""
+    part_url = package_body_locator(PART_PACKAGE, "htm", part_id=PART)
+    common = {"package": PART_PACKAGE, "format": "htm", "content_type": "text/html", "max_bytes": 200_000}
+    proved = validate_package_body(BODY, final_url=part_url, part_id=PART, **common)
+    assert (proved.part_id, proved.final_url) == (PART, part_url)
+    with pytest.raises(GovInfoBodySourceError, match="final URL"):
+        validate_package_body(BODY, final_url=package_body_locator(PART_PACKAGE, "htm"), part_id=PART, **common)
 
 
 def test_real_body_is_proved_by_its_locator_and_media_type() -> None:

@@ -579,7 +579,9 @@ instead four publisher statements about the one URL whose bytes were kept:
 - **The MODS states `accessId`.** Every `accessId` under the package root's own
   `extension` children must equal the requested id; a constituent's `accessId`
   names a granule and is not read. This is the same rule the Federal Register
-  granule route applies to its resolved `accessId`.
+  granule route applies to its resolved `accessId`. The one exception is a
+  committee report's numbered part, stated beside the package's own id
+  ([Multi-part committee reports](#multi-part-committee-reports)).
 - **The MODS states the rendition URL.** The fetched locator must be one the
   MODS named as a `raw object` rendition of this package, so the address this
   module derives and the address the publisher publishes have to agree.
@@ -599,6 +601,43 @@ instead four publisher statements about the one URL whose bytes were kept:
 - **The media type matches the format, the body is not empty, and a PDF begins
   with `%PDF-`.** A 200 that is not the requested format is a refusal with its
   bytes retained, never data and never absence.
+
+## Multi-part committee reports
+
+A report filed in parts (H. Rept. 119-811, Part 1) is **one package**,
+`CRPT-119hrpt811`, and each part is a granule of it, `{package id}-pt{N}`. The
+summary, the record identifier, the package-level `accessId` and the preferred
+citation all name the package; the granules route names the part. A part is
+never a package id, so the grammar still refuses `CRPT-119hrpt811-pt1`. GovInfo
+writes the package's record in one of three shapes (measured 2026-09-23):
+
+| Parts published | What the package MODS root states | `acquire` |
+| --- | --- | --- |
+| One, spelled `-pt1` (`CRPT-119hrpt811`, `CRPT-112hrpt38`) | Its own `accessId`, the part's `accessId` beside a `granuleClass`, and renditions only at the part's stem; the package stem redirects to the error page | Reads the part: `mods.part_id` and `body.part_id` name it |
+| Two or more, each suffixed (`CRPT-119hrpt455`, `CRPT-108hrpt24`) | Its own `accessId`; each part as a `relatedItem type="constituent"` with its own renditions; nothing at the root | `GovInfoFormatNotOfferedError` |
+| Part 1 unsuffixed, part 2 `-pt2` (`CRPT-119hrpt494`) | Part 1's renditions at the package stem; both parts as constituents | Reads part 1 only, like any single-part report |
+
+The first shape is how GovInfo writes every package that holds one granule: it
+flattens that granule's record into the package root. For a single-part report
+the granule id is the package id, so nothing shows. When the one granule is a
+numbered part, `validate_package_mods` admits its `accessId` only if it is
+exactly this package's `-pt{N}`, its `extension` states `granuleClass`, the
+package's own `accessId` is stated too, and no second part is. Only CRPT's
+grammar allows parts (`PackageGrammar.parts`). The renditions are then proved at
+the part's stem, which is `granule_body_locator(package, part, format)`. A
+package-stem URL in such a record would read as moved. The row a caller
+publishes keeps the package id; the part's stem is in `requested_url`, and the
+summary title says `Part 1-`.
+
+The other two shapes are unchanged on purpose. Reading one part of a
+two-part package as the package would publish half a report under the
+package's identity. Whether each part gets its own row is a contract decision
+for the report tables, not a reader rule. The third shape is already read,
+but only part 1, and nothing in the result says a part 2 exists. `acquire_granule`
+is no route to a part either. For `CRPT-119hrpt811-pt1` and
+`CRPT-119hrpt455-pt1`, the granule MODS route answers with the package's own
+record, which states no `relatedItem type="host"`, so `validate_granule_mods`
+refuses it.
 
 ## Granule bodies for the Record
 
@@ -690,9 +729,9 @@ MODS as the refused one. A refusal returns no partial result.
 `GovInfoPackageBody` is frozen and holds the parsed `identity`, the `format`
 chosen, the `preference` asked for, `offered_formats`, the validated `summary`
 (with its `download_links` as evidence), the validated `mods` (with
-`moved_renditions`, `other_renditions` and `bills`) and `body` identities, the
-three captures in request order, the consumed `request_count` and the
-effective `budget`.
+`moved_renditions`, `other_renditions`, `bills` and a report's `part_id`) and
+`body` identities, the three captures in request order, the consumed
+`request_count` and the effective `budget`.
 
 `PackageModsIdentity.bills` is every `<bill>` the MODS names, in the
 publisher's own document order, read from the same root-level `extension`

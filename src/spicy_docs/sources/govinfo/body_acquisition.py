@@ -318,6 +318,10 @@ class GovInfoBodyAcquirer:
         bound), so it is reached only after every text-bearing rendition and is
         the format a narrow ``max_bytes`` is most likely to refuse.
 
+        A one-part report whose MODS states its part in place of the package
+        stem (``mods.part_id``) is read at that part's stem, the only address
+        its record names.
+
         ``max_bytes`` may narrow the body allowance for this call, never raise
         it. Every refusal carries its capture, the stage it failed at and this
         context.
@@ -370,7 +374,9 @@ class GovInfoBodyAcquirer:
             stage = "body"
             # A body failure must never be attributed to the metadata captures.
             capture = None
-            body_capture = self._body_capture(package_body_locator(identity, chosen), max_bytes=budget.max_body_bytes)
+            body_capture = self._body_capture(
+                package_body_locator(identity, chosen, part_id=mods.part_id), max_bytes=budget.max_body_bytes
+            )
             capture = body_capture
             body = validate_package_body(
                 body_capture.body,
@@ -379,6 +385,7 @@ class GovInfoBodyAcquirer:
                 content_type=body_capture.content_type,
                 final_url=body_capture.resolved_url,
                 max_bytes=budget.max_body_bytes,
+                part_id=mods.part_id,
             )
             return GovInfoPackageBody(
                 identity=identity,

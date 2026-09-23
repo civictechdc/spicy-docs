@@ -1,0 +1,280 @@
+<mods xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.loc.gov/mods/v3" version="3.3" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-3.xsd" ID="P0b002ee180c3cb00">
+    <name type="corporate">
+         <namePart>United States Government Publishing Office</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">publisher</roleTerm>
+              <roleTerm authority="marcrelator" type="code">pbl</roleTerm>
+        </role>
+         <role>
+              <roleTerm authority="marcrelator" type="text">distributor</roleTerm>
+              <roleTerm authority="marcrelator" type="code">dst</roleTerm>
+        </role>
+    </name>
+    <name type="corporate">
+         <namePart>United States</namePart>
+         <namePart>Congress</namePart>
+         <namePart>House of Representatives</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">author</roleTerm>
+              <roleTerm authority="marcrelator" type="code">aut</roleTerm>
+        </role>
+         <description>Government Organization</description>
+    </name>
+    <typeOfResource>text</typeOfResource>
+    <genre authority="marcgt">government publication</genre>
+    <language>
+         <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+    </language>
+    <extension>
+         <collectionCode>CRPT</collectionCode>
+         <category>Congressional Committee Materials</category>
+         <waisDatabaseName>112_cong_reports</waisDatabaseName>
+         <branch>legislative</branch>
+         <dateIngested>2011-03-19</dateIngested>
+    </extension>
+    <titleInfo>
+         <title>NO TAXPAYER FUNDING FOR ABORTION ACT</title>
+    </titleInfo>
+    <originInfo>
+         <publisher>U.S. Government Printing Office</publisher>
+         <dateIssued encoding="w3cdtf">2011-03-17</dateIssued>
+         <issuance>monographic</issuance>
+    </originInfo>
+    <physicalDescription>
+         <note type="source content type">deposited</note>
+         <digitalOrigin>born digital</digitalOrigin>
+         <extent>50 digital object pages</extent>
+    </physicalDescription>
+    <classification authority="sudocs">Y 1.1/8:112-38/</classification>
+    <identifier type="uri">https://www.govinfo.gov/app/details/CRPT-112hrpt38</identifier>
+    <identifier type="local">P0b002ee180c3cb00</identifier>
+    <identifier type="ILS system id">000804278</identifier>
+    <recordInfo>
+         <recordContentSource authority="marcorg">DGPO</recordContentSource>
+         <recordCreationDate encoding="w3cdtf">2011-03-19</recordCreationDate>
+         <recordChangeDate encoding="w3cdtf">2024-11-09</recordChangeDate>
+         <recordIdentifier source="DGPO">CRPT-112hrpt38</recordIdentifier>
+         <recordOrigin>machine generated</recordOrigin>
+         <languageOfCataloging>
+              <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+        </languageOfCataloging>
+    </recordInfo>
+    <accessCondition type="GPO scope determination">fdlp</accessCondition>
+    <extension>
+         <subtitle>Report together with DISSENTING VIEWS to accompany H.R. 3, including cost estimate of the Congressional Budget Office</subtitle>
+         <docClass>HRPT</docClass>
+         <accessId>CRPT-112hrpt38</accessId>
+         <chamber>HOUSE</chamber>
+         <congress years="2011-2012">112</congress>
+         <number>38</number>
+         <session>1</session>
+         <isConferenceReport>false</isConferenceReport>
+         <isSerialSet>true</isSerialSet>
+    </extension>
+    <location>
+         <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CRPT-112hrpt38</url>
+    </location>
+    <identifier type="preferred citation">H. Rept. 112-38</identifier>
+    <titleInfo>
+         <title>NO TAXPAYER FUNDING FOR ABORTION ACT</title>
+         <partName>Part 1</partName>
+    </titleInfo>
+    <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CRPT-112hrpt38/html/CRPT-112hrpt38-pt1.htm">
+         <identifier type="FDsys Unique ID">D09002ee1ce39fe5b</identifier>
+    </relatedItem>
+    <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CRPT-112hrpt38/pdf/CRPT-112hrpt38-pt1.pdf">
+         <identifier type="FDsys Unique ID">D09002ee1ce39fe5c</identifier>
+    </relatedItem>
+    <identifier type="uri">https://www.govinfo.gov/app/details/CRPT-112hrpt38/CRPT-112hrpt38-pt1</identifier>
+    <identifier type="former granule identifier">f:hr38p1.112.txt</identifier>
+    <location>
+         <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CRPT-112hrpt38/CRPT-112hrpt38-pt1</url>
+         <url access="raw object" displayLabel="PDF rendition">https://www.govinfo.gov/content/pkg/CRPT-112hrpt38/pdf/CRPT-112hrpt38-pt1.pdf</url>
+         <url access="raw object" displayLabel="HTML rendition">https://www.govinfo.gov/content/pkg/CRPT-112hrpt38/html/CRPT-112hrpt38-pt1.htm</url>
+    </location>
+    <identifier type="preferred citation">H. Rept. 112-38,Part 1</identifier>
+    <abstract>The Committee on the Judiciary, to whom was referred the bill (H.R. 3) to prohibit taxpayer funded abortions and to provide for conscience protections, and for other purposes, having considered the same, reports favorably thereon with an amendment and recommends that the bill as amended do pass.</abstract>
+    <extension>
+         <searchTitle>NO TAXPAYER FUNDING FOR ABORTION ACT;H. Rept. 112-38,Part 1</searchTitle>
+         <legislativeHistory>Ordered to be printed</legislativeHistory>
+         <granuleClass>FIRSTPART</granuleClass>
+         <accessId>CRPT-112hrpt38-pt1</accessId>
+         <action date="2011-03-17">Ordered to be printed</action>
+         <heading>Part 1</heading>
+         <session>1</session>
+         <shortTitle>No Taxpayer Funding for Abortion Act</shortTitle>
+         <recommendation>The Committee on the Judiciary, to whom was referred the bill (H.R. 3) to prohibit taxpayer funded abortions and to provide for conscience protections, and for other purposes, having considered the same, reports favorably thereon with an amendment and recommends that the bill as amended do pass.</recommendation>
+         <submittedStatement>Mr. Smith of Texas, from the Committee on the Judiciary, submitted the following</submittedStatement>
+         <bill congress="112" context="OTHER" number="3" type="HR"></bill>
+         <bill congress="112" context="PRIMARY" number="3" type="HR"></bill>
+         <bill congress="112" context="OTHER" number="3200" type="HR"></bill>
+         <bill congress="112" context="OTHER" number="3590" type="HR"></bill>
+         <bill congress="112" context="OTHER" number="3962" type="HR"></bill>
+         <bill congress="112" context="OTHER" number="4872" type="HR"></bill>
+         <congCommittee authorityId="hsju00" chamber="H" congress="112" type="S">
+                                    
+              <name type="authority-standard">Committee on the Judiciary</name>
+                                    
+              <name type="authority-short">Judiciary</name>
+                                
+        </congCommittee>
+         <congMember bioGuideId="S000583" chamber="H" congress="112" party="R" role="SUBMITTEDBY" state="TX">
+                                    
+              <name type="parsed">Mr. Smith of Texas</name>
+                                    
+              <name type="authority-fnf">Lamar Smith</name>
+                                    
+              <name type="authority-lnf">Smith, Lamar</name>
+                                
+        </congMember>
+         <law congress="93" isPrivate="false" number="45"></law>
+         <law congress="111" isPrivate="false" number="117"></law>
+         <law congress="111" isPrivate="false" number="148"></law>
+         <law congress="111" isPrivate="false" number="152"></law>
+         <USCode title="18">
+                                    
+              <section detail="(b)" number="1093"></section>
+                                
+        </USCode>
+         <USCode title="42">
+                                    
+              <section number="300a-7"></section>
+                                
+        </USCode>
+         <statuteAtLarge volume="123">
+                                    
+              <pages pages="3034"></pages>
+                                
+        </statuteAtLarge>
+         <associatedBills>H.R. 3, 112th</associatedBills>
+    </extension>
+    <name type="personal">
+         <namePart>Lamar Smith</namePart>
+         <affiliation>United States House of Representatives</affiliation>
+         <role>
+              <roleTerm authority="marcrelator" type="text">sponsor</roleTerm>
+              <roleTerm authority="marcrelator" type="code">spn</roleTerm>
+        </role>
+         <description>United States Congress Member</description>
+    </name>
+    <name type="corporate">
+         <namePart>United States</namePart>
+         <namePart>Congress</namePart>
+         <namePart>House of Representatives</namePart>
+         <namePart>Committee on the Judiciary</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">associated name</roleTerm>
+              <roleTerm authority="marcrelator" type="code">asn</roleTerm>
+        </role>
+         <description>Government Organization</description>
+    </name>
+    <relatedItem type="isReferencedBy">
+         <titleInfo>
+              <title>United States House Bill 3 (112th Congress)</title>
+        </titleInfo>
+         <identifier type="Congressional Bill citation">H.R. 3</identifier>
+         <extension>
+              <congress>112</congress>
+              <context>OTHER</context>
+        </extension>
+    </relatedItem>
+    <relatedItem type="isReferencedBy">
+         <titleInfo>
+              <title>United States House Bill 3 (112th Congress)</title>
+        </titleInfo>
+         <identifier type="Congressional Bill citation">H.R. 3</identifier>
+         <extension>
+              <congress>112</congress>
+              <context>PRIMARY</context>
+        </extension>
+    </relatedItem>
+    <relatedItem type="isReferencedBy">
+         <titleInfo>
+              <title>United States House Bill 3200 (112th Congress)</title>
+        </titleInfo>
+         <identifier type="Congressional Bill citation">H.R. 3200</identifier>
+         <extension>
+              <congress>112</congress>
+              <context>OTHER</context>
+        </extension>
+    </relatedItem>
+    <relatedItem type="isReferencedBy">
+         <titleInfo>
+              <title>United States House Bill 3590 (112th Congress)</title>
+        </titleInfo>
+         <identifier type="Congressional Bill citation">H.R. 3590</identifier>
+         <extension>
+              <congress>112</congress>
+              <context>OTHER</context>
+        </extension>
+    </relatedItem>
+    <relatedItem type="isReferencedBy">
+         <titleInfo>
+              <title>United States House Bill 3962 (112th Congress)</title>
+        </titleInfo>
+         <identifier type="Congressional Bill citation">H.R. 3962</identifier>
+         <extension>
+              <congress>112</congress>
+              <context>OTHER</context>
+        </extension>
+    </relatedItem>
+    <relatedItem type="isReferencedBy">
+         <titleInfo>
+              <title>United States House Bill 4872 (112th Congress)</title>
+        </titleInfo>
+         <identifier type="Congressional Bill citation">H.R. 4872</identifier>
+         <extension>
+              <congress>112</congress>
+              <context>OTHER</context>
+        </extension>
+    </relatedItem>
+    <relatedItem type="isReferencedBy">
+         <titleInfo>
+              <title>United States Code</title>
+              <partNumber>Title 18 Section 1093(b)</partNumber>
+        </titleInfo>
+         <identifier type="USC citation">18 U.S.C. 1093(b)</identifier>
+    </relatedItem>
+    <relatedItem type="isReferencedBy">
+         <titleInfo>
+              <title>United States Code</title>
+              <partNumber>Title 42 Section 300a-7</partNumber>
+        </titleInfo>
+         <identifier type="USC citation">42 U.S.C. 300a-7</identifier>
+    </relatedItem>
+    <relatedItem type="isReferencedBy">
+         <titleInfo>
+              <title>United States Statutes at Large</title>
+              <partNumber>Volume 123 Page 3034</partNumber>
+        </titleInfo>
+         <identifier type="Statute citation">123 Stat. 3034</identifier>
+    </relatedItem>
+    <relatedItem type="isReferencedBy">
+         <titleInfo>
+              <title>United States Public Law 45 (93rd Congress)</title>
+        </titleInfo>
+         <identifier type="public law citation">Public Law 93-45</identifier>
+         <identifier type="public law citation">Public Law No 93-45</identifier>
+    </relatedItem>
+    <relatedItem type="isReferencedBy">
+         <titleInfo>
+              <title>United States Public Law 117 (111th Congress)</title>
+        </titleInfo>
+         <identifier type="public law citation">Public Law 111-117</identifier>
+         <identifier type="public law citation">Public Law No 111-117</identifier>
+    </relatedItem>
+    <relatedItem type="isReferencedBy">
+         <titleInfo>
+              <title>United States Public Law 148 (111th Congress)</title>
+        </titleInfo>
+         <identifier type="public law citation">Public Law 111-148</identifier>
+         <identifier type="public law citation">Public Law No 111-148</identifier>
+    </relatedItem>
+    <relatedItem type="isReferencedBy">
+         <titleInfo>
+              <title>United States Public Law 152 (111th Congress)</title>
+        </titleInfo>
+         <identifier type="public law citation">Public Law 111-152</identifier>
+         <identifier type="public law citation">Public Law No 111-152</identifier>
+    </relatedItem>
+</mods>

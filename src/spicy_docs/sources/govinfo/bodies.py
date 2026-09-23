@@ -135,16 +135,25 @@ class PackageGrammar:
     ``BUDGET-2027-BUD`` and ``GPO-CDOC-119sdoc3`` both state ``GPO`` (measured
     2026-09-20). It lives beside the pattern so a collection states everything
     about itself in one place and no check has to assume the two agree.
+
+    ``parts`` says whether this collection's package record can state one
+    numbered part, ``{package id}-pt{N}``, in place of its own stem (see
+    ``validate_package_mods``). Measured on CRPT alone, so no other collection
+    claims it.
     """
 
     pattern: re.Pattern[str]
     example: str
     collection_code: str
+    parts: bool = False
 
 
 _GRAMMARS: dict[str, PackageGrammar] = {
     "CRPT": PackageGrammar(
-        re.compile(rf"(?P<congress>{_CONGRESS})(?P<type>hrpt|srpt|erpt)(?P<number>{_NUMBER})"), "119hrpt1", "CRPT"
+        re.compile(rf"(?P<congress>{_CONGRESS})(?P<type>hrpt|srpt|erpt)(?P<number>{_NUMBER})"),
+        "119hrpt1",
+        "CRPT",
+        parts=True,
     ),
     "CHRG": PackageGrammar(
         re.compile(rf"(?P<congress>{_CONGRESS})(?P<type>hhrg|shrg|jhrg)(?P<number>{_JACKET})"), "119hhrg64242", "CHRG"
@@ -620,6 +629,11 @@ class PackageModsIdentity:
     #: (``interpretation/hearing_bill_links.py``); ``None`` for a collection
     #: whose records state none, which every sampled CRPT record does.
     held_date: str | None = None
+    #: The one numbered part (``CRPT-119hrpt811-pt1``) the root states in
+    #: place of the package's own stem, or ``None``. A granule of this
+    #: package, never a package id: ``offered_formats`` were proved at its
+    #: stem, which is where the package's body is fetched from.
+    part_id: str | None = None
 
     @property
     def submitted_by(self) -> ModsMember | None:
@@ -841,6 +855,8 @@ class PackageBodyIdentity:
     media_type: str
     final_url: str
     byte_size: int
+    #: The part whose stem the body was proved at; ``PackageModsIdentity.part_id``.
+    part_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -986,10 +1002,36 @@ def _format(name: object) -> BodyFormat:
     return PACKAGE_BODY_FORMATS[name]
 
 
-def package_body_locator(package: PackageIdentity | str, format: str) -> str:
-    """Return the keyless rendition locator in ``O(I)`` time."""
+# A multi-part report's parts are its granules, spelled ``{package id}-pt{N}``
+# (measured 2026-09-23: CRPT-119hrpt811-pt1, CRPT-119hrpt455-pt2,
+# CRPT-108hrpt24-pt2). The package id never carries the suffix.
+_PART_SUFFIX = re.compile(rf"-pt{_NUMBER}")
+
+
+def _is_part_of(identity: PackageIdentity, value: object) -> bool:
+    """Whether ``value`` is a numbered part of this package, in a collection whose records state one."""
+    return (
+        _GRAMMARS[identity.collection].parts
+        and isinstance(value, str)
+        and value.startswith(identity.package_id)
+        and _PART_SUFFIX.fullmatch(value, len(identity.package_id)) is not None
+    )
+
+
+def package_body_locator(package: PackageIdentity | str, format: str, *, part_id: str | None = None) -> str:
+    """Return the keyless rendition locator in ``O(I)`` time.
+
+    ``part_id`` is the numbered part a one-part report's record states in place
+    of the package's own stem (``PackageModsIdentity.part_id``); the rendition
+    is then that part's, which is a granule's address. Only this package's own
+    part is accepted.
+    """
     identity = _identity(package)
     body_format = _format(format)
+    if part_id is not None:
+        if not _is_part_of(identity, part_id):
+            raise GovInfoBodySourceError(f"{part_id!r} is not a numbered part of {identity.package_id}")
+        return granule_body_locator(identity, part_id, format)
     package_id = identity.package_id
     return f"{CONTENT}/content/pkg/{package_id}/{body_format.folder}/{package_id}.{body_format.extension}"
 
@@ -1175,6 +1217,10 @@ def validate_package_mods(
     can see the address the publisher gave. Anything else (another package,
     another file type, another host) is recorded verbatim and means nothing
     about this fetch.
+
+    One accessId other than the package's own is admitted: the numbered part
+    a one-part report states in place of its stem (``_stated_part``). The
+    renditions are then proved at that part's stem, and ``part_id`` says so.
     """
     identity = _identity(package)
     exact = _checked_bytes(body, max_bytes, label="package MODS")
@@ -1192,12 +1238,15 @@ def validate_package_mods(
     access_ids = tuple(element.text.strip() for element in root.fields("extension", "accessId"))
     if not access_ids:
         raise GovInfoBodySourceError("GovInfo package MODS states no accessId")
-    if any(value != identity.package_id for value in access_ids):
+    part_id = _stated_part(root, identity)
+    if identity.package_id not in access_ids or any(
+        value not in (identity.package_id, part_id) for value in access_ids
+    ):
         raise GovInfoBodySourceError("GovInfo MODS accessId differs from the requested package")
     codes = {element.text.strip() for element in root.fields("extension", "collectionCode")}
     if codes and codes != {stated_collection_code(identity.collection)}:
         raise GovInfoBodySourceError("GovInfo MODS collectionCode differs from the requested collection")
-    locators = {package_body_locator(identity, name): name for name in PACKAGE_BODY_FORMATS}
+    locators = {package_body_locator(identity, name, part_id=part_id): name for name in PACKAGE_BODY_FORMATS}
     offered, moved, other = _read_offered_renditions(root, locators, identity)
     return PackageModsIdentity(
         identity=identity,
@@ -1218,7 +1267,41 @@ def validate_package_mods(
         session=next((element.text.strip() for element in root.fields("extension", "session")), None),
         fiscal_year=_mods_fiscal_year(root),
         held_date=_mods_held_date(root),
+        part_id=part_id,
     )
+
+
+def _stated_part(root: ModsRecord, identity: PackageIdentity) -> str | None:
+    """The numbered part a one-part report's root states beside the package's own accessId, or ``None``.
+
+    GovInfo writes a package that holds one granule by flattening the
+    granule's record into the package root: a second root ``extension``
+    stating the granule's ``granuleClass`` and ``accessId``, and a root
+    ``location`` stating the granule's renditions. For a single-part report
+    the granule id is the package id, so the two agree (CRPT-119hrpt1). When
+    the one granule is part 1 of a multi-part report it is
+    ``{package id}-pt1`` and the root's renditions sit at the part's stem,
+    while the package stem redirects to the error page (CRPT-119hrpt811; the
+    2011 report CRPT-112hrpt38 still states only its part 1). A package
+    holding two or more parts states each as a ``relatedItem
+    type="constituent"`` and no rendition at its root, so nothing here reads
+    it.
+
+    So an accessId counts as a part only when it is this package's numbered
+    part and its extension also states ``granuleClass``; anything else is left
+    for the caller's accessId check to refuse, and two parts at one root are
+    refused here.
+    """
+    parts = {
+        value
+        for extension in map(ModsRecord, root.fields("extension"))
+        if extension.fields("granuleClass")
+        for element in extension.fields("accessId")
+        if _is_part_of(identity, value := element.text.strip())
+    }
+    if len(parts) > 1:
+        raise GovInfoBodySourceError("GovInfo package MODS states more than one part at its root")
+    return next(iter(parts), None)
 
 
 def validate_granule_mods(
@@ -1365,15 +1448,20 @@ def validate_package_body(
     content_type: str | None,
     final_url: str,
     max_bytes: int,
+    part_id: str | None = None,
 ) -> PackageBodyIdentity:
-    """Prove a bounded body against its locator, media type and native magic."""
+    """Prove a bounded body against its locator, media type and native magic.
+
+    ``part_id`` is the part the MODS stated (``PackageModsIdentity.part_id``),
+    whose stem is then the locator.
+    """
     identity = _identity(package)
     exact, body_format, media_type = _validate_body(
         body,
         format=format,
         content_type=content_type,
         final_url=final_url,
-        expected_url=package_body_locator(identity, format),
+        expected_url=package_body_locator(identity, format, part_id=part_id),
         max_bytes=max_bytes,
         label="package body",
     )
@@ -1383,6 +1471,7 @@ def validate_package_body(
         media_type=media_type,
         final_url=final_url,
         byte_size=len(exact),
+        part_id=part_id,
     )
 
 
