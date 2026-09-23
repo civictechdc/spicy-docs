@@ -176,8 +176,16 @@ IN_PROGRESS = {
     "type": "Still in Progress",
     "errorCode": "FSP",
 }
-# The download's real answer to an Accept that rules out its gzip, ready or not (2026-09-23).
-NOT_ACCEPTABLE = {"title": "Invalid Accept Header", "detail": "No acceptable representation"}
+# The download's real answer to an Accept that rules out its gzip, here for a ready file (2026-09-23;
+# receipt in corpora/fork-execution-2026-09-21/sam-406-2026-09-23/).
+NOT_ACCEPTABLE = {
+    "httpStatus": "406 NOT_ACCEPTABLE",
+    "title": "Invalid Accept Header",
+    "detail": "No acceptable representation",
+    "errorCode": "406",
+}
+# Long enough for scrub_credential's literal pass, which skips keys under 8 characters.
+KEY = "sam-test-key-0123"
 
 
 def _admits_gzip(accept: str) -> bool:
@@ -194,23 +202,32 @@ class _Publisher:
     """A MockTransport answering the trigger with SENTENCE and the download from ``downloads`` in turn.
 
     Like SAM, it refuses a download whose ``Accept`` rules out gzip with 406 before looking at the file.
+    Time is its own: sleeps advance ``now``, and so does each request by ``latency`` seconds.
     """
 
-    def __init__(self, *downloads: httpx.Response, trigger: httpx.Response | None = None):
+    def __init__(self, *downloads: httpx.Response, trigger: httpx.Response | None = None, latency: float = 0.0):
         self.downloads = list(downloads)
         self.trigger = trigger or httpx.Response(200, text=SENTENCE)
         self.requests: list[httpx.Request] = []
+        self.now = 0.0
+        self.latency = latency
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
         self.requests.append(request)
+        self.now += self.latency
         if request.url.path.endswith("/entities"):
             return self.trigger
         if not _admits_gzip(request.headers.get("Accept", "")):
             return httpx.Response(406, json=NOT_ACCEPTABLE)
         return self.downloads.pop(0)
 
+    def sleep(self, seconds: float) -> None:
+        self.now += seconds
+
     def reader(self, **kwargs) -> SamBulkExtract:
-        return SamBulkExtract(api_key="secret", transport=httpx.MockTransport(self), sleep=lambda _: None, **kwargs)
+        return SamBulkExtract(
+            api_key=KEY, transport=httpx.MockTransport(self), sleep=self.sleep, clock=lambda: self.now, **kwargs
+        )
 
 
 def test_the_trigger_keeps_its_selection_and_adds_the_key():
@@ -218,10 +235,10 @@ def test_the_trigger_keeps_its_selection_and_adds_the_key():
     publisher = _Publisher(httpx.Response(200, content=_extract("A")))
     assert _ueis(publisher.reader(year=2026).records()) == ["A"]
     trigger = publisher.requests[0].url.params
-    assert (trigger["registrationStatus"], trigger["format"], trigger["api_key"]) == ("A", "json", "secret")
+    assert (trigger["registrationStatus"], trigger["format"], trigger["api_key"]) == ("A", "json", KEY)
     assert trigger["registrationDate"] == "[01/01/2026,12/31/2026]"
     download = publisher.requests[1].url.params
-    assert (download["token"], download["api_key"]) == ("Tok123", "secret")
+    assert (download["token"], download["api_key"]) == ("Tok123", KEY)
 
 
 def test_the_download_polls_through_the_in_progress_answer():
@@ -234,10 +251,12 @@ def test_the_download_polls_through_the_in_progress_answer():
     assert [request.headers["Accept"] for request in publisher.requests] == ["application/json", "*/*", "*/*", "*/*"]
 
 
-def test_each_distinct_in_progress_detail_is_logged_once():
-    later = {**IN_PROGRESS, "detail": "Still writing"}
+def test_each_distinct_in_progress_detail_is_logged_once_and_scrubbed():
+    """Both scrub passes: the reader's key bare (literal pass) and another key in a URL (pattern pass)."""
+    other_key = "other-key-4567890"
+    leaky = {**IN_PROGRESS, "detail": f"Still writing for {KEY} at https://api.sam.gov/x?api_key={other_key}"}
     publisher = _Publisher(
-        *[httpx.Response(400, json=body) for body in (IN_PROGRESS, IN_PROGRESS, later)],
+        *[httpx.Response(400, json=body) for body in (IN_PROGRESS, IN_PROGRESS, leaky, leaky)],
         httpx.Response(200, content=_extract("A")),
     )
     logged: list[str] = []
@@ -248,9 +267,9 @@ def test_each_distinct_in_progress_detail_is_logged_once():
         logger.remove(sink)
     assert [line.strip() for line in logged if "still generating" in line] == [
         "DEBUG SAM extract still generating: File Processing in Progress. Please check again later",
-        "DEBUG SAM extract still generating: Still writing",
+        "DEBUG SAM extract still generating: Still writing for <redacted> at https://api.sam.gov/x?api_key=<redacted>",
     ]
-    assert not any("secret" in line or "token=" in line for line in logged)
+    assert not any(KEY in line or other_key in line for line in logged)
 
 
 def test_any_other_400_refuses():
@@ -259,10 +278,15 @@ def test_any_other_400_refuses():
         list(publisher.reader().records())
 
 
-def test_the_poll_budget_bounds_the_wait():
-    publisher = _Publisher(*[httpx.Response(400, json=IN_PROGRESS)] * 3)
-    with pytest.raises(SamExtractError, match="poll budget"):
-        list(publisher.reader(poll_max=3).records())
+def test_the_wait_is_wall_clock_from_the_trigger_so_hanging_polls_still_end_it():
+    """Requests taking 100 s each: the deadline is set before the trigger, so polls start at 100 and 230 s only."""
+    publisher = _Publisher(*[httpx.Response(400, json=IN_PROGRESS)] * 10, latency=100.0)
+    with pytest.raises(SamExtractError, match="within its 300 s wait; last poll: HTTP 400"):
+        list(publisher.reader(max_wait=300.0, poll_interval=30.0).records())
+    trigger, *polls = publisher.requests
+    assert len(polls) == 2 and publisher.now == 330.0
+    assert trigger.extensions["timeout"]["read"] == 120.0
+    assert {poll.extensions["timeout"]["read"] for poll in polls} == {30.0}
 
 
 def _registration(uei: str, eft: str | None = None, updated: str = "2026-09-01", name: str = "X") -> dict:
