@@ -3,8 +3,9 @@
 The Entity Management API's asynchronous extract (``format=json``) answers the
 trigger with a plain-text sentence naming a download URL whose ``api_key`` is
 the literal ``REPLACE_WITH_API_KEY`` placeholder; the download answers HTTP
-400 with ``errorCode`` ``FSP`` while the file generates (both measured
-2026-09-23). The trigger states no count, so the downloaded file's own
+400 with ``errorCode`` ``FSP`` while the file generates and serves the file
+only as ``application/x-gzip`` (all measured 2026-09-23). The trigger states
+no count, so the downloaded file's own
 ``totalRecords`` is the selection's count, and a floor: the file is written while
 registrations change, so it may hold more (never fewer) registrations, each keyed
 by UEI and EFT indicator (:func:`registrations`). The key travels merged into each
@@ -34,15 +35,31 @@ from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 import httpx
 from loguru import logger
 
+from spicy_docs.transport.credentials import scrub_credential
 from spicy_docs.transport.retry import retry_http
 
 API = "https://api.sam.gov/entity-information/v4"
 API_KEY_PLACEHOLDER = "REPLACE_WITH_API_KEY"
 
-# The async extract may not be ready on the first GET: poll with a fixed
-# interval up to this many attempts before refusing the selection.
-EXTRACT_POLL_MAX = 60
-EXTRACT_POLL_INTERVAL = 10.0
+# Each request states what it accepts. The download serves only application/x-gzip and answers
+# 406 "Invalid Accept Header" to Accept: application/json, so a client-wide JSON Accept failed
+# every scheduled spicy-regs run on its first poll (run 35907412992); */* gets the in-progress 400
+# JSON and then the file. Receipts, 2026-09-23, in corpora/fork-execution-2026-09-21/: the 406 for
+# a ready file in sam-406-2026-09-23/, the */* answers in sam-initial-load-2026-09-23/.
+_TRIGGER_ACCEPT = {"Accept": "application/json"}
+_DOWNLOAD_ACCEPT = {"Accept": "*/*"}
+
+# The download answers "still generating" until the file is written. The 2026 registration-year
+# extract (147,256 rows, 71.5 MB gzip) was still generating 21 minutes after its trigger and ready
+# at the next poll, 46 minutes after it; when in between it finished is unmeasured (receipts in
+# sam-initial-load-2026-09-23/). The default wait is 25 minutes of wall clock from the trigger,
+# because the spicy-regs sam_entities job has 30 minutes in all (_rollup.yml's timeout_minutes
+# default) and the reader must refuse before the job is cancelled.
+EXTRACT_MAX_WAIT = 25 * 60.0
+EXTRACT_POLL_INTERVAL = 30.0
+# Polls answered within seconds (the whole ready 71.5 MB file in 5.3 s); httpx's read timeout
+# bounds each socket read, not the transfer, so 30 s ends a stalled poll without cutting the file.
+_POLL_TIMEOUT = httpx.Timeout(30.0)
 MAX_RETRIES = 5
 DEFAULT_TIMEOUT = httpx.Timeout(120.0, connect=30.0)
 
@@ -186,15 +203,15 @@ def find_extract_download_url(payload: object) -> str | None:
     return walk(payload) or fallback
 
 
-def _still_generating(response: httpx.Response) -> bool:
-    """True for SAM's in-progress answer: HTTP 400 whose JSON body carries ``errorCode`` ``FSP``."""
+def _in_progress(response: httpx.Response) -> dict | None:
+    """SAM's in-progress answer, an HTTP 400 JSON body carrying ``errorCode`` ``FSP``; otherwise None."""
     if response.status_code != 400:
-        return False
+        return None
     try:
         body = response.json()
     except ValueError:
-        return False
-    return isinstance(body, dict) and body.get("errorCode") == "FSP"
+        return None
+    return body if isinstance(body, dict) and body.get("errorCode") == "FSP" else None
 
 
 def reinject_extract_key(link: str, api_key: str) -> str:
@@ -325,6 +342,14 @@ class SamBulkExtract:
     re-injected with the real key on the SAM host only. ``max_records`` bounds
     emitted records, not downloaded bytes. Records yielded before a refusal are
     partial — callers must exhaust the iterator before writing output.
+
+    ``max_wait`` seconds of ``clock`` from the trigger bound the wait for the file
+    (:data:`EXTRACT_MAX_WAIT`): no poll starts after it, polls run ``poll_interval``
+    seconds apart under 30 s timeouts, and the trigger's own retries count against
+    it. spicy-regs' ``build_sam_entities._iter_sam_entities`` passes no ``max_wait``
+    today, so waiting out the measured 46 minutes there means raising
+    ``timeout_minutes`` in its ``rollup-sam-entities.yml`` and passing ``max_wait``
+    through.
     """
 
     def __init__(
@@ -335,42 +360,35 @@ class SamBulkExtract:
         year: int | None = None,
         max_records: int | None = None,
         transport: httpx.BaseTransport | None = None,
-        poll_max: int = EXTRACT_POLL_MAX,
+        max_wait: float = EXTRACT_MAX_WAIT,
         poll_interval: float = EXTRACT_POLL_INTERVAL,
         sleep: Callable[[float], None] = time.sleep,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         if not api_key or not api_key.strip():
             raise SamExtractError("SAM extracts require a SAM-authorized API key")
         if max_records is not None and (type(max_records) is not int or max_records <= 0):
             raise SamExtractError("max_records must be a positive integer or None")
-        if (
-            type(poll_max) is not int
-            or poll_max <= 0
-            or not isinstance(poll_interval, (int, float))
-            or poll_interval < 0
-        ):
-            raise SamExtractError("extract poll budget must be a positive integer and a nonnegative interval")
+        if any(type(value) not in (int, float) or value <= 0 for value in (max_wait, poll_interval)):
+            raise SamExtractError("extract max_wait and poll_interval must be positive seconds")
         self.api_key = api_key
         self.registration_status = registration_status
         self.year = year
         self.max_records = max_records
         self.transport = transport
-        self.poll_max = poll_max
+        self.max_wait = max_wait
         self.poll_interval = poll_interval
         self.sleep = sleep
+        self.clock = clock
         self._seen = 0
 
     def records(self) -> Iterator[dict]:
         """Trigger the extract, download it, and yield validated entities."""
         self._seen = 0
         # Extract download URLs commonly 302 to a signed blob URL.
-        with httpx.Client(
-            timeout=DEFAULT_TIMEOUT,
-            headers={"Accept": "application/json"},
-            follow_redirects=True,
-            transport=self.transport,
-        ) as client:
+        with httpx.Client(timeout=DEFAULT_TIMEOUT, follow_redirects=True, transport=self.transport) as client:
             url = extract_entities_url(registration_status=self.registration_status, year=self.year)
+            deadline = self.clock() + self.max_wait
             trigger = _body(self._get(client, url))
             if isinstance(trigger, dict) and "entityData" in trigger:
                 total, records = _total_records(trigger), _entity_data(trigger)
@@ -378,7 +396,7 @@ class SamBulkExtract:
                 download_url = find_extract_download_url(trigger)
                 if download_url is None:
                     raise SamExtractError("SAM extract trigger named no download URL")
-                total, records = self._download_records(client, download_url)
+                total, records = self._download_records(client, download_url, deadline)
             records = registrations(records)
             if len(records) < total:
                 raise SamExtractError(
@@ -396,7 +414,7 @@ class SamBulkExtract:
         return self.max_records is None or self._seen < self.max_records
 
     def _get(self, client: httpx.Client, url: str) -> httpx.Response:
-        """GET ``url`` with the key merged into its own query, under bounded retries.
+        """GET the trigger ``url`` for JSON with the key merged into its own query, under bounded retries.
 
         Passing ``params`` to httpx replaces a URL's query rather than extending it, which
         silently dropped every selection filter (measured 2026-09-23: the trigger answered
@@ -405,7 +423,7 @@ class SamBulkExtract:
         keyed = httpx.URL(url).copy_merge_params({"api_key": self.api_key})
 
         def attempt() -> httpx.Response:
-            response = client.get(keyed)
+            response = client.get(keyed, headers=_TRIGGER_ACCEPT)
             if response.status_code == 429 or response.status_code >= 500:
                 raise httpx.HTTPStatusError("retryable", request=response.request, response=response)
             if response.status_code != 200:
@@ -416,35 +434,40 @@ class SamBulkExtract:
 
         return retry_http(attempt, retryable=(httpx.HTTPError,), max_attempts=MAX_RETRIES, api_key=self.api_key)
 
-    def _download_records(self, client: httpx.Client, download_url: str) -> tuple[int, list[dict]]:
-        """Poll the extract download until ready, then defensively parse its bytes."""
+    def _download_records(self, client: httpx.Client, download_url: str, deadline: float) -> tuple[int, list[dict]]:
+        """Poll the extract download until ready, starting no poll after ``deadline``; parse its bytes."""
         url = reinject_extract_key(download_url, self.api_key)
-        for attempt in range(1, self.poll_max + 1):
+        details: set[str] = set()
+        last = "none"
+        while self.clock() < deadline:
             try:
-                response = client.get(url)
-            except httpx.HTTPError:
-                if attempt == self.poll_max:
-                    raise SamExtractError("SAM extract transport retries exhausted") from None
-                self.sleep(self.poll_interval)
-                continue
-            # The file may still be generating: SAM answers 400 with errorCode FSP ("Extract
-            # File Generation is Still in Progress", measured 2026-09-23), and 202/404/429/5xx.
-            if _still_generating(response) or response.status_code in (202, 404, 429) or response.status_code >= 500:
-                if attempt == self.poll_max:
-                    raise SamExtractError("SAM extract did not finish within its poll budget")
-                self.sleep(self.poll_interval)
-                continue
-            if response.status_code != 200:
-                raise SamExtractError(f"SAM extract refused with HTTP {response.status_code}")
-            return extract_population(response.content)
-        raise SamExtractError("SAM extract poll budget exhausted")
+                response = client.get(url, headers=_DOWNLOAD_ACCEPT, timeout=_POLL_TIMEOUT)
+            except httpx.HTTPError as error:
+                last = type(error).__name__
+            else:
+                # The file may still be generating: SAM answers 400 with errorCode FSP ("Extract
+                # File Generation is Still in Progress", measured 2026-09-23), and 202/404/429/5xx.
+                progress = _in_progress(response)
+                status = response.status_code
+                if progress is None and status not in (202, 404, 429) and status < 500:
+                    if status != 200:
+                        raise SamExtractError(f"SAM extract refused with HTTP {status}")
+                    return extract_population(response.content)
+                last = f"HTTP {status}"
+                if progress is not None:
+                    detail = scrub_credential(str(progress.get("detail", "")), self.api_key).strip()[:200]
+                    if detail not in details:
+                        details.add(detail)
+                        logger.debug("SAM extract still generating: {}", detail)
+            self.sleep(min(self.poll_interval, max(0.0, deadline - self.clock())))
+        raise SamExtractError(f"SAM extract did not finish within its {self.max_wait:g} s wait; last poll: {last}")
 
 
 __all__ = [
     "API",
     "API_KEY_PLACEHOLDER",
+    "EXTRACT_MAX_WAIT",
     "EXTRACT_POLL_INTERVAL",
-    "EXTRACT_POLL_MAX",
     "SamBulkExtract",
     "SamExtractError",
     "extract_entities_url",
