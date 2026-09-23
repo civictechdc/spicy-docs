@@ -4,7 +4,9 @@ Pins exact source enumeration (listing ETags, versions, sizes, order and
 close-early behaviour), transient retry versus data-fact refusal, 401/403
 aborting with typed errors and no manifest key, unresolved and requested-empty
 observations that stay retryable across runs, credential scrubbing, and the S3
-resource's retry and connection-pool configuration.
+resource's retry and connection-pool configuration. The derived comment text
+reader is pinned for numeric attachment order, one pinned-order tool per
+comment, missing attachments, stray keys, refusals, and ETag-pinned fetches.
 """
 
 from collections.abc import Iterable
@@ -1504,3 +1506,212 @@ def test_s3_resource_connection_pool_fits_download_workers() -> None:
     pool_size = resource.meta.client.meta.config.max_pool_connections
 
     assert pool_size >= DEFAULT_DOWNLOAD_WORKERS
+
+
+# Derived comment text: Mirrulations' own attachment extraction under derived-data/.
+
+DERIVED_DOCKET = "EPA-HQ-OAR-2022-0730"
+
+
+def _derived_key(tool: str, comment: str, attachment: int | str, docket: str = DERIVED_DOCKET) -> str:
+    from spicy_docs.sources.mirrulations import comments_extracted_prefix
+
+    return f"{comments_extracted_prefix(AGENCY, docket)}{tool}/{docket}-{comment}_attachment_{attachment}_extracted.txt"
+
+
+def _listing_order(store: dict[str, bytes]) -> dict[str, bytes]:
+    """S3 lists keys in byte order, which is what puts ``attachment_10`` before ``attachment_2``."""
+    return dict(sorted(store.items()))
+
+
+def test_derived_text_orders_attachments_by_number_not_listing_order() -> None:
+    """A comment's attachments come back 1, 2, 10 with their listed provenance, text not yet fetched."""
+    from spicy_docs.sources.mirrulations import DerivedAttachment, list_docket_derived_text
+
+    store = _listing_order({_derived_key("pypdf", "0001", n): f"part {n}".encode() for n in (1, 2, 10)})
+    assert [key.rsplit("_attachment_", 1)[1] for key in store] == [
+        "10_extracted.txt",
+        "1_extracted.txt",
+        "2_extracted.txt",
+    ]
+
+    comment = list_docket_derived_text(_FakeS3Resource(store), AGENCY, DERIVED_DOCKET).comments[
+        f"{DERIVED_DOCKET}-0001"
+    ]
+
+    assert comment.attachments == tuple(
+        DerivedAttachment(n, "pypdf", key, len(store[key]), f'"etag:{key}"')
+        for n, key in ((n, _derived_key("pypdf", "0001", n)) for n in (1, 2, 10))
+    )
+    assert (comment.tool, comment.available_tools) == ("pypdf", ("pypdf",))
+
+
+def test_derived_text_takes_one_tool_per_comment_in_pinned_order() -> None:
+    """Known tools rank by the pinned order and any other tool after them, by name."""
+    from spicy_docs.sources.mirrulations import DERIVED_TEXT_TOOLS, list_docket_derived_text
+
+    assert DERIVED_TEXT_TOOLS == ("pypdf", "pdfminer")
+    tools_by_comment = {
+        "0001": ("pdfminer", "pypdf"),
+        "0002": ("pdfminer",),
+        "0003": ("docling", "pdfminer"),
+        "0004": ("zzz", "aaa"),
+    }
+    store = _listing_order(
+        {_derived_key(tool, comment, 1): tool.encode() for comment, tools in tools_by_comment.items() for tool in tools}
+    )
+
+    comments = list_docket_derived_text(_FakeS3Resource(store), AGENCY, DERIVED_DOCKET).comments
+
+    chosen = {
+        cid.rsplit("-", 1)[1]: (c.tool, c.available_tools, {a.tool for a in c.attachments})
+        for cid, c in comments.items()
+    }
+    assert chosen == {
+        "0001": ("pypdf", ("pypdf", "pdfminer"), {"pypdf"}),
+        "0002": ("pdfminer", ("pdfminer",), {"pdfminer"}),
+        "0003": ("pdfminer", ("pdfminer", "docling"), {"pdfminer"}),
+        "0004": ("aaa", ("aaa", "zzz"), {"aaa"}),
+    }
+
+
+def test_derived_text_leaves_missing_attachments_missing() -> None:
+    """A number the chosen tool lacks stays absent, even when another tool has it."""
+    from spicy_docs.sources.mirrulations import list_docket_derived_text
+
+    store = _listing_order(
+        {
+            _derived_key("pypdf", "0001", 1): b"one",
+            _derived_key("pypdf", "0001", 3): b"three",
+            _derived_key("pdfminer", "0001", 2): b"two",
+        }
+    )
+
+    comments = list_docket_derived_text(_FakeS3Resource(store), AGENCY, DERIVED_DOCKET).comments
+
+    comment = comments[f"{DERIVED_DOCKET}-0001"]
+    assert [(a.tool, a.attachment) for a in comment.attachments] == [("pypdf", 1), ("pypdf", 3)]
+    assert comment.available_tools == ("pypdf", "pdfminer")
+    assert f"{DERIVED_DOCKET}-0002" not in comments
+
+
+def test_derived_text_lists_the_docket_prefix_once_and_keeps_unexplained_keys() -> None:
+    """One listing covers every tool; keys outside the layout are returned, not dropped or guessed at."""
+    from spicy_docs.sources.mirrulations import comments_extracted_prefix, list_docket_derived_text
+
+    prefix = comments_extracted_prefix(AGENCY, DERIVED_DOCKET)
+    stray = [
+        f"{prefix}README.txt",
+        f"{prefix}pypdf/notes.txt",
+        f"{prefix}pypdf/nested/{DERIVED_DOCKET}-0009_attachment_1_extracted.txt",
+    ]
+    store = _listing_order(
+        {
+            _derived_key("pypdf", "0001", 1): b"a",
+            _derived_key("pdfminer", "0002", 1): b"b",
+            _derived_key("pypdf", "0001", 1, docket="EPA-HQ-OAR-2022-0731"): b"other docket",
+            **dict.fromkeys(stray, b"?"),
+        }
+    )
+    listed: list[str] = []
+
+    class _CountingResource(_FakeS3Resource):
+        def Bucket(self, name: str) -> _FakeBucket:
+            bucket = super().Bucket(name)
+            filter_objects = bucket.objects.filter
+
+            def counting_filter(Prefix: str):
+                listed.append(Prefix)
+                return filter_objects(Prefix=Prefix)
+
+            bucket.objects.filter = counting_filter
+            return bucket
+
+    docket = list_docket_derived_text(_CountingResource(store), AGENCY, DERIVED_DOCKET)
+
+    assert listed == [prefix]
+    assert sorted(docket.comments) == [f"{DERIVED_DOCKET}-0001", f"{DERIVED_DOCKET}-0002"]
+    assert docket.unrecognized_keys == tuple(sorted(stray))
+
+
+def test_derived_text_refuses_two_keys_for_one_attachment() -> None:
+    """``_attachment_1_`` and ``_attachment_01_`` could each be the text, so the docket is refused."""
+    from spicy_docs.sources.mirrulations import list_docket_derived_text
+
+    store = {_derived_key("pypdf", "0001", "1"): b"a", _derived_key("pypdf", "0001", "01"): b"b"}
+
+    with pytest.raises(ValueError, match="name the same attachment"):
+        list_docket_derived_text(_FakeS3Resource(store), AGENCY, DERIVED_DOCKET)
+
+
+@pytest.mark.parametrize(("status", "refused"), [(403, True), (500, False)])
+def test_derived_text_listing_failure_is_never_an_empty_docket(status: int, refused: bool) -> None:
+    """A refusal raises the typed error; any other listing failure propagates rather than read as no text."""
+    from spicy_docs.sources.mirrulations import MirrulationsAccessRefusedError, list_docket_derived_text
+
+    resource = _RefusingListingResource({_derived_key("pypdf", "0001", 1): b"a"}, status, after_first=False)
+
+    with pytest.raises(MirrulationsAccessRefusedError if refused else ClientError) as raised:
+        list_docket_derived_text(resource, AGENCY, DERIVED_DOCKET)
+    assert isinstance(raised.value, MirrulationsAccessRefusedError) is refused
+
+
+def test_derived_text_fetch_pins_etags_and_records_digest_and_text() -> None:
+    """Fetching adds each object's SHA-256 and UTF-8 text; empty and undecodable bytes stay recorded."""
+    import hashlib
+    import json
+
+    from spicy_docs.sources.mirrulations import fetch_derived_text, list_docket_derived_text
+
+    contents = {1: "café".encode(), 2: b"", 10: b"bad \xff byte"}
+    store = _listing_order({_derived_key("pypdf", "0001", n): body for n, body in contents.items()})
+    resource = _FakeS3Resource(store)
+    listed = list_docket_derived_text(resource, AGENCY, DERIVED_DOCKET).comments[f"{DERIVED_DOCKET}-0001"]
+
+    fetched = fetch_derived_text(resource, listed)
+
+    assert [(a.attachment, a.text) for a in fetched.attachments] == [(1, "café"), (2, ""), (10, "bad � byte")]
+    assert [a.sha256 for a in fetched.attachments] == [hashlib.sha256(contents[n]).hexdigest() for n in (1, 2, 10)]
+    assert resource.get_requests == [(a.key, {"IfMatch": a.etag}) for a in listed.attachments]
+    record = json.loads(json.dumps(fetched.to_json()))
+    assert record == {
+        "comment_id": f"{DERIVED_DOCKET}-0001",
+        "tool": "pypdf",
+        "available_tools": ["pypdf"],
+        "attachments": [
+            {
+                "attachment": a.attachment,
+                "tool": "pypdf",
+                "key": a.key,
+                "size": len(contents[a.attachment]),
+                "etag": a.etag,
+                "sha256": a.sha256,
+            }
+            for a in fetched.attachments
+        ],
+    }
+
+
+def test_derived_text_fetch_refuses_changed_objects_and_refusals() -> None:
+    """A changed ETag, a size unlike the listing and a 401/403 raise instead of dropping an attachment."""
+    from dataclasses import replace
+
+    from spicy_docs.sources.mirrulations import (
+        MirrulationsAccessRefusedError,
+        fetch_derived_text,
+        list_docket_derived_text,
+    )
+
+    key = _derived_key("pypdf", "0001", 1)
+    store = {key: b"text"}
+    comment = list_docket_derived_text(_FakeS3Resource(store), AGENCY, DERIVED_DOCKET).comments[
+        f"{DERIVED_DOCKET}-0001"
+    ]
+    (attachment,) = comment.attachments
+
+    with pytest.raises(ValueError, match="precondition failed"):
+        fetch_derived_text(_FakeS3Resource(store), replace(comment, attachments=(replace(attachment, etag='"stale"'),)))
+    with pytest.raises(ValueError, match="listed at 99"):
+        fetch_derived_text(_FakeS3Resource(store), replace(comment, attachments=(replace(attachment, size=99),)))
+    with pytest.raises(MirrulationsAccessRefusedError):
+        fetch_derived_text(_RefusingResource(store, {key: 403}), comment)

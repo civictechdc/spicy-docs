@@ -86,6 +86,21 @@ and byte mismatches abort, and it yields exact bytes without the record-shape
 check `iter_records` applies. Concurrent GETs use a bounded queue. Closing
 iteration cancels queued work; running calls finish under their transport limits.
 
+**Derived comment text.** Mirrulations publishes its own attachment text under
+`derived-data/<agency>/<docket>/mirrulations/extracted_txt/comments_extracted_text/<tool>/`.
+
+- `list_docket_derived_text(resource, agency, docket_id)` lists that prefix once
+  for every tool and returns a `CommentDerivedText` per comment: one tool, chosen
+  by the pinned `DERIVED_TEXT_TOOLS` order (the measurement is beside it), the
+  tools that were available, and `DerivedAttachment(attachment, tool, key, size,
+  etag)` records in numeric order. An attachment the chosen tool lacks stays
+  absent. Keys outside the layout come back as `unrecognized_keys`.
+- `fetch_derived_text(resource, comment)` adds each attachment's `sha256` and
+  UTF-8 `text`, with GETs pinned to the listed ETags.
+- `to_json()` gives the provenance, without the text, as plain JSON values.
+- A 401/403 raises `MirrulationsAccessRefusedError`. Other listing failures,
+  changed objects and size mismatches raise; none reads as a comment without text.
+
 ## CourtListener
 
 [`courtlistener_bulk.py`](../../src/spicy_docs/sources/courtlistener/bulk.py)
