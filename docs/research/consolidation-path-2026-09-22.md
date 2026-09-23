@@ -216,7 +216,7 @@ Update one row per event; commit each update on its own.
 | A8 | proposed | [survey](parsing-survey-2026-09-23.md) |
 | A9 | proposed | [survey](parsing-survey-2026-09-23.md) |
 | A10 | proposed | [survey](parsing-survey-2026-09-23.md) |
-| A11 | proposed | [survey](parsing-survey-2026-09-23.md) |
+| A11 | done: spicy-docs 0.30.0 owns `vote_day` and appends `roll_call_votes.vote_day` (`c5bd161`, `6e1bb3b`); spicy-regs `57a68bc` backfills prior rows and adds `term_match = undated`; the version column stays `vote_date` until the backfill is published (next scheduled roll-call run) | receipt `vote-day-2026-09-23/`, `vote-day-backfill-2026-09-23/` |
 | A12 | proposed | [survey](parsing-survey-2026-09-23.md) |
 | B1 | proposed | — |
 | B2 | partial: readers deleted on main; shaper copy remains (re-confirmed 2026-09-23) | `9837fae`…`f808ecf`; `build_federal_register.py:88` |

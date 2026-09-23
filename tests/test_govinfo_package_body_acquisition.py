@@ -28,7 +28,7 @@ from spicy_docs.sources.govinfo.body_acquisition import (
 from spicy_docs.transport import retry
 from spicy_docs.transport.credentials import CredentialRefusedError, read_api_key
 
-from .test_govinfo_package_bodies import BODY, MODS, SUMMARY, mods_xml
+from .test_govinfo_package_bodies import BODY, MODS, PART, PART_MODS, PART_PACKAGE, PART_SUMMARY, SUMMARY, mods_xml
 
 PACKAGE = "CRPT-119hrpt1"
 SUMMARY_URL = f"https://api.govinfo.gov/packages/{PACKAGE}/summary"
@@ -256,6 +256,30 @@ def test_a_preferred_format_stated_elsewhere_refuses_as_disagreement() -> None:
     assert transport.urls == [SUMMARY_URL, MODS_URL]
     assert caught.value.moved_renditions == (("xml", moved),)
     assert moved in str(caught.value)
+
+
+def test_a_one_part_report_is_fetched_at_its_parts_stem_never_the_package_stem() -> None:
+    """CRPT-119hrpt811 states only its part 1, so the body is proved and fetched at that part's stem.
+
+    The package stem redirects to the error page for this package (fixture README), and the transport answers only
+    the routes named here, so a request for it would fail the test.
+    """
+    api = f"https://api.govinfo.gov/packages/{PART_PACKAGE}"
+    part_url = f"https://www.govinfo.gov/content/pkg/{PART_PACKAGE}/html/{PART}.htm"
+    transport = Transport(
+        **{
+            f"{api}/summary": reply(PART_SUMMARY, content_type="application/json"),
+            f"{api}/mods": reply(PART_MODS, content_type="application/xml"),
+            part_url: HTML_BODY,
+        }
+    )
+    result = acquire(transport, package_id=PART_PACKAGE)
+
+    assert transport.urls == [f"{api}/summary", f"{api}/mods", part_url]
+    assert result.identity.package_id == result.summary.identity.package_id == PART_PACKAGE
+    assert result.mods.part_id == result.body.part_id == PART
+    assert (result.format, result.offered_formats) == ("htm", ("pdf", "htm"))
+    assert result.body.final_url == result.body_capture.resolved_url == part_url
 
 
 def test_a_missing_package_is_unavailable_not_absent() -> None:

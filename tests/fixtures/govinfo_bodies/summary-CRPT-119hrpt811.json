@@ -1,0 +1,30 @@
+{
+    "dateIssued": "2026-09-10",
+    "documentType": "HRPT",
+    "congress": "119",
+    "session": "2",
+    "documentNumber": "811",
+    "packageId": "CRPT-119hrpt811",
+    "collectionCode": "CRPT",
+    "detailsLink": "https://www.govinfo.gov/app/details/CRPT-119hrpt811",
+    "title": "Part 1- NORTHERN NEVADA ECONOMIC DEVELOPMENT AND CONSERVATION ACT OF 2026",
+    "branch": "legislative",
+    "collectionName": "Congressional Reports",
+    "download": {
+        "premisLink": "https://api.govinfo.gov/packages/CRPT-119hrpt811/premis",
+        "zipLink": "https://api.govinfo.gov/packages/CRPT-119hrpt811/zip",
+        "modsLink": "https://api.govinfo.gov/packages/CRPT-119hrpt811/mods"
+    },
+    "pages": "60",
+    "governmentAuthor2": "House of Representatives",
+    "chamber": "HOUSE",
+    "subtitle": "Report together with ADDITIONAL VIEWS to accompany H.R. 2317",
+    "governmentAuthor1": "Congress",
+    "publisher": "U.S. Government Publishing Office",
+    "suDocClassNumber": "Y 1.1/8:",
+    "docClass": "HRPT",
+    "lastModified": "2026-09-22T14:12:09Z",
+    "category": "Congressional Committee Materials",
+    "otherIdentifier": {"migrated-doc-id": "f:hr811p1.119.txt"},
+    "granulesLink": "https://api.govinfo.gov/packages/CRPT-119hrpt811/granules?offsetMark=*&pageSize=100"
+}
