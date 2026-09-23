@@ -210,7 +210,7 @@ Update one row per event; commit each update on its own.
 | A2 | proposed | — |
 | A3 | proposed; disagreement measured 2026-09-23, latent in published keys | [survey](parsing-survey-2026-09-23.md) §3 |
 | A4 | proposed; remote removed 2026-09-22 | git config only |
-| A5 | proposed | [survey](parsing-survey-2026-09-23.md) |
+| A5 | done in spicy-regs `81cfee7` (not yet pushed): key only in `X-Api-Key`, no URL or exception text in logs, 401/403 abort, redirects not followed (decision 23); the reader route stays with B10. spicy-docs `sources/congress/crs_summaries.py:54-60` still puts the key in the query but scrubs errors before writing them (its rule 5); moving it to the header would retire the scrub | [survey](parsing-survey-2026-09-23.md) §2 |
 | A6 | proposed | [survey](parsing-survey-2026-09-23.md) |
 | A7 | proposed | [survey](parsing-survey-2026-09-23.md) |
 | A8 | proposed | [survey](parsing-survey-2026-09-23.md) |
