@@ -128,12 +128,13 @@ appended.
 printed `usc_section` lower-cased, with every dash spelling an ASCII hyphen
 (`schemas.tables.usc_section_key`), the spelling RefSpec's section oracle keys
 on. Join on it, never on the printed column, and fold the other side the same
-way. **The citation side is not folded yet:** `document_citations`'
-`usc_section` rule 001 keeps the printed case and dashes (`26-199A`), so a
-consumer passes that key's section through `usc_section_key` before joining
-`{usc_title}-{usc_section_key}`. B4's grammar lower-cases and adopts the helper,
-after which the citation key is already folded. Rows published before the
-column carry NULL until their scope is captured again
+way. **The citation side is already folded by the same function:**
+`document_citations`' `usc_section` (rule 002) keys through the citation
+grammar, which folds each section through `usc_section_key`, so
+`{usc_title}-{usc_section_key}` joins its `target_key` as published. Only rows
+published under rule 001 keep the printed case (`26-199A`) and need the fold
+first. Rows published before the column carry NULL until their scope is
+captured again
 ([decision](decisions.md#us-code-section-join-keys-are-lower-cased-on-both-sides)).
 
 `report_sections` preserves the source heading in its appended `heading`

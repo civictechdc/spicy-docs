@@ -1090,8 +1090,9 @@ prose the report quotes from it.
 
 RefSpec's `citation_grammar` and `identifier_shapes` are now
 `interpretation/citation_grammar.py` and `interpretation/identifier_shapes.py`
-(consolidation item B4, 2026-09-23). They import only the standard library,
-spicy-docs cannot import RefSpec (RefSpec depends on it), and RefSpec's pin
+(consolidation item B4, 2026-09-23). They import only the standard library
+(and the grammar the stdlib-only `schemas.tables` leaf, for decision 30's
+section fold), spicy-docs cannot import RefSpec (RefSpec depends on it), and RefSpec's pin
 cannot be installed beside spicy-regs', so the one place every repository can
 reach a shared grammar is here. They were chosen, not merely the first to
 move: five prose grammars were run over the same retained inputs and RefSpec's
@@ -1118,7 +1119,9 @@ expectations see a difference, and both move at the repin:
 `tests/test_cfr_ranges.py` expects "41 CFR 60- 1" to stay an unread
 coordinate, which reads as the title-41 part it prints now, and
 `tests/test_identifier_shapes.py` expects the column reader to refuse
-"GIPSA-2008-FGIS-0002-NONRULEMAKING".
+"GIPSA-2008-FGIS-0002-NONRULEMAKING". A third test calls the sort helper by
+its old name, `_usc_section_key`, renamed `_usc_section_order` for decision
+30, and follows the rename.
 
 What a later change must preserve:
 
@@ -2009,17 +2012,18 @@ beside a derived key is these tables' existing pattern: `stated_key` sits beside
 **The helper is in the `schemas` leaf, not in `interpretation/`.** `schemas`
 may not import `interpretation` (see [Tables](tables.md)), and
 `interpretation.citations` already imports `schemas.tables`, so a helper there
-would have made an import cycle. On this branch the lower-casing grammar does
-not exist yet. `document_citations` still keys through `citations.py` rule 001,
-which keeps the printed case and dashes (`26-199A`, `26-1400Z–1`). Until B4
-lands, a consumer must fold the citation's section through `usc_section_key`
-before joining `{usc_title}-{usc_section_key}`, or it misses every citation
-printed with a capital. The grammar that lower-cases is B4's
-`citation_grammar._usc_section`, which has its own `_DASH_SPELLINGS`. When B4
-lands, its grammar should fold through `usc_section_key` and `DASH_SPELLINGS`
-so that only one fold remains. B4's sort helper, also named
-`_usc_section_key`, is renamed then, because it returns an ordering tuple and
-not this key.
+would have made an import cycle. **Both sides now fold through it (done
+with B4).** `document_citations`' `usc_section` reads through B4's grammar,
+whose `citation_grammar._usc_section` folds each section through
+`usc_section_key` and whose dash fold reads `DASH_SPELLINGS`, so the key a
+citation publishes (`26-199a`, `26-1400z-1`) and the tables' `usc_section_key`
+are folded by one function and one list; the grammar kept no list of its own.
+Over the parsing survey's 60,000 Federal Register texts the change moved no
+key (77,545 keys read before and after). The grammar's sort helper, which
+shared the name, is now `_usc_section_order`, because it returns an ordering
+tuple and not this key; RefSpec's test that calls it by name follows the
+rename at its repin. Rule 001 citation rows published before B4 keep the
+printed case (`26-199A`), and fold through `usc_section_key` to join.
 
 **Repinning spicy-regs moves its data dictionary.** Both tables gain a
 column, so the repin regenerates `data_dictionary/catalog.json` and its

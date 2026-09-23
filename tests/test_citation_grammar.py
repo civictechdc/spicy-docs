@@ -39,6 +39,7 @@ from spicy_docs.interpretation.citation_grammar import (
     usc_section_pinpoint,
     usc_token_is_chapter_qualified,
 )
+from spicy_docs.schemas.tables import DASH_SPELLINGS, usc_section_key
 
 
 def _parts(text: str, **kwargs) -> list[str | None]:
@@ -3885,7 +3886,7 @@ def test_a_range_keeps_its_far_end_in_the_four_places_it_was_losing_it() -> None
     A COMPOUND ENDPOINT (43 / 491). "16 U.S.C. 460k to 460k-4" is the Refuge
     Recreation Act entire, and the endpoint slot took a bare token, so it
     captured "460k", left "-4" behind, and the pair no longer ascended.
-    Ordering it needs the third component of :func:`_usc_section_key`: the
+    Ordering it needs the third component of :func:`_usc_section_order`: the
     Code numbers a run of inserted sections 460k, 460k-1 ... 460k-4.
 
     A PARENTHESISED ENDPOINT (57 / 249). "42 U.S.C. 405(d) to 506 (h)" names a
@@ -3920,7 +3921,7 @@ def test_a_range_keeps_its_far_end_in_the_four_places_it_was_losing_it() -> None
     compound = parse_authority_citation("16 U.S.C. 460k to 460k-4")[0]
     assert (compound.usc_section, compound.usc_section_end) == ("460k", "460k-4")
     assert compound.usc_section_span_rule == citation_grammar.USC_SPAN_STATED
-    assert citation_grammar._usc_section_key("460k") < citation_grammar._usc_section_key("460k-4")
+    assert citation_grammar._usc_section_order("460k") < citation_grammar._usc_section_order("460k-4")
     # And the truncation it replaces: the endpoint used to lose its own leaf.
     truncated = parse_authority_citation("12 USC 1702 to 1715z-21")[0]
     assert (truncated.usc_section, truncated.usc_section_end) == ("1702", "1715z-21")
@@ -4273,6 +4274,13 @@ def test_doubling_the_text_does_not_quadruple_the_time() -> None:
 
 def test_dash_folding_is_the_translation_table() -> None:
     """The fast fold gives the string the translation table gives, every spelling and its neighbours included."""
-    text = "".join(f"a{dash}1 {dash}{dash}" for dash in citation_grammar._DASH_SPELLINGS + "-…­⸺")
+    text = "".join(f"a{dash}1 {dash}{dash}" for dash in DASH_SPELLINGS + "-…­⸺")
     assert citation_grammar._normalize_dashes(text) == text.translate(citation_grammar._DASHES)
     assert len(citation_grammar._normalize_dashes(text)) == len(text)
+
+
+def test_the_section_key_is_the_tables_own_fold() -> None:
+    """A citation's section and a table's ``usc_section_key`` are folded by one function (decision 30)."""
+    for printed in ("199A", " 1400Z\u20131 ", "1400Z\x961", "552a"):
+        (row,) = parse_authority_citation(f"26 U.S.C. {printed}")
+        assert row.usc_section == usc_section_key(printed), printed

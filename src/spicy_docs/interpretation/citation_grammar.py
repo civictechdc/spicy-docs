@@ -75,13 +75,14 @@ data-side citation grammar (consolidation item B4 in
 that chose it is ``docs/research/parsing-survey-2026-09-23.md`` section 5). The
 source is RefSpec ``src/refspec/registry/citation_grammar.py`` at RefSpec
 ``4a680c81``, unchanged since ``c9cc5410`` and so byte-identical to what the
-survey measured at ``f83c0d7a``. Beyond this paragraph and ``ruff format``'s
-layout, one thing is new here: :func:`find_public_law_citations` and
-:func:`find_statute_citations` locate those two families in running text,
-reading them through the same tables (``_PUBLIC_LAW_FORMS``,
-``_STATUTE_FAMILIES``) the field reader now reads them by. Every RefSpec test
-that exercises this module passed against this copy before it landed, before
-and after that change. The self-contained tests are ported to
+survey measured at ``f83c0d7a``, and every RefSpec test that exercises it
+passed against this copy when it landed. This is the canonical copy now, and
+it has changed since: it is linear in its text, it locates Public Law,
+Statutes and Federal Register citations in running text, it reads four shapes
+it dropped, and it folds a U.S. Code section through the tables' own
+``usc_section_key`` (its one import beyond the standard library). The list,
+with the two RefSpec expectations that move, is ``docs/decisions.md``, "The
+stack's citation grammar and identifier shapes live here". The self-contained tests are ported to
 ``tests/test_citation_grammar.py``; the ones that read RefSpec's pinned inputs
 stay beside those inputs and run here once RefSpec imports this module back.
 ``refspec.registry.*`` names below are RefSpec modules that stay in RefSpec.
@@ -96,6 +97,8 @@ from dataclasses import dataclass, replace
 from itertools import accumulate
 from string import ascii_lowercase
 from typing import Any
+
+from spicy_docs.schemas.tables import DASH_SPELLINGS, usc_section_key
 
 # Every name a consumer outside this module reads. Six of these were reached
 # by siblings and tests while absent from the list -- ``states_nothing`` and
@@ -532,9 +535,11 @@ _COMMAS_THAT_BELONG_TO_A_NAME: tuple[re.Pattern[str], ...] = (_SPELLED_DATE, _AC
 #: corpus-wide mojibake ``unified_agenda_editions`` names, not a defect of
 #: citations. It changes nothing here: no identity this grammar reads is
 #: affected either way, because every dash spelling folds through this SAME
-#: translation table wherever a citation shape consumes it.
-_DASH_SPELLINGS = "‐‑‒–—―−\x96\x97"
-_DASHES = str.maketrans(dict.fromkeys(_DASH_SPELLINGS, "-"))
+#: translation table wherever a citation shape consumes it. The nine spellings
+#: are ``schemas.tables.DASH_SPELLINGS`` (decision 30), the list the U.S. Code
+#: tables fold their section keys by, so a citation and a table row cannot fold
+#: a dash two ways.
+_DASHES = str.maketrans(dict.fromkeys(DASH_SPELLINGS, "-"))
 
 # --------------------------------------------------------------------------- #
 # CFR
@@ -2241,7 +2246,7 @@ def _normalize_dashes(text: str) -> str:
     characters); ``test_dash_folding_is_the_translation_table`` holds the two
     equal.
     """
-    for dash in _DASH_SPELLINGS:
+    for dash in DASH_SPELLINGS:
         text = text.replace(dash, "-")
     return text
 
@@ -2283,15 +2288,21 @@ _ZERO_PADDED_SECTION = re.compile(r"(?:^|(?<=[a-z]-))0+(?=\d)")
 
 
 def _usc_section(value: str | None) -> str | None:
-    """Lowercase a section token, drop subsection detail, close a lost space after a hyphen, strip a zero pad."""
+    """Fold a section token as the tables fold theirs, drop subsection detail, close a lost space, strip a zero pad.
+
+    The fold is ``schemas.tables.usc_section_key`` -- trimmed, lower-cased,
+    every dash spelling a hyphen -- so the key a citation publishes and the
+    ``usc_section_key`` column of ``law_code_sections`` and ``table3_records``
+    are folded by one function (decision 30).
+    """
 
     if value is None:
         return None
-    text = re.sub(r"-[ \t]+", "-", re.sub(r"\([^)]*\)", "", value.strip().lower()))
+    text = re.sub(r"-[ \t]+", "-", re.sub(r"\([^)]*\)", "", usc_section_key(value)))
     return _ZERO_PADDED_SECTION.sub("", text) or None
 
 
-def _usc_section_key(section: str | None) -> tuple[int, str, int] | None:
+def _usc_section_order(section: str | None) -> tuple[int, str, int] | None:
     """Order a U.S.C. section by numeric stem, letter suffix, then compound leaf.
 
     ``7671`` < ``7671a`` < ``7671q`` < ``7672``. None for anything that is not
@@ -2466,7 +2477,7 @@ def _usc_section_range(section: str | None, range_end: str | None = None) -> tup
         start, end = section.split("-")
     else:
         return (section, None, None)
-    low, high = _usc_section_key(start), _usc_section_key(end)
+    low, high = _usc_section_order(start), _usc_section_order(end)
     if low is not None and high is not None and low < high:
         return (start, end, USC_SPAN_STATED)
     expanded = _abbreviated_span(section if range_end is None else f"{start}-{end}")
