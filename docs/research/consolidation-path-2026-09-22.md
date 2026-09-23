@@ -164,6 +164,7 @@ republish every row once. Ruling 4 in §5 orders the two.
 10. Whether DocSpec's Regulations.gov policy version moves so that `commentCloseDate` and the publication day use the Eastern rule (A13); it changes every stored deadline. **Decided:** not now; spicysearch and Engine derive their day fields through the spicy-docs helper, and DocSpec's policy moves with the Track D rebuild (decision 26).
 11. Whether spicy-regs mints Federal Register document-number IRIs in RefSpec's rkaf space instead of `urn:spicy-regs:frdoc` (B20; 429,131 values). **Decided:** the rkaf spaces; no published column carries the local prefix, so nothing moves (decision 27).
 12. Where the IRI minters live (B20): spicy-docs as standard-library modules beside the grammar, which reaches spicy-regs at once, or Rulespec Core per REF-024, which would add `rulespec-conformance` (rdflib, pyshacl) to spicy-regs; the identifier shapes stay in spicy-docs either way. **Decided:** spicy-docs; REF-024's wording is narrowed so Core owns the lexical spaces, an amendment Mike confirms (decision 28).
+13. How the committee-report tables represent multi-part GovInfo reports (the `-pt1` fix on wt/pt1 records a `part_id` no table carries). **Decided:** one row per part, identity `(package_id, part_id)` plus `part_number`; `committee_report_reads` stays keyed by package; hold `CRPT-119hrpt811` out until it lands (decision 29; Mike confirms the identity move).
 
 Rulings 5–12 were decided on 2026-09-23 by delegation, with reasons, as decisions
 17–21 and 26–28 in the spicy-regs decisions record (`docs/research/fork-delivery-decisions-2026-09-22.md`); the owner can overturn any of them.
@@ -230,7 +231,7 @@ Update one row per event; commit each update on its own.
 | A5 | done in spicy-regs `81cfee7` (pushed 2026-09-23): key only in `X-Api-Key`, no URL or exception text in logs, 401/403 abort, redirects not followed (decision 23); the reader route stays with B10. spicy-docs `sources/congress/crs_summaries.py:54-60` still puts the key in the query but scrubs errors before writing them (its rule 5); moving it to the header would retire the scrub | [survey](parsing-survey-2026-09-23.md) §2 |
 | A6 | proposed | [survey](parsing-survey-2026-09-23.md) |
 | A7 | proposed | [survey](parsing-survey-2026-09-23.md) |
-| A8 | proposed | [survey](parsing-survey-2026-09-23.md) |
+| A8 | done: spicy-docs 0.30.0 scan (`eae0812`, `1183d0c`); spicy-regs `5f4423c` places from the heading with a publish-first marker; `cfr_sections` republished at `de703ffe…` (2026-09-23) and its workflow re-enabled; title 41 citations join after A7 | receipt `cfr-ancestry-fix-2026-09-23/` |
 | A9 | proposed | [survey](parsing-survey-2026-09-23.md) |
 | A10 | in progress (wt/b4, under rework); gate: RefSpec's `usc_section_oracle` finds 331 unresolvable rows | [survey](parsing-survey-2026-09-23.md) §2, §11 |
 | A11 | done: spicy-docs 0.30.0 owns `vote_day` and appends `roll_call_votes.vote_day` (`c5bd161`, `6e1bb3b`); spicy-regs `57a68bc` backfills prior rows and adds `term_match = undated`; the version column stays `vote_date` until the backfill is published (next scheduled roll-call run) | receipt `vote-day-2026-09-23/`, `vote-day-backfill-2026-09-23/` |
