@@ -230,27 +230,27 @@ Update one row per event; commit each update on its own.
 | A3 | proposed; disagreement measured 2026-09-23, latent in published keys; also covers `house_committee_repository`'s `bill_key_*` | [survey](parsing-survey-2026-09-23.md) §3, §11 |
 | A4 | proposed; remote removed 2026-09-22 | git config only |
 | A5 | done in spicy-regs `81cfee7` (pushed 2026-09-23): key only in `X-Api-Key`, no URL or exception text in logs, 401/403 abort, redirects not followed (decision 23); the reader route stays with B10. spicy-docs `sources/congress/crs_summaries.py:54-60` still puts the key in the query but scrubs errors before writing them (its rule 5); moving it to the header would retire the scrub | [survey](parsing-survey-2026-09-23.md) §2 |
-| A6 | proposed | [survey](parsing-survey-2026-09-23.md) |
-| A7 | proposed | [survey](parsing-survey-2026-09-23.md) |
+| A6 | spicy-docs done (`d12c17b`, in 0.30.0); spicy-regs on wt/regs-a6 (`f90cc2d`, reviewed): the 65,994-row repaired staging is built into a `comments.parquet` candidate whose other 23,824,409 rows equal the live parent, awaiting publication | [survey](parsing-survey-2026-09-23.md); receipt `comment-text-repair-2026-09-23/` |
+| A7 | code complete and reviewed on wt/regs-a7 (`cbb7b04`, `ac836d9`): label-aware docket reads, unpadded FR keys that refuse different-width padding, folds named in status; the candidate is rebuilt and published after the 0.31.0 re-vendor | [survey](parsing-survey-2026-09-23.md); receipt `rulemaking-joins-2026-09-23/` |
 | A8 | done: spicy-docs 0.30.0 scan (`eae0812`, `1183d0c`); spicy-regs `5f4423c` places from the heading with a publish-first marker; `cfr_sections` republished at `de703ffe…` (2026-09-23) and its workflow re-enabled; title 41 citations join after A7 | receipt `cfr-ancestry-fix-2026-09-23/` |
 | A9 | proposed | [survey](parsing-survey-2026-09-23.md) |
 | A10 | in progress (wt/b4, under rework); gate: RefSpec's `usc_section_oracle` finds 331 unresolvable rows | [survey](parsing-survey-2026-09-23.md) §2, §11 |
 | A11 | done: spicy-docs 0.30.0 owns `vote_day` and appends `roll_call_votes.vote_day` (`c5bd161`, `6e1bb3b`); spicy-regs `57a68bc` backfills prior rows and adds `term_match = undated`; the version column stays `vote_date` until the backfill is published (next scheduled roll-call run) | receipt `vote-day-2026-09-23/`, `vote-day-backfill-2026-09-23/` |
-| A12 | proposed; widened 2026-09-23 | [survey](parsing-survey-2026-09-23.md) §11 |
-| A13 | proposed; helper in progress (wt/gaps) | [survey](parsing-survey-2026-09-23.md) §11 |
-| A14 | in progress (wt/gaps) | [survey](parsing-survey-2026-09-23.md) §11 |
+| A12 | rulemaking half on wt/regs-a7 with A7 (one Eastern-day rule, `eastern_day` → `regulations_gov_day` at the re-vendor); the bill-walk distinct count follows B6; the wider tables stay proposed | [survey](parsing-survey-2026-09-23.md) §11 |
+| A13 | spicy-docs helper done (`b4fd806`, `1f80bee`, on the 0.31.0 release branch); DocSpec, spicysearch and spicyengine adoption proposed | [survey](parsing-survey-2026-09-23.md) §11 |
+| A14 | spicy-docs done (`5847505`, `4c67e1e`, `a17fa2f`, `197937c`, on the 0.31.0 release branch); spicy-regs `acquire_annual` adopts the validator at the re-vendor (`TODO(A14)` in `sources/cfr_sections.py`) | [survey](parsing-survey-2026-09-23.md) §11 |
 | A15 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
 | B1 | proposed | — |
 | B2 | partial: readers deleted on main; shaper copy remains (re-confirmed 2026-09-23) | `9837fae`…`f808ecf`; `build_federal_register.py:88` |
 | B3 | proposed | — |
 | B4 | bakeoff run 2026-09-23; move proposed | [survey](parsing-survey-2026-09-23.md) §5 |
 | B5 | proposed; re-confirmed 2026-09-23 | [survey](parsing-survey-2026-09-23.md) |
-| B6 | proposed | [survey](parsing-survey-2026-09-23.md) |
+| B6 | spicy-docs done (`9d53b32`…`61c86c1`, on the 0.31.0 release branch): pooled identities across up to four differently paged walks, settled on a clean walk or a pool equal to the declared count, typed `DeclaredCountMismatch`/`DeclaredCountChanged`/`IncompleteWalkError`; spicy-regs adoption on wt/regs-b6 (`41054ee`) awaits the re-vendor | [survey](parsing-survey-2026-09-23.md) |
 | B7 | proposed | [survey](parsing-survey-2026-09-23.md) |
 | B8 | proposed | [survey](parsing-survey-2026-09-23.md) |
 | B9 | proposed | [survey](parsing-survey-2026-09-23.md) |
 | B10 | proposed; the key resolver is copied in nine spicy-regs modules, not five | [survey](parsing-survey-2026-09-23.md) §11 |
-| B11 | in progress (wt/b11): RefSpec's edition projection moves into spicy-docs | [survey](parsing-survey-2026-09-23.md) §11 |
+| B11 | spicy-docs done (`1967f7d`, `3c62e5d`, on the 0.31.0 release branch); RefSpec and spicy-regs adopt it at their repins | [survey](parsing-survey-2026-09-23.md) §11 |
 | B12 | proposed | [survey](parsing-survey-2026-09-23.md) |
 | B13 | proposed | §11 |
 | B14 | proposed; wheel API parity unverified | §11 |
@@ -259,7 +259,7 @@ Update one row per event; commit each update on its own.
 | B17 | proposed | §11 |
 | B18 | proposed | [survey](parsing-survey-2026-09-23.md) §9 |
 | B19 | proposed | [survey](parsing-survey-2026-09-23.md) §9 |
-| B20 | in progress (wt/iri, into spicy-docs); its home is ruling 12 | [survey](parsing-survey-2026-09-23.md) §11 |
+| B20 | spicy-docs on wt/iri (`d76eabf`), in review; its home is ruling 12; REF-024's wording amendment awaits Mike (decision 28) | [survey](parsing-survey-2026-09-23.md) §11 |
 | B21 | proposed; after RefSpec repins | [survey](parsing-survey-2026-09-23.md) §11 |
 | B22 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
 | B23 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
@@ -270,7 +270,7 @@ Update one row per event; commit each update on its own.
 | B28 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
 | B29 | proposed; after B4 | [survey](parsing-survey-2026-09-23.md) §11 |
 | B30 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
-| B31 | in progress (wt/parts); the identity move awaits Mike's line | decision 29 |
+| B31 | spicy-docs on wt/parts (`1025a9b`), in review; held out of 0.31.0 until Mike confirms the identity move | decision 29 |
 | C1 | proposed | — |
 | C2 | proposed | — |
 | C3 | not before C1 | — |
