@@ -55,12 +55,15 @@ repositories carries the repository name (decision 15 in the spicy-regs decision
 | A4 | spicy-regs docs | Correct the ownership sentence, the upstream paragraph and the docs-site link. | the **Owners:** sentence under "Consolidated task queue" in `docs/fork-generation.md`; `PLAN.md:9-24`; `mkdocs.yml:4-5`; the `origin` remote was removed 2026-09-22 | prose matches the code and the remote list |
 | A5 | spicy-regs | Stop `bill_subjects` logging the Congress.gov key: delete its own client and read through `CongressListingReader` (a `bill-subjects` route) or BILLSTATUS; 401/403 abort. | key in the query at `sources/bill_subjects.py:238-244`, logged at `:347,:350`; [survey](parsing-survey-2026-09-23.md) §2 | no request of this family carries the key in its URL |
 | A6 | spicy-docs, then spicy-regs | Mirrulations comment text: numeric attachment order, one tool per comment, per-attachment key/tool/digest; move the fetch to `sources/mirrulations.py`. | string sort at `spicy-regs/.../sources/derived_text.py:82`; [survey](parsing-survey-2026-09-23.md) §2, §6 | a 10-attachment comment reads 1…10; `pdf_extraction_results_json` filled; status `derived`, one tool per comment by a measured, pinned preference order (ruling 7) |
-| A7 | spicy-regs, with RefSpec's docket reader | Label-aware docket reads (RefSpec's reader; delete the unused local copy) and unpadded FR numbers in `rule_targets`, `proceedings`, `comment_periods`; one actor-id bump per table; unresolved links stay as rows. | `build_rule_targets.py:204,222`; counts re-derived in [survey](parsing-survey-2026-09-23.md) §2 | ruling 6 |
+| A7 | spicy-regs, with spicy-docs' docket reader | Label-aware docket reads (spicy-docs 0.31.0's `normalize_docket_reference`, moved from RefSpec; delete the unused local copy) and unpadded FR numbers in `rule_targets`, `proceedings`, `comment_periods`; one actor-id bump per table; unresolved links stay as rows. | `build_rule_targets.py:204,222`; counts re-derived in [survey](parsing-survey-2026-09-23.md) §2 | ruling 6 |
 | A8 | spicy-docs, then spicy-regs (T11) | CFR part from the volume's enclosing `PART` heading via a section-ancestry scan in `sources/cfr/annual.py`. | titles 43 and 41 wrong, 14 vol 4 NULL, plus typo and range rows; counts in [survey](parsing-survey-2026-09-23.md) §4 | MODS and eCFR agree on sampled parts; title 43 `cfr_ref` is the printed citation, and a test ties it to the Federal Register side's spelling (ruling 5) |
 | A9 | spicy-docs | One bill-number reader; delete the patterns in `release_matching` and `bill_signals`. | `interpretation/release_matching.py:23-53`, `interpretation/bill_signals.py:57-63`; counts in [survey](parsing-survey-2026-09-23.md) §2 | "CR S4530" and "President's 2004" yield no bill |
 | A10 | spicy-docs | `document_citations` keys: strip trailing punctuation, fold dashes, split ranges, read "Part" in any case. Folds into B4. | `interpretation/citations.py:287,446,455`; counts in [survey](parsing-survey-2026-09-23.md) §2 | every published key parses back |
 | A11 | spicy-docs, then spicy-regs | Vote day as the publisher's local day in spicy-docs `votes.py`; `roll_call_votes` gets a sortable version column. | `spicy-regs/.../build_member_vote_terms.py:57-69`, `build_bill_family.py:832-880`; counts in [survey](parsing-survey-2026-09-23.md) §2 | `vote_day` agrees with the chamber's date on every vote |
-| A12 | spicy-regs | One day rule for instants across the rulemaking tables, and a distinct-count check on the bill walk (after B6). | [survey](parsing-survey-2026-09-23.md) §2 | ruling 6 covers the table changes |
+| A12 | spicy-regs | One day rule for instants across the rulemaking tables, and a distinct-count check on the bill walk (after B6). Widen to `rulemaking_lifecycles`, `agency_monthly_volume` and `sources/iceberg.py`, which still take the UTC day. | [survey](parsing-survey-2026-09-23.md) §2, §11 | ruling 6 covers the table changes |
+| A13 | spicy-docs, then DocSpec, spicysearch, spicyengine | One owner for the Regulations.gov day rule: deadlines are 23:59:59 Eastern, so DocSpec's `commentCloseDate` (UTC date) is one day late on every record and Engine's "through date X" filter omits documents closing on X; spicysearch's publication day is late on about 1.5%. Add the helper in spicy-docs `sources/regulations_gov` (in progress, wt/gaps); the consumers switch under ruling 10. | DocSpec `application/catalog_policy.py:80-93`; spicysearch `metadata/preparation.py:444`; spicyengine `search/queries.py:131-146`; [survey](parsing-survey-2026-09-23.md) §11 | 1,458 of 1,458 sampled deadlines; ruling 10 |
+| A14 | spicy-docs | `validate_annual_cfr_xml` wrongly refuses two real volumes (combined Title 34/35; a volume with no sections); GovInfo discovery checks neither a declared count nor repeated ids; Congress.gov date windows are spelled three ways in spicy-regs. Fix the validator, add the discovery checks, and one measured window helper (in progress, wt/gaps). | [survey](parsing-survey-2026-09-23.md) §11 (map P2, P5, P12) | 262 of 262 retained volumes validate |
+| A15 | spicysearch | The RIN facet publishes damaged values (98 distinct, e.g. `0648-XAO6`); use the strict published key and RefSpec's `corrected_rin` against a roster. | spicysearch `metadata/preparation.py:413-418`; [survey](parsing-survey-2026-09-23.md) §11 | no facet value outside the strict shape |
 
 ### Track B. Remove the second copies. One to two weeks.
 
@@ -84,6 +87,18 @@ repositories carries the repository name (decision 15 in the spicy-regs decision
 | B16 | RefSpec, at cache regeneration | Extract the eCFR authority-notes cache through `sources/cfr/authority.py` instead of the local research scripts; re-pin. | the frozen 2026-08-24 cache was extracted by independent stdlib scripts from unretained full-title XML; the reusable scanner post-dates it; §11 | parse deltas surface as counted differences at re-pin |
 | B17 | spicy-regs | Extract the shared candidate-selection, partition-walk and catalog-upsert driver behind `enrich_pdf.py` and `backfill_derived_text.py`; the two text sources stay distinct. | near-identical candidate SQL (`enrich_pdf.py:493-501` vs `backfill_derived_text.py:352-360`) and twin mains, about 200 lines; the docstring names the sibling; both touch the durable R2 catalog write path; §11 | both CLIs' dedicated tests stay green on the shared driver |
 | B18 | spicysearch, then spicy-regs | Delete spicysearch's unread vendored `vendor/spicy-regs-catalog-dictionary.json` (with its sidecar and source-commit record), and spicy-regs' obligation to re-vendor it (`spicy-regs/PLAN.md:164-181`; stale `README.md:309`, "24 → 45 classes"). By ruling 8, also delete spicy-regs' `data_dictionary/catalog.json`, its `.sha256` sidecar, the `catalog` subcommand and its tests; `table_metadata.json` stays. | no reader (rg); stale: 75 classes against 79; [survey](parsing-survey-2026-09-23.md) §9 | nothing in spicysearch references spicy-regs' catalog |
+| B20 | spicy-docs, then spicy-regs, spicysearch and rulespec-projection | Move RefSpec's `iri_minting` into spicy-docs beside the grammar (in progress, wt/iri); spicy-regs drops `_agenda_item_id` and its seven minters, spicysearch and the projection their copies. Whether spicy-regs adopts the Federal Register document-number space (`urn:spicy-regs:frdoc` → rkaf; 429,131 values) is ruling 11. | spicy-regs `build_regulatory_agenda.py:78`, `ontology/citations.py:390-620`; {SV} §11 | RIN, CFR and EO minting agree 100% on the retained tables |
+| B21 | RefSpec, after its repin | RefSpec imports the spicy-docs readers it re-writes (`parse_ecfr_titles`, the CBO estimates feed, the source-domain code parsers, `PypdfReader`, `read_html_events`, `parse_xml`, `load_bounded_json`), folding its stricter refusals into spicy-docs first and keeping the old parsers as test oracles; collapse its 28 `_verify_payload`/`_publish_payload` copies (2,629 lines) onto one pinned-acquisition helper. | {SV} §11 | RefSpec's gate green with the old parsers as oracles |
+| B22 | RefSpec | One docket reader: `agency_crosswalk.normalize_docket_id` delegates to the moved docket reader, keeping its whitespace fold (17,016 more links join; 101 only the crosswalk reads). | RefSpec `agency_crosswalk.py:176`; {SV} §11 | spicysearch's docket facets gain the links |
+| B23 | spicysearch | Delete the orphaned half of `identifiers.py` (field classifiers, `is_cfr_section`, `unread_identifier_shapes`, `identifier_values`; about 400 lines with no callers since `0422da3`) and its contract-test halves; `canonical.py` delegates to `rulespec_artifacts`; D6 reads `sourceObservedTopics` instead of re-deriving topics. | {SV} §11 | no caller lost; digests unchanged |
+| B24 | spicy-regs | `bill_subjects` from BILLSTATUS (one request per bill today, silently stopping after 4 pages), the API only below the 108th Congress; adopt `match_member`, `parse_package_id().collection`, `parse_xml` and `load_integer_json` where spicy-regs re-implements them (in progress, wt/regs-gaps). | {SV} §11 (map P6, P14) | published subjects unchanged |
+| B25 | spicy-regs | The remaining map gaps: `enrich_pdf` through `RegulationsGovAttachmentAcquirer` (with B17); one versioned rulemaking-stage rule (proceedings vs lifecycles); A7 widened to `fr_docket_links.docket_id`; the vote version columns after the backfill; timetable dates, RSS `pubDate` and FEC id shapes through spicy-docs; a public capture hook and an FR record-id decoder; one watermark and one env helper for the seven and five copies. | {SV} §11 (map P3, P8–P11, P13, P14) | each copy deleted with a test |
+| B26 | spicy-docs, then each family | Table contracts and projections for the non-Congress families (lobbying, SAM, USAspending, CourtListener, FCC, FEC, agenda, GAO), which today have only spicy-regs `_shape` functions; gives D3 and D6 an identity source. | {SV} §11 (map P7) | every published table has a contract |
+| B27 | RefSpec | Use rulespec-conformance's release digest (`reference_release_digest.compute_digest`) instead of its copy in `atlas/model.py:125`, which differs on 4 of 11 control-character literals (latent); delete the unused shell-out in `release_graph.py:395`; keep the copy as a test oracle. | [survey](parsing-survey-2026-09-23.md) §11 | atlas digests unchanged on current data |
+| B28 | spicy-docs | Adopt rulespec-artifacts' v2 DocumentCapture provenance checks and delete `schemas/document_capture/provenance.py` (253 lines; accepts 4 malformed inputs rulespec rejects); move the seven captures, `PINS.json` and the family profiles to v2. | [survey](parsing-survey-2026-09-23.md) §11 | rulespec's retained replay reproduces the seven captures |
+| B29 | rulespec-extrapolator, after B4 | Read references with spicy-docs' grammar instead of spicysearch's query grammar (`references.py:19,69`; spicysearch 0.2.0 pinned, current 0.4.2); B4 first adds position-returning readers for public laws, Statutes at Large, executive orders, dockets and RINs. | [survey](parsing-survey-2026-09-23.md) §11 | spicysearch and DocSpec leave the extra's dependencies |
+| B30 | spicy-regs, spicyengine, RefSpec | One canonical-JSON helper (`rulespec_artifacts`; byte-identical on 2,204,970 of 2,204,970 values; keep the projection's copy, which digests floats) and one exported `verify_file_pin` for the five pinned-file hashers. | [survey](parsing-survey-2026-09-23.md) §11 | no identifier changes |
+| B31 | spicy-docs, then spicy-regs | Multi-part committee reports as one row per part (ruling 13): read constituent parts from a package's MODS, carry `part_id` and `part_number` in the report contracts with identity `(package_id, part_id)` (`committee_report_reads` stays keyed by package; parts replaced as a set), and until spicy-regs adopts it, hold any part-only row (`part_id` set) out of the table. | wt/pt1 records `part_id`; 119hrpt455, 119hrpt620, 108hrpt24 offer nothing at package level; 119hrpt494 reads Part 1 silently | hrpt811, hrpt494 and the two-part reports each publish every published part |
 | B19 | spicy-regs | Build `DERIVED_SCHEMAS` from the producers' column constants (18 of 26 entries repeat one) and declare identity beside each transform's `COLUMNS` (23 of 74 published tables have none in `table_metadata.json`); after B2, FR's list is `FEDERAL_REGISTER_COLUMNS + ("rin",)`. Gives D3 an identity source. | `src/spicy_regs/data_dictionary.py:250-648`; [survey](parsing-survey-2026-09-23.md) §9 | catalog bytes unchanged; every published table declares identity |
 
 ### Track C. Put a timer on it. Parallel, cheap.
@@ -147,9 +162,13 @@ republish every row once. Ruling 4 in §5 orders the two.
 9. Who normalizes Federal Register and Regulations.gov search fields:
    DocSpec's stored `normalizedMetadata` or spicysearch's preparer (D6, with
    D3). **Decided:** spicysearch for now; spicy-docs after D3.
+10. Whether DocSpec's Regulations.gov policy version moves so that `commentCloseDate` and the publication day use the Eastern rule (A13); it changes every stored deadline. **Decided:** not now; spicysearch and Engine derive their day fields through the spicy-docs helper, and DocSpec's policy moves with the Track D rebuild (decision 26).
+11. Whether spicy-regs mints Federal Register document-number IRIs in RefSpec's rkaf space instead of `urn:spicy-regs:frdoc` (B20; 429,131 values). **Decided:** the rkaf spaces; no published column carries the local prefix, so nothing moves (decision 27).
+12. Where the IRI minters live (B20): spicy-docs as standard-library modules beside the grammar, which reaches spicy-regs at once, or Rulespec Core per REF-024, which would add `rulespec-conformance` (rdflib, pyshacl) to spicy-regs; the identifier shapes stay in spicy-docs either way. **Decided:** spicy-docs; REF-024's wording is narrowed so Core owns the lexical spaces, an amendment Mike confirms (decision 28).
+13. How the committee-report tables represent multi-part GovInfo reports (the `-pt1` fix on wt/pt1 records a `part_id` no table carries). **Decided:** one row per part, identity `(package_id, part_id)` plus `part_number`; `committee_report_reads` stays keyed by package; hold `CRPT-119hrpt811` out until it lands (decision 29; Mike confirms the identity move).
 
-Rulings 5–9 were decided on 2026-09-23 by delegation, with reasons, as decisions
-17–21 in the spicy-regs decisions record (`docs/research/fork-delivery-decisions-2026-09-22.md`); the owner can overturn any of them.
+Rulings 5–12 were decided on 2026-09-23 by delegation, with reasons, as decisions
+17–21 and 26–28 in the spicy-regs decisions record (`docs/research/fork-delivery-decisions-2026-09-22.md`); the owner can overturn any of them.
 
 Everything else is a reversible commit.
 
@@ -208,27 +227,30 @@ Update one row per event; commit each update on its own.
 | --- | --- | --- |
 | A1 | proposed; url provenance labelled (`6d34a1b`, a spicy-regs commit) | — |
 | A2 | proposed | — |
-| A3 | proposed; disagreement measured 2026-09-23, latent in published keys | [survey](parsing-survey-2026-09-23.md) §3 |
+| A3 | proposed; disagreement measured 2026-09-23, latent in published keys; also covers `house_committee_repository`'s `bill_key_*` | [survey](parsing-survey-2026-09-23.md) §3, §11 |
 | A4 | proposed; remote removed 2026-09-22 | git config only |
 | A5 | done in spicy-regs `81cfee7` (pushed 2026-09-23): key only in `X-Api-Key`, no URL or exception text in logs, 401/403 abort, redirects not followed (decision 23); the reader route stays with B10. spicy-docs `sources/congress/crs_summaries.py:54-60` still puts the key in the query but scrubs errors before writing them (its rule 5); moving it to the header would retire the scrub | [survey](parsing-survey-2026-09-23.md) §2 |
-| A6 | proposed | [survey](parsing-survey-2026-09-23.md) |
-| A7 | proposed | [survey](parsing-survey-2026-09-23.md) |
-| A8 | proposed | [survey](parsing-survey-2026-09-23.md) |
+| A6 | done: spicy-docs `d12c17b` (0.30.0); spicy-regs `f90cc2d` merged (`3e39fba`, pushed 2026-09-23); `comments.parquet` republished at table digest `c3f45f07…` (2026-09-23) with 65,994 comments' derived text in numeric attachment order and one tool recorded, the other 23,818,790 rows identical to the replaced object | [survey](parsing-survey-2026-09-23.md); receipt `comment-text-repair-2026-09-23/` |
+| A7 | code complete and reviewed on wt/regs-a7 (`cbb7b04`, `ac836d9`): label-aware docket reads, unpadded FR keys that refuse different-width padding, folds named in status; the candidate is rebuilt and published after the 0.31.0 re-vendor | [survey](parsing-survey-2026-09-23.md); receipt `rulemaking-joins-2026-09-23/` |
+| A8 | done: spicy-docs 0.30.0 scan (`eae0812`, `1183d0c`); spicy-regs `5f4423c` places from the heading with a publish-first marker; `cfr_sections` republished at `de703ffe…` (2026-09-23) and its workflow re-enabled; title 41 citations join after A7 | receipt `cfr-ancestry-fix-2026-09-23/` |
 | A9 | proposed | [survey](parsing-survey-2026-09-23.md) |
-| A10 | proposed | [survey](parsing-survey-2026-09-23.md) |
+| A10 | in progress (wt/b4, under rework); gate: RefSpec's `usc_section_oracle` finds 331 unresolvable rows | [survey](parsing-survey-2026-09-23.md) §2, §11 |
 | A11 | done: spicy-docs 0.30.0 owns `vote_day` and appends `roll_call_votes.vote_day` (`c5bd161`, `6e1bb3b`); spicy-regs `57a68bc` backfills prior rows and adds `term_match = undated`; the version column stays `vote_date` until the backfill is published (next scheduled roll-call run) | receipt `vote-day-2026-09-23/`, `vote-day-backfill-2026-09-23/` |
-| A12 | proposed | [survey](parsing-survey-2026-09-23.md) |
+| A12 | rulemaking half on wt/regs-a7 with A7 (one Eastern-day rule, `eastern_day` → `regulations_gov_day` at the re-vendor); the bill-walk distinct count follows B6; the wider tables stay proposed | [survey](parsing-survey-2026-09-23.md) §11 |
+| A13 | spicy-docs helper done (`b4fd806`, `1f80bee`, on the 0.31.0 release branch); DocSpec, spicysearch and spicyengine adoption proposed | [survey](parsing-survey-2026-09-23.md) §11 |
+| A14 | spicy-docs done (`5847505`, `4c67e1e`, `a17fa2f`, `197937c`, on the 0.31.0 release branch); spicy-regs `acquire_annual` adopts the validator at the re-vendor (`TODO(A14)` in `sources/cfr_sections.py`) | [survey](parsing-survey-2026-09-23.md) §11 |
+| A15 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
 | B1 | proposed | — |
 | B2 | partial: readers deleted on main; shaper copy remains (re-confirmed 2026-09-23) | `9837fae`…`f808ecf`; `build_federal_register.py:88` |
 | B3 | proposed | — |
 | B4 | bakeoff run 2026-09-23; move proposed | [survey](parsing-survey-2026-09-23.md) §5 |
 | B5 | proposed; re-confirmed 2026-09-23 | [survey](parsing-survey-2026-09-23.md) |
-| B6 | proposed | [survey](parsing-survey-2026-09-23.md) |
+| B6 | spicy-docs done (`9d53b32`…`61c86c1`, on the 0.31.0 release branch): pooled identities across up to four differently paged walks, settled on a clean walk or a pool equal to the declared count, typed `DeclaredCountMismatch`/`DeclaredCountChanged`/`IncompleteWalkError`; spicy-regs adoption on wt/regs-b6 (`41054ee`) awaits the re-vendor | [survey](parsing-survey-2026-09-23.md) |
 | B7 | proposed | [survey](parsing-survey-2026-09-23.md) |
 | B8 | proposed | [survey](parsing-survey-2026-09-23.md) |
 | B9 | proposed | [survey](parsing-survey-2026-09-23.md) |
-| B10 | proposed | [survey](parsing-survey-2026-09-23.md) |
-| B11 | proposed | [survey](parsing-survey-2026-09-23.md) |
+| B10 | proposed; the key resolver is copied in nine spicy-regs modules, not five | [survey](parsing-survey-2026-09-23.md) §11 |
+| B11 | spicy-docs done (`1967f7d`, `3c62e5d`, on the 0.31.0 release branch); RefSpec and spicy-regs adopt it at their repins | [survey](parsing-survey-2026-09-23.md) §11 |
 | B12 | proposed | [survey](parsing-survey-2026-09-23.md) |
 | B13 | proposed | §11 |
 | B14 | proposed; wheel API parity unverified | §11 |
@@ -237,6 +259,18 @@ Update one row per event; commit each update on its own.
 | B17 | proposed | §11 |
 | B18 | proposed | [survey](parsing-survey-2026-09-23.md) §9 |
 | B19 | proposed | [survey](parsing-survey-2026-09-23.md) §9 |
+| B20 | spicy-docs on wt/iri (`46aea16`, on the B4 rework): reviewed, byte-identical to RefSpec's minter on 3,966,225 paired calls except the `-RULE`-family docket suffixes B4 admits; merges with B4 into 0.31.0; its home is ruling 12; REF-024's wording amendment awaits Mike (decision 28) | [survey](parsing-survey-2026-09-23.md) §11 |
+| B21 | proposed; after RefSpec repins | [survey](parsing-survey-2026-09-23.md) §11 |
+| B22 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
+| B23 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
+| B24 | done in spicy-regs `b7283e4` (pushed 2026-09-23): `bill_subjects` copies BILLSTATUS subjects from the family for the 108th on, reads bulk zips for unread folders, asks the API only below the 108th and for refused files, under a run deadline; `match_member`, `parse_package_id().collection` and `parse_xml` adopted; the workflow input whose absence failed every scheduled run since 2026-09-05 declared | [survey](parsing-survey-2026-09-23.md) §11 |
+| B25 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
+| B26 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
+| B27 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
+| B28 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
+| B29 | proposed; after B4 | [survey](parsing-survey-2026-09-23.md) §11 |
+| B30 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
+| B31 | spicy-docs on wt/parts (`2bdd428`): reviewed and fixed (a NULL part refuses, a 1..N part set is required, a budget refusal precedes any body request); held out of 0.31.0 until Mike confirms the identity move, and spicy-regs must adopt (pass `part_id`, backfill `COALESCE(part_id, package_id)`, merge `committee_reports` with `replace_parents` by package, size `BODY_BUDGET` per part) in the same release it vendors | decision 29 |
 | C1 | proposed | — |
 | C2 | proposed | — |
 | C3 | not before C1 | — |
