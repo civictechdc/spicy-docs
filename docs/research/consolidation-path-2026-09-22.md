@@ -263,7 +263,7 @@ Update one row per event; commit each update on its own.
 | B21 | proposed; after RefSpec repins | [survey](parsing-survey-2026-09-23.md) §11 |
 | B22 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
 | B23 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
-| B24 | in progress (wt/regs-gaps) | [survey](parsing-survey-2026-09-23.md) §11 |
+| B24 | done in spicy-regs `b7283e4` (pushed 2026-09-23): `bill_subjects` copies BILLSTATUS subjects from the family for the 108th on, reads bulk zips for unread folders, asks the API only below the 108th and for refused files, under a run deadline; `match_member`, `parse_package_id().collection` and `parse_xml` adopted; the workflow input whose absence failed every scheduled run since 2026-09-05 declared | [survey](parsing-survey-2026-09-23.md) §11 |
 | B25 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
 | B26 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
 | B27 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
