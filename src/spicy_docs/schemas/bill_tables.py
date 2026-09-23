@@ -192,6 +192,7 @@ BILL_PUBLISHER_SUMMARIES = table_contract(
 
 
 def _committee_rows(committees: object) -> int:
+    """Count committees and their subcommittees at any nesting depth, as ``committee_count`` states."""
     total = 0
     for committee in committees or ():
         total += 1 + _committee_rows(committee.subcommittees)

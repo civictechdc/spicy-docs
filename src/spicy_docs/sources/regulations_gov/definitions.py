@@ -321,6 +321,9 @@ class RegulationsGovPage:
 
 @dataclass(frozen=True, slots=True)
 class MirrulationsWindow:
+    """One pack request in the enumeration: a collection, one agency, that agency's pack
+    index, and whether that pack is the agency's terminal (last) one."""
+
     kind: Literal["pack"]
     collection: str
     agency: str

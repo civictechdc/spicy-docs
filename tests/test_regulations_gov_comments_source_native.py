@@ -198,6 +198,8 @@ def _reader(root: Path, pin) -> SourceNativeReleaseReader:
 
 
 def test_comment_raw_fields_and_every_attachment_rendition_are_preserved() -> None:
+    """The raw comment passes through unshaped, its modifyDate is its issued version, and the
+    comment's and the attachment's file formats each yield a rendition row."""
     raw = _comment()
 
     assert classify_comment(raw) == raw
@@ -212,6 +214,8 @@ def test_comment_raw_fields_and_every_attachment_rendition_are_preserved() -> No
 
 
 def test_comment_json_types_survive_publication_and_retained_replay(tmp_path: Path) -> None:
+    """JSON and unknown-format attachments publish and replay byte-equal with media types
+    assigned, under acquisition policy 1.3, and the release verifies."""
     raw = _comment()
     raw["data"]["attributes"]["fileFormats"] = [
         {"fileUrl": "https://example.test/data.json#table", "format": None},
@@ -239,6 +243,8 @@ def test_comment_json_types_survive_publication_and_retained_replay(tmp_path: Pa
 def test_complete_enumeration_selects_newest_comment_version_and_counts_discard(
     tmp_path: Path,
 ) -> None:
+    """Two observations of one comment publish only the newest, and the receipt counts both
+    discovered and the one discarded observation."""
     identity = "EPA-2026-0001-0001"
     older = _comment(identity, modify_date="2026-08-24T10:00:00Z", body="older")
     newer = _comment(identity, modify_date="2026-08-25T10:00:00Z", body="newer")
@@ -266,6 +272,7 @@ def test_complete_enumeration_selects_newest_comment_version_and_counts_discard(
 def test_nonnull_modify_date_wins_and_single_null_version_remains_valid(
     tmp_path: Path,
 ) -> None:
+    """A dated modifyDate outranks a null one, and a comment whose only version is null still publishes."""
     identity = "EPA-2026-0001-0001"
     null_version = _comment(identity, modify_date=None, body="null")
     exact_version = _comment(identity, modify_date="2026-08-25T10:00:00Z", body="dated")
@@ -312,6 +319,8 @@ def test_differing_comments_at_one_normalized_version_refuse_a_tie(
     first_body: str,
     second_body: str,
 ) -> None:
+    """Differing comments at one normalized instant -- an offset spelling, two nulls, or the
+    same string twice -- refuse the release with a source-version tie."""
     identity = "EPA-2026-0001-0001"
     first = _comment(identity, modify_date=first_version, body=first_body)
     second = _comment(identity, modify_date=second_version, body=second_body)
@@ -342,6 +351,7 @@ def test_identical_comments_at_one_version_are_one_observation(tmp_path: Path) -
 
 @pytest.mark.parametrize("location", ["comment", "attachment"])
 def test_comment_schema_drift_fails_closed(location: str) -> None:
+    """An unrecognized field, on the comment or its attachment, fails closed naming the field."""
     raw = deepcopy(_comment())
     if location == "comment":
         raw["data"]["attributes"]["newSourceField"] = "unclassified"
@@ -353,6 +363,7 @@ def test_comment_schema_drift_fails_closed(location: str) -> None:
 
 
 def test_comment_release_records_are_ascii_sorted_and_distinct(tmp_path: Path) -> None:
+    """Published records come out ASCII-sorted and distinct however their objects arrived."""
     objects = [
         _object("EPA-2026-0001-0003", tag="z"),
         _object("EPA-2026-0001-0001", tag="x"),
@@ -367,6 +378,8 @@ def test_comment_release_records_are_ascii_sorted_and_distinct(tmp_path: Path) -
 def test_comment_profile_is_available_through_the_single_injected_cli(
     tmp_path: Path,
 ) -> None:
+    """The CLI publishes the comment release through one injected reader and asks only for the
+    comments collection."""
     release = tmp_path / "cli-comments"
     output = StringIO()
     observed_collections: list[str] = []
@@ -412,6 +425,8 @@ def test_comment_profile_is_available_through_the_single_injected_cli(
 
 
 def test_comment_source_native_boundary_has_no_sibling_product_imports() -> None:
+    """No releases, regulations_gov or source-native module imports a sibling product's package
+    (docspec, refspec, spicysearch)."""
     repository = Path(__file__).resolve().parents[1]
     imported: set[str] = set()
     for relative in (

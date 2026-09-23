@@ -36,6 +36,9 @@ def _date_scope(
     from_field: str,
     through_field: str,
 ) -> dict[str, Any]:
+    """Validate and normalize one query scope, refusing a scope whose fields differ, whose
+    agencies are not nonempty ASCII sorted distinct, whose dates are invalid or reversed,
+    or whose span reaches MAX_QUERY_DAYS."""
     if set(value) != {"agencies", from_field, through_field}:
         raise RegulationsGovSourceError("Regulations.gov query scope fields differ")
     agencies = value.get("agencies")
@@ -63,6 +66,7 @@ def _date_scope(
 
 
 def regulations_gov_document_query_scope(value: Mapping[str, Any]) -> dict[str, Any]:
+    """Document query scope: the agency list plus publishedFrom/publishedThrough."""
     return _date_scope(
         value,
         from_field="publishedFrom",
@@ -71,6 +75,7 @@ def regulations_gov_document_query_scope(value: Mapping[str, Any]) -> dict[str, 
 
 
 def regulations_gov_docket_query_scope(value: Mapping[str, Any]) -> dict[str, Any]:
+    """Docket query scope: the agency list plus modifiedFrom/modifiedThrough."""
     return _date_scope(
         value,
         from_field="modifiedFrom",
@@ -79,6 +84,7 @@ def regulations_gov_docket_query_scope(value: Mapping[str, Any]) -> dict[str, An
 
 
 def regulations_gov_comment_query_scope(value: Mapping[str, Any]) -> dict[str, Any]:
+    """Comment query scope: the agency list plus postedFrom/postedThrough."""
     return _date_scope(
         value,
         from_field="postedFrom",
@@ -91,6 +97,7 @@ def regulations_gov_next_page_url(
     *,
     seen_urls: set[str],
 ) -> None:
+    """Refuse any publisher ``next_page_url``: exact-object evidence packs never paginate."""
     del seen_urls
     if response.get("next_page_url") is not None:
         raise RegulationsGovSourceError("Mirrulations exact-object evidence cannot paginate")
@@ -98,6 +105,10 @@ def regulations_gov_next_page_url(
 
 @dataclass(slots=True)
 class RegulationsGovTraversalCheck:
+    """Require one single-page traversal: each page must be page 0 with results and declared
+    count agreeing within MAX_EVIDENCE_PACK_OBJECTS, and finish refuses unless exactly one
+    page was observed."""
+
     observed_pages: int = 0
 
     def add(self, response: Mapping[str, Any], *, page_index: int) -> None:
@@ -123,6 +134,7 @@ def _pack_request(
     pack_index: int,
     terminal: bool,
 ) -> str:
+    """The canonical ``mirrulations://`` pack request string for one window."""
     query = urlencode(
         {
             "agency": agency,
@@ -134,6 +146,8 @@ def _pack_request(
 
 
 def parse_mirrulations_request(value: str) -> MirrulationsWindow:
+    """Parse one canonical ``mirrulations://`` pack request into its window; any other
+    spelling refuses (the parsed values are re-encoded and compared to the input)."""
     parsed = urlparse(value)
     path = parsed.path.strip("/").split("/")
     if (
@@ -202,6 +216,9 @@ class MirrulationsAcquisitionCheck:
         records_included: bool,
         response_bytes: bytes,
     ) -> None:
+        """Admit one pack's response, refusing it unless the evidence echoes its window, the
+        agencies arrive ASCII-sorted with contiguous pack indexes from zero and a terminal
+        final pack, and every object key is globally sorted and distinct."""
         if not isinstance(page_window, MirrulationsWindow) or page_window.collection != self.collection:
             raise RegulationsGovSourceError("Mirrulations evidence request collection differs")
         del response_bytes
@@ -249,6 +266,7 @@ class MirrulationsAcquisitionCheck:
         self.current_terminal = page_window.terminal
 
     def finish(self, *, query_scope: Mapping[str, Any]) -> None:
+        """Refuse unless the enumerated agencies equal the query scope's and the final pack was terminal."""
         agencies = query_scope.get("agencies")
         if self.observed_agencies != agencies:
             raise RegulationsGovSourceError("Mirrulations enumeration does not cover exact agencies")
@@ -263,6 +281,8 @@ def _records_included(
     page_window: object | None,
     collection: str,
 ) -> bool:
+    """Recompute every packed record's in-scope disposition and refuse unless results equals
+    exactly the included records in pack order."""
     if not isinstance(page_window, MirrulationsWindow) or page_window.collection != collection:
         raise RegulationsGovSourceError("Mirrulations page lacks a validated request")
     if (
@@ -305,6 +325,9 @@ def _record_in_scope(
     agency: str,
     collection: str,
 ) -> bool:
+    """One record's in-scope answer; refuses a record whose agencyId differs from its object
+    path's agency, returns False outside the requested agencies or window, and treats an
+    absent or unparseable document postedDate as outside every scope."""
     attributes = _data_attributes(record)
     record_agency = attributes.get("agencyId")
     if record_agency != agency:
@@ -441,6 +464,8 @@ def _acquisition_policy(
     validator: Callable[[Mapping[str, Any]], Mapping[str, Any]],
     collection: str,
 ) -> dict[str, Any]:
+    """Build one collection's acquisition policy document: the validated query scope, the
+    evidence bounds, and the observation selection that collapses repeats by ``/data/id``."""
     # Group by /data/id and keep the greatest normalized UTC instant.
     # Documents use modifyDate, then postedDate; dockets/comments use modifyDate.
     # Documents/dockets collapse equal digests; documents also allow differences

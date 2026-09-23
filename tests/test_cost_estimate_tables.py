@@ -118,6 +118,7 @@ def test_unread_and_populated_are_distinct_and_the_column_is_appended() -> None:
 
 
 def test_url_source_names_billstatus_only_when_the_document_states_a_url() -> None:
+    """url_source is billstatus exactly when the document states a url, and NULL alongside a NULL url."""
     parsed = status("BILLSTATUS-118hr801", HR801)
     stated = "https://www.congress.gov/bill/118th-congress/house-bill/801"
     for url, source in ((stated, "billstatus"), (None, None)):
