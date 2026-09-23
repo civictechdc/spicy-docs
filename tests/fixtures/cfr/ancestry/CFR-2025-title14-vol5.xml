@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='utf-8'?>
+<CFRDOC xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CFRMergedXML.xsd">
+ <TITLE>
+  <CHAPTER>
+   <PART>
+    <EAR>Pt. 1201</EAR>
+    <HD SOURCE="HED">PART 1201—STATEMENT OF ORGANIZATION AND GENERAL INFORMATION</HD>
+    <SUBPART>
+     <HD SOURCE="HED">Subpart 1—Introduction</HD>
+     <SECTION>
+      <SECTNO>§ 1201.100</SECTNO>
+      <SUBJECT>Creation and authority.</SUBJECT>
+     </SECTION>
+    </SUBPART>
+   </PART>
+  </CHAPTER>
+ </TITLE>
+</CFRDOC>

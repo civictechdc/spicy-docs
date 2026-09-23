@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='utf-8'?>
+<CFRDOC xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CFRMergedXML.xsd">
+ <TITLE>
+  <CHAPTER>
+   <SUBCHAP TYPE="P">
+    <PART>
+     <EAR>Pt. 326</EAR>
+     <HD SOURCE="HED">
+                        PART 326—MINIMUM SECURITY DEVICES AND PROCEDURES AND BANK SECRECY ACT 
+                        <SU>1</SU>
+      <FTREF />
+                         COMPLIANCE
+                    </HD>
+     <SUBPART>
+      <HD SOURCE="HED">Subpart A—Minimum Security Procedures</HD>
+      <SECTION>
+       <SECTNO>§ 326.0</SECTNO>
+       <SUBJECT>Authority, purpose, and scope.</SUBJECT>
+      </SECTION>
+      <SECTION>
+       <SECTNO>§ 326.1</SECTNO>
+       <SUBJECT>Definitions.</SUBJECT>
+      </SECTION>
+     </SUBPART>
+    </PART>
+   </SUBCHAP>
+  </CHAPTER>
+ </TITLE>
+</CFRDOC>

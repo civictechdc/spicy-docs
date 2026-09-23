@@ -1,0 +1,46 @@
+<?xml version='1.0' encoding='utf-8'?>
+<CFRDOC xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CFRMergedXML.xsd">
+ <TITLE>
+  <SUBTITLE>
+   <CHAPTER>
+    <PART>
+     <EAR>Pt. 201-1</EAR>
+     <HD SOURCE="HED">PART 201-1—GENERAL REGULATIONS</HD>
+     <SUBPART>
+      <HD SOURCE="HED">Subpart C—Exclusion and Removal Orders</HD>
+      <SECTION>
+       <SECTNO>§ 201-1.303</SECTNO>
+       <SUBJECT>Issuance of orders and related activities.</SUBJECT>
+      </SECTION>
+      <SECTION>
+       <SECTNO>§ 201-1.304</SECTNO>
+       <SUBJECT>Executive agency compliance with exclusion and removal orders.</SUBJECT>
+       <SUBTITLE>
+        <CHAPTER>
+         <SUBCHAP TYPE="N">
+          <PART>
+           <EAR>Pt. 300-1</EAR>
+           <HD SOURCE="HED">PART 300-1—THE FEDERAL TRAVEL REGULATION (FTR)</HD>
+           <SECTION>
+            <SECTNO>§ 300-1.1</SECTNO>
+            <SUBJECT>What is the FTR?</SUBJECT>
+           </SECTION>
+          </PART>
+          <PART>
+           <EAR>Pt. 300-2</EAR>
+           <HD SOURCE="HED">PART 300-2—HOW TO USE THE FTR</HD>
+           <SECTION>
+            <SECTNO>§ 300-2.1</SECTNO>
+            <SUBJECT>How is the FTR formatted?</SUBJECT>
+           </SECTION>
+          </PART>
+         </SUBCHAP>
+        </CHAPTER>
+       </SUBTITLE>
+      </SECTION>
+     </SUBPART>
+    </PART>
+   </CHAPTER>
+  </SUBTITLE>
+ </TITLE>
+</CFRDOC>

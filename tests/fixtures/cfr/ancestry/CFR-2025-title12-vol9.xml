@@ -1,0 +1,36 @@
+<?xml version='1.0' encoding='utf-8'?>
+<CFRDOC xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CFRMergedXML.xsd">
+ <TITLE>
+  <CHAPTER>
+   <PART>
+    <EAR>Pt. 1033</EAR>
+    <HD SOURCE="HED">PART 1033—PERSONAL FINANCIAL DATA RIGHTS</HD>
+    <SUBPART>
+     <HD SOURCE="HED">Subpart A—General</HD>
+     <SECTION>
+      <SECTNO>§ 1033.101</SECTNO>
+      <SUBJECT>Authority, purpose, and organization.</SUBJECT>
+     </SECTION>
+    </SUBPART>
+    <SUBPART>
+     <APPENDIX>
+      <EFFDNOTP>
+       <REVTXT>
+        <PART>
+         <HD SOURCE="HED">PART 1033—PERSONAL FINANCIAL DATA RIGHTS</HD>
+         <SUBPART>
+          <HD SOURCE="HED">Subpart A—General</HD>
+          <SECTION>
+           <SECTNO>§ 1033.101</SECTNO>
+           <SUBJECT>Authority, purpose, and organization.</SUBJECT>
+          </SECTION>
+         </SUBPART>
+        </PART>
+       </REVTXT>
+      </EFFDNOTP>
+     </APPENDIX>
+    </SUBPART>
+   </PART>
+  </CHAPTER>
+ </TITLE>
+</CFRDOC>

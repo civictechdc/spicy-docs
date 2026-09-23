@@ -7,13 +7,14 @@ from dataclasses import dataclass
 from datetime import date as Date
 from typing import Literal
 
+from spicy_docs.sources.cfr_section_number import CFR_SECTION_NUMBER
 from spicy_docs.transport.source_acquirer import limit_byte_bound
 
 DEFAULT_MAX_BYTES = 16 * 1024 * 1024
 MAX_CFR_BYTES = 256 * 1024 * 1024
 _PART = re.compile(r"[0-9]+(?:-[0-9]+)*")
 _SECTION = re.compile(r"[0-9][0-9A-Za-z()._-]*")
-_ANNUAL_SECTION = re.compile(r"[0-9]+(?:-[0-9]+)*\.[0-9]+[A-Za-z]?(?:-[0-9]+[A-Za-z]?)*")
+_ANNUAL_SECTION = re.compile(CFR_SECTION_NUMBER)
 
 
 class CfrSourceError(ValueError):
@@ -83,8 +84,9 @@ class AnnualCfrSelection:
         _title(self.title)
         if type(self.year) is not int or not 1000 <= self.year <= 9999:
             raise CfrSourceError("year must be a four-digit integer")
-        if type(self.volume) is not int or not 1 <= self.volume <= 999:
-            raise CfrSourceError("volume must be an integer from 1 to 999")
+        # GovInfo publishes volume 0 packages (CFR-2026-title14-vol0).
+        if type(self.volume) is not int or not 0 <= self.volume <= 999:
+            raise CfrSourceError("volume must be an integer from 0 to 999")
         if self.section is not None:
             _section(self.section)
             if _ANNUAL_SECTION.fullmatch(self.section) is None:

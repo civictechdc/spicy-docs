@@ -80,6 +80,50 @@ Use `acquire_annual(AnnualCfrSelection(...))`, `acquire_ecfr_bulk(title)` or
 `acquire_ecfr_titles()` for the other routes. Pure validators accept retained
 XML plus the expected selection and final URL for offline checks.
 
+## Place annual sections under their parts
+
+`scan_annual_cfr_sections(xml, max_bytes=...)` reads one acquired annual
+volume (`CFRDOC`) in a single streaming pass and returns every SECTION in
+document order. Its part is the number in the innermost enclosing `PART`
+heading, because neither the printed section number nor the GovInfo granule id
+establishes it: Title 43 numbers sections by subpart (§ 1601.0-1 is in Part
+1600), Title 41's compound parts contain a hyphen (`50-201`) and Title 14 Part
+241 prints `19-8.1`. The running head is kept for diagnostics only; some are
+wrong. A section under a PART that prints no heading, or outside every PART,
+has no part.
+
+Look a granule up by its token (`granule`) among the `canonical` sections, and
+never filter on `nested`, `wrapped` or `revised`: none of them means "not
+current". Unclosed publisher elements swallow the parts that follow them, so in
+15 CFR vol 1 every part after 6 prints inside § 6.5's revised text, and one
+wrapper section holds 41 CFR vol 4. In the published table 4,022 section
+granules match only a nested copy and 2,512 only a revised one. `wrapped` marks
+a section with a PART between it and its enclosing section; the canonical copy
+of a token is the one with the lowest (nested, revised, position), and
+`repeated` marks numbers printed twice outside nesting. Three content granules
+carry a GovInfo `-id` suffix (`sec849-504-id915`); strip it to reach the same
+canonical copy.
+
+`split_annual_cfr_section(number, part, subpart)` gives the `section` and, for
+one citable section, its printed `citation`: Title 43's subpart-numbered
+sections cite as printed while their part stays the heading's. Ranges,
+publisher typos (`§ 206.253` under `PART 1206`) and unprefixed forms such as
+`Sec. 1-1` have none. `citation_joins` is false for the 1,496 citations that
+keep parentheses (`1.401(k)-1`), because the Federal Register side's key reads
+`26 CFR 1.401(k)-1` as `26-1.401`; set `cfr_ref` NULL for those until the
+shared citation grammar decides one spelling.
+
+Pass `max_bytes` explicitly. The largest retained 2025 volume (40 CFR vol 20)
+is 12,576,481 bytes, so the 16 MiB default leaves only 1.33× headroom; 64 MiB
+is a reasonable cap within the 256 MiB maximum.
+
+Over the 262 retained 2025–2026 volumes, an independent lxml tree scan finds
+the same printed number, nesting and innermost PART heading for every section.
+It reuses the heading pattern, so it confirms the streaming traversal, not the
+pattern; the survey checked the pattern's changed parts against eCFR and MODS.
+The receipt is in
+`corpora/supply-2026-09-02/receipts/cfr-section-ancestry-2026-09-23/`.
+
 ## Read dates and identity honestly
 
 `identity_basis` identifies native XML fields and fields supported only by the

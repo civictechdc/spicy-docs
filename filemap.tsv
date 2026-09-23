@@ -229,12 +229,13 @@ src/spicy_docs/sources/cfr/__init__.py	Source identities, locators and offline C
 src/spicy_docs/sources/cfr/_xml.py	CFR identity scans bind the shared bounded scanner to CFR refusals and limits.	src
 src/spicy_docs/sources/cfr/acquisition.py	Acquire explicit CFR/eCFR sources with exact bytes and bounded HTTP evidence.	src
 src/spicy_docs/sources/cfr/agencies.py	Literal rows and locations from the eCFR administrative agency roster.	src
-src/spicy_docs/sources/cfr/annual.py	Annual CFR bulk volumes and explicitly selected GovInfo section granules.	src
+src/spicy_docs/sources/cfr/annual.py	Annual CFR bulk volumes, their sections' printed PART ancestry, and explicitly selected GovInfo section granules.	src
 src/spicy_docs/sources/cfr/authority.py	Source AUTH notes and their structural context from retained eCFR XML.	src
 src/spicy_docs/sources/cfr/ecfr.py	Dated eCFR API sources and the separate latest GovInfo bulk title route.	src
 src/spicy_docs/sources/cfr/edition.py	Annual publication facts from GovInfo package MODS, separate from body XML.	src
 src/spicy_docs/sources/cfr/models.py	Explicit CFR source requests and the native facts their XML can establish.	src
 src/spicy_docs/sources/cfr/subject_index.py	Read Archives CFR subject-index markup without assigning terms to parts.	src
+src/spicy_docs/sources/cfr_section_number.py	The printed CFR ``part.section`` number grammar, importable without the CFR source package.	src
 src/spicy_docs/sources/congress/__init__.py	Congress.gov acquisition commands.	src
 src/spicy_docs/sources/congress/bill_acquisition.py	Capture one bill's status and explicitly selected XML text from GovInfo.	src
 src/spicy_docs/sources/congress/bill_pdf.py	Fetch one bill version's PDF as a GovInfo BILLS package body.	src
@@ -407,6 +408,7 @@ tests/test_cfr_acquisition.py	CFR source requests preserve exact responses, boun
 tests/test_cfr_agencies.py	Source values survive without census, identifier or legal policy.	test
 tests/test_cfr_capture_example.py	The runnable capture example retains exact bytes and truthful failure evidence.	test
 tests/test_cfr_edition.py	Publisher flags classify editions; body dates cannot establish cover-only status.	test
+tests/test_cfr_section_ancestry.py	Annual CFR sections take their part from the enclosing PART heading, never the number or granule id.	test
 tests/test_cfr_sources.py	CFR request locators and response checks retain source dates and refuse false identity.	test
 tests/test_cfr_subject_index.py	CFR subject-index HTML: literal source markup, anomalies and original-byte positions.	test
 tests/test_citations.py	The citation rules and the two activity reports they are pinned on.	test

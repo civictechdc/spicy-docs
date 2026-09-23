@@ -25,6 +25,7 @@ from dataclasses import dataclass, field, replace
 from typing import Protocol
 
 from spicy_docs.extraction.gpo_normalize import METADATA_RULES, normalize_gpo_glyphs
+from spicy_docs.sources.cfr_section_number import CFR_SECTION_NUMBER
 
 from .evidence import (
     Decision,
@@ -64,11 +65,10 @@ CFR_KINDS: dict[str, str | None] = {
     "note": "NOTE",
 }
 
-_NUMBER = r"[0-9]+(?:-[0-9]+)*\.[0-9]+[A-Za-z]?(?:-[0-9]+[A-Za-z]?)*"
-_SECTION_HEADING = re.compile(rf"^§\s*(?P<number>{_NUMBER})\s*(?P<subject>.*)$")
+_SECTION_HEADING = re.compile(rf"^§\s*(?P<number>{CFR_SECTION_NUMBER})\s*(?P<subject>.*)$")
 _MARKER = re.compile(r"^(?P<marker>(?:\([0-9A-Za-z]{1,6}\))+)")
 _DESIGNATION = re.compile(r"\(([0-9A-Za-z]{1,6})\)")
-_CONTENTS_ENTRY = re.compile(rf"^{_NUMBER}\s")
+_CONTENTS_ENTRY = re.compile(rf"^{CFR_SECTION_NUMBER}\s")
 _PAGE_NUMBER = re.compile(r"^[0-9]{1,4}$")
 _NOTE_LABEL = re.compile(r"^(NOTE|EDITORIAL NOTE|EFFECTIVE DATE NOTE|CROSS REFERENCE)S?\b")
 _PART_HEADING = re.compile(r"^PART\s+[0-9]")

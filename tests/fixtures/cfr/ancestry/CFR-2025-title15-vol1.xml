@@ -1,0 +1,44 @@
+<?xml version='1.0' encoding='utf-8'?>
+<CFRDOC xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="CFRMergedXML.xsd">
+ <TITLE>
+  <SUBTITLE>
+   <PART>
+    <HD SOURCE="HED">PART 6—CIVIL MONETARY PENALTY ADJUSTMENTS FOR INFLATION (EFF. until 1-15-25)</HD>
+    <SECTION>
+     <SECTNO>§ 6.1</SECTNO>
+     <SUBJECT>Definitions.</SUBJECT>
+    </SECTION>
+    <SECTION>
+     <SECTNO>§ 6.5</SECTNO>
+     <SUBJECT>Subsequent annual adjustments for inflation to civil monetary penalties.</SUBJECT>
+     <EFFDNOTP>
+      <REVTXT>
+       <SUBPART>
+        <HD SOURCE="HED">PART 6—CIVIL MONETARY PENALTY ADJUSTMENTS FOR INFLATION (EFF. 1-15-25)</HD>
+        <SECTION>
+         <SECTNO>§ 6.1</SECTNO>
+         <SUBJECT>Definitions.</SUBJECT>
+        </SECTION>
+        <SECTION>
+         <SECTNO>§ 6.5</SECTNO>
+         <SUBJECT>Subsequent annual adjustments for inflation to civil monetary penalties.</SUBJECT>
+        </SECTION>
+       </SUBPART>
+       <PART>
+        <EAR>Pt. 8</EAR>
+        <HD SOURCE="HED">PART 8—NONDISCRIMINATION IN FEDERALLY ASSISTED PROGRAMS OF THE DEPARTMENT OF COMMERCE—EFFECTUATION OF TITLE VI OF THE CIVIL RIGHTS ACT OF 1964</HD>
+        <SUBPART>
+         <HD SOURCE="HED">Subpart A—General Provisions; Prohibitions: Nondiscrimination Clause; Applicability to Programs</HD>
+         <SECTION>
+          <SECTNO>§ 8.1</SECTNO>
+          <SUBJECT>Purpose.</SUBJECT>
+         </SECTION>
+        </SUBPART>
+       </PART>
+      </REVTXT>
+     </EFFDNOTP>
+    </SECTION>
+   </PART>
+  </SUBTITLE>
+ </TITLE>
+</CFRDOC>

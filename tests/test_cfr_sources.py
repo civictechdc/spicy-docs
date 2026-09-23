@@ -22,6 +22,7 @@ from spicy_docs.sources.cfr import (
     ecfr_bulk_xml_locator,
     ecfr_xml_locator,
     parse_ecfr_titles,
+    scan_annual_cfr_sections,
     validate_annual_cfr_xml,
     validate_ecfr_bulk_xml,
     validate_ecfr_xml,
@@ -316,6 +317,7 @@ def test_xml_validation_does_not_build_a_tree(monkeypatch):
     api()
     annual()
     bulk()
+    scan_annual_cfr_sections((FIXTURES / "ancestry" / "CFR-2025-title41-vol4.xml").read_bytes())
 
 
 @pytest.mark.parametrize(
@@ -356,3 +358,6 @@ def test_native_part_is_not_inferred_from_section_number():
     assert ecfr_xml_locator(selection).endswith("part=241&section=19-8")
     source = (FIXTURES / "annual-title30-vol3-sec716-2.xml").read_bytes()
     assert annual(source.replace(b'HEADING="PART 716"', b'HEADING="PART 715"'), section="716.2").section == "716.2"
+    # The annual volume's PART heading places the same section in Part 241.
+    volume = (FIXTURES / "ancestry" / "CFR-2025-title14-vol4.xml").read_bytes()
+    assert {s.part for s in scan_annual_cfr_sections(volume) if s.granule == "19-8-1"} == {"241"}
