@@ -17,7 +17,9 @@ RefSpec table, not an input of this repository."""
 
 from __future__ import annotations
 
+import random
 import re
+import time
 from dataclasses import replace
 
 import pytest
@@ -4042,3 +4044,114 @@ def test_the_occurrence_readers_state_what_the_field_reader_states(text: str) ->
         stated = {replace(row, parse_status="ok") for row in fields if row.authority_type == family}
         located = {replace(o.citation, parse_status="ok") for o in finder(text)}
         assert located == stated, (family, text)
+
+
+# --------------------------------------------------------------------------- #
+# New in spicy-docs (2026-09-23): the grammar is linear in its text. A whole
+# budget volume (12 million characters) took 479 s through the four readers;
+# each fix below keeps its answer and drops a per-citation pass over the text
+# or over every earlier citation, and each is checked against the rule it
+# replaced rather than against itself.
+
+
+def test_the_status_bound_is_the_longest_tail() -> None:
+    """The early refusal counts characters outside the tail's punctuation class; "and following" has twelve."""
+    phrases = ("et seq.", "as amended", "and following", "ff.")
+    longest = max(sum(1 for character in phrase if character not in " \t,;:.") for phrase in phrases)
+    assert citation_grammar._MORE_THAN_AN_IGNORABLE_TAIL.pattern.endswith(f"{{{longest + 1}}}")
+    assert citation_grammar._IGNORABLE_TAIL.fullmatch("  and   following. ")
+
+
+def test_the_bounded_status_is_the_remainder_rule() -> None:
+    """Randomized against the rule it shortcuts: the remainder outside the span, whole."""
+    rng = random.Random(20260923)
+    alphabet = ["et seq.", "as amended", "and following", "ff.", " ", ",", ".", ";", "x", "7", "U.S.C."]
+    for _ in range(3000):
+        text = "".join(rng.choice(alphabet) for _ in range(rng.randint(0, 8)))
+        start = rng.randint(0, len(text))
+        end = rng.randint(start, len(text))
+        remainder = f"{text[:start]} {text[end:]}"
+        expected = "ok" if citation_grammar._IGNORABLE_TAIL.fullmatch(remainder) else "partial"
+        assert citation_grammar._status_for_span(text, start, end) == expected, (text, start, end)
+
+
+def test_indexed_containment_is_the_scan_it_replaced() -> None:
+    """``_containment`` answers exactly what ``_lies_inside`` answers, on random overlapping spans."""
+    rng = random.Random(7)
+    for _ in range(300):
+        spans = tuple(
+            (low, low + rng.randint(0, 30)) for low in (rng.randint(0, 100) for _ in range(rng.randint(0, 12)))
+        )
+        holds = citation_grammar._containment(spans)
+        for _ in range(20):
+            start = rng.randint(0, 130)
+            end = start + rng.randint(0, 20)
+            assert holds(start, end) == citation_grammar._lies_inside(spans, start, end), (spans, start, end)
+
+
+def test_the_indexed_public_law_beside_a_statute_is_the_scan_it_replaced() -> None:
+    """``_PublicLawsBeside`` names the Congress the per-law scan named, on random runs of laws, dates and cites."""
+    pieces = [
+        "Pub. L. 92-463",
+        "P.L. 94-409",
+        ", ",
+        "; ",
+        " ",
+        "Dec. 15, 1971, ",
+        "as amended by ",
+        "86 Stat. 770",
+        "90 Stat. 1241",
+    ]
+    rng = random.Random(11)
+    for _ in range(400):
+        text = citation_grammar._normalize_dashes("".join(rng.choice(pieces) for _ in range(rng.randint(1, 9))))
+        laws = [m for pattern in citation_grammar._PUBLIC_LAW_FORMS for m in pattern.finditer(text)]
+        index = citation_grammar._PublicLawsBeside(text, laws)
+        for statute in citation_grammar._STATUTE_AT_LARGE.finditer(text):
+            beside = [
+                law
+                for law in laws
+                if law.end() <= statute.start()
+                and citation_grammar._PUBLIC_LAW_TO_STATUTE.fullmatch(text[law.end() : statute.start()])
+            ]
+            expected = int(beside[0].group("congress")) if len(beside) == 1 else None
+            assert index.congress(statute) == expected, text
+
+
+def _read_all(text: str) -> None:
+    citation_grammar.find_usc_citations(text)
+    citation_grammar.find_cfr_citations(text)
+    citation_grammar.find_public_law_citations(text)
+    citation_grammar.find_statute_citations(text)
+
+
+def test_doubling_the_text_does_not_quadruple_the_time() -> None:
+    """Dense citations are where every superlinear pass showed: a list walk, statuses, neighbours, duplicates.
+
+    Measured 2026-09-23, best of three: before the fixes this took 0.37 s at
+    300 copies and 1.53 s at 600 (4.2 times), after them 0.085 s and 0.17 s
+    (2.0 times). Best of three, so a scheduler hiccup does not fail it.
+    """
+    block = (
+        "The Clean Air Act (42 U.S.C. 7401, 7402 and 7403), Pub. L. 92-463, 86 Stat. 770, "
+        "and 40 CFR parts 60 and 61 as amended by Pub. L. 101-549, 104 Stat. 2399. "
+    )
+
+    def best(copies: int) -> float:
+        text = block * copies
+        times = []
+        for _ in range(3):
+            started = time.perf_counter()
+            _read_all(text)
+            times.append(time.perf_counter() - started)
+        return min(times)
+
+    small, large = best(300), best(600)
+    assert large < 3 * small, (small, large)
+
+
+def test_dash_folding_is_the_translation_table() -> None:
+    """The fast fold gives the string the translation table gives, every spelling and its neighbours included."""
+    text = "".join(f"a{dash}1 {dash}{dash}" for dash in citation_grammar._DASH_SPELLINGS + "-…­⸺")
+    assert citation_grammar._normalize_dashes(text) == text.translate(citation_grammar._DASHES)
+    assert len(citation_grammar._normalize_dashes(text)) == len(text)

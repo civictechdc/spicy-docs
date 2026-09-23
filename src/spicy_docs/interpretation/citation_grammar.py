@@ -531,7 +531,8 @@ _COMMAS_THAT_BELONG_TO_A_NAME: tuple[re.Pattern[str], ...] = (_SPELLED_DATE, _AC
 #: citations. It changes nothing here: no identity this grammar reads is
 #: affected either way, because every dash spelling folds through this SAME
 #: translation table wherever a citation shape consumes it.
-_DASHES = str.maketrans(dict.fromkeys("‐‑‒–—―−\x96\x97", "-"))
+_DASH_SPELLINGS = "‐‑‒–—―−\x96\x97"
+_DASHES = str.maketrans(dict.fromkeys(_DASH_SPELLINGS, "-"))
 
 # --------------------------------------------------------------------------- #
 # CFR
@@ -1674,6 +1675,14 @@ _IGNORABLE_TAIL = re.compile(
     re.IGNORECASE,
 )
 
+#: More characters outside :data:`_IGNORABLE_TAIL`'s punctuation class than
+#: its longest phrase carries ("and following": twelve). A remainder holding
+#: this many is partial whatever else it holds, and finding out costs only as
+#: far as the thirteenth such character -- so a citation in a long document is
+#: statused without copying the document around it. Written from the tail's
+#: phrases, so it moves with them: ``test_the_status_bound_is_the_longest_tail``.
+_MORE_THAN_AN_IGNORABLE_TAIL = re.compile(r"(?:[\s,;:.]*[^\s,;:.]){13}")
+
 _USC_SECTION_ATOM = re.compile(r"(?P<number>\d+)(?P<suffix>[a-z]*)")
 
 
@@ -2165,7 +2174,17 @@ def _canonical_part(part: str | None) -> str | None:
 
 
 def _normalize_dashes(text: str) -> str:
-    return text.translate(_DASHES)
+    """:data:`_DASHES` applied: every dash spelling to "-", one character for one.
+
+    Written as one ``str.replace`` per spelling rather than ``translate``,
+    which gives the same string about sixty times faster (the whole text is
+    folded several times per reading, and a budget volume is twelve million
+    characters); ``test_dash_folding_is_the_translation_table`` holds the two
+    equal.
+    """
+    for dash in _DASH_SPELLINGS:
+        text = text.replace(dash, "-")
+    return text
 
 
 #: A zero PAD in front of a section number, which the section does not own.
@@ -2579,28 +2598,61 @@ _STATUTE_FAMILIES: tuple[
 _PUBLIC_LAW_TO_STATUTE = re.compile(rf"[\s,;:()\[\]]*(?:(?:{_SPELLED_DATE.pattern})[\s,;:()\[\]]*)?", re.IGNORECASE)
 
 
+class _PublicLawsBeside:
+    """The Public Laws of one text, ordered by where they end, to ask which one stands before a Statutes cite.
+
+    Only a law ending at or before the cite can stand beside it, and the walk
+    back from the nearest such law stops at the first whose gap already holds
+    another whole Public Law: a gap :data:`_PUBLIC_LAW_TO_STATUTE` accepts is
+    punctuation and one spelled date, and a law's opening ``P`` -- never
+    preceded by a letter -- can be neither, so no law further back can stand
+    beside the cite either. The gap is matched in place (``pos``/``endpos``),
+    never sliced out, so judging every cite of a long text costs its laws
+    once, not once per cite.
+    """
+
+    def __init__(self, text: str, public_laws: Iterable[re.Match[str]]) -> None:
+        self.text = text
+        self.laws = sorted(public_laws, key=lambda match: match.end())
+        self.ends = [match.end() for match in self.laws]
+
+    def congress(self, statute: re.Match[str]) -> int | None:
+        beside: list[re.Match[str]] = []
+        latest_start = -1
+        for index in range(bisect_right(self.ends, statute.start()) - 1, -1, -1):
+            law = self.laws[index]
+            if law.end() <= latest_start:
+                break
+            if _PUBLIC_LAW_TO_STATUTE.fullmatch(self.text, law.end(), statute.start()):
+                beside.append(law)
+            latest_start = max(latest_start, law.start())
+        return int(beside[0].group("congress")) if len(beside) == 1 else None
+
+
 def _congress_beside(text: str, public_laws: list[re.Match[str]], statute: re.Match[str]) -> int | None:
     """The Congress of the one Public Law standing next to this Statutes cite.
 
     None where none stands next to it, and None where SEVERAL do — a fence
     that cannot say which law the volume belongs to has nothing to judge.
+    One cite at a time; a reader judging many builds :class:`_PublicLawsBeside`
+    once instead.
     """
 
-    beside = [
-        match
-        for match in public_laws
-        if match.end() <= statute.start() and _PUBLIC_LAW_TO_STATUTE.fullmatch(text[match.end() : statute.start()])
-    ]
-    return int(beside[0].group("congress")) if len(beside) == 1 else None
+    return _PublicLawsBeside(text, public_laws).congress(statute)
 
 
 def _statutes_volume_verdict(normalized: str, public_laws: list[re.Match[str]]) -> _VolumeVerdict:
-    """Judge a Statutes volume against the one Public Law standing beside it in ``normalized``."""
+    """Judge a Statutes volume against the one Public Law standing beside it in ``normalized``.
+
+    ``public_laws`` may still be filling when this is built -- the field reader
+    reads the laws before the Statutes -- so the index is taken on first use.
+    """
+    index: list[_PublicLawsBeside] = []
 
     def verdict(match: re.Match[str]) -> bool | None:
-        return statutes_volume_matches_congress(
-            _congress_beside(normalized, public_laws, match), int(match.group("volume"))
-        )
+        if not index:
+            index.append(_PublicLawsBeside(normalized, public_laws))
+        return statutes_volume_matches_congress(index[0].congress(match), int(match.group("volume")))
 
     return verdict
 
@@ -2615,6 +2667,26 @@ def _lies_inside(spans: tuple[tuple[int, int], ...], start: int, end: int) -> bo
     return any(low <= start and end <= high for low, high in spans)
 
 
+def _containment(spans: Iterable[tuple[int, int]]) -> Callable[[int, int], bool]:
+    """:func:`_lies_inside` over fixed spans, answered by bisect rather than by a scan.
+
+    The spans are ordered by where they open, each paired with the furthest
+    any span opening no later reaches, so "some span holds ``start..end``" is
+    one lookup: ``O(log n)`` a question, where a scan per list member made the
+    list walk quadratic in a long document.
+    """
+
+    ordered = sorted(spans)
+    opens = [low for low, _ in ordered]
+    reach = list(accumulate((high for _, high in ordered), max))
+
+    def holds(start: int, end: int) -> bool:
+        index = bisect_right(opens, start)
+        return index > 0 and reach[index - 1] >= end
+
+    return holds
+
+
 def _status_for_span(text: str, start: int, end: int) -> str:
     """Status for a citation covering ``text[start:end]`` and nothing else.
 
@@ -2623,6 +2695,8 @@ def _status_for_span(text: str, start: int, end: int) -> str:
     characters are not covered and must still count against "ok".
     """
 
+    if _MORE_THAN_AN_IGNORABLE_TAIL.match(text, 0, start) or _MORE_THAN_AN_IGNORABLE_TAIL.match(text, end):
+        return "partial"
     remainder = f"{text[:start]} {text[end:]}"
     return "ok" if _IGNORABLE_TAIL.fullmatch(remainder) else "partial"
 
@@ -3727,6 +3801,7 @@ def _parse_authority_citation(
         return (AuthorityCitation(authority_type="unstated", parse_status="failed"),)
 
     citations: list[AuthorityCitation] = []
+    seen: set[AuthorityCitation] = set()
 
     usc_ends: dict[int, int] = {}
 
@@ -3742,7 +3817,8 @@ def _parse_authority_citation(
         # consumer filtering on "ok" sees without reading this file.
         if citation.usc_section_span_rule == USC_SPAN_ABBREVIATED and citation.parse_status == "ok":
             citation = replace(citation, parse_status="partial")
-        if citation not in citations:
+        if citation not in seen:
+            seen.add(citation)
             citations.append(citation)
         if usc_record is not None and match is not None and citation.authority_type in ("usc", "usc_chapter"):
             span = span or (offset + match.start(), offset + match.end())
@@ -4277,6 +4353,13 @@ def _parse_authority_citation(
         for pattern in (_STATUTE_LETTERED_PAGE, _STATUTE_LETTERED_VOLUME, _STATUTE_AT_LARGE)
         for match in pattern.finditer(normalized)
     )
+    # The same four questions, indexed once: a list member is asked each of
+    # them, and a scan over every span per member was quadratic in a document.
+    fenced = _containment((*named, *rins, *compilations))
+    statute_opens = sorted(statutes)
+    statute_starts = [start for start, _ in statute_opens]
+    # The earliest any Statutes cite opening at or after each position closes.
+    statute_first_close = list(accumulate((end for _, end in reversed(statute_opens)), min))[::-1]
     seeds = sorted(
         [(match, False) for match in usc_matches] + [(match, True) for match in appendix_matches],
         key=lambda seed: seed[0].start(),
@@ -4294,18 +4377,12 @@ def _parse_authority_citation(
                 if gap.strip(" \t\r\n,") or _CITATION_PARAGRAPH_BREAK.search(gap):
                     break
             start, end = window + tail.start("section"), window + tail.end("section")
-            if (
-                _lies_inside(named, start, end)
-                or _lies_inside(rins, start, end)
-                or _lies_inside(compilations, start, end)
-            ):
+            if fenced(start, end):
                 continue
             fields = _usc_section_fields(tail.group("section"), tail.group("range_end"))
             if fields["usc_section"] is not None:
-                after_statute = any(
-                    statute_start >= window and statute_end <= window + tail.start()
-                    for statute_start, statute_end in statutes
-                )
+                first = bisect_left(statute_starts, window)
+                after_statute = first < len(statute_opens) and statute_first_close[first] <= window + tail.start()
                 occurrence_end = _add(
                     AuthorityCitation(
                         authority_type="usc",
@@ -4360,6 +4437,10 @@ def _parse_authority_citation(
             )
             _add(citation, bare_usc)
             return (citation,)
+        if usc_record is not None:
+            # Locating occurrences discards the whole-value row, and naming an
+            # act over a whole document walks back from every "Act" in it.
+            return ()
         # A row nothing could resolve still carries what it states. Partial
         # information is worth keeping: a consumer looking for section 326 of
         # an NDAA can find the row even where no reader can say which year's
