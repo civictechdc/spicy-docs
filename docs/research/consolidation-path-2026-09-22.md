@@ -98,6 +98,7 @@ repositories carries the repository name (decision 15 in the spicy-regs decision
 | B28 | spicy-docs | Adopt rulespec-artifacts' v2 DocumentCapture provenance checks and delete `schemas/document_capture/provenance.py` (253 lines; accepts 4 malformed inputs rulespec rejects); move the seven captures, `PINS.json` and the family profiles to v2. | [survey](parsing-survey-2026-09-23.md) §11 | rulespec's retained replay reproduces the seven captures |
 | B29 | rulespec-extrapolator, after B4 | Read references with spicy-docs' grammar instead of spicysearch's query grammar (`references.py:19,69`; spicysearch 0.2.0 pinned, current 0.4.2); B4 first adds position-returning readers for public laws, Statutes at Large, executive orders, dockets and RINs. | [survey](parsing-survey-2026-09-23.md) §11 | spicysearch and DocSpec leave the extra's dependencies |
 | B30 | spicy-regs, spicyengine, RefSpec | One canonical-JSON helper (`rulespec_artifacts`; byte-identical on 2,204,970 of 2,204,970 values; keep the projection's copy, which digests floats) and one exported `verify_file_pin` for the five pinned-file hashers. | [survey](parsing-survey-2026-09-23.md) §11 | no identifier changes |
+| B31 | spicy-docs, then spicy-regs | Multi-part committee reports as one row per part (ruling 13): read constituent parts from a package's MODS, carry `part_id` and `part_number` in the report contracts with identity `(package_id, part_id)` (`committee_report_reads` stays keyed by package; parts replaced as a set), and until spicy-regs adopts it, hold any part-only row (`part_id` set) out of the table. | wt/pt1 records `part_id`; 119hrpt455, 119hrpt620, 108hrpt24 offer nothing at package level; 119hrpt494 reads Part 1 silently | hrpt811, hrpt494 and the two-part reports each publish every published part |
 | B19 | spicy-regs | Build `DERIVED_SCHEMAS` from the producers' column constants (18 of 26 entries repeat one) and declare identity beside each transform's `COLUMNS` (23 of 74 published tables have none in `table_metadata.json`); after B2, FR's list is `FEDERAL_REGISTER_COLUMNS + ("rin",)`. Gives D3 an identity source. | `src/spicy_regs/data_dictionary.py:250-648`; [survey](parsing-survey-2026-09-23.md) §9 | catalog bytes unchanged; every published table declares identity |
 
 ### Track C. Put a timer on it. Parallel, cheap.
@@ -269,6 +270,7 @@ Update one row per event; commit each update on its own.
 | B28 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
 | B29 | proposed; after B4 | [survey](parsing-survey-2026-09-23.md) §11 |
 | B30 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
+| B31 | in progress (wt/parts); the identity move awaits Mike's line | decision 29 |
 | C1 | proposed | — |
 | C2 | proposed | — |
 | C3 | not before C1 | — |
