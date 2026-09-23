@@ -331,6 +331,7 @@ src/spicy_docs/sources/sam_extract.py	SAM.gov bulk entity extracts: trigger, pol
 src/spicy_docs/sources/source_domains.py	Compare published column values with pinned publisher documentation.	src
 src/spicy_docs/sources/supreme_court.py	Supreme Court slip opinions: one term index, then the exact PDFs that index names.	src
 src/spicy_docs/sources/unified_agenda/__init__.py	Unified Agenda editions from reginfo.gov: one XML file per semiannual edition, identity proved per record.	src
+src/spicy_docs/sources/unified_agenda/projection.py	One field-path projection of a Unified Agenda edition: citations, timetable and continued authorities.	src
 src/spicy_docs/sources/unified_agenda/records.py	Bounded source metadata from retained Unified Agenda XML editions.	src
 src/spicy_docs/sources/usaspending.py	USAspending recipients: a keyless POST list whose page metadata names the next page.	src
 src/spicy_docs/sources/uscode/__init__.py	Explicit OLRC U.S. Code sources: release points, annual archives, popular names, Table III and classification tables.	src
@@ -549,6 +550,7 @@ tests/test_supreme_court.py	A Supreme Court term index is one render that must s
 tests/test_table_contracts.py	Four loops over every registered contract, and the shaped rows they run against.	test
 tests/test_table_json.py	The shared JSON spelling refuses values JSON cannot represent.	test
 tests/test_unified_agenda.py	Unified Agenda editions prove themselves from every record, not from their file name.	test
+tests/test_unified_agenda_projection.py	The one Unified Agenda field-path projection: RefSpec's rules, on publisher excerpts.	test
 tests/test_unified_agenda_records.py	Literal Unified Agenda fields remain separate from receiver interpretation.	test
 tests/test_uscode.py	OLRC U.S. Code requests and response checks prove native identity and keep publisher spellings.	test
 tests/test_uscode_acquisition.py	OLRC U.S. Code requests preserve exact responses, bounds, and refusal evidence.	test

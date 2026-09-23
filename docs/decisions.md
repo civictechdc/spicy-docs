@@ -1773,3 +1773,49 @@ every current-year estimate — have no text route at all; their index rows
 still carry the bill, the stage, the date and the locator, and the figures are
 recorded as absent. Under the retain-value rule that is a capability with a
 measured limit, not a gap to hide.
+
+## The Unified Agenda's citation paths have one reading, here
+
+Adopted 2026-09-23 as B11 of the
+[consolidation path](research/consolidation-path-2026-09-22.md); the rules
+live in `sources/unified_agenda/projection.py`, documented in the
+[Unified Agenda guide](sources/unified-agenda.md#project-citations-and-timetables).
+
+The raw reader left whitespace, the 2004 byte repair and `ADDITIONAL_INFO`
+continuations to its receivers. SpicyRegs and RefSpec then read the same three
+paths two ways: SpicyRegs stripped and RefSpec collapsed whitespace, and only
+RefSpec read continued authorities. It is the case
+[a host restating a rule](#what-a-host-restates-is-a-rule-this-package-failed-to-own)
+describes. RefSpec's rules move here because, over all 60 retained editions,
+they lose nothing that SpicyRegs' `strip()` kept. The receipt is
+`corpora/supply-2026-09-02/receipts/unified-agenda-projection-2026-09-23/`.
+
+The move is not verbatim. These changes alter no projected value in the 60
+editions:
+
+- An absent or blank timetable action or date is `None`; RefSpec wrote `""`.
+- Only `CFR` and `LEGAL_AUTHORITY` items are read inside their lists; RefSpec
+  read every child.
+- Every list is read, where RefSpec read only the first.
+- RefSpec refused an edition whose `0x19` presence disagreed with its roster.
+  Here a roster edition without the byte reads normally, and one with more
+  than a single byte is refused.
+- The search for another field's label stops at the paragraph mark or blank
+  line, and a label's words are capped at 64 letters and spaces. RefSpec's
+  search ran to the end of the field and grew with the cube of a whitespace
+  run: 5 s at 2,000 spaces, where a record may hold 4 MiB. All 65,128
+  `ADDITIONAL_INFO` fields give the same result either way.
+
+- **Whitespace.** The only differences are spacing, in 1,562 CFR lists, 1,959
+  authority lists and 1,373 timetables. Collapsing also respells a lone
+  non-ASCII space, which a check for whitespace runs misses: edition 202510
+  changes 38 CFR and 24 authority cells, not 37 and 23.
+- **Repeated lists.** Every list is read, which cannot differ from reading the
+  first: the XSD allows one of each and no edition repeats one.
+- **The 2004 byte.** The repair covers the one byte measured in each of the
+  two editions. A second one in those editions is refused, the raw reader and
+  acquisition still refuse the byte, and so does any other edition. An
+  unmeasured defect stays a refusal and does not become a guessed character.
+- **Continued authorities.** 98 records carry them, and RefSpec's grammar reads
+  1,310 citations from them. They are returned beside the list, not appended to
+  it, because whether a host publishes them is the host's choice.

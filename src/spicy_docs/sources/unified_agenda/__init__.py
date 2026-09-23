@@ -8,7 +8,7 @@ and Deregulatory Actions as one XML file, ``REGINFO_RIN_DATA_{YYYYMM}.xml`` with
 rather than from its file name. Three publisher irregularities are recorded, not repaired: the file
 named ``REGINFO_RIN_DATA_2012.xml`` states ``PUBLICATION_ID`` 201210, Spring 2012 (``201204``) was
 never published, and the two 2004 editions each contain one control byte that XML 1.0 forbids, so
-the strict parser refuses them and the exact bytes remain the caller's to repair downstream.
+acquisition refuses them; ``projection`` repairs a retained copy in memory and pins the bytes as served.
 """
 
 from __future__ import annotations
@@ -96,21 +96,15 @@ class UnifiedAgendaMetadata:
     rins: tuple[str, ...]
 
 
-def validate_unified_agenda_xml(
-    body: bytes,
-    *,
-    edition: UnifiedAgendaEdition,
-    final_url: str,
-    max_bytes: int = DEFAULT_MAX_BYTES,
-) -> UnifiedAgendaMetadata:
-    """Prove every record belongs to the requested edition; keep the exact bytes for the caller."""
-    _limit(max_bytes)
-    if final_url != unified_agenda_xml_locator(edition):
-        raise UnifiedAgendaSourceError("Unified Agenda response URL differs from the requested edition")
-    rins: list[str] = []
-    seen: set[str] = set()
+class _EditionIdentity:
+    """Each record states one RIN and the requested edition; no RIN twice; at least one record."""
 
-    def validate_record(record: UnifiedAgendaRecordObservation) -> None:
+    def __init__(self, edition: UnifiedAgendaEdition) -> None:
+        self.edition = edition
+        self._rins: list[str] = []
+        self._seen: set[str] = set()
+
+    def prove(self, record: UnifiedAgendaRecordObservation) -> str:
         raw_rins = [field.text for field in record.fields if field.element.tag == "RIN"]
         publications = [
             child.text
@@ -124,24 +118,41 @@ def validate_unified_agenda_xml(
         record_rins = [value.strip() for value in raw_rins]
         if len(record_rins) != 1 or not record_rins[0]:
             raise UnifiedAgendaSourceError("Unified Agenda record requires exactly one RIN")
-        if [value.strip() for value in publications] != [edition.publication_id]:
+        if [value.strip() for value in publications] != [self.edition.publication_id]:
             raise UnifiedAgendaSourceError("Unified Agenda record states another edition than the request")
         rin = record_rins[0]
-        if rin in seen:
+        if rin in self._seen:
             raise UnifiedAgendaSourceError("Unified Agenda edition repeats a RIN")
-        seen.add(rin)
-        rins.append(rin)
+        self._seen.add(rin)
+        self._rins.append(rin)
+        return rin
 
-    result = _read_records(body, on_record=validate_record, max_bytes=max_bytes, identity_only=True)
-    if not rins:
-        raise UnifiedAgendaSourceError("Unified Agenda edition lists no RIN_INFO records")
+    def proved(self) -> tuple[str, ...]:
+        if not self._rins:
+            raise UnifiedAgendaSourceError("Unified Agenda edition lists no RIN_INFO records")
+        return tuple(self._rins)
+
+
+def validate_unified_agenda_xml(
+    body: bytes,
+    *,
+    edition: UnifiedAgendaEdition,
+    final_url: str,
+    max_bytes: int = DEFAULT_MAX_BYTES,
+) -> UnifiedAgendaMetadata:
+    """Prove every record belongs to the requested edition; keep the exact bytes for the caller."""
+    _limit(max_bytes)
+    if final_url != unified_agenda_xml_locator(edition):
+        raise UnifiedAgendaSourceError("Unified Agenda response URL differs from the requested edition")
+    identity = _EditionIdentity(edition)
+    result = _read_records(body, on_record=identity.prove, max_bytes=max_bytes, identity_only=True)
     return UnifiedAgendaMetadata(
         edition.file_stem,
         edition.publication_id,
         result.root.attributes.get("RUN_DATE"),
         result.root.attributes.get(_SCHEMA_LOCATION),
         result.record_count,
-        tuple(rins),
+        identity.proved(),
     )
 
 
