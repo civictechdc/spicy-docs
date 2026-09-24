@@ -219,7 +219,12 @@ stem is the CHRG package id. Measured once, `hearing/119/house/64431`
 detail record carries `relatedItems.bills`, `hearingTranscript[].jacketNumber`,
 `witnessDocuments` and `meetingDocuments`, the fields the legislative data
 map's `meeting->bill`, `meeting->hearing` and `meeting->documents` edges
-resolve on. `house-communication-detail` closes the regulatory-bridge half
+resolve on. The detail route also accepts the publisher's `nochamber`
+address, as retained meeting `119/nochamber/338692` states. The table keeps
+`NoChamber` as lowercase `nochamber`; it does not infer `joint` from the
+committee name. This address value is admitted only for meeting details.
+
+`house-communication-detail` closes the regulatory-bridge half
 of gap A5: `isRulemaking`, `reportNature` (which carries the RIN),
 `committees[].systemCode` and `matchingRequirements[].number` are the fields
 the map's `communication-typing`, `communication->committee`,

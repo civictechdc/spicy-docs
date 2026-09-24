@@ -128,7 +128,10 @@ COMMITTEE_MEETINGS = table_contract(
     version_column="update_date",
     columns={
         "congress": "The numbered Congress the meeting belongs to.",
-        "chamber": "The chamber, lowercased the way the publisher's own address spells it (house, senate, joint).",
+        "chamber": (
+            "The publisher's chamber value, lowercased as its address spells it "
+            "(house, senate, joint, nochamber). NoChamber stays nochamber, not an inferred chamber."
+        ),
         "event_id": "The publisher's event id, the key hearing_transcripts.event_id joins on.",
         "title": "The meeting title as the detail states it.",
         "meeting_type": "The publisher's meeting type (Hearing, Markup, ...).",

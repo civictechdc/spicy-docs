@@ -535,9 +535,12 @@ def _amendment_type_param(value: str | None) -> str:
     return value
 
 
-def _chamber_param(value: str | None) -> str:
-    if value not in _CHAMBERS:
-        raise PagedJsonSourceError("chamber must be 'house', 'senate' or 'joint'")
+def _chamber_param(value: str | None, route_name: str) -> str:
+    # NoChamber is a publisher-stated meeting address, not a fourth chamber
+    # to infer for committee, bill or vote routes (retained meeting 338692).
+    valid = _CHAMBERS | {"nochamber"} if route_name == "committee-meeting-detail" else _CHAMBERS
+    if value not in valid:
+        raise PagedJsonSourceError(f"chamber must be one of {sorted(valid)} for {route_name}")
     return value
 
 
@@ -574,8 +577,8 @@ def _session_param(value: int | None) -> str:
 def _communication_type_param(value: str | None, route_name: str) -> str:
     """Validated against the calling route's own chamber, not a House/Senate union.
 
-    Not dispatched through ``_VALIDATE_PARAM``: every other token's valid values are the same
-    regardless of which route names it, but ``commtype`` is not -- the House and Senate
+    Not dispatched through ``_VALIDATE_PARAM``: its valid values depend on the
+    route, as chamber values do -- the House and Senate
     enumerations differ -- so ``_route_path`` calls this directly, keyed by ``route.name``,
     instead of through the single-argument dispatch table.
     """
@@ -601,7 +604,6 @@ def _bioguide_id_param(value: str | None) -> str:
 
 _VALIDATE_PARAM: dict[str, Callable[[object], str]] = {
     "congress": _congress_param,
-    "chamber": _chamber_param,
     "code": _committee_code_param,
     "type": _bill_type_param,
     "number": lambda value: _positive_int_param(value, "number"),
@@ -661,12 +663,11 @@ def _route_path(route: CongressListRoute, values: Mapping[str, object]) -> str:
             continue
         if stopped_at is not None:
             raise PagedJsonSourceError(f"{_KWARG_FOR_PARAM[name]} requires an explicit {_KWARG_FOR_PARAM[stopped_at]}")
-        # "commtype" is the one token whose valid values depend on the route asking for it (the
-        # House and Senate communication type enumerations differ), so it is dispatched directly
-        # rather than through _VALIDATE_PARAM's single-argument table; see
-        # _communication_type_param.
+        # Communication types and chambers have route-specific vocabularies.
         if name == "commtype":
             segments.append(_communication_type_param(value, route.name))
+        elif name == "chamber":
+            segments.append(_chamber_param(value, route.name))
         else:
             segments.append(_VALIDATE_PARAM[name](value))
     return "/".join(segments)

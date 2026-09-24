@@ -641,6 +641,22 @@ def test_list_route_url_bare_route_omits_the_congress_segment():
     assert list_route_url(LIST_ROUTES["member"], limit=3) == "https://api.congress.gov/v3/member?format=json&limit=3"
 
 
+def test_meeting_detail_accepts_the_publishers_nochamber_address():
+    assert (
+        list_route_url(
+            LIST_ROUTES["committee-meeting-detail"], congress=119, chamber="nochamber", event_id=338692, limit=1
+        )
+        == "https://api.congress.gov/v3/committee-meeting/119/nochamber/338692?format=json&limit=1"
+    )
+
+
+@pytest.mark.parametrize("route_name", ["committee", "committee-meeting", "committee-detail"])
+def test_nochamber_is_not_inferred_for_other_routes(route_name):
+    kwargs = {"system_code": "jcse00"} if route_name == "committee-detail" else {"congress": 119}
+    with pytest.raises(PagedJsonSourceError, match="chamber"):
+        list_route_url(LIST_ROUTES[route_name], chamber="nochamber", **kwargs)
+
+
 def test_new_list_routes_omit_their_optional_trailing_segments():
     """A5, A6, A7, A10: committee-meeting, treaty and senate-communication all support a bare
     request the same way amendment/nomination do; committee-meeting also supports congress alone,
