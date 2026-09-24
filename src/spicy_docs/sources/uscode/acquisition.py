@@ -7,7 +7,9 @@ and no disk cache. The zip routes send no ``Content-Type`` or ``Content-Length``
 and so are proved from their bytes, a generated page cut short is a 200 the
 readers refuse by name, and a title the publisher lists but does not serve
 answers 302 rather than 404, so only the exact requested locator answering
-404/410 raises :class:`UsCodeSourceUnavailableError`.
+404/410 raises :class:`UsCodeSourceUnavailableError`. No answer establishes
+that Table III lacks an act; :func:`~spicy_docs.sources.uscode.table3.iter_table3_chain`
+reads that from the links between the pages it serves.
 """
 
 from __future__ import annotations
@@ -170,6 +172,7 @@ class UsCodeAcquirer(SourceAcquirer):
         media_types: tuple[str, ...],
         read: Callable[[bytes, int], UsCodeResult],
         max_bytes: int | None,
+        retain_dropped_body: bool = False,
     ) -> UsCodeAcquisition:
         effective = replace(self.budget, max_bytes=narrow_byte_limit(self.budget.max_bytes, max_bytes))
         result, capture = self.capture_validated(
@@ -179,6 +182,7 @@ class UsCodeAcquirer(SourceAcquirer):
             max_bytes=effective.max_bytes,
             unavailable=UsCodeSourceUnavailableError,
             context={"operation": operation, "selection": selection, "budget": asdict(effective)},
+            retain_dropped_body=retain_dropped_body,
         )
         return UsCodeAcquisition(operation, selection, result, capture, self.request_count, effective)
 
@@ -271,9 +275,11 @@ class UsCodeAcquirer(SourceAcquirer):
     ) -> UsCodeAcquisition:
         """Capture one act's Table III page and prove the act it states is the act requested.
 
-        An act the table does not hold answers 200 with a page cut off inside the
-        site menu. It is refused with its bytes; a row count of zero from such an
-        answer never becomes "this act classified nothing".
+        An act the table serves no page for answers 200, the first 16 KB of the
+        site template, and a dropped connection: a transport failure, retried
+        like any other. The error that escapes keeps the last attempt's bytes as
+        its ``response-incomplete`` evidence. Those bytes are a prefix of every
+        served page, so they never establish absence; the chain of pages does.
         """
         table3_file_name(key)
         return self._acquire(
@@ -283,6 +289,7 @@ class UsCodeAcquirer(SourceAcquirer):
             media_types=HTML_MEDIA_TYPES,
             read=lambda body, limit: parse_table3_page(body, key=key, max_bytes=limit, max_rows=max_rows),
             max_bytes=max_bytes,
+            retain_dropped_body=True,
         )
 
     def acquire_table3_bulk(

@@ -1,11 +1,23 @@
-"""Table III: per-act pages and the bare-fragment bulk member."""
+"""Table III: per-act pages, the chain of acts they link, and the bare-fragment bulk member.
+
+Absence is read from the chain, never from a page's bytes. Each served page
+names the act before and after it, and those links skip exactly the acts the
+table serves no page for. An act without a page answers ``200``, the first
+16,134 or 16,209 bytes of the site template (the site menu opens at about
+2.3 KB and the page's content at about 27 KB), and a dropped connection.
+Session id aside, every such answer is a byte-exact prefix of a served page,
+so a served page dropped between those two points reads the same. The
+measurements are in
+``~/Work/corpora/fork-execution-2026-09-21/table3-walk-2026-09-24/spicy-docs/``.
+"""
 
 from __future__ import annotations
 
 import re
-from collections.abc import Iterator
+from collections.abc import Callable, Container, Generator, Iterator
 from dataclasses import dataclass
 from html.parser import HTMLParser
+from typing import TYPE_CHECKING
 from urllib.parse import parse_qs, urlsplit
 from xml.etree.ElementTree import Element
 
@@ -28,6 +40,9 @@ from spicy_docs.sources.uscode.core import (
     _visible,
     table3_file_name,
 )
+
+if TYPE_CHECKING:
+    from spicy_docs.sources.uscode.acquisition import UsCodeAcquisition
 
 # --------------------------------------------------------------------------- #
 # Table III
@@ -153,9 +168,9 @@ def parse_table3_page(
 ) -> Table3Page:
     """Read one act's Table III page, proving the act it states is the act requested.
 
-    An act the table does not hold answers HTTP 200 and a page cut off inside
-    the site menu. It states no act and is not closed, so both checks refuse it;
-    a row count of zero is never read as "this act classified nothing".
+    The bytes of an act the table serves no page for stop inside the site menu:
+    they state no act and are not closed, so both checks refuse them, and a
+    row count of zero is never read as "this act classified nothing".
     """
     table3_file_name(key)
     _limit(max_bytes)
@@ -210,6 +225,79 @@ def parse_table3_page(
         reader.context.get("nextact"),
         tuple(records),
     )
+
+
+#: A public law as a key or a page states it: ``119-4``, or ``119–4`` with the page's en dash.
+_PUBLIC_LAW = re.compile(r"(?P<congress>[1-9][0-9]{0,2})-(?P<number>[1-9][0-9]*)")
+
+
+def _public_law(stated: str | None) -> tuple[int, int] | None:
+    match = _PUBLIC_LAW.fullmatch(_comparable(stated or ""))
+    return (int(match["congress"]), int(match["number"])) if match else None
+
+
+def iter_table3_chain(
+    acquire: Callable[[str], UsCodeAcquisition],
+    start: str,
+    *,
+    max_acts: int,
+    within: Container[str] | None = None,
+) -> Generator[UsCodeAcquisition, None, str]:
+    """Walk one Congress's chain: request ``start``, then each act a page names next, yielding every acquisition.
+
+    ``acquire`` is :meth:`~spicy_docs.sources.uscode.acquisition.UsCodeAcquirer.acquire_table3_act`
+    or a wrapper around it. The acts a link passes over are the ones the table
+    serves no page for: on 2026-09-24 ``119-12`` named ``119-18`` next, and
+    ``119-13`` to ``119-17`` each answered only the site template.
+
+    The walk requests nothing more, and returns why, after ``max_acts`` pages or
+    at a page that names no next public law, or names one in another Congress,
+    one that does not follow the act it is on, one outside ``within`` (the
+    caller's own bound, such as the public laws it lists, spelled ``119-4``;
+    pass a set, since membership is tested once per act), or one past the
+    release point the page states itself current through, in that order. The
+    last served page of 2026-09-24, ``119-73`` at ``119-73``, named ``119-74``,
+    which answered only the template.
+
+    A named act that fails raises from ``acquire`` as it would alone, retried
+    and refused the same way. The walk ends there, since only that page names
+    the next act, and nothing it received becomes an absence. ``start`` is
+    requested like any other act, so it must be one the table serves: a
+    Congress whose lowest act has no page cannot start from it. The previous
+    Congress's walk should end at a page naming an act in this one, which could
+    seed it; that is inferred from ``119-1`` naming ``118-273`` as its prior
+    act, not yet observed.
+
+    A page's stop rules run inside the ``next()`` that follows it, so that
+    call can end the walk without a request. Spend a per-run cap or check a
+    deadline inside ``acquire``, once per request, not before each ``next()``:
+    a count taken there also spends one at every natural end and reports the
+    cap instead of the chain's end. ``acquire`` stops the walk by raising.
+    """
+    _count(max_acts, "max_acts")
+    current = _public_law(start)
+    if current is None:
+        raise UsCodeSourceError("Table III chain starts at a public-law key such as 119-4")
+    key = f"{current[0]}-{current[1]}"
+    for _ in range(max_acts):
+        acquired = acquire(key)
+        yield acquired
+        page = acquired.result
+        following = _public_law(page.next_act)
+        if following is None:
+            return "names no next public law"
+        if following[0] != current[0]:
+            return "names an act in another Congress"
+        if following[1] <= current[1]:
+            return "names an act that does not follow it"
+        key = f"{following[0]}-{following[1]}"
+        if within is not None and key not in within:
+            return "names an act outside the caller's bound"
+        stated = _public_law(page.release_point)
+        if stated is not None and following > stated:
+            return "names an act past the release point it states"
+        current = following
+    return "reached max_acts"
 
 
 _ACT_OPEN = b"<act "

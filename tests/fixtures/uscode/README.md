@@ -1,6 +1,6 @@
 # OLRC U.S. Code fixtures
 
-Publisher files from `uscode.house.gov`, pinned on 2026-09-14 unless stated (the two classification fixtures on 2026-09-19).
+Publisher files from `uscode.house.gov`, pinned on 2026-09-14 unless stated (the two classification fixtures on 2026-09-19, the three Table III chain pages on 2026-09-24).
 These U.S. government documents are public domain. Offline tests establish
 behavior for these shapes; they do not establish coverage or continuing live
 availability.
@@ -13,7 +13,10 @@ availability.
 | `popularnames-head.htm` | reduced: [`popularnames.htm`](https://uscode.house.gov/popularnames/popularnames.htm) (11,106,277 bytes) through its first 9 entries, closed | 9,260 | `6c715b1dab0ae63d21a46ee50bc75b993d4bb102ad7cb9e9aaf1185581498259` |
 | `table3-1955_360-head.htm` | reduced: [`1955_360.htm`](https://uscode.house.gov/table3/1955_360.htm) (117,524 bytes, 186 rows) through its first 4 rows, closed | 6,245 | `9fa0a4014cebc9e12f5497508557676d95fde44bc40ff092b8610b3ccd42569f` |
 | `table3-111_226-head.htm` | reduced: [`111_226.htm`](https://uscode.house.gov/table3/111_226.htm) (53,528 bytes, 32 rows) through its first 4 rows, closed | 6,199 | `943c62a36a58f7f0a94da6276ba073e44cd3af439656be32abbaa9143740a301` |
-| `table3-100_234-truncated.htm` | complete: the publisher's whole answer for [`100_234.htm`](https://uscode.house.gov/table3/100_234.htm), an act Table III does not hold | 15,881 | `dc126dffdbde367d40149b96e5da70ca0d71dd9a3c95535d1d25a095ee66912e` |
+| `table3-100_234-truncated.htm` | complete: every byte the publisher sent for [`100_234.htm`](https://uscode.house.gov/table3/100_234.htm), an act Table III has no page for, before it dropped the connection | 15,881 | `dc126dffdbde367d40149b96e5da70ca0d71dd9a3c95535d1d25a095ee66912e` |
+| `table3-119_69-head.htm` | reduced: [`119_69.htm`](https://uscode.house.gov/table3/119_69.htm) (41,145 bytes, 5 rows) through its first 2 rows, closed; names 119-72 next | 5,386 | `bfdfbedc105307290d363f910e045815503d008bd26e7997177ed48600f66e0b` |
+| `table3-119_72-head.htm` | reduced: [`119_72.htm`](https://uscode.house.gov/table3/119_72.htm) (39,853 bytes, 2 rows), closed; names 119-69 before and 119-73 next | 5,381 | `70f18081114a3847fb3b59f820f90c06a205f0854ce65c02ee651f22ce9e05fe` |
+| `table3-119_73-head.htm` | reduced: [`119_73.htm`](https://uscode.house.gov/table3/119_73.htm) (42,398 bytes, 8 rows) through its first 2 rows, closed; current through 119-73, names 119-74 next | 5,383 | `8255a24c50e3f8b570570c76a493597818dc9588cde2a66aa69b84a171ee6872` |
 | `table3-fulldump-head.xml` | reduced: the first 3 `<act>` elements of `fulldump@119-73.xml` (126,260,704 bytes) inside [`table3-xml-bulk.zip`](https://uscode.house.gov/table3/table3-xml-bulk.zip) | 4,948 | `158d910a5d76fd9cf954a382061e600ff3121af9651a41d3f4b983a33a9d1c1a` |
 | `classification-tables-index.shtml` | reduced: [`classification/tables.shtml`](https://uscode.house.gov/classification/tables.shtml) (39,140 bytes) minus its 27 KB navigation menu, everything else kept | 13,285 | `6a4fbfe2c5834745dfbaabd4418549e25bf3dca3b2ac25a63e3e7fc241cfcba0` |
 | `classification-tbl119pl_2nd-head.htm` | reduced: [`classification/tbl119pl_2nd.htm`](https://uscode.house.gov/classification/tbl119pl_2nd.htm) (115,140 bytes, 583 rows) through its column header plus 10 of the 583 data lines, closed | 14,073 | `2eb046d9bab9bce8a04606d23cff48b51b4ac942f653e3e0e6bb747b73e2fda6` |
@@ -28,7 +31,7 @@ appended; no byte inside a kept region was rewritten except as noted here.
   `jsessionid=SESSIONID`. The originals, session ids and all, are in the port
   receipt; `table3-100_234-truncated.htm` is 16,134 bytes there, SHA-256
   `d10dea18868af541a42aeb309e592a2340e83217106376e76c0f73a6cb5ee4a5`.
-- **The site menu.** `popularnames-head.htm` and both `table3-*-head.htm`
+- **The site menu.** `popularnames-head.htm` and the `table3-*-head.htm`
   fixtures drop the 27 KB navigation menu every page on the site repeats,
   between `<div id="menu">` and the page's own content div, replaced by
   `<!-- site menu removed -->`. Nothing the readers look at lives there.
@@ -42,11 +45,19 @@ appended; no byte inside a kept region was rewritten except as noted here.
   which keeps every earlier byte and inserts that line before `</pre>`.
 - The truncated Table III fixture is **not** reduced beyond the session id: its
   point is that the publisher's answer stops mid-menu, and shortening it would
-  remove the evidence.
+  remove the evidence. The publisher drops the connection there, and the tests
+  replay it that way. The bytes are also the first 16 KB of every served page,
+  which is why they are evidence of a failed request and never of absence.
+- **The chain pages** were captured on 2026-09-24 by the drift audit's probe,
+  which kept its session cookie, so they carry no session id. They keep their
+  caption whole: the act, its prior and next acts, and the table's currency.
 
 The build script is `build_fixtures.py` in
 `corpora/supply-2026-09-02/receipts/port-P01-uscode-2026-09-14/`, beside the
-original captures and the pin log.
+original captures and the pin log. The chain pages' script is
+`build_chain_fixtures.py` in
+`corpora/fork-execution-2026-09-21/table3-walk-2026-09-24/spicy-docs/`; the
+originals are in `drift-audit-2026-09-24/laws/raw/table3/` beside it.
 
 ## Observed shapes across every retained file
 

@@ -11,7 +11,7 @@ keyless: no API key, no account, no terms gate.
 | Release-point corpus | Release point | Every title in one zip of about 108 MB, each member validated against its own bytes. |
 | Annual archive | Year, 1994 onwards | One year of the Code as XHTML. Every title member states its edition, year, title and currency. |
 | Popular Name Tool | None | Every popular name Congress has used, with the enacting act's Table III key and often the Code section its short title lives in. |
-| Table III act | An act key | Which of the act's sections went to which Code section, and what happened to the rest. |
+| Table III act | An act key | Which of the act's sections went to which Code section, and what happened to the rest. Each page also names the acts before and after it. |
 | Table III bulk | None | The whole of Table III in one zip: 48,973 acts and 317,590 classification records. |
 
 OLRC's USLM is **not** GovInfo's. This publisher serves USLM 1.0 in
@@ -50,6 +50,71 @@ Offline, `read_title_archive`, `read_corpus_archive` and `read_annual_archive` l
 `parse_table3_page` and `read_table3_bulk_archive` check retained bytes against
 a selection in `spicy_docs.sources.uscode`. `iter_table3_acts` streams the bulk file's 48,973 acts without
 holding them.
+
+## Walk Table III by its own links
+
+Each Table III page names the act before and after it. `iter_table3_chain`
+walks one Congress's chain. It requests a starting act and then each act a
+page names next, yielding every `UsCodeAcquisition`. When it ends on its own,
+it returns the reason as `StopIteration.value`, which a `for` loop discards:
+
+```python
+from spicy_docs.sources.uscode import iter_table3_chain
+
+
+class Stop(Exception):
+    """Raised by the wrapper to end the walk at the caller's own limit."""
+
+
+def acquire(key):
+    # A cap or deadline belongs here, once per request (see below).
+    if not cap.take():
+        raise Stop(key)
+    return source.acquire_table3_act(key)
+
+
+with UsCodeAcquirer(budget=budget) as source:
+    chain = iter_table3_chain(acquire, "119-69", max_acts=300, within=listed_laws)
+    while True:
+        try:
+            acquired = next(chain)
+        except StopIteration as end:
+            reason = end.value  # for example "names an act past the release point it states"
+            break
+        except Stop:
+            break
+        page = acquired.result
+        print(page.key, page.next_act, len(page.records), acquired.capture.observed_at)
+```
+
+- **Only the chain establishes absence.** The acts a link passes over are the
+  ones the table has no page for: `119-12` names `119-18` next, and `119-13`
+  to `119-17` answer only the site template. A page's bytes never establish it
+  (see [below](#read-the-result-correctly)).
+- **The walk asks for nothing past its end.** It stops after `max_acts` pages,
+  or at a page whose next act is not a public law, is in another Congress,
+  does not follow the page's own act, is outside `within` (your own bound,
+  such as the public laws you list, spelled `119-4`, as a set), or is after
+  the release point the page states itself current through, checked in that
+  order. On 2026-09-24 the last page,
+  `119-73`, stated currency through `119-73` and named `119-74`, which answered
+  only the template. These are the chain rules spicy-regs' laws rollup applies.
+- **A failure ends the walk.** A named act that drops or is refused raises from
+  `acquire_table3_act` as it would alone, after the same retries. Only that
+  page names the next act.
+- **Count requests inside `acquire`, not before `next()`.** A page's stop
+  rules run inside the `next()` that follows it, and that call can end the
+  walk without a request. A cap unit spent before each `next()` is also spent
+  at every natural end, which then reports the cap instead of the chain's end.
+  Spend the cap and check the deadline in the `acquire` wrapper, and raise
+  from it to stop.
+- **Start at an act the table serves**, such as the highest one you have read.
+  The start is requested like any other act. A Congress whose lowest act has
+  no page cannot start cold from it. The previous Congress's walk should end
+  at a page naming an act in this one, which could seed it. That is inferred,
+  not yet observed: `119-1` names `118-273` as its prior act, and no page of
+  the 118th Congress was read. The per-Congress index
+  (`congress119th.htm`, linked from every page) is not read by this package.
 
 To parse the retained content, use the [structure and annual section readers](uscode-structure.md)
 and [reference and source-credit readers](uscode-references.md). They preserve
@@ -112,7 +177,7 @@ much larger or much slower, and one budget will not fit them all:
 | Corpus zip | 108.6 MB, 243 s | 192 MiB / 900 |
 | Annual archive | 52–88 MB, 32–172 s | 128 MiB / 900 |
 | Popular Name Tool | 11.1 MB, **435 s** | 32 MiB / 900 |
-| Table III act page | 16–118 KB, 7–15 s | 32 MiB / 120 |
+| Table III act page | 16–118 KB, 7–15 s; an act without a page holds the connection 11–16 s before dropping it | 32 MiB / 120 |
 | Table III bulk | 15.0 MB, about 260 s with retries | 64 MiB / 900 |
 
 The Popular Name Tool is assembled per request, which is why 11 MB takes seven
@@ -126,14 +191,27 @@ minutes. Be polite: about 1.5 seconds between request starts.
   are what a title proves itself with, and `identifier` is a second witness
   where the document states one. `usc50A.xml`, the eliminated Title 50
   Appendix, states none; it was converted in 2015 and reissued unchanged since.
-- **A truncated 200 is refused, not read as an empty answer.** An act Table III
-  does not hold answers HTTP 200 with 16,134 bytes of site menu and then closes
-  the stream: no rows, no `</html>`, no act key. A reader that trusted the
-  status would record "this act classified nothing", which is a different claim
-  from "the table does not list this act". Both checks refuse it and the bytes
-  are retained. The same truncation has been seen on the download page and
-  mid-way through the bulk zip, so a retry is the right response to it, never a
-  smaller result.
+- **An act without a page answers 200 and a dropped connection.** OLRC sends
+  the first 16,134 bytes of its site template, or 16,209 when the request
+  carries the session cookie. It then drops the connection (`RemoteProtocolError:
+  … incomplete chunked read`). All 44 retained answers of this kind dropped
+  and none ended cleanly. They carry no rows, no `</html>` and no act key, so
+  re-read bytes are refused rather than recorded as "this act classified
+  nothing".
+- **Those bytes are a served page's first 16 KB, so they never establish
+  absence.** On served pages the site menu (`<div id="subMenu">`) opens at
+  2,251 or 2,339 bytes and the content (`<div id="content"`) at 27,199 or
+  27,947. Session id aside, each answer is a byte-exact prefix of every served
+  page with the same session state, in all 1,331 pairs checked. A served page
+  dropped anywhere between those two points is therefore indistinguishable
+  from an act without a page. The acquirer treats the answer as the transport failure it is: it
+  retries it and then raises with the last attempt's bytes as
+  `response-incomplete` evidence (`refused_response`). Absence is read from
+  [the chain](#walk-table-iii-by-its-own-links). Other routes keep no bytes
+  from a drop; the download page and the bulk zip have dropped mid-way too.
+  The receipt is `~/Work/corpora/fork-execution-2026-09-21/table3-walk-2026-09-24/`
+  (the walk, and `spicy-docs/` for these measurements), with the drift
+  audit's probes in `drift-audit-2026-09-24/laws/`.
 - **A listed title the publisher does not serve answers 302**, to
   `/docnotfound.xhtml`. Title 53 is reserved, is linked from the download page,
   and answers that way. A redirect establishes neither data nor absence; it is
@@ -196,4 +274,6 @@ Complete and reduced publisher fixtures with hashes are in
 live pins, the offline qualification of every validator against RefSpec's
 retained 108 MB corpus zip and all 31 annual archives, and the timing
 measurements quoted above are in
-`corpora/supply-2026-09-02/receipts/port-P01-uscode-2026-09-14/`.
+`corpora/supply-2026-09-02/receipts/port-P01-uscode-2026-09-14/`. The Table III
+template and chain measurements of 2026-09-24 are in
+`corpora/fork-execution-2026-09-21/table3-walk-2026-09-24/spicy-docs/`.

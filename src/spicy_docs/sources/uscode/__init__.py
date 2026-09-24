@@ -5,11 +5,13 @@ no API, and each family proves its own identity from its own bytes: a
 release-point title's ``<meta>`` states its number and release point, an annual
 member's ``AUTHORITIES-*`` comments state its year, and the zip routes carry
 neither ``Content-Type`` nor ``Content-Length``, so archive shape is proved
-from a local file header and CRC check instead. Two publisher refusals shape the
-readers: an absent Table III act answers HTTP 200 with a truncated page, and a
-title the publisher lists but does not serve answers 302, so neither status is
-read as data or absence. This publisher's USLM is not GovInfo's -- OLRC serves
-USLM 1.0 under ``uscDoc``, GovInfo 2.x under ``pLaw`` -- so
+from a local file header and CRC check instead. Two publisher answers shape the
+readers: a Table III act without a page answers HTTP 200 and a connection
+dropped inside the site template, and a title the publisher lists but does not
+serve answers 302, so neither status is read as data or absence; Table III
+absence is read from the chain of acts its pages link. This publisher's USLM is
+not GovInfo's -- OLRC serves USLM 1.0 under ``uscDoc``, GovInfo 2.x under
+``pLaw`` -- so
 :mod:`spicy_docs.sources.govinfo.uslm`'s
 :class:`~spicy_docs.sources.govinfo.uslm.UslmScan` is bound to this namespace,
 root and body sections rather than written twice.
@@ -58,6 +60,7 @@ from .table3 import (
     Table3Record,
     iter_act_fragments,
     iter_table3_acts,
+    iter_table3_chain,
     parse_act_fragment,
     parse_table3_page,
     read_table3_bulk_archive,
@@ -100,6 +103,7 @@ __all__ = [
     "corpus_xml_locator",
     "iter_act_fragments",
     "iter_table3_acts",
+    "iter_table3_chain",
     "parse_act_fragment",
     "parse_popular_names",
     "parse_table3_page",

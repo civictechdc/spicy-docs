@@ -346,7 +346,7 @@ src/spicy_docs/sources/uscode/core.py	Shared U.S. Code facts: constants, budget 
 src/spicy_docs/sources/uscode/popular_names.py	The Popular Name Tool page: one record per stated fact, defects named rather than dropped.	src
 src/spicy_docs/sources/uscode/references.py	Literal U.S. Code references and source credits, without citation interpretation.	src
 src/spicy_docs/sources/uscode/structure.py	Literal U.S. Code structure observations from retained OLRC XML.	src
-src/spicy_docs/sources/uscode/table3.py	Table III: per-act pages and the bare-fragment bulk member.	src
+src/spicy_docs/sources/uscode/table3.py	Table III: per-act pages, the chain of acts they link, and the bare-fragment bulk member.	src
 src/spicy_docs/sources/uscode/titles.py	Release-point title USLM: native identity proven against the request.	src
 src/spicy_docs/sources/zyte.py	Bounded, secret-safe raw HTTP capture through Zyte.	src
 src/spicy_docs/storage/__init__.py	Local blob storage and immutable filesystem publication.	src

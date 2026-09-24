@@ -24,12 +24,17 @@ class _RetryableTransportError(ConnectionError):
     """Transport failed without copying arbitrary provider text into logs."""
 
 
-def _access_refusal(response: httpx.Response, url: str, max_bytes: int) -> RefusedResponse:
-    """Retain complete bounded raw evidence for a 401/403; a failed read marks it unavailable, never absent."""
-    media_type = (response.headers.get("content-type") or "application/octet-stream").split(";", 1)[0]
+def _evidence_media_type(response: httpx.Response) -> str:
+    """The media type raw evidence bytes are: the stated one, unless the body is encoded."""
     if response.headers.get("content-encoding", "identity").strip().lower() != "identity":
         # Raw encoded bytes are evidence, not the decoded format named by the header.
-        media_type = "application/octet-stream"
+        return "application/octet-stream"
+    return (response.headers.get("content-type") or "application/octet-stream").split(";", 1)[0]
+
+
+def _access_refusal(response: httpx.Response, url: str, max_bytes: int) -> RefusedResponse:
+    """Retain complete bounded raw evidence for a 401/403; a failed read marks it unavailable, never absent."""
+    media_type = _evidence_media_type(response)
     body = bytearray()
     try:
         for chunk in response.iter_raw(chunk_size=min(max_bytes + 1, 64 * 1024)):
@@ -118,8 +123,18 @@ class BoundedHttpCapture:
         method: str = "GET",
         content: bytes | None = None,
         request_headers: Mapping[str, str] | None = None,
+        retain_dropped_body: bool = False,
     ) -> CapturedBodyResponse:
-        """``POST`` sends ``content`` verbatim and records it on the capture; credentials never belong in it."""
+        """``POST`` sends ``content`` verbatim and records it on the capture; credentials never belong in it.
+
+        ``retain_dropped_body`` keeps what a body delivered before any
+        ``httpx.RequestError`` cut it short (a dropped connection, a reset, a read
+        timeout) as the transport refusal's evidence, marked
+        ``response-incomplete`` so it is never read as the whole answer. The
+        failure is retried exactly as without it; the error that finally escapes
+        carries the last attempt's bytes. It is for keyless routes only: those
+        bytes never reach the credential-echo check a completed capture gets.
+        """
         if self._closed:
             raise ValueError("Source acquisition client is closed")
         if method not in ("GET", "POST"):
@@ -164,23 +179,43 @@ class BoundedHttpCapture:
                         raise error
                     body = bytearray()
                     # HTTPX's chunker yields at most this size, including over
-                    # short transport reads. A complete capture needs EOF.
-                    for chunk in response.iter_raw(chunk_size=min(max_bytes + 1, 64 * 1024)):
-                        if len(body) + len(chunk) > max_bytes:
-                            error = self.error_type("Body source response exceeds its byte bound")
-                            attach_refused_response(
-                                error,
-                                RefusedResponse(
-                                    url,
-                                    "transport",
-                                    None,
-                                    "application/octet-stream",
-                                    "response-byte-limit",
-                                    len(body) + len(chunk),
-                                ),
-                            )
-                            raise error
-                        body.extend(chunk)
+                    # short transport reads. A complete capture needs EOF. The
+                    # chunker loses what it holds when the stream fails, so a
+                    # dropped body is kept only by reading chunks as they arrive.
+                    chunk_size = None if retain_dropped_body else min(max_bytes + 1, 64 * 1024)
+                    try:
+                        for chunk in response.iter_raw(chunk_size=chunk_size):
+                            if len(body) + len(chunk) > max_bytes:
+                                error = self.error_type("Body source response exceeds its byte bound")
+                                attach_refused_response(
+                                    error,
+                                    RefusedResponse(
+                                        url,
+                                        "transport",
+                                        None,
+                                        "application/octet-stream",
+                                        "response-byte-limit",
+                                        len(body) + len(chunk),
+                                    ),
+                                )
+                                raise error
+                            body.extend(chunk)
+                    except httpx.RequestError:
+                        if not retain_dropped_body:
+                            raise
+                        dropped = _RetryableTransportError("Body source transport failed while acquiring a response")
+                        attach_refused_response(
+                            dropped,
+                            RefusedResponse(
+                                url,
+                                "transport",
+                                bytes(body),
+                                _evidence_media_type(response),
+                                "response-incomplete",
+                                len(body),
+                            ),
+                        )
+                        raise dropped from None
                     observed_at = self._clock()
                     if observed_at.tzinfo is None or observed_at.utcoffset() is None:
                         raise ValueError("Source acquisition clock must return a timezone-aware instant")
