@@ -202,6 +202,7 @@ class SourceAcquirer:
         content: bytes | None = None,
         request_headers: Mapping[str, str] | None = None,
         reset_budget: bool = True,
+        retain_dropped_body: bool = False,
     ) -> tuple[Result, CapturedBodyResponse]:
         """One request; 404/410 raise ``unavailable``; any failure carries its capture and context.
 
@@ -212,7 +213,8 @@ class SourceAcquirer:
         conditional download, say) passes it on every call after the first so
         ``max_requests`` bounds the whole operation once, not each request in
         it separately, and ``request_count`` after the last call reports the
-        true total.
+        true total. ``retain_dropped_body`` is passed to
+        :meth:`~spicy_docs.transport.capture.BoundedHttpCapture.capture`.
         """
         if reset_budget:
             self._http.reset_budget()
@@ -226,6 +228,7 @@ class SourceAcquirer:
                 method=method,
                 content=content,
                 request_headers=request_headers,
+                retain_dropped_body=retain_dropped_body,
             )
             if capture.status_code in (404, 410):
                 raise unavailable(capture)

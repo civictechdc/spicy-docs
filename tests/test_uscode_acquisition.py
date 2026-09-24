@@ -1,7 +1,8 @@
 """OLRC U.S. Code requests preserve exact responses, bounds, and refusal evidence.
 
 Title, corpus, annual, popular-names, and Table 3 routes capture original bytes; a 302 document-not-found is a
-refusal rather than an absence; and byte, entry, and expansion bounds refuse with the capture retained."""
+refusal rather than an absence; byte, entry, and expansion bounds refuse with the capture retained; and Table III
+absence is read from the chain its pages link, never from a dropped answer's bytes."""
 
 import io
 import zipfile
@@ -12,7 +13,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from spicy_docs.sources.uscode import ReleasePoint, TitleSelection, UsCodeSourceError
+from spicy_docs.sources.uscode import ReleasePoint, TitleSelection, UsCodeSourceError, iter_table3_chain
 from spicy_docs.sources.uscode.acquisition import (
     UsCodeAcquirer,
     UsCodeAcquisitionBudget,
@@ -28,6 +29,8 @@ ANNUAL_HTML = (FIXTURES / "annual-2024usc01-head.htm").read_bytes()
 POPULAR_NAMES = (FIXTURES / "popularnames-head.htm").read_bytes()
 TABLE3_PAGE = (FIXTURES / "table3-1955_360-head.htm").read_bytes()
 TABLE3_TRUNCATED = (FIXTURES / "table3-100_234-truncated.htm").read_bytes()
+#: 119-69 names 119-72 next and 119-72 names 119-73: 119-70 and 119-71 have no page.
+CHAIN = [(FIXTURES / f"table3-119_{number}-head.htm").read_bytes() for number in (69, 72, 73)]
 BULK_XML = (FIXTURES / "table3-fulldump-head.xml").read_bytes()
 
 CURRENT = ReleasePoint(119, 103)
@@ -57,6 +60,23 @@ def response(body=TITLE_ZIP, status=200, *, content_type=None, **headers):
     if content_type is not None:
         headers["content-type"] = content_type
     return httpx.Response(status, stream=httpx.ByteStream(body), headers=headers)
+
+
+class Dropped(httpx.SyncByteStream):
+    """The body in two chunks, then the connection closed before the body ended, as OLRC closes it."""
+
+    def __init__(self, body):
+        self.body = body
+
+    def __iter__(self):
+        yield self.body[:4096]
+        yield self.body[4096:]
+        raise httpx.RemoteProtocolError("peer closed connection without sending complete message body")
+
+
+def page(body, *, dropped=False):
+    stream = Dropped(body) if dropped else httpx.ByteStream(body)
+    return httpx.Response(200, stream=stream, headers={"content-type": "text/html;charset=UTF-8"})
 
 
 class Transport(httpx.MockTransport):
@@ -234,16 +254,117 @@ def test_wrong_shape_identity_redirect_or_incomplete_response_never_succeeds(ans
     assert raised.value.refused_response.response_bytes is not None
 
 
-def test_a_truncated_table3_answer_is_refused_with_its_bytes_and_never_read_as_zero_rows():
-    transport = Transport(response(TABLE3_TRUNCATED, content_type="text/html;charset=UTF-8"))
-    with (
-        UsCodeAcquirer(budget=BUDGET, transport=transport) as source,
-        pytest.raises(UsCodeSourceError, match="truncated") as raised,
-    ):
+def test_a_dropped_table3_answer_is_retried_and_keeps_its_bytes_as_evidence_never_as_an_absence():
+    # An act without a page answers 200, the site template up to 16 KB, and a dropped connection. A served page
+    # dropped at the same point is byte for byte the same, so this is a transport failure like any other.
+    transport = Transport(*(page(TABLE3_TRUNCATED, dropped=True) for _ in range(BUDGET.max_requests)))
+    with UsCodeAcquirer(budget=BUDGET, transport=transport) as source, pytest.raises(ConnectionError) as raised:
         source.acquire_table3_act("100-234")
-    assert raised.value.capture.status_code == 200
-    assert raised.value.refused_response.response_bytes == TABLE3_TRUNCATED
+    assert len(transport.calls) == raised.value.uscode_acquisition["requestCount"] == BUDGET.max_requests
+    evidence = raised.value.refused_response
+    assert (evidence.response_bytes, evidence.observed_byte_size) == (TABLE3_TRUNCATED, len(TABLE3_TRUNCATED))
+    assert (evidence.stage, evidence.media_type, evidence.unavailable_reason) == (
+        "transport",
+        "text/html",
+        "connection-dropped",
+    )
     assert raised.value.uscode_acquisition["selection"] == {"key": "100-234"}
+
+
+def test_other_routes_keep_no_bytes_from_a_dropped_body():
+    transport = Transport(*(page(POPULAR_NAMES, dropped=True) for _ in range(BUDGET.max_requests)))
+    with UsCodeAcquirer(budget=BUDGET, transport=transport) as source, pytest.raises(ConnectionError) as raised:
+        source.acquire_popular_names()
+    assert len(transport.calls) == BUDGET.max_requests
+    assert raised.value.refused_response.response_bytes is None
+    assert raised.value.refused_response.unavailable_reason == "response-unavailable"
+
+
+def walk(transport, start="119-69", **kwargs):
+    """The acquisitions a chain walk yields and the reason it returns, through the real acquirer."""
+    walked = []
+    with UsCodeAcquirer(budget=BUDGET, transport=transport) as source:
+        chain = iter_table3_chain(source.acquire_table3_act, start, **{"max_acts": 10, **kwargs})
+        while True:
+            try:
+                walked.append(next(chain))
+            except StopIteration as end:
+                return [acquired.result.key for acquired in walked], end.value
+
+
+def test_the_chain_follows_the_links_the_pages_state_and_stops_at_the_tables_currency():
+    transport = Transport(*(page(body) for body in CHAIN))
+    assert walk(transport) == (["119-69", "119-72", "119-73"], "names an act past the release point it states")
+    assert [call.url.path for call in transport.calls] == [
+        "/table3/119_69.htm",
+        "/table3/119_72.htm",
+        "/table3/119_73.htm",
+    ]
+    # 119-73 states the table current through 119-73 and names 119-74 next; on 2026-09-24 that act answered only
+    # the site template, so the walk does not ask for it.
+
+
+NEXT_73 = b'href="119_73.htm">119&ndash;73'
+
+
+@pytest.mark.parametrize(
+    ("linked", "reason"),
+    [
+        (None, "names no next public law"),
+        (b'href="120_1.htm">120&ndash;1', "names an act in another Congress"),
+        (b'href="119_69.htm">119&ndash;69', "names an act that does not follow it"),
+        (b'href="1955_360.htm">1955:360', "names no next public law"),
+    ],
+    ids=["no-next-act", "another-congress", "not-following", "a-chapter-key"],
+)
+def test_the_chain_ends_at_a_link_it_cannot_follow_without_asking_for_it(linked, reason):
+    middle = (
+        CHAIN[1].replace(b"class='nextact'", b"class='removed'")
+        if linked is None
+        else CHAIN[1].replace(NEXT_73, linked)
+    )
+    transport = Transport(page(CHAIN[0]), page(middle))
+    assert walk(transport) == (["119-69", "119-72"], reason)
+    assert len(transport.calls) == 2
+
+
+def test_the_callers_own_bound_and_max_acts_end_the_walk_before_a_request():
+    transport = Transport(*(page(body) for body in CHAIN))
+    assert walk(transport, within={"119-69", "119-72"}) == (
+        ["119-69", "119-72"],
+        "names an act outside the caller's bound",
+    )
+    transport = Transport(*(page(body) for body in CHAIN))
+    assert walk(transport, max_acts=2) == (["119-69", "119-72"], "reached max_acts")
+    assert len(transport.calls) == 2
+
+
+def test_a_chain_page_dropped_mid_body_is_retried_and_read():
+    transport = Transport(page(CHAIN[0]), page(CHAIN[1][:2000], dropped=True), page(CHAIN[1]), page(CHAIN[2]))
+    with UsCodeAcquirer(budget=BUDGET, transport=transport) as source:
+        walked = list(iter_table3_chain(source.acquire_table3_act, "119-69", max_acts=10))
+    assert [acquired.result.key for acquired in walked] == ["119-69", "119-72", "119-73"]
+    assert [acquired.request_count for acquired in walked] == [1, 2, 1]
+
+
+def test_a_chain_page_that_keeps_dropping_ends_the_walk_as_a_transport_failure():
+    answers = [page(CHAIN[0])] + [page(CHAIN[1][:2000], dropped=True) for _ in range(BUDGET.max_requests)]
+    transport = Transport(*answers)
+    walked = []
+    with UsCodeAcquirer(budget=BUDGET, transport=transport) as source, pytest.raises(ConnectionError) as raised:
+        walked.extend(iter_table3_chain(source.acquire_table3_act, "119-69", max_acts=10))
+    assert [acquired.result.key for acquired in walked] == ["119-69"]
+    assert len(transport.calls) == 1 + BUDGET.max_requests
+    assert raised.value.refused_response.response_bytes == CHAIN[1][:2000]
+    assert raised.value.uscode_acquisition["selection"] == {"key": "119-72"}
+
+
+@pytest.mark.parametrize(("start", "max_acts"), [("119_69", 1), ("1955:360", 1), ("119-69", 0), ("119-69", True)])
+def test_a_walk_with_a_bad_start_or_bound_makes_no_request(start, max_acts):
+    transport = Transport()
+    with UsCodeAcquirer(budget=BUDGET, transport=transport) as source, pytest.raises(UsCodeSourceError):
+        next(iter_table3_chain(source.acquire_table3_act, start, max_acts=max_acts))
+    assert not transport.calls
 
 
 def test_a_page_route_refuses_a_zip_and_an_archive_route_refuses_a_page():

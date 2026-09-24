@@ -520,8 +520,9 @@ def test_table3_page_keeps_the_en_dash_the_publisher_spells_a_public_law_with():
 
 
 def test_an_act_the_table_does_not_hold_is_refused_not_read_as_no_classifications():
-    # The publisher answers HTTP 200 and 16,134 bytes of site furniture, then
-    # closes the stream. Zero rows from that answer is not a fact about the act.
+    # The publisher answers HTTP 200 and 16,134 bytes of site template, then
+    # drops the connection. Re-read, those bytes are refused: zero rows from
+    # them is not a fact about the act.
     assert b"table3row_" not in TABLE3_TRUNCATED and b"</html>" not in TABLE3_TRUNCATED
     with pytest.raises(UsCodeSourceError, match="truncated"):
         parse_table3_page(TABLE3_TRUNCATED, key="100-234")

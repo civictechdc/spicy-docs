@@ -2030,3 +2030,47 @@ column, so the repin regenerates `data_dictionary/catalog.json` and its
 `.sha256`, `src/spicy_regs/table_metadata.json`, and the
 `docs/tables/law_code_sections.md` and `docs/tables/table3_records.md` pages
 (`uv run spicy-regs-dict generate`).
+
+## Table III absence is read from the chain of pages, never from a page's bytes
+
+**2026-09-24.** spicy-regs' Table III walk had stopped at the same three acts
+on every run since 2026-09-22. OLRC answers an act without a page with HTTP
+200, the first 16,134 or 16,209 bytes of its site template, and a dropped
+connection. This package retried that answer as a transport failure (four
+requests, about 70 seconds an act), and three in a row stopped the walk. A
+stopgap there typed those bytes as a definite absence: the site menu is present
+and the page's content is not. Measured against every retained answer, that
+test cannot separate the two cases. On served pages the menu opens at about
+2.3 KB and the content at about 27 KB. All 44 template answers are byte-exact
+prefixes of served pages, session id aside, so a served page dropped anywhere
+in that window reads the same. The receipt is
+`corpora/fork-execution-2026-09-21/table3-walk-2026-09-24/spicy-docs/`.
+
+A dropped answer is a failed request, and the publisher states absence through
+the links between its pages. Each page names its prior and next act, and on
+2026-09-24 the 119th-Congress chain from 119-1 was the same 40 acts that
+`fulldump@119-73.xml` lists. Repetition does not establish absence either:
+RefSpec's 2026-08-02 build received the template for 119-21 on four attempts.
+The bulk file RefSpec retained on 2026-08-06, already at 119-73, lists that act.
+
+What a later change must preserve:
+
+- **No refusal type means "the table lacks this act".** `iter_table3_chain`
+  follows `Table3Page.next_act` from a starting act. The acts a link passes
+  over are the absent ones. A named act that fails ends the walk as the
+  ordinary failure it is.
+- **A drop stays a retried transport failure on every route.** The Table III
+  act route alone passes `retain_dropped_body` to the capture, which keeps the
+  last attempt's bytes as `connection-dropped` evidence on the escaping error.
+  Retries and every other route are unchanged. It reads chunks as they arrive,
+  because HTTPX's chunker drops what it buffered when the stream fails, and a
+  16 KB answer fits inside one 64 KiB chunk.
+- **The walk keeps spicy-regs' chain rules.** It walks one Congress. It stops
+  at a page whose next act is not a public law, is in another Congress, does
+  not follow, is outside the caller's bound, or is after the release point the
+  page states itself current through. The last page, 119-73 at 119-73, names
+  119-74, which answered only the template on 2026-09-24. Without that stop,
+  every walk would end in that act's retried failure. These rules match
+  spicy-regs' `build_laws._table3_rows` at `b2fd9a0`, so that walk can move
+  here unchanged. A start with no page is a failure. The previous Congress's
+  last page names the seed, and the index page `congress{N}th.htm` is not read.
