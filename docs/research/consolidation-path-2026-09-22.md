@@ -35,7 +35,7 @@ Nothing in spicy-regs's merge or publish path has been timed (Track C).
 | Small revision after import | 0.35–1.38 s to publish | same, `:33-35` |
 | Ledger overhead outside base data files | about 0.69 KB per record | derived from the rows above |
 | Per-record operation path | 25 ms and about 26 KB of ledger per record | `DocSpec/docs/core-model-implementation-tasks.md:983-989` |
-| Fork-host `federal-register` generation, read 2026-09-23 | 1,009,005 rows, 155,924,250 bytes, sha256 `731984ca92583f93350fa0c029d7bfa32809c0240b41b5607cd05967996bed28` | `https://pub-72e95c0c20a84508b42b03a6ff6d55f8.r2.dev/publication.json`; the 2026-09-22 read's truncated `18afcd6e…` is not recoverable in full |
+| Fork-host `federal-register` generation, read 2026-09-23 | 1,009,005 rows; member file 155,924,250 bytes, member sha256 `47ad1212…`; artifact root sha256 `731984ca92583f93350fa0c029d7bfa32809c0240b41b5607cd05967996bed28` | `https://pub-72e95c0c20a84508b42b03a6ff6d55f8.r2.dev/publication.json`; the 2026-09-22 read's `18afcd6e…` is the prior generation's member (1,008,903 rows), held locally with the current one; both digests in DocSpec `docs/history/probes/2026-09-23-admit-by-reference-spike.md` |
 | Fork-host managed families, same read | 41 on 2026-09-23; largest `court-opinion-clusters` 10.07 M rows / 3.95 GB, `fec-observations` 13.9 M rows / 1.17 GB, then `court-citations` 1.01 GB | same |
 
 ## 3. Tracks
@@ -127,7 +127,7 @@ republish every row once. Ruling 4 in §5 orders the two.
 | D1 | DocSpec decision 0007 | A table-shaped state may be a pinned copy of a producer's sealed artifact, stored locally like every other layer, one ledger row per generation, occurrence ids by hash of pin and key. | the model permits it (`docs/core-model.md:72,82,104,146`); the implementation refuses it (`adapters/storage/records.py:287,457`); Search 0008 condition 5 is met by a copy in the workspace | owner ruling |
 | D2 | DocSpec spike, one hour | Does `iceberg_scan` read Parquet without Iceberg field ids through a name mapping on the local fixture? Fallback: one vectorized `CREATE TABLE AS SELECT` through the REST fixture. | reads are catalog-free at `records.py:340`; `pyiceberg==0.12.0`, `rulespec-artifacts==1.1.1` pinned | answer recorded with its receipt |
 | D3 | DocSpec C27 | Admission: read `publication.json`, admit the root and members through the rulespec admission DocSpec already uses, download the members, register into a local Iceberg table, pin the metadata, write one ledger row. Identity source order: artifact fields if present, else `spicy_docs.schemas.TABLE_CONTRACTS`, else DocSpec decision 0003 for Federal Register, else refuse. | — | §6 |
-| D4 | DocSpec C28 | Delete the row-copy catalog example once D3 passes. Admit comments from spicy-regs's catalog by a pinned-snapshot copy, which needs a read token. | `examples/spicyregs_comments.py`; `docs/spicyregs-comments.md:67` | example gone; comments admitted by snapshot id |
+| D4 | DocSpec C30 (C28 is the per-layer ledger, landed 2026-09-24) | Delete the row-copy catalog example once D3 passes. Admit comments from spicy-regs's catalog by a pinned-snapshot copy, which needs a read token. | `examples/spicyregs_comments.py`; `docs/spicyregs-comments.md:67` | example gone; comments admitted by snapshot id |
 | D5 | DocSpec 0.10.0; spicysearch; spicyengine | Release; delete identifier enrichment in favour of derive over the admitted state: in spicysearch `catalog_enrichment.py`, the `enrich-identifiers` command, its test and doc; in spicyengine `indexing/enrichment.py`, `load --enrichment` and `tools/check_enrichment.py`; in DocSpec `runtime/selected_outputs.py`, left without a caller. | 0.9.1 (`2cdde74`) is 0.9.0's code on SpicyDocs 0.26.6 and Rulespec Artifacts 1.1.1, and Search `b150fdd` and Engine `31f7959` already pin `docspec==0.9.1`, `spicy-docs==0.26.6` and `rulespec-artifacts==1.1.1`; PM01 already deleted metadata's per-record path (`spicysearch/PLAN.md`, Prepared metadata) and derives at `spicysearch/src/spicysearch/metadata/enrichment.py:159,176`; identifier enrichment still calls `resolve_many` at `spicysearch/src/spicysearch/catalog_enrichment.py:123`, Engine reads its outputs through `open_selected_outputs` at `spicyengine/src/spicyengine/indexing/enrichment.py:45`, and no Search plan row retires it; measured, it added no key the prepared identifiers lacked on 8,663 records and costs one DocSpec operation per record (≈7 h / 26 GB for 1.0M FR records), [survey](parsing-survey-2026-09-23.md) §9 | no `resolve_many` or `open_selected_outputs` caller left outside DocSpec |
 | D6 | spicysearch | A preparer reader for rows shaped like spicy-regs generations, keyed on spicy-docs' `TABLE_CONTRACTS` (0.26.6 covers 38 of 39 tables as 0.29.0 does); today `prepare` refuses them ("requires exactly one identity-matched native fact"). Needed before D5's derive over admitted generations. | `spicysearch/src/spicysearch/metadata/preparation.py:164`, refusing through `source_facts` at `:83`; [survey](parsing-survey-2026-09-23.md) §9 | prepared values over a generation equal those over the source state for the same records |
 
@@ -142,15 +142,18 @@ republish every row once. Ruling 4 in §5 orders the two.
   which is large and changes DocSpec output; B18–B19 with B9; D6 before D5.
 - From §11: B13 with week two; B14 when RefSpec next re-vendors; B15–B16 ride
   the scheduled rebuilds and cache regenerations; B17 independently.
-- PM01's remaining steps sit before or after D3, as ruling 4 decides.
+- PM01's remaining steps come after B2 and D3 (ruling 4).
 
 ## 5. Rulings this plan needs
 
-1. Decision 0007 as stated in D1.
+1. Decision 0007, as revised in DocSpec's draft `docs/decisions/0007-table-shaped-states-by-reference.md`: occurrence identity is a hash of table, member key and row digest, not of pin and key, so unchanged rows keep their identity across generations (the PM01 gate showed pin-keyed identity reports every member changed). **Pending**, with the six sub-rulings R1–R6 decided 2026-09-24 and recorded there.
 2. The generation decision in B3.
 3. The bill-key rule in A3: zero padding and unknown types.
 4. Whether PM01 cuts over on the row-copied catalog states and D5 re-derives
-   after D3, or PM01's cutover waits for D3.
+   after D3, or PM01's cutover waits for D3. **Decided 2026-09-24:** the cutover
+   waits for B2 and then D3 (C27 with C29), so the 8091 index is replaced once;
+   the row-copied workspaces keep their pre-C28 per-member rows until that
+   rebuild retires them.
 5. `cfr_ref` for title 43's subpart-numbered sections (A8). **Decided:** the
    printed citation (`43-1601.0-1`), with part 1600.
 6. Whether the rulemaking tables admit label-derived dockets and unpadded FR
