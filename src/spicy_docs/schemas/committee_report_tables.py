@@ -167,7 +167,9 @@ COMMITTEE_REPORTS = table_contract(
         ),
         "part_number": (
             "The part's number as the publisher states it (its `partNumber`, or the `-pt{N}` its id carries, "
-            "which must agree).  NULL on a report published in one part, whose record numbers none."
+            "which must agree).  NULL on a report published in one part at the package id, whose record numbers "
+            "none; a report the publisher issued as a lone `-pt1` is (`{package}-pt1`, 1), so a reader counts "
+            "rows per package to tell it from Part 1 of several."
         ),
     },
 )

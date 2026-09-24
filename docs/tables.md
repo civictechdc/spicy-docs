@@ -831,8 +831,8 @@ with its own body ([multi-part reports](sources/govinfo-bodies.md#multi-part-com
 `(package_id, part_id, seq)`, with `seq` counting within the part. Both
 columns are appended; `part_number` is appended beside `part_id` on the report
 row only, since a block reaches it through its parent. This is an owner-ruled
-identity move (decision 29, delegated 2026-09-23; the owner's confirmation of
-the move itself is pending).
+identity move (decision 29, delegated 2026-09-23 and confirmed 2026-09-24;
+shipped in 0.32.0).
 
 - **`part_id` is the publisher's granule id, never a marker.** It is the
   `accessId` the record states for the part and the file stem its body was
@@ -881,7 +881,8 @@ the move itself is pending).
      then replaced when the reader-version bump re-reads its package, rather
      than kept beside the corrected row.
 
-  Until the owner confirms decision 29 this move is held out of 0.31.0.
+  The move shipped in 0.32.0 after the owner confirmed decision 29; a consumer
+  adopts it in the release it vendors.
 
 Over every retained CRPT package MODS (148 distinct records, 145 packages, all
 read, none refused; receipt
