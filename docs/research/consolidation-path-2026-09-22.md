@@ -272,8 +272,8 @@ Update one row per event; commit each update on its own.
 | B28 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
 | B29 | proposed; after B4 | [survey](parsing-survey-2026-09-23.md) §11 |
 | B30 | proposed | [survey](parsing-survey-2026-09-23.md) §11 |
-| B31 | spicy-docs on wt/parts (`2bdd428`): reviewed and fixed (a NULL part refuses, a 1..N part set is required, a budget refusal precedes any body request); held out of 0.31.0 until Mike confirms the identity move, and spicy-regs must adopt (pass `part_id`, backfill `COALESCE(part_id, package_id)`, merge `committee_reports` with `replace_parents` by package, size `BODY_BUDGET` per part) in the same release it vendors | decision 29 |
-| B32 | spicy-docs done on main (`0d67a97`, merged 2026-09-24, for the next release); spicy-regs' own chain walk shipped 2026-09-24 and moves over at the re-vendor | receipts `table3-walk-2026-09-24/` |
+| B31 | spicy-docs released in 0.32.0 (`c214502`; decision 29 confirmed by Mike 2026-09-24); spicy-regs adopts at the 0.32.0 re-vendor (pass `part_id`, backfill `COALESCE(part_id, package_id)`, merge `committee_reports` with `replace_parents` by package, size `BODY_BUDGET` per part, delete the part-only hold) | decision 29 |
+| B32 | spicy-docs released in 0.32.0 (`0d67a97`); spicy-regs' own chain walk shipped 2026-09-24 and moves to `iter_table3_chain` at the 0.32.0 re-vendor | receipts `table3-walk-2026-09-24/` |
 | B33 | proposed; measured 2026-09-24 | RefSpec `PLAN.md` repin item |
 | C1 | proposed | — |
 | C2 | proposed | — |
