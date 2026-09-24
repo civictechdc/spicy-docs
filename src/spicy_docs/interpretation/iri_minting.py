@@ -49,9 +49,8 @@ Moved into spicy-docs on 2026-09-23 beside :mod:`citation_grammar` and
 rulespec-projection and spicysearch each carry their own minters, and
 spicy-regs decision 28 puts the stack's minters here, beside the shapes, not
 in Rulespec Core: spicy-docs is the one place all of them can import. RefSpec's
-REF-024 still assigns identity functions to Rulespec Core; decision 28's
-narrowing of that clause awaits the owner's confirmation
-(``docs/decisions.md``).
+REF-024, amended 2026-09-24, gives Rulespec Core the lexical spaces and
+spicy-docs the minters (``docs/decisions.md``).
 
 The source is RefSpec ``src/refspec/registry/iri_minting.py`` at RefSpec
 ``4a680c81`` (last changed in ``ef654b59``). With docstrings aside, the code

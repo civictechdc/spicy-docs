@@ -1181,9 +1181,9 @@ executive-order, Federal Register and docket minting, and spicy-regs decision
 28 puts the minters here, beside the identifier shapes they refuse over, not in
 Rulespec Core: spicy-docs is the one place all of them can import. REF-024
 (RefSpec `docs/decisions.md`) still assigns identity functions to Rulespec
-Core. Decision 28 proposes narrowing that clause so Core owns the lexical
-spaces and spicy-docs' tests hold its minters to them; that amendment awaits
-the owner's confirmation, and REF-024 is not amended.
+Core. Decision 28 narrowed that clause so Core owns the lexical spaces and
+spicy-docs' tests hold its minters to them; the owner confirmed it on
+2026-09-24 and REF-024 carries the amendment (RefSpec `56a76e78`).
 
 Behaviour is RefSpec `4a680c81`'s but for three dockets. Over 3,966,225
 paired calls (RefSpec's pinned Federal Register and Unified Agenda columns,
