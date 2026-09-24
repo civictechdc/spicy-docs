@@ -33,3 +33,34 @@ def test_pdf_bytes_need_the_magic_and_a_trailer_within_the_last_kilobyte():
     ):
         with pytest.raises(RouteError, match=message):
             check_pdf_bytes(bad, error_type=RouteError, label="doc")
+
+
+def test_only_a_keyless_acquirer_keeps_a_dropped_body():
+    """A keyed route's dropped bytes could echo its key and would skip the credential-echo check."""
+    import httpx
+
+    from spicy_docs.transport.source_acquirer import SourceAcquirer
+
+    calls = []
+    source = SourceAcquirer(
+        max_requests=1,
+        timeout_seconds=1,
+        min_request_interval_seconds=0,
+        user_agent="test",
+        label="Test",
+        error_type=ValueError,
+        context_key="test_acquisition",
+        transport=httpx.MockTransport(lambda request: calls.append(request) or httpx.Response(200)),
+        credential="supersecret",
+    )
+    with source, pytest.raises(ValueError, match="keyless"):
+        source.capture_validated(
+            "https://example.gov/x",
+            media_types=("",),
+            parse=lambda capture, limit: capture,
+            max_bytes=10,
+            unavailable=ValueError,
+            context={},
+            retain_dropped_body=True,
+        )
+    assert not calls

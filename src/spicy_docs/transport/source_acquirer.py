@@ -214,8 +214,11 @@ class SourceAcquirer:
         ``max_requests`` bounds the whole operation once, not each request in
         it separately, and ``request_count`` after the last call reports the
         true total. ``retain_dropped_body`` is passed to
-        :meth:`~spicy_docs.transport.capture.BoundedHttpCapture.capture`.
+        :meth:`~spicy_docs.transport.capture.BoundedHttpCapture.capture`, and
+        only a keyless acquirer may ask for it.
         """
+        if retain_dropped_body and not self._http.retain_refusal_bodies:
+            raise ValueError("retain_dropped_body is for keyless routes: the bytes skip the credential-echo check")
         if reset_budget:
             self._http.reset_budget()
         capture = None

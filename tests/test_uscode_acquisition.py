@@ -266,7 +266,7 @@ def test_a_dropped_table3_answer_is_retried_and_keeps_its_bytes_as_evidence_neve
     assert (evidence.stage, evidence.media_type, evidence.unavailable_reason) == (
         "transport",
         "text/html",
-        "connection-dropped",
+        "response-incomplete",
     )
     assert raised.value.uscode_acquisition["selection"] == {"key": "100-234"}
 
@@ -337,6 +337,15 @@ def test_the_callers_own_bound_and_max_acts_end_the_walk_before_a_request():
     transport = Transport(*(page(body) for body in CHAIN))
     assert walk(transport, max_acts=2) == (["119-69", "119-72"], "reached max_acts")
     assert len(transport.calls) == 2
+
+
+def test_the_callers_bound_is_checked_before_the_release_point():
+    # 119-73 names 119-74, which is both outside this bound and past the release point 119-73.
+    transport = Transport(page(CHAIN[1]), page(CHAIN[2]))
+    assert walk(transport, "119-72", within={"119-72", "119-73"}) == (
+        ["119-72", "119-73"],
+        "names an act outside the caller's bound",
+    )
 
 
 def test_a_chain_page_dropped_mid_body_is_retried_and_read():

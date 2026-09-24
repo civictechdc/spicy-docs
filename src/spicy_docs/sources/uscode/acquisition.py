@@ -278,7 +278,7 @@ class UsCodeAcquirer(SourceAcquirer):
         An act the table serves no page for answers 200, the first 16 KB of the
         site template, and a dropped connection: a transport failure, retried
         like any other. The error that escapes keeps the last attempt's bytes as
-        its ``connection-dropped`` evidence. Those bytes are a prefix of every
+        its ``response-incomplete`` evidence. Those bytes are a prefix of every
         served page, so they never establish absence; the chain of pages does.
         """
         table3_file_name(key)

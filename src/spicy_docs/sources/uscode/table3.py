@@ -253,8 +253,9 @@ def iter_table3_chain(
     The walk requests nothing more, and returns why, after ``max_acts`` pages or
     at a page that names no next public law, or names one in another Congress,
     one that does not follow the act it is on, one outside ``within`` (the
-    caller's own bound, such as the public laws it lists, spelled ``119-4``),
-    or one past the release point the page states itself current through. The
+    caller's own bound, such as the public laws it lists, spelled ``119-4``;
+    pass a set, since membership is tested once per act), or one past the
+    release point the page states itself current through, in that order. The
     last served page of 2026-09-24, ``119-73`` at ``119-73``, named ``119-74``,
     which answered only the template.
 
@@ -263,7 +264,15 @@ def iter_table3_chain(
     the next act, and nothing it received becomes an absence. ``start`` is
     requested like any other act, so it must be one the table serves: a
     Congress whose lowest act has no page cannot start from it. The previous
-    Congress's walk ends at a page naming an act in this one, which can seed it.
+    Congress's walk should end at a page naming an act in this one, which could
+    seed it; that is inferred from ``119-1`` naming ``118-273`` as its prior
+    act, not yet observed.
+
+    A page's stop rules run inside the ``next()`` that follows it, so that
+    call can end the walk without a request. Spend a per-run cap or check a
+    deadline inside ``acquire``, once per request, not before each ``next()``:
+    a count taken there also spends one at every natural end and reports the
+    cap instead of the chain's end. ``acquire`` stops the walk by raising.
     """
     _count(max_acts, "max_acts")
     current = _public_law(start)

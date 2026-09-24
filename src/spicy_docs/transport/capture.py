@@ -127,10 +127,13 @@ class BoundedHttpCapture:
     ) -> CapturedBodyResponse:
         """``POST`` sends ``content`` verbatim and records it on the capture; credentials never belong in it.
 
-        ``retain_dropped_body`` keeps what a body delivered before its connection
-        dropped as the transport refusal's evidence, marked ``connection-dropped``
-        so it is never read as the whole answer. The drop is retried exactly as
-        without it; the error that finally escapes carries the last attempt's bytes.
+        ``retain_dropped_body`` keeps what a body delivered before any
+        ``httpx.RequestError`` cut it short (a dropped connection, a reset, a read
+        timeout) as the transport refusal's evidence, marked
+        ``response-incomplete`` so it is never read as the whole answer. The
+        failure is retried exactly as without it; the error that finally escapes
+        carries the last attempt's bytes. It is for keyless routes only: those
+        bytes never reach the credential-echo check a completed capture gets.
         """
         if self._closed:
             raise ValueError("Source acquisition client is closed")
@@ -208,7 +211,7 @@ class BoundedHttpCapture:
                                 "transport",
                                 bytes(body),
                                 _evidence_media_type(response),
-                                "connection-dropped",
+                                "response-incomplete",
                                 len(body),
                             ),
                         )

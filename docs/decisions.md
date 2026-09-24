@@ -2061,8 +2061,10 @@ What a later change must preserve:
   ordinary failure it is.
 - **A drop stays a retried transport failure on every route.** The Table III
   act route alone passes `retain_dropped_body` to the capture, which keeps the
-  last attempt's bytes as `connection-dropped` evidence on the escaping error.
-  Retries and every other route are unchanged. It reads chunks as they arrive,
+  last attempt's bytes as `response-incomplete` evidence on the escaping error,
+  whatever `httpx.RequestError` cut the body short. Retries and every other
+  route are unchanged. Only a keyless acquirer may ask for it, because those
+  bytes never reach the credential-echo check. It reads chunks as they arrive,
   because HTTPX's chunker drops what it buffered when the stream fails, and a
   16 KB answer fits inside one 64 KiB chunk.
 - **The walk keeps spicy-regs' chain rules.** It walks one Congress. It stops
@@ -2070,7 +2072,14 @@ What a later change must preserve:
   not follow, is outside the caller's bound, or is after the release point the
   page states itself current through. The last page, 119-73 at 119-73, names
   119-74, which answered only the template on 2026-09-24. Without that stop,
-  every walk would end in that act's retried failure. These rules match
-  spicy-regs' `build_laws._table3_rows` at `b2fd9a0`, so that walk can move
-  here unchanged. A start with no page is a failure. The previous Congress's
-  last page names the seed, and the index page `congress{N}th.htm` is not read.
+  every walk would end in that act's retried failure. These are the rules
+  and the order of spicy-regs' `build_laws._table3_rows` at `b2fd9a0`. To move
+  that walk here, spicy-regs spends its per-run cap and checks its deadline in
+  the `acquire` wrapper, once per request, and raises from it to stop. A page's
+  stop rules run inside the following `next()`, so a cap spent before each
+  `next()` would spend one at every natural end. It publishes rows only for
+  acts it does not already hold, since the start act is yielded like any
+  other. It reads the end reason from `StopIteration.value`. A start with no
+  page is a failure. The previous Congress's last page should name a seed.
+  That is inferred from 119-1 naming 118-273 as its prior act, not yet
+  observed. The index page `congress{N}th.htm` is not read.
