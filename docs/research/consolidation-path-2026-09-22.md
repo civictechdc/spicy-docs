@@ -225,7 +225,7 @@ Update one row per event; commit each update on its own.
 
 | Item | Status | Evidence |
 | --- | --- | --- |
-| A1 | proposed; url provenance labelled (`6d34a1b`, a spicy-regs commit) | — |
+| A1 | done: the narrow writer is retired in spicy-regs `f7a9474` (pushed 2026-09-24) — the family refreshes the 119th daily, earlier than the writer ever did; the family re-reads the rows the writer labelled `congress_api_list` and merges `update_date` by the larger valid value, healing 3,044 dates and 3,090 of 3,095 URLs on its next run (the 5 in the 118th when the family runs for the 118th); the writer's refresh of pre-119th list columns (47 rows in the audited run) is the stated loss | drift audit receipt `drift-audit-2026-09-23/bill-family/` |
 | A2 | proposed | — |
 | A3 | proposed; disagreement measured 2026-09-23, latent in published keys; also covers `house_committee_repository`'s `bill_key_*` | [survey](parsing-survey-2026-09-23.md) §3, §11 |
 | A4 | proposed; remote removed 2026-09-22 | git config only |
