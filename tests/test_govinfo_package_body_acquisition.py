@@ -2,7 +2,8 @@
 
 Pins the sealed preference order and the print permutation, credential scoping
 to keyed routes, MODS identity and rendition disagreement, unavailable,
-redirect and error-page refusals, shared request budgets, and byte bounds.
+redirect and error-page refusals, shared request budgets, byte bounds, and
+one body per part of a multi-part report, all or nothing.
 """
 
 from __future__ import annotations
@@ -23,12 +24,23 @@ from spicy_docs.sources.govinfo.body_acquisition import (
     GovInfoFormatNotOfferedError,
     GovInfoPackageBody,
     GovInfoPackageUnavailableError,
+    GovInfoPartsOverBudgetError,
     GovInfoRenditionAddressError,
 )
 from spicy_docs.transport import retry
 from spicy_docs.transport.credentials import CredentialRefusedError, read_api_key
 
-from .test_govinfo_package_bodies import BODY, MODS, PART, PART_MODS, PART_PACKAGE, PART_SUMMARY, SUMMARY, mods_xml
+from .test_govinfo_package_bodies import (
+    BODY,
+    FIXTURES,
+    MODS,
+    PART,
+    PART_MODS,
+    PART_PACKAGE,
+    PART_SUMMARY,
+    SUMMARY,
+    mods_xml,
+)
 
 PACKAGE = "CRPT-119hrpt1"
 SUMMARY_URL = f"https://api.govinfo.gov/packages/{PACKAGE}/summary"
@@ -282,6 +294,145 @@ def test_a_one_part_report_is_fetched_at_its_parts_stem_never_the_package_stem()
     assert result.body.final_url == result.body_capture.resolved_url == part_url
 
 
+MULTIPART = "CRPT-119hrpt455"
+UNSUFFIXED = "CRPT-119hrpt494"
+PART_2_BODY = reply((FIXTURES / f"body-{UNSUFFIXED}-pt2.htm").read_bytes(), content_type="text/html")
+
+
+def multipart_transport(package: str, **bodies) -> Transport:
+    """The package's real summary and MODS, and the named part bodies; nothing else answers."""
+    api = f"https://api.govinfo.gov/packages/{package}"
+    return Transport(
+        **{
+            f"{api}/summary": reply(
+                (FIXTURES / f"summary-{package}.json").read_bytes(), content_type="application/json"
+            ),
+            f"{api}/mods": reply((FIXTURES / f"mods-{package}.xml").read_bytes(), content_type="application/xml"),
+            **{f"https://www.govinfo.gov/content/pkg/{package}/html/{part}.htm": body for part, body in bodies.items()},
+        }
+    )
+
+
+def acquire_parts(transport: Transport, package_id: str, **arguments) -> tuple[GovInfoPackageBody, ...]:
+    """Acquire every part of one package through the transport."""
+    budget = arguments.pop("budget", replace(BUDGET, max_requests=6))
+    with GovInfoBodyAcquirer(budget=budget, api_key=KEY, transport=transport, clock=lambda: NOW) as client:
+        return client.acquire_parts(package_id, **arguments)
+
+
+def test_every_part_is_fetched_once_at_its_own_stem_under_one_summary_and_mods() -> None:
+    """CRPT-119hrpt455 publishes two parts and nothing at its root: two bodies, each proved at its part's stem.
+
+    The part bodies here are stand-ins (identity rests on the locator); the summary and MODS are the publisher's.
+    """
+    parts = (f"{MULTIPART}-pt1", f"{MULTIPART}-pt2")
+    transport = multipart_transport(MULTIPART, **dict.fromkeys(parts, HTML_BODY))
+    bodies = acquire_parts(transport, MULTIPART)
+
+    assert len(transport.urls) == 4 and transport.urls[2:] == [body.body.final_url for body in bodies]
+    assert [(body.part.part_id, body.part.part_number, body.body.part_id) for body in bodies] == [
+        (parts[0], 1, parts[0]),
+        (parts[1], 2, parts[1]),
+    ]
+    assert [body.body.final_url.rsplit("/", 1)[1] for body in bodies] == [f"{part}.htm" for part in parts]
+    assert all(body.format == "htm" and body.offered_formats == ("pdf", "htm") for body in bodies)
+    # One summary and one MODS prove both parts; each result carries them beside its own body.
+    assert {body.summary_capture.sha256 for body in bodies} == {bodies[0].summary_capture.sha256}
+    assert {body.request_count for body in bodies} == {4}
+    assert [body.part.primary_bill.number for body in bodies] == ["5103", "5103"]
+
+
+def test_an_unsuffixed_part_1_is_fetched_at_the_package_stem_beside_its_part_2() -> None:
+    """CRPT-119hrpt494: Part 1 is the package stem, Part 2 its ``-pt2`` (the publisher's own 1,490 bytes)."""
+    transport = multipart_transport(UNSUFFIXED, **{UNSUFFIXED: HTML_BODY, f"{UNSUFFIXED}-pt2": PART_2_BODY})
+    first, second = acquire_parts(transport, UNSUFFIXED)
+
+    assert (first.part.part_id, first.part.part_number) == (UNSUFFIXED, 1)
+    assert first.body.final_url == f"https://www.govinfo.gov/content/pkg/{UNSUFFIXED}/html/{UNSUFFIXED}.htm"
+    assert (second.part.part_id, second.part.part_number, second.body.byte_size) == (f"{UNSUFFIXED}-pt2", 2, 1_490)
+    assert b"SUPPLEMENTAL REPORT" in second.body_capture.body
+
+
+def test_acquire_reads_only_the_roots_part_and_says_which_one_it_is() -> None:
+    """``acquire`` on CRPT-119hrpt494 still reads the root, which is Part 1, and no longer silently.
+
+    The result names its part, and ``mods.parts`` lists the Part 2 the root does not offer.
+    """
+    transport = multipart_transport(UNSUFFIXED, **{UNSUFFIXED: HTML_BODY})
+    result = acquire(transport, package_id=UNSUFFIXED)
+
+    assert result.part.part_id == result.body.part_id == UNSUFFIXED
+    assert [part.part_id for part in result.mods.parts] == [UNSUFFIXED, f"{UNSUFFIXED}-pt2"]
+
+
+def test_a_report_in_one_part_is_one_body_whichever_way_it_is_read() -> None:
+    """A single-part report is its own one part: ``acquire_parts`` returns what ``acquire`` does."""
+    (whole,) = acquire_parts(Transport(), PACKAGE)
+    single = acquire(Transport())
+
+    assert whole.part == single.part and whole.part.part_id == whole.body.part_id == PACKAGE
+    assert whole.part.part_number is None
+    assert (whole.body, whole.body_capture.body) == (single.body, single.body_capture.body)
+
+
+def test_a_part_offering_no_preferred_format_refuses_the_package_before_any_body() -> None:
+    """Every part's format is chosen before a body is requested, so a partial set is never fetched."""
+    transport = multipart_transport(MULTIPART)
+    with pytest.raises(GovInfoFormatNotOfferedError, match=f"{MULTIPART}-pt1 offers") as caught:
+        acquire_parts(transport, MULTIPART, prefer=("xml",))
+
+    assert len(transport.urls) == 2
+    assert caught.value.__dict__["govinfo_body_acquisition"]["partId"] == f"{MULTIPART}-pt1"
+
+
+def test_one_unavailable_part_refuses_the_whole_package() -> None:
+    """A part whose stem redirects refuses the package: half a report is never a result."""
+    redirect = reply(b"", status=302, location="https://www.govinfo.gov/error")
+    transport = multipart_transport(MULTIPART, **{f"{MULTIPART}-pt1": HTML_BODY, f"{MULTIPART}-pt2": redirect})
+    with pytest.raises(GovInfoPackageUnavailableError) as caught:
+        acquire_parts(transport, MULTIPART)
+
+    context = caught.value.__dict__["govinfo_body_acquisition"]
+    assert (context["stage"], context["partId"], context["requestCount"]) == ("body", f"{MULTIPART}-pt2", 4)
+
+
+def test_a_record_stating_more_parts_than_the_budget_fetches_is_refused_before_any_body() -> None:
+    """``2 + P`` requests: a budget of three cannot fetch two parts, so no body is requested, and the refusal is
+    typed as the budget's, which every run would repeat, rather than a transient exhaustion.
+    """
+    transport = multipart_transport(MULTIPART, **{f"{MULTIPART}-pt1": HTML_BODY})
+    with pytest.raises(GovInfoPartsOverBudgetError, match="need 4 requests") as caught:
+        acquire_parts(transport, MULTIPART, budget=replace(BUDGET, max_requests=3))
+    assert len(transport.urls) == 2
+    assert (caught.value.required_requests, caught.value.max_requests) == (4, 3)
+
+
+def test_a_retry_that_spends_a_parts_request_is_a_transient_budget_refusal() -> None:
+    """Every part spends the one budget, retries included: a budget sized for two parts runs out on a retry, untyped."""
+    attempts = iter([reply(b"", status=503), HTML_BODY])
+    transport = multipart_transport(MULTIPART, **{f"{MULTIPART}-pt1": lambda: next(attempts)()})
+    with pytest.raises(GovInfoBodySourceError, match="exhausted its total request budget") as caught:
+        acquire_parts(transport, MULTIPART, budget=replace(BUDGET, max_requests=4))
+    assert not isinstance(caught.value, GovInfoPartsOverBudgetError)
+    assert len(transport.urls) == 4
+
+
+def test_a_collection_that_states_no_parts_is_refused_by_acquire_parts() -> None:
+    """A hearing has no report parts, so ``acquire_parts`` refuses it after reading its record."""
+    hearing = "CHRG-119hhrg64242"
+    api = f"https://api.govinfo.gov/packages/{hearing}"
+    summary = SUMMARY.replace(PACKAGE.encode(), hearing.encode()).replace(b'"CRPT"', b'"CHRG"')
+    transport = Transport(
+        **{
+            f"{api}/summary": reply(summary, content_type="application/json"),
+            f"{api}/mods": reply(mods_xml(access_id=hearing, collection="CHRG"), content_type="application/xml"),
+        }
+    )
+    with pytest.raises(GovInfoBodySourceError, match="state no parts"):
+        acquire_parts(transport, hearing)
+    assert len(transport.urls) == 2
+
+
 def test_a_missing_package_is_unavailable_not_absent() -> None:
     """A missing package is unavailable, not absent, with its response retained."""
     missing = reply(b'{"message":"The requested resource does not exist."}', status=404, content_type="text/plain")
@@ -459,21 +610,23 @@ def test_a_closed_client_refuses_without_a_request() -> None:
     assert not transport.calls
 
 
+LIVE_BUDGET = GovInfoBodyBudget(
+    max_requests=6,
+    max_body_bytes=24 * 1024 * 1024,
+    max_metadata_bytes=8 * 1024 * 1024,
+    timeout_seconds=60.0,
+    min_request_interval_seconds=0.5,
+)
+
+
 @pytest.mark.integration
 @pytest.mark.parametrize("package_id", ["CRPT-119hrpt1", "CHRG-119hhrg64242"])
 def test_live_package_body_is_acquired_and_proved(package_id: str) -> None:
     """Live: the package body is acquired and proved for both collections, without an error page or key."""
     if not ENV_FILE.exists():
         pytest.skip(f"no credential file at {ENV_FILE}")
-    budget = GovInfoBodyBudget(
-        max_requests=6,
-        max_body_bytes=24 * 1024 * 1024,
-        max_metadata_bytes=8 * 1024 * 1024,
-        timeout_seconds=60.0,
-        min_request_interval_seconds=0.5,
-    )
     key = read_api_key(ENV_FILE, "API_GOV")
-    with GovInfoBodyAcquirer(budget=budget, api_key=key) as client:
+    with GovInfoBodyAcquirer(budget=LIVE_BUDGET, api_key=key) as client:
         result = client.acquire(package_id)
 
     assert result.identity.package_id == package_id
@@ -486,3 +639,19 @@ def test_live_package_body_is_acquired_and_proved(package_id: str) -> None:
     assert result.body_capture.byte_size > 1_000
     assert b"govinfo.gov/error" not in result.body_capture.body
     assert key.encode() not in result.body_capture.body
+
+
+@pytest.mark.integration
+def test_live_parts_are_each_acquired_at_their_own_stem() -> None:
+    """Live: CRPT-119hrpt455's two parts are each proved at their own stem, as on 2026-09-23 (fixture README)."""
+    if not ENV_FILE.exists():
+        pytest.skip(f"no credential file at {ENV_FILE}")
+    key = read_api_key(ENV_FILE, "API_GOV")
+    with GovInfoBodyAcquirer(budget=LIVE_BUDGET, api_key=key) as client:
+        bodies = client.acquire_parts(MULTIPART)
+
+    assert [body.part.part_id for body in bodies] == [f"{MULTIPART}-pt1", f"{MULTIPART}-pt2"]
+    for body in bodies:
+        assert body.body.final_url.endswith(f"/{body.part.part_id}.{body.format}")
+        assert body.body_capture.status_code == 200 and body.body_capture.byte_size > 1_000
+        assert key.encode() not in body.body_capture.body

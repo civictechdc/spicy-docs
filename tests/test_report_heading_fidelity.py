@@ -16,7 +16,7 @@ FIXTURES = Path(__file__).parent / "fixtures"
 def _rows(text, package):
     blocks = parse_agency_blocks(text)
     rows = [
-        REPORT_SECTIONS.checked(shape_report_section(block, package_id=package, seq=seq))
+        REPORT_SECTIONS.checked(shape_report_section(block, package_id=package, part_id=package, seq=seq))
         for seq, block in enumerate(blocks)
     ]
     assert "".join(text[start:end] for start, end in (block.char_span for block in blocks)) == text

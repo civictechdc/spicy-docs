@@ -1,0 +1,359 @@
+<mods xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.loc.gov/mods/v3" version="3.3" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-3.xsd" ID="P0b002ee1e804e4a0">
+    <name type="corporate">
+         <namePart>United States Government Publishing Office</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">publisher</roleTerm>
+              <roleTerm authority="marcrelator" type="code">pbl</roleTerm>
+        </role>
+         <role>
+              <roleTerm authority="marcrelator" type="text">distributor</roleTerm>
+              <roleTerm authority="marcrelator" type="code">dst</roleTerm>
+        </role>
+    </name>
+    <name type="corporate">
+         <namePart>United States</namePart>
+         <namePart>Congress</namePart>
+         <namePart>House of Representatives</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">author</roleTerm>
+              <roleTerm authority="marcrelator" type="code">aut</roleTerm>
+        </role>
+         <description>Government Organization</description>
+    </name>
+    <typeOfResource>text</typeOfResource>
+    <genre authority="marcgt">government publication</genre>
+    <language>
+         <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+    </language>
+    <extension>
+         <collectionCode>CRPT</collectionCode>
+         <category>Congressional Committee Materials</category>
+         <waisDatabaseName>119_cong_reports</waisDatabaseName>
+         <branch>legislative</branch>
+         <dateIngested>2026-09-10</dateIngested>
+    </extension>
+    <titleInfo>
+         <title>DIRECT SELLER AND REAL ESTATE AGENT HARMONIZATION ACT</title>
+    </titleInfo>
+    <originInfo>
+         <publisher>U.S. Government Publishing Office</publisher>
+         <dateIssued encoding="w3cdtf">2026-02-11</dateIssued>
+         <issuance>monographic</issuance>
+    </originInfo>
+    <physicalDescription>
+         <note type="source content type">deposited</note>
+         <digitalOrigin>born digital</digitalOrigin>
+         <extent>22 digital object pages</extent>
+    </physicalDescription>
+    <classification authority="sudocs">Y 1.1/8:</classification>
+    <identifier type="uri">https://www.govinfo.gov/app/details/CRPT-119hrpt494</identifier>
+    <identifier type="local">P0b002ee1e804e4a0</identifier>
+    <identifier type="ILS system id">001468303</identifier>
+    <identifier type="former package identifier">f:hr494.119.txt</identifier>
+    <recordInfo>
+         <recordContentSource authority="marcorg">DGPO</recordContentSource>
+         <recordCreationDate encoding="w3cdtf">2026-09-10</recordCreationDate>
+         <recordChangeDate encoding="w3cdtf">2026-09-10</recordChangeDate>
+         <recordIdentifier source="DGPO">CRPT-119hrpt494</recordIdentifier>
+         <recordOrigin>machine generated</recordOrigin>
+         <languageOfCataloging>
+              <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+        </languageOfCataloging>
+    </recordInfo>
+    <accessCondition type="GPO scope determination">fdlp</accessCondition>
+    <extension>
+         <subtitle>Report together with minority views to accompany H.R. 3495, including cost estimate of the Congressional Budget Office</subtitle>
+         <docClass>HRPT</docClass>
+         <accessId>CRPT-119hrpt494</accessId>
+         <chamber>HOUSE</chamber>
+         <congress years="2025-2026">119</congress>
+         <number>494</number>
+         <session>2</session>
+         <isConferenceReport>false</isConferenceReport>
+         <isSerialSet>true</isSerialSet>
+    </extension>
+    <location>
+         <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CRPT-119hrpt494</url>
+         <url displayLabel="HTML rendition" access="raw object">https://www.govinfo.gov/content/pkg/CRPT-119hrpt494/html/CRPT-119hrpt494.htm</url>
+         <url displayLabel="PDF rendition" access="raw object">https://www.govinfo.gov/content/pkg/CRPT-119hrpt494/pdf/CRPT-119hrpt494.pdf</url>
+    </location>
+    <identifier type="preferred citation">H. Rept. 119-494</identifier>
+    <relatedItem type="constituent" ID="id-hr494" xlink:href="https://www.govinfo.gov/metadata/granule/CRPT-119hrpt494/CRPT-119hrpt494/mods.xml">
+         <titleInfo>
+              <title>DIRECT SELLER AND REAL ESTATE AGENT HARMONIZATION ACT</title>
+        </titleInfo>
+         <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CRPT-119hrpt494/html/CRPT-119hrpt494.htm">
+              <identifier type="FDsys Unique ID">D09002ee1e804eee7</identifier>
+        </relatedItem>
+         <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CRPT-119hrpt494/pdf/CRPT-119hrpt494.pdf">
+              <identifier type="FDsys Unique ID">D09002ee1e804eee9</identifier>
+        </relatedItem>
+         <identifier type="uri">https://www.govinfo.gov/app/details/CRPT-119hrpt494/CRPT-119hrpt494</identifier>
+         <identifier type="former granule identifier">f:hr494.119.txt</identifier>
+         <location>
+              <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CRPT-119hrpt494/CRPT-119hrpt494</url>
+              <url access="raw object" displayLabel="PDF rendition">https://www.govinfo.gov/content/pkg/CRPT-119hrpt494/pdf/CRPT-119hrpt494.pdf</url>
+              <url access="raw object" displayLabel="HTML rendition">https://www.govinfo.gov/content/pkg/CRPT-119hrpt494/html/CRPT-119hrpt494.htm</url>
+        </location>
+         <identifier type="preferred citation">H. Rept. 119-494</identifier>
+         <abstract>The Committee on Education and Workforce, to whom was referred the bill (H.R. 3495) to amend the Fair Labor Standards Act of 1938 to clarify the definition of employee as it relates to direct sellers and real estate agents, and for other purposes, having considered the same, reports favorably thereon with an amendment and recommends that the bill as amended do pass.</abstract>
+         <extension>
+              <searchTitle>DIRECT SELLER AND REAL ESTATE AGENT HARMONIZATION ACT;H. Rept. 119-494</searchTitle>
+              <legislativeHistory>Committed to the Committee of the Whole House on the State of the Union and ordered to be printed</legislativeHistory>
+              <granuleClass>FIRSTPART</granuleClass>
+              <accessId>CRPT-119hrpt494</accessId>
+              <action date="2026-02-11">Committed to the Committee of the Whole House on the State of the Union and ordered to be printed</action>
+              <partNumber>1</partNumber>
+              <session>2</session>
+              <shortTitle>Direct Seller and Real Estate Agent Harmonization Act</shortTitle>
+              <recommendation>The Committee on Education and Workforce, to whom was referred the bill (H.R. 3495) to amend the Fair Labor Standards Act of 1938 to clarify the definition of employee as it relates to direct sellers and real estate agents, and for other purposes, having considered the same, reports favorably thereon with an amendment and recommends that the bill as amended do pass.</recommendation>
+              <submittedStatement>Mr. Walberg, from the Committee on Education and Workforce, submitted the following</submittedStatement>
+              <bill congress="119" context="OTHER" number="3495" type="HR"></bill>
+              <bill congress="119" context="PRIMARY" number="3495" type="HR"></bill>
+              <congCommittee authorityId="hsed00" chamber="H" congress="119" type="S">
+                                        
+                   <name type="authority-standard">Committee on Education and Workforce</name>
+                                        
+                   <name type="authority-short">Education and Workforce</name>
+                                    
+            </congCommittee>
+              <congMember bioGuideId="W000798" chamber="H" congress="119" party="R" role="SUBMITTEDBY" state="MI">
+                                        
+                   <name type="parsed">Mr. Walberg</name>
+                                        
+                   <name type="authority-fnf">Tim Walberg</name>
+                                        
+                   <name type="authority-lnf">Walberg, Tim</name>
+                                    
+            </congMember>
+              <law congress="75" isPrivate="false" number="718"></law>
+              <law congress="93" isPrivate="false" number="344"></law>
+              <law congress="103" isPrivate="false" number="3"></law>
+              <law congress="104" isPrivate="false" number="1"></law>
+              <law congress="104" isPrivate="false" number="4"></law>
+              <law congress="111" isPrivate="false" number="139"></law>
+              <USCode title="5">
+                                        
+                   <section number="102"></section>
+                                    
+            </USCode>
+              <USCode title="26"></USCode>
+              <USCode title="29">
+                                        
+                   <section detail="(e)" number="203"></section>
+                                    
+            </USCode>
+              <statuteAtLarge volume="52">
+                                        
+                   <pages pages="1060"></pages>
+                                    
+            </statuteAtLarge>
+              <associatedBills>H.R. 3495, 119th</associatedBills>
+        </extension>
+         <name type="personal">
+              <namePart>Tim Walberg</namePart>
+              <affiliation>United States House of Representatives</affiliation>
+              <role>
+                   <roleTerm authority="marcrelator" type="text">sponsor</roleTerm>
+                   <roleTerm authority="marcrelator" type="code">spn</roleTerm>
+            </role>
+              <description>United States Congress Member</description>
+        </name>
+         <name type="corporate">
+              <namePart>United States</namePart>
+              <namePart>Congress</namePart>
+              <namePart>House of Representatives</namePart>
+              <namePart>Committee on Education and Workforce</namePart>
+              <role>
+                   <roleTerm authority="marcrelator" type="text">associated name</roleTerm>
+                   <roleTerm authority="marcrelator" type="code">asn</roleTerm>
+            </role>
+              <description>Government Organization</description>
+        </name>
+         <relatedItem type="isReferencedBy">
+              <titleInfo>
+                   <title>United States House Bill 3495 (119th Congress)</title>
+            </titleInfo>
+              <identifier type="Congressional Bill citation">H.R. 3495</identifier>
+              <extension>
+                   <congress>119</congress>
+                   <context>OTHER</context>
+            </extension>
+        </relatedItem>
+         <relatedItem type="isReferencedBy">
+              <titleInfo>
+                   <title>United States House Bill 3495 (119th Congress)</title>
+            </titleInfo>
+              <identifier type="Congressional Bill citation">H.R. 3495</identifier>
+              <extension>
+                   <congress>119</congress>
+                   <context>PRIMARY</context>
+            </extension>
+        </relatedItem>
+         <relatedItem type="isReferencedBy">
+              <titleInfo>
+                   <title>United States Code</title>
+                   <partNumber>Title 5 Section 102</partNumber>
+            </titleInfo>
+              <identifier type="USC citation">5 U.S.C. 102</identifier>
+        </relatedItem>
+         <relatedItem type="isReferencedBy">
+              <titleInfo>
+                   <title>United States Code</title>
+            </titleInfo>
+        </relatedItem>
+         <relatedItem type="isReferencedBy">
+              <titleInfo>
+                   <title>United States Code</title>
+                   <partNumber>Title 29 Section 203(e)</partNumber>
+            </titleInfo>
+              <identifier type="USC citation">29 U.S.C. 203(e)</identifier>
+        </relatedItem>
+         <relatedItem type="isReferencedBy">
+              <titleInfo>
+                   <title>United States Statutes at Large</title>
+                   <partNumber>Volume 52 Page 1060</partNumber>
+            </titleInfo>
+              <identifier type="Statute citation">52 Stat. 1060</identifier>
+        </relatedItem>
+         <relatedItem type="isReferencedBy">
+              <titleInfo>
+                   <title>United States Public Law 718 (75th Congress)</title>
+            </titleInfo>
+              <identifier type="public law citation">Public Law 75</identifier>
+              <identifier type="public law citation">Public Law No 75</identifier>
+        </relatedItem>
+         <relatedItem type="isReferencedBy">
+              <titleInfo>
+                   <title>United States Public Law 344 (93rd Congress)</title>
+            </titleInfo>
+              <identifier type="public law citation">Public Law 93-344</identifier>
+              <identifier type="public law citation">Public Law No 93-344</identifier>
+        </relatedItem>
+         <relatedItem type="isReferencedBy">
+              <titleInfo>
+                   <title>United States Public Law 3 (103rd Congress)</title>
+            </titleInfo>
+              <identifier type="public law citation">Public Law 103-3</identifier>
+              <identifier type="public law citation">Public Law No 103-3</identifier>
+        </relatedItem>
+         <relatedItem type="isReferencedBy">
+              <titleInfo>
+                   <title>United States Public Law 1 (104th Congress)</title>
+            </titleInfo>
+              <identifier type="public law citation">Public Law 104-1</identifier>
+              <identifier type="public law citation">Public Law No 104-1</identifier>
+        </relatedItem>
+         <relatedItem type="isReferencedBy">
+              <titleInfo>
+                   <title>United States Public Law 4 (104th Congress)</title>
+            </titleInfo>
+              <identifier type="public law citation">Public Law 104-4</identifier>
+              <identifier type="public law citation">Public Law No 104-4</identifier>
+        </relatedItem>
+         <relatedItem type="isReferencedBy">
+              <titleInfo>
+                   <title>United States Public Law 139 (111th Congress)</title>
+            </titleInfo>
+              <identifier type="public law citation">Public Law 111-139</identifier>
+              <identifier type="public law citation">Public Law No 111-139</identifier>
+        </relatedItem>
+    </relatedItem>
+    <relatedItem type="constituent" ID="id-hr494p2" xlink:href="https://www.govinfo.gov/metadata/granule/CRPT-119hrpt494/CRPT-119hrpt494-pt2/mods.xml">
+         <titleInfo>
+              <title>DIRECT SELLER AND REAL ESTATE AGENT HARMONIZATION ACT</title>
+              <partName>Part 2</partName>
+        </titleInfo>
+         <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CRPT-119hrpt494/html/CRPT-119hrpt494-pt2.htm">
+              <identifier type="FDsys Unique ID">D09002ee1e804eee8</identifier>
+        </relatedItem>
+         <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CRPT-119hrpt494/pdf/CRPT-119hrpt494-pt2.pdf">
+              <identifier type="FDsys Unique ID">D09002ee1e804eeea</identifier>
+        </relatedItem>
+         <identifier type="uri">https://www.govinfo.gov/app/details/CRPT-119hrpt494/CRPT-119hrpt494-pt2</identifier>
+         <identifier type="former granule identifier">f:hr494p2.119.txt</identifier>
+         <location>
+              <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CRPT-119hrpt494/CRPT-119hrpt494-pt2</url>
+              <url access="raw object" displayLabel="PDF rendition">https://www.govinfo.gov/content/pkg/CRPT-119hrpt494/pdf/CRPT-119hrpt494-pt2.pdf</url>
+              <url access="raw object" displayLabel="HTML rendition">https://www.govinfo.gov/content/pkg/CRPT-119hrpt494/html/CRPT-119hrpt494-pt2.htm</url>
+        </location>
+         <identifier type="preferred citation">H. Rept. 119-494,Part 2</identifier>
+         <extension>
+              <searchTitle>DIRECT SELLER AND REAL ESTATE AGENT HARMONIZATION ACT;H. Rept. 119-494,Part 2</searchTitle>
+              <legislativeHistory>Committed to the Committee of the Whole House on the State of the Union and ordered to be printed</legislativeHistory>
+              <granuleClass>OTHERPART</granuleClass>
+              <accessId>CRPT-119hrpt494-pt2</accessId>
+              <action date="2026-09-08">Committed to the Committee of the Whole House on the State of the Union and ordered to be printed</action>
+              <heading>Part 2</heading>
+              <partNumber>2</partNumber>
+              <session>2</session>
+              <submittedStatement>Mr. Walberg, from the Committee on Education and Workforce, submitted the following</submittedStatement>
+              <bill congress="119" context="OTHER" number="3495" type="HR"></bill>
+              <bill congress="119" context="PRIMARY" number="3495" type="HR"></bill>
+              <congCommittee authorityId="hsed00" chamber="H" congress="119" type="S">
+                                        
+                   <name type="authority-standard">Committee on Education and Workforce</name>
+                                        
+                   <name type="authority-short">Education and Workforce</name>
+                                    
+            </congCommittee>
+              <congMember bioGuideId="W000798" chamber="H" congress="119" party="R" role="SUBMITTEDBY" state="MI">
+                                        
+                   <name type="parsed">Mr. Walberg</name>
+                                        
+                   <name type="authority-fnf">Tim Walberg</name>
+                                        
+                   <name type="authority-lnf">Walberg, Tim</name>
+                                    
+            </congMember>
+              <congReport congress="119" number="494" type="H"></congReport>
+              <associatedBills>H.R. 3495, 119th</associatedBills>
+        </extension>
+         <name type="personal">
+              <namePart>Tim Walberg</namePart>
+              <affiliation>United States House of Representatives</affiliation>
+              <role>
+                   <roleTerm authority="marcrelator" type="text">sponsor</roleTerm>
+                   <roleTerm authority="marcrelator" type="code">spn</roleTerm>
+            </role>
+              <description>United States Congress Member</description>
+        </name>
+         <name type="corporate">
+              <namePart>United States</namePart>
+              <namePart>Congress</namePart>
+              <namePart>House of Representatives</namePart>
+              <namePart>Committee on Education and Workforce</namePart>
+              <role>
+                   <roleTerm authority="marcrelator" type="text">associated name</roleTerm>
+                   <roleTerm authority="marcrelator" type="code">asn</roleTerm>
+            </role>
+              <description>Government Organization</description>
+        </name>
+         <relatedItem type="isReferencedBy">
+              <titleInfo>
+                   <title>United States House Bill 3495 (119th Congress)</title>
+            </titleInfo>
+              <identifier type="Congressional Bill citation">H.R. 3495</identifier>
+              <extension>
+                   <congress>119</congress>
+                   <context>OTHER</context>
+            </extension>
+        </relatedItem>
+         <relatedItem type="isReferencedBy">
+              <titleInfo>
+                   <title>United States House Bill 3495 (119th Congress)</title>
+            </titleInfo>
+              <identifier type="Congressional Bill citation">H.R. 3495</identifier>
+              <extension>
+                   <congress>119</congress>
+                   <context>PRIMARY</context>
+            </extension>
+        </relatedItem>
+         <relatedItem type="isReferencedBy">
+              <titleInfo>
+                   <title>United States House Report 494 (119th Congress)</title>
+            </titleInfo>
+              <identifier type="congressional report citation">H. Rept. 119-494</identifier>
+        </relatedItem>
+    </relatedItem>
+</mods>

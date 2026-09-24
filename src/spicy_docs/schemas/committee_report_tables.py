@@ -1,5 +1,5 @@
-"""``committee_reports``, ``hearing_transcripts`` and ``report_sections``, all keyed on the GovInfo package id rather
-than on a bill, so ``bill_id`` is nullable and a row exists without a linkage nothing can make yet.
+"""``committee_reports`` (one row per report part), ``hearing_transcripts`` and ``report_sections``, keyed on GovInfo
+packages rather than on a bill, so ``bill_id`` is nullable and a row exists without a linkage nothing can make yet.
 
 ``hearing_transcripts.bill_id`` is always NULL because a legislative hearing is held on a list of bills, which
 ``hearing_bill_links`` hosts, while a report is filed against one bill and keeps its scalar.  The appended CBO estimate
@@ -14,8 +14,10 @@ from spicy_docs.schemas.tables import Row, flag, table_contract, text
 #: Processing identity for report heading segmentation and table shaping.
 #: Hosts include it in their read checkpoint alongside the CBO reader version;
 #: publisher last_modified cannot invalidate a corrected reader. Bump this
-#: when segmentation or these output semantics change.
-REPORT_SECTION_READER_VERSION = "report-headings-001"
+#: when segmentation or these output semantics change: ``001`` kept the source
+#: heading; ``002`` made a report one row per part (``part_id``), so every
+#: package is re-read into part rows.
+REPORT_SECTION_READER_VERSION = "report-headings-002"
 
 #: Which chamber each GovInfo document-type code belongs to.  CRPT's ``erpt``
 #: is a Senate executive report, not a House one; naming the six codes as data
@@ -69,8 +71,11 @@ def _package_columns(
 
 COMMITTEE_REPORTS = table_contract(
     "committee_reports",
-    grain="One row per captured GovInfo committee report package, with the CBO estimate it reprints or refuses.",
-    identity=("package_id",),
+    grain=(
+        "One row per published part of a captured GovInfo committee report package, with the CBO estimate it "
+        "reprints or refuses."
+    ),
+    identity=("package_id", "part_id"),
     version_column="last_modified",
     columns={
         **_package_columns(
@@ -78,6 +83,12 @@ COMMITTEE_REPORTS = table_contract(
             type_description="The report's document-type code (hrpt, srpt, erpt).",
             number_column="report_number",
             number_description="The report's number within its Congress and type.",
+        ),
+        # Overridden in place, so the column keeps its position; only the
+        # sentence changes, because the identity is now the package and part.
+        "package_id": (
+            "The GovInfo package id: with part_id, this row's identity.  Summary facts (title, date_issued, "
+            "last_modified) are the package's and repeat on every part row."
         ),
         # Appended after the nineteen shared columns, the way a hosted table
         # takes new ones (docs/tables.md): every column before this keeps its
@@ -146,6 +157,18 @@ COMMITTEE_REPORTS = table_contract(
             "filed) or `not_received` (the committee asked and CBO had not answered).  NULL where the report "
             "gives no reason, which is not the same as having none to give."
         ),
+        # Appended last, the way a hosted table takes new columns (docs/tables.md).
+        "part_id": (
+            "The part of the report this row is: the publisher's own granule id for it, which is also the file "
+            "stem its body was read at (`CRPT-119hrpt455-pt2`).  The package id itself where the part's stem is "
+            "the package's: a report published in one part, and a Part 1 the publisher left unsuffixed "
+            "(`CRPT-119hrpt494`).  Never NULL, because it is half the identity; a package's part rows are "
+            "replaced as a set."
+        ),
+        "part_number": (
+            "The part's number as the publisher states it (its `partNumber`, or the `-pt{N}` its id carries, "
+            "which must agree).  NULL on a report published in one part, whose record numbers none."
+        ),
     },
 )
 
@@ -182,12 +205,12 @@ HEARING_TRANSCRIPTS = table_contract(
 
 REPORT_SECTIONS = table_contract(
     "report_sections",
-    grain="One row per heading block parsed out of one committee report's text.",
-    identity=("package_id", "seq"),
+    grain="One row per heading block parsed out of one committee report part's text.",
+    identity=("package_id", "part_id", "seq"),
     version_column="last_modified",
     columns={
         "package_id": "The report package this block was parsed from.",
-        "seq": "Zero-based position of this block in the report, in reading order.",
+        "seq": "Zero-based position of this block in its part, in reading order.",
         "agency_label": (
             "NULL because heading recognition does not establish agency identity; the source heading "
             "is retained separately in heading."
@@ -210,6 +233,10 @@ REPORT_SECTIONS = table_contract(
         "heading": (
             "The source heading as spelled and trimmed, including actual agency names and generic titles; "
             "NULL for preamble or full_report blocks, which have no source heading."
+        ),
+        "part_id": (
+            "The report part this block was parsed from, spelled as `committee_reports.part_id`, so "
+            "(package_id, part_id) is the parent row.  Appended last."
         ),
     },
 )
@@ -265,13 +292,21 @@ def shape_committee_report(
     estimate: object = None,
     recital_bill_id: str | None = None,
 ) -> Row:
-    """One ``committee_reports`` row from one acquired CRPT package.
+    """One ``committee_reports`` row from one acquired part of a CRPT package.
 
-    ``estimate`` is the ``interpretation.cbo_estimates.CboEstimateFinding`` read over this package's text, or ``None``
-    where no rule was run -- which lands NULL throughout rather than as ``false``, because "not read" and "the cover
-    declares no estimate" are different answers.  ``recital_bill_id`` is passed in rather than derived here because
-    reading a printed designator into a bill key is the ``interpretation`` package's vocabulary.
+    ``body`` is one result of ``GovInfoBodyAcquirer.acquire_parts``; its ``part`` names the row's part, and a body
+    naming none is refused: a NULL ``part_id`` is half an identity, which a merge keeping only whole identities would
+    drop without a word.  ``estimate`` is the
+    ``interpretation.cbo_estimates.CboEstimateFinding`` read over this part's text, or ``None`` where no rule was run --
+    which lands NULL throughout rather than as ``false``, because "not read" and "the cover declares no estimate" are
+    different answers.  ``recital_bill_id`` is passed in rather than derived here because reading a printed designator
+    into a bill key is the ``interpretation`` package's vocabulary.
     """
+    part = getattr(body, "part", None)
+    if part is None:
+        raise ValueError(
+            f"{body.identity.package_id} names no report part; shape committee_reports rows from acquire_parts results"
+        )
     row = _package_row(
         body,
         type_column="report_type",
@@ -295,6 +330,8 @@ def shape_committee_report(
         "letter_signatory": text(None if estimate is None else estimate.signatory),
         "estimate_absence_reason": text(None if estimate is None else estimate.absence_reason),
         "estimate_absence_rule": text(None if estimate is None else estimate.absence_rule),
+        "part_id": text(part.part_id),
+        "part_number": text(part.part_number),
     }
     return row
 
@@ -328,13 +365,15 @@ def shape_report_section(
     block: object,
     *,
     package_id: str,
+    part_id: str,
     seq: int,
     last_modified: str | None = None,
 ) -> Row:
-    """One ``report_sections`` row from one observed heading block.
+    """One ``report_sections`` row from one observed heading block of one report part.
 
-    ``last_modified`` is a column so a merge can read the version column the design names, and ``heading`` stays NULL
-    for ``preamble``/``full_report`` blocks, whose ``agency`` is a text shape rather than an agency assertion.
+    ``part_id`` is the parent row's (``ReportPart.part_id``) and ``seq`` counts within that part.  ``last_modified`` is
+    a column so a merge can read the version column the design names, and ``heading`` stays NULL for
+    ``preamble``/``full_report`` blocks, whose ``agency`` is a text shape rather than an agency assertion.
     """
     start, end = block.char_span
     pages = block.page_span
@@ -352,6 +391,7 @@ def shape_report_section(
         "body_chars": text(len(block.body)),
         "last_modified": text(last_modified),
         "heading": None if block.pattern in {"preamble", "full_report"} else text(block.agency),
+        "part_id": text(part_id),
     }
 
 

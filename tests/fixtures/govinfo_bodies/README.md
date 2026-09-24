@@ -52,8 +52,9 @@ only the grammar entry.
 ## Multi-part committee reports
 
 Captured 2026-09-23. `CRPT-119hrpt811` was the one report the spicy-regs
-committee-reports rollup refused that day. The other two show the same shape in
-the 112th Congress and the two-part shape the reader still refuses.
+committee-reports rollup refused that day. `CRPT-112hrpt38` shows the same shape
+in the 112th Congress, `CRPT-119hrpt455` the shape whose parts are all
+constituents, and `CRPT-119hrpt494` the unsuffixed Part 1 beside a `-pt2`.
 
 | Fixture | Publisher response | Bytes | SHA-256 |
 | --- | --- | --- | --- |
@@ -61,10 +62,20 @@ the 112th Congress and the two-part shape the reader still refuses.
 | `mods-CRPT-119hrpt811.xml` | [`packages/CRPT-119hrpt811/mods`](https://api.govinfo.gov/packages/CRPT-119hrpt811/mods), keyed with `X-Api-Key` | 26,279 | `aba0227068f60977bb1ee98d58add159064bb2b38e7b235e70b8673de7b3e125` |
 | `mods-CRPT-112hrpt38.xml` | [`packages/CRPT-112hrpt38/mods`](https://api.govinfo.gov/packages/CRPT-112hrpt38/mods), keyed with `X-Api-Key` | 13,932 | `ddc18b4eef1895e89576f623def42712f91e24a0d00f9b4f971a8bf6d88f6fc0` |
 | `mods-CRPT-119hrpt455.xml` | [`packages/CRPT-119hrpt455/mods`](https://api.govinfo.gov/packages/CRPT-119hrpt455/mods), keyed with `X-Api-Key` | 24,549 | `290e09efb3f28d77e3e23cd379d8e826e8894ef444aea0fd383377a210d86c59` |
+| `summary-CRPT-119hrpt455.json` | [`packages/CRPT-119hrpt455/summary`](https://api.govinfo.gov/packages/CRPT-119hrpt455/summary), keyed with `X-Api-Key` | 1,399 | `1d483854f59a0c6d3c4bf521c4b2a6ec44391d16391faf3271a8b1884ecaceb0` |
+| `summary-CRPT-119hrpt494.json` | [`packages/CRPT-119hrpt494/summary`](https://api.govinfo.gov/packages/CRPT-119hrpt494/summary), keyed with `X-Api-Key` | 1,381 | `6d1e7dbda2f69f71bd7cb626025cb8378ea90e457731e3e2bc20deed0ae0fe66` |
+| `mods-CRPT-119hrpt494.xml` | [`packages/CRPT-119hrpt494/mods`](https://api.govinfo.gov/packages/CRPT-119hrpt494/mods), keyed with `X-Api-Key` | 20,579 | `8ba1ed0f6e11569f78130f71a6390abd34f424ccac3bb684a48e14c39cd70b68` |
+| `body-CRPT-119hrpt494-pt2.htm` | [Part 2's HTML rendition](https://www.govinfo.gov/content/pkg/CRPT-119hrpt494/html/CRPT-119hrpt494-pt2.htm), keyless | 1,490 | `c988d374420e3dd010d4980118d94404d99e4dbed423f936d98ef29aaf97717c` |
 
-The summary came from the rollup's own requalification capture; the three
-MODS came from a probe of 21 bounded GETs. Both receipts are under the supply corpus:
-`receipts/multipart-reports-2026-09-23/` (`ledger.jsonl`, `raw/`) and
+The `CRPT-119hrpt811` summary came from the rollup's own requalification
+capture; its MODS, `CRPT-112hrpt38`'s and `CRPT-119hrpt455`'s came from a probe
+of 21 bounded GETs. The `CRPT-119hrpt494` summary and MODS are the rollup's
+captures of 2026-09-22 (`fork-execution-2026-09-21/report-family/acquisition/raw/`),
+byte-identical to its 2026-09-23 captures and to a live `acquire_parts` run the
+same afternoon, which also served the `CRPT-119hrpt455` summary and the
+`CRPT-119hrpt494` Part 2 body (8 GETs; `receipts/multipart-reports-2026-09-23/parts/`).
+The receipts are under the supply corpus:
+`receipts/multipart-reports-2026-09-23/` (`ledger.jsonl`, `raw/`, `parts/`) and
 `fork-execution-2026-09-21/reports-requalification-2026-09-23/`. The same probe
 measured the other routes:
 

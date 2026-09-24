@@ -9,7 +9,8 @@ publisher's own statement and the body request is made only for a format the
 publisher named. Identity is proved before the body is fetched, which keeps a
 mistaken request from spending tens of megabytes; ``acquire_granule`` follows
 the same shape, except a granule that does not belong to the requested package
-answers HTTP 400 rather than 404. Two clients draw on the same budget: the keyed
+answers HTTP 400 rather than 404, and ``acquire_parts`` fetches one body per
+part a report's record states. Two clients draw on the same budget: the keyed
 one retains no refusal body, since an api.data.gov error can echo the
 credential, while the keyless one keeps its 401/403 answer.
 """
@@ -37,6 +38,7 @@ from spicy_docs.sources.govinfo.bodies import (
     PackageIdentity,
     PackageModsIdentity,
     PackageSummary,
+    ReportPart,
     granule_body_locator,
     granule_mods_locator,
     granule_summary_locator,
@@ -74,10 +76,11 @@ class GovInfoBodyBudget:
     """Per-acquisition request/byte bounds and per-client request-start pacing.
 
     ``max_requests`` covers the summary, the MODS, the body and every retry on
-    both clients. The timeout bounds transport waits, not total elapsed time.
-    A zero start interval explicitly disables pacing; a nonzero one meters each
-    client separately, so the keyed API host and the keyless content host are
-    paced apart, as they are answered apart.
+    both clients; ``acquire_parts`` needs ``2 + P`` for a report of ``P`` parts,
+    so a caller sizes it per part. The timeout bounds transport waits, not
+    total elapsed time. A zero start interval explicitly disables pacing; a
+    nonzero one meters each client separately, so the keyed API host and the
+    keyless content host are paced apart, as they are answered apart.
     """
 
     max_requests: int
@@ -95,7 +98,11 @@ class GovInfoBodyBudget:
 
 @dataclass(frozen=True, slots=True)
 class GovInfoPackageBody:
-    """Exact bytes for one package rendition with every capture that proved it."""
+    """Exact bytes for one package rendition with every capture that proved it.
+
+    ``part`` is the part of the package the bytes are, as the record states
+    it, or ``None`` for a collection whose records state no parts.
+    """
 
     identity: PackageIdentity
     format: str
@@ -109,6 +116,7 @@ class GovInfoPackageBody:
     body_capture: CapturedBodyResponse
     request_count: int
     budget: GovInfoBodyBudget
+    part: ReportPart | None = None
 
     @property
     def captures(self) -> tuple[CapturedBodyResponse, ...]:
@@ -165,6 +173,21 @@ class GovInfoFormatNotOfferedError(GovInfoBodySourceError):
         )
         self.offered_formats = tuple(offered)
         self.preference = tuple(preference)
+
+
+class GovInfoPartsOverBudgetError(GovInfoBodySourceError):
+    """The record states more parts than the request budget can fetch; no body request was made.
+
+    Not transient: the same record refuses under the same budget on every run,
+    so the caller grows ``max_requests`` rather than retrying.
+    """
+
+    def __init__(self, label: str, *, parts: int, max_requests: int) -> None:
+        super().__init__(
+            f"{label} states {parts} parts, which need {2 + parts} requests; the request budget allows {max_requests}"
+        )
+        self.required_requests = 2 + parts
+        self.max_requests = max_requests
 
 
 class GovInfoRenditionAddressError(GovInfoBodySourceError):
@@ -320,12 +343,50 @@ class GovInfoBodyAcquirer:
 
         A one-part report whose MODS states its part in place of the package
         stem (``mods.part_id``) is read at that part's stem, the only address
-        its record names.
+        its record names. The result's ``part`` names the part the bytes are.
+        A record listing several parts is read at its root only where the root
+        restates a part's renditions -- CRPT-119hrpt494's Part 1, at the
+        package stem, with ``mods.parts`` listing the rest; CRPT-119hrpt455's
+        root states none, so it is refused as offering no format.
+        ``acquire_parts`` reads every part.
 
         ``max_bytes`` may narrow the body allowance for this call, never raise
         it. Every refusal carries its capture, the stage it failed at and this
         context.
         """
+        (body,) = self._acquire(package_id, prefer=prefer, max_bytes=max_bytes, every_part=False)
+        return body
+
+    def acquire_parts(
+        self,
+        package_id: str,
+        *,
+        prefer: Sequence[str] = BODY_PREFERENCE,
+        max_bytes: int | None = None,
+    ) -> tuple[GovInfoPackageBody, ...]:
+        """Capture every part the package record states, each at its own stem, or refuse the package.
+
+        One summary and one MODS, then one body per part in ``mods.parts``
+        order, each the first preferred rendition that part offers: ``2 + P``
+        requests from the one budget. A record stating more parts than the
+        budget can fetch is refused before any body request
+        (``GovInfoPartsOverBudgetError``). A report published in one part is one
+        body, exactly what ``acquire`` returns. A format is chosen for every
+        part before any body is requested, and any refusal refuses the whole
+        package: a host replaces a package's part rows as a set, so half a
+        report is never a result. ``max_bytes`` narrows each body's allowance.
+        """
+        return self._acquire(package_id, prefer=prefer, max_bytes=max_bytes, every_part=True)
+
+    def _acquire(
+        self,
+        package_id: str,
+        *,
+        prefer: Sequence[str],
+        max_bytes: int | None,
+        every_part: bool,
+    ) -> tuple[GovInfoPackageBody, ...]:
+        """Summary, MODS, then a body for the root's part or for every part; refusals carry this context."""
         if self._closed:
             raise ValueError("GovInfo body acquirer is closed")
         identity = parse_package_id(package_id)
@@ -334,6 +395,7 @@ class GovInfoBodyAcquirer:
         self._api.reset_budget()
         self._content.reset_budget()
         stage = "summary"
+        part_id: str | None = None
         chosen: str | None = None
         offered: tuple[str, ...] = ()
         capture: CapturedBodyResponse | None = None
@@ -363,43 +425,67 @@ class GovInfoBodyAcquirer:
                 final_url=mods_capture.resolved_url,
                 max_bytes=budget.max_metadata_bytes,
             )
-            offered = mods.offered_formats
-            chosen = next((name for name in preference if name in offered), None)
-            if chosen is None:
-                moved = [(name, url) for name, url in mods.moved_renditions if name in preference]
-                if moved:
-                    raise GovInfoRenditionAddressError(identity.package_id, moved)
-                raise GovInfoFormatNotOfferedError(identity.package_id, preference, offered)
+            if every_part:
+                if not mods.parts:
+                    raise GovInfoBodySourceError(f"GovInfo {identity.collection} records state no parts to acquire")
+                if 2 + len(mods.parts) > budget.max_requests:
+                    raise GovInfoPartsOverBudgetError(
+                        identity.package_id, parts=len(mods.parts), max_requests=budget.max_requests
+                    )
+                targets = [(part, part.offered_formats, part.moved_renditions) for part in mods.parts]
+            else:
+                # The root's renditions were proved at the stem of the part its record states there.
+                stem = mods.part_id or identity.package_id
+                root = next((part for part in mods.parts if part.part_id == stem), None)
+                targets = [(root, mods.offered_formats, mods.moved_renditions)]
+            choices = []
+            for part, offered, moved_renditions in targets:
+                part_id = None if part is None else part.part_id
+                label = part_id if every_part else identity.package_id
+                chosen = next((name for name in preference if name in offered), None)
+                if chosen is None:
+                    moved = [(name, url) for name, url in moved_renditions if name in preference]
+                    if moved:
+                        raise GovInfoRenditionAddressError(label, moved)
+                    raise GovInfoFormatNotOfferedError(label, preference, offered)
+                choices.append((part_id, offered, chosen, part))
 
             stage = "body"
-            # A body failure must never be attributed to the metadata captures.
-            capture = None
-            body_capture = self._body_capture(
-                package_body_locator(identity, chosen, part_id=mods.part_id), max_bytes=budget.max_body_bytes
-            )
-            capture = body_capture
-            body = validate_package_body(
-                body_capture.body,
-                package=identity,
-                format=chosen,
-                content_type=body_capture.content_type,
-                final_url=body_capture.resolved_url,
-                max_bytes=budget.max_body_bytes,
-                part_id=mods.part_id,
-            )
-            return GovInfoPackageBody(
-                identity=identity,
-                format=chosen,
-                preference=preference,
-                offered_formats=offered,
-                summary=summary,
-                mods=mods,
-                body=body,
-                summary_capture=summary_capture,
-                mods_capture=mods_capture,
-                body_capture=body_capture,
-                request_count=self.request_count,
-                budget=budget,
+            fetched = []
+            for part_id, offered, chosen, part in choices:
+                # A body failure must never be attributed to the metadata captures.
+                capture = None
+                body_capture = self._body_capture(
+                    package_body_locator(identity, chosen, part_id=part_id), max_bytes=budget.max_body_bytes
+                )
+                capture = body_capture
+                body = validate_package_body(
+                    body_capture.body,
+                    package=identity,
+                    format=chosen,
+                    content_type=body_capture.content_type,
+                    final_url=body_capture.resolved_url,
+                    max_bytes=budget.max_body_bytes,
+                    part_id=part_id,
+                )
+                fetched.append((offered, chosen, part, body, body_capture))
+            return tuple(
+                GovInfoPackageBody(
+                    identity=identity,
+                    format=chosen,
+                    preference=preference,
+                    offered_formats=offered,
+                    summary=summary,
+                    mods=mods,
+                    body=body,
+                    summary_capture=summary_capture,
+                    mods_capture=mods_capture,
+                    body_capture=body_capture,
+                    request_count=self.request_count,
+                    budget=budget,
+                    part=part,
+                )
+                for offered, chosen, part, body, body_capture in fetched
             )
         except Exception as error:
             # A credential refusal keeps no capture: the body may echo the key.
@@ -409,6 +495,7 @@ class GovInfoBodyAcquirer:
                 "packageId": identity.package_id,
                 "collection": identity.collection,
                 "stage": stage,
+                "partId": part_id,
                 "preference": list(preference),
                 "offeredFormats": list(offered),
                 "format": chosen,
@@ -583,5 +670,6 @@ __all__ = [
     "GovInfoGranuleBody",
     "GovInfoPackageBody",
     "GovInfoPackageUnavailableError",
+    "GovInfoPartsOverBudgetError",
     "GovInfoRenditionAddressError",
 ]

@@ -1,0 +1,33 @@
+{
+    "dateIssued": "2026-02-11",
+    "documentType": "HRPT",
+    "congress": "119",
+    "session": "2",
+    "documentNumber": "494",
+    "packageId": "CRPT-119hrpt494",
+    "collectionCode": "CRPT",
+    "detailsLink": "https://www.govinfo.gov/app/details/CRPT-119hrpt494",
+    "title": "DIRECT SELLER AND REAL ESTATE AGENT HARMONIZATION ACT",
+    "branch": "legislative",
+    "collectionName": "Congressional Reports",
+    "download": {
+        "premisLink": "https://api.govinfo.gov/packages/CRPT-119hrpt494/premis",
+        "zipLink": "https://api.govinfo.gov/packages/CRPT-119hrpt494/zip",
+        "modsLink": "https://api.govinfo.gov/packages/CRPT-119hrpt494/mods"
+    },
+    "pages": "22",
+    "governmentAuthor2": "House of Representatives",
+    "chamber": "HOUSE",
+    "subtitle": "Report together with minority views to accompany H.R. 3495, including cost estimate of the Congressional Budget Office",
+    "governmentAuthor1": "Congress",
+    "publisher": "U.S. Government Publishing Office",
+    "suDocClassNumber": "Y 1.1/8:",
+    "docClass": "HRPT",
+    "lastModified": "2026-09-11T12:18:06Z",
+    "category": "Congressional Committee Materials",
+    "otherIdentifier": {
+        "migrated-doc-id": "f:hr494.119.txt",
+        "ils-system-id": "001468303"
+    },
+    "granulesLink": "https://api.govinfo.gov/packages/CRPT-119hrpt494/granules?offsetMark=*&pageSize=100"
+}

@@ -604,57 +604,105 @@ instead four publisher statements about the one URL whose bytes were kept:
 
 ## Multi-part committee reports
 
-A report filed in parts (H. Rept. 119-811, Part 1) is **one package**,
-`CRPT-119hrpt811`, and each part is a granule of it, `{package id}-pt{N}`. The
-summary, the record identifier, the package-level `accessId` and the preferred
-citation all name the package; the granules route names the part. A part is
-never a package id, so the grammar still refuses `CRPT-119hrpt811-pt1`. GovInfo
-writes the package's record in one of three shapes (measured 2026-09-23):
+A report filed in parts (H. Rept. 119-455, Parts 1 and 2) is **one package**,
+`CRPT-119hrpt455`, and each part is a granule of it, usually
+`{package id}-pt{N}`. The summary, the record identifier, the package-level
+`accessId` and the preferred citation all name the package; the granules route
+names the part. A part is never a package id, so the grammar still refuses
+`CRPT-119hrpt811-pt1`. GovInfo writes the package's record in one of three
+shapes (measured 2026-09-23 on every multi-part record retained):
 
-| Parts published | What the package MODS root states | `acquire` |
-| --- | --- | --- |
-| One, spelled `-pt1` (`CRPT-119hrpt811`, `CRPT-112hrpt38`) | Its own `accessId`, the part's `accessId` beside a `granuleClass`, and renditions only at the part's stem; the package stem redirects to the error page | Reads the part: `mods.part_id` and `body.part_id` name it |
-| Two or more, each suffixed (`CRPT-119hrpt455`, `CRPT-108hrpt24`) | Its own `accessId`; each part as a `relatedItem type="constituent"` with its own renditions; nothing at the root | `GovInfoFormatNotOfferedError` |
-| Part 1 unsuffixed, part 2 `-pt2` (`CRPT-119hrpt494`) | Part 1's renditions at the package stem; both parts as constituents | Reads part 1 only, like any single-part report |
+| Parts published | What the package MODS states | `acquire` | `acquire_parts` |
+| --- | --- | --- | --- |
+| One, spelled `-pt1` (`CRPT-119hrpt811`, `CRPT-112hrpt38`) | Its own `accessId`, the part's `accessId` beside a `granuleClass` at the root, and renditions only at the part's stem; the package stem redirects to the error page | Reads the part | One body, the same |
+| Two, each suffixed (`CRPT-119hrpt455`, `-119hrpt620`, `-108hrpt24`) | Its own `accessId`; each part as a `relatedItem type="constituent"` with its own `accessId`, `partNumber`, `granuleClass` and renditions; nothing at the root | `GovInfoFormatNotOfferedError` | One body per part |
+| Part 1 unsuffixed, Part 2 `-pt2` (`CRPT-119hrpt494`) | Both parts as constituents, Part 1's `accessId` being the package id; the root repeats Part 1's renditions at the package stem | Reads Part 1, and says so | One body per part |
 
-The first shape is how GovInfo writes every package that holds one granule: it
-flattens that granule's record into the package root. For a single-part report
-the granule id is the package id, so nothing shows. When the one granule is a
-part, `validate_package_mods` admits its `accessId` only if all of these hold:
+A report published in one part (`CRPT-119hrpt1`, and 133 of the 145 packages
+whose MODS is retained, counted in
+[Table contracts](../tables.md#a-multi-part-committee-report-is-one-row-per-part))
+is the first shape with the package id in place of the part's: the root states
+the granule's `accessId`, which equals the package id.
 
-- it is exactly this package's id plus its grammar's part suffix,
-  `PackageGrammar.part`. Only CRPT has one, and it is `-pt1`, the only spelling
-  a root was measured stating. A lone `-pt2` at the root is refused.
-- its own `extension` states `granuleClass` `FIRSTPART`.
-- the package's own `accessId` is stated too.
-- the record states no `relatedItem type="constituent"`. A Part 2 listed beside
-  the flattened Part 1, the way `CRPT-119hrpt494` lists its `-pt2`, means the
-  package holds more than that one part, so the record is refused rather than
-  read as the whole report.
+### Reading the parts
 
-The renditions are then proved at the part's stem, which is
-`granule_body_locator(package, part, format)`. A package-stem URL in such a
-record would read as moved.
+`validate_package_mods` lists them as `mods.parts`, one `ReportPart` per part in
+document order: `part_id` (the publisher's granule `accessId`, which is also the
+file stem its renditions are published under), `part_number`,
+`offered_formats`, moved and other renditions, the part's own `bills` and
+`primary_bill`, and `body_locator(format)`, the address its body is proved at.
+A record listing no constituent is one part, its root. A record listing
+constituents is those parts, and each is held to the rules the root's `-pt1`
+was:
 
-**What `part_id` guarantees.** `mods.part_id` and `body.part_id` guarantee that
-the bytes are that part's own file, at the address the publisher's record
-names for it. They do not guarantee that the part is the whole report: a Part 2
-can be published later under the same package, and the record then changes
-shape. Downstream tables carry only the package id today. A
-`committee_reports` row for `CRPT-119hrpt811` is keyed on the package, the
-part's stem is visible only in `requested_url`, and the title says `Part 1-`.
-How parts should be represented in the report tables is a pending contract
-ruling, not something this reader decides.
+- **Its id is this package's.** Exactly one `accessId` in the constituent's own
+  extension, spelled as this package's id plus `-pt{N}` (the CRPT grammar's
+  `part`), or as the package id itself. Another report's part, a longer report
+  number (`CRPT-119hrpt11-pt1` under `CRPT-119hrpt1`) or `-pt01` is refused.
+- **Its number agrees with itself.** A stated `partNumber` must equal the `N`
+  its id carries. The unsuffixed part carries none, so it must state one, and
+  it must be 1: that is the one measured use (`CRPT-119hrpt494`).
+- **Its class agrees with its number.** `granuleClass` is `FIRSTPART` on part 1
+  and `OTHERPART` on every later part, as on every record measured.
+- **Every part once, and no body that belongs to no part.** Two constituents
+  stating one id or one number are refused, and so are part numbers other than
+  exactly 1 to N: a lone `-pt2`, or parts 1 and 3, would publish a report
+  missing a part, and the refusal names the missing numbers. So is a rendition
+  at the root, offered or at a stem that is not the root's, that no part
+  states. `CRPT-119hrpt494`'s root repeats Part 1's renditions, which is
+  allowed because Part 1's stem is the package's.
+- **Each part's renditions are its own.** Read from the constituent's own
+  `location` and proved at `granule_body_locator(package, part_id, format)`,
+  with the same offered/moved/other split the root uses.
 
-The other two shapes are unchanged on purpose. Reading one part of a
-two-part package as the package would publish half a report under the
-package's identity. Whether each part gets its own row is a contract decision
-for the report tables, not a reader rule. The third shape is already read,
-but only part 1, and nothing in the result says a part 2 exists. `acquire_granule`
-is no route to a part either. For `CRPT-119hrpt811-pt1` and
-`CRPT-119hrpt455-pt1`, the granule MODS route answers with the package's own
-record, which states no `relatedItem type="host"`, so `validate_granule_mods`
-refuses it.
+A root that states a `-pt1` part **and** constituents beside it is still
+refused, and so is a lone `-pt2` at the root: the flattened root shape means
+the package holds that one granule, and a record saying otherwise is read as a
+disagreement, not a report. A collection with no part grammar (every one but
+CRPT) states no parts.
+
+Where each part's `<bill>` lives matters to a caller. A multi-part package's
+root states none (`CRPT-119hrpt455`, `-119hrpt494`), so `mods.primary_bill` is
+`None` there and `part.primary_bill` names H.R. 5103 and H.R. 3495.
+
+### Acquiring every part
+
+`GovInfoBodyAcquirer.acquire_parts(package_id)` reads the summary and the MODS
+once, chooses a rendition for every part before any body is requested, then
+fetches one body per part at its own stem: `2 + P` requests from one budget.
+It returns one `GovInfoPackageBody` per part, each naming its `part`, with
+`body.part_id` equal to it. **It is all or nothing.** A part that offers no
+preferred rendition, redirects, or runs out of budget refuses the package,
+with the part named in the refusal context's `partId`, because a host replaces
+a package's part rows as a set and half a report is never a result.
+
+**A caller sizes its budget per part.** `max_requests` must cover `2 + P` for
+the largest `P` it will meet, plus retries. A record stating more parts than
+the budget can ever fetch is refused after the MODS and before any body
+request, as `GovInfoPartsOverBudgetError`, which carries `required_requests`
+and `max_requests`. That refusal repeats on every run until the budget grows,
+so a caller must not read it as transient; a budget that covers `2 + P` but
+runs out on a retry is the ordinary `request-budget-exhausted` refusal, which
+the next run may clear.
+
+`acquire` is unchanged in what it fetches: the root's rendition, at the stem
+of the part the root states. Its result now names that part (`result.part`,
+and `body.part_id`, which is the package id for a report in one part) and
+`mods.parts` lists every other one, so `CRPT-119hrpt494`'s Part 2 is no longer
+invisible to a caller that reads only Part 1. `acquire_granule` is still
+no route to a part: for `CRPT-119hrpt811-pt1` and `CRPT-119hrpt455-pt1` the
+granule MODS route answers with the package's own record, which states no
+`relatedItem type="host"`, so `validate_granule_mods` refuses it.
+
+The committee-report tables key each row on the package and the part; see
+[Table contracts](../tables.md#a-multi-part-committee-report-is-one-row-per-part).
+Measured live 2026-09-23 through `acquire_parts` (receipt
+`receipts/multipart-reports-2026-09-23/parts/`, 8 keyed and keyless GETs
+against a declared cap of 20): `CRPT-119hrpt455` yielded both parts at their
+`-pt1`/`-pt2` stems (46,976 and 39,075 bytes), and `CRPT-119hrpt494` yielded
+Part 1 at the package stem (63,188 bytes, the same digest the rollup captured
+on 2026-09-22) and Part 2 at `-pt2`, a 1,490-byte supplemental report
+correcting Part 1's committee votes.
 
 ## Granule bodies for the Record
 
@@ -728,8 +776,9 @@ through `acquire(package_id)`.
 | --- | --- |
 | `GovInfoPackageUnavailableError` | The exact locator said the object is not there: 404/410 on a keyed route, or a redirect on a body route. On a granule's summary or MODS route this is HTTP 400 instead, typed the same way when the 400's body is the documented `invalid granuleId` message -- GovInfo answers that way for a granule that does not belong to the requested package; any other 400 stays a generic refusal. It carries that capture. It is not a statement about other formats, packages or granules. |
 | `GovInfoFormatNotOfferedError` | The package or granule stated its renditions and none was preferred. It carries `offered_formats`; no body request was made. |
-| `GovInfoBodySourceError` | Identity or shape failed: a `packageId`, `granuleId`, `collectionCode` or `accessId` that differs, a final URL that differs, a wrong media type, an empty body, a PDF without its magic, or a bound exceeded. |
+| `GovInfoBodySourceError` | Identity or shape failed: a `packageId`, `granuleId`, `collectionCode` or `accessId` that differs, a report part whose id, number or class disagrees, a final URL that differs, a wrong media type, an empty body, a PDF without its magic, or a bound exceeded. |
 | `GovInfoRenditionAddressError` | The package or granule states a preferred format at an address this module does not derive. The publisher's own URL is on the error. Disagreement, not absence; no body request was made. |
+| `GovInfoPartsOverBudgetError` | `acquire_parts` only: the record states more parts than `max_requests` can fetch (`2 + P`). It carries `required_requests` and `max_requests`; no body request was made. Not transient: the same budget refuses the same record every run. |
 | `GovInfoBodySourceError` naming the error page | The publisher's error page arrived as a 200. Its bytes are retained; it is a refusal, never absence. |
 | `CredentialRefusedError` | HTTP 401/403, or a keyed response echoing the key. Stop the operation; do not continue with another route, package or granule. |
 
@@ -746,9 +795,10 @@ MODS as the refused one. A refusal returns no partial result.
 `GovInfoPackageBody` is frozen and holds the parsed `identity`, the `format`
 chosen, the `preference` asked for, `offered_formats`, the validated `summary`
 (with its `download_links` as evidence), the validated `mods` (with
-`moved_renditions`, `other_renditions`, `bills` and a report's `part_id`) and
-`body` identities, the three captures in request order, the consumed
-`request_count` and the effective `budget`.
+`moved_renditions`, `other_renditions`, `bills`, and a report's `part_id` and
+`parts`) and `body` identities, the three captures in request order, the
+consumed `request_count`, the effective `budget` and the report `part` the
+bytes are.
 
 `PackageModsIdentity.bills` is every `<bill>` the MODS names, in the
 publisher's own document order, read from the same root-level `extension`

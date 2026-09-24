@@ -180,7 +180,7 @@ src/spicy_docs/schemas/bill_model_tables.py	The two model-backed tables -- ``sec
 src/spicy_docs/schemas/bill_tables.py	The four tables one BILLSTATUS document fills: ``congress_bills``, ``bill_actions``, ``bill_committees`` and…	src
 src/spicy_docs/schemas/bill_version_tables.py	``bill_versions`` (one row per printing per source that supplied it) and ``bill_sections`` (one row per…	src
 src/spicy_docs/schemas/budget_volume_tables.py	``budget_volumes``: one row per published volume of the President's budget, carrying what its print adds to its own…	src
-src/spicy_docs/schemas/committee_report_tables.py	``committee_reports``, ``hearing_transcripts`` and ``report_sections``, all keyed on the GovInfo package id rather…	src
+src/spicy_docs/schemas/committee_report_tables.py	``committee_reports`` (one row per report part), ``hearing_transcripts`` and ``report_sections``, keyed on GovInfo…	src
 src/spicy_docs/schemas/congress_activity_tables.py	``amendments``, ``press_releases``, ``roll_call_votes`` and ``member_votes``, each identity a correction the placement…	src
 src/spicy_docs/schemas/congress_index_tables.py	The Congress.gov index tables ``house_communications``, ``committee_meetings``, ``record_issues``, ``treaties`` and…	src
 src/spicy_docs/schemas/cost_estimate_tables.py	``cbo_cost_estimates``: the CBO cost-estimate index read out of the same BILLSTATUS document the bill family reads,…	src

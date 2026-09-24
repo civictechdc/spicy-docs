@@ -2083,3 +2083,44 @@ What a later change must preserve:
   page is a failure. The previous Congress's last page should name a seed.
   That is inferred from 119-1 naming 118-273 as its prior act, not yet
   observed. The index page `congress{N}th.htm` is not read.
+## A multi-part committee report is one row per part, keyed on the publisher's granule id
+
+Decision 29, delegated 2026-09-23 and confirmed by the owner on 2026-09-24.
+`committee_reports` moves from `(package_id)`
+to `(package_id, part_id)` and `report_sections` from `(package_id, seq)` to
+`(package_id, part_id, seq)`; the host's acquisition checkpoint stays keyed by
+package, because one read yields every part and a package's part rows are
+replaced as a set. `REPORT_SECTION_READER_VERSION` moves to
+`report-headings-002` so every report is re-read into part rows. Behavior and
+measurements: [Table contracts](tables.md#a-multi-part-committee-report-is-one-row-per-part)
+and [multi-part reports](sources/govinfo-bodies.md#multi-part-committee-reports).
+
+**The single-part spelling is the package id, not a blank.** `TableContract.key`
+refuses a NULL identity part, so a report in one part needs a value. The record
+already states one: its root names the granule's `accessId`, and it is the
+package id (`CRPT-119hrpt1`). `CRPT-119hrpt494` spells its real, numbered Part 1
+the same way. Taking the publisher's id means `part_id` is always a value some
+record states and always the stem of `requested_url`; the `treaties.suffix`
+blank would have been neither. But `part_id` and `part_number` do not say how
+many parts a package has. On the package-id spelling `part_number` separates Part 1 of two
+(`CRPT-119hrpt494`, 1) from a report in one part (NULL), but the eight packages
+whose one part is spelled `-pt1` are `(CRPT-119hrpt811-pt1, 1)`, the same shape
+as `CRPT-119hrpt455`'s Part 1. A reader tells Part 1 of two from a lone part by
+counting the package's rows.
+
+**A host adopts it in the release that vendors it.** `shape_report_section`
+now requires `part_id` and `shape_committee_report` refuses a body that names
+no part, so a host that vendors this without adopting it breaks, and a host
+that adopts only the shapers loses rows: its merge keeps only whole
+identities, and every prior row reads `part_id` as NULL. In the same release a
+host passes `part_id`, backfills prior rows with
+`COALESCE(part_id, package_id)`, and merges `committee_reports` with
+`replace_parents` by package, as it already merges `report_sections`
+([Table contracts](tables.md#a-multi-part-committee-report-is-one-row-per-part)).
+That is why this change waited for the owner's confirmation of decision 29
+and ships in 0.32.0, whose consumer must adopt it in the same release it vendors.
+
+**Why not read two parts as one package.** Joining the parts' text under the
+package id would publish two bodies, two digests and two CBO findings as one,
+and `CRPT-119hrpt494`'s Part 2 is a supplemental report correcting Part 1's
+committee votes, not a continuation of it.

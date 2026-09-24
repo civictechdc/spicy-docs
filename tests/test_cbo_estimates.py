@@ -486,13 +486,21 @@ class _Summary:
     last_modified = "2023-05-12T00:00:00Z"
 
 
+class _Part:
+    """A report published in one part: the part is the package's own stem, and unnumbered."""
+
+    part_id = "CRPT-118hrpt53"
+    part_number = None
+
+
 class _Body:
-    """The three things ``_package_row`` reads, and nothing this test does not need."""
+    """The three things ``_package_row`` reads and the part the row is, and nothing this test does not need."""
 
     identity = _Identity()
     summary = _Summary()
     body_capture = _Capture()
     format = "htm"
+    part = _Part()
 
     class body:
         media_type = "text/html"
@@ -573,13 +581,15 @@ def test_the_nineteen_package_columns_keep_their_order_and_the_rest_are_appended
         "page_count",
         "text_sha256",
     )
-    assert COMMITTEE_REPORTS.identity == ("package_id",)
+    # The part columns came after the estimate columns (decision 29), so both appendices keep their places.
+    assert COMMITTEE_REPORTS.columns[-2:] == ("part_id", "part_number")
+    assert COMMITTEE_REPORTS.identity == ("package_id", "part_id")
     assert COMMITTEE_REPORTS.version_column == "last_modified"
-    assert len(COMMITTEE_REPORTS.columns) == 32
+    assert len(COMMITTEE_REPORTS.columns) == 34
 
 
 def test_the_hearing_table_did_not_take_the_estimate_columns() -> None:
-    """The hearing table did not take the estimate columns."""
+    """The hearing table did not take the estimate or part columns."""
     assert not set(COMMITTEE_REPORTS.columns[19:]) & set(HEARING_TRANSCRIPTS.columns)
 
 

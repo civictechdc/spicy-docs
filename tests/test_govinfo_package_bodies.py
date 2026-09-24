@@ -1,7 +1,8 @@
 """Package-id grammar, locators and body identity rules, offline.
 
 The three CRPT-119hrpt1 fixtures are exact publisher responses, as are the
-multi-part report records (CRPT-119hrpt811, CRPT-112hrpt38, CRPT-119hrpt455);
+multi-part report records (CRPT-119hrpt811, CRPT-112hrpt38, CRPT-119hrpt455,
+CRPT-119hrpt494);
 the synthetic cases cover shapes the publisher answered on other packages (a
 BILLS download block, a USLM rendition) and the refusals themselves.
 """
@@ -626,16 +627,17 @@ def test_every_package_level_access_id_must_agree() -> None:
 
 
 def test_a_constituent_access_id_names_a_granule_not_this_package() -> None:
-    """A constituent access id names a granule, not this package, and does not become a package access id."""
+    """A constituent access id names a part, not this package, and does not become a package access id."""
     body = (
         '<mods xmlns="http://www.loc.gov/mods/v3">'
         f"<extension><accessId>{PACKAGE}</accessId></extension>"
-        '<relatedItem type="constituent"><extension>'
+        '<relatedItem type="constituent"><extension><granuleClass>FIRSTPART</granuleClass>'
         f"<accessId>{PACKAGE}-pt1</accessId></extension></relatedItem></mods>"
     ).encode()
     mods = validate_package_mods(body, package=PACKAGE, final_url=MODS_URL, max_bytes=10_000)
     assert mods.access_ids == (PACKAGE,)
     assert mods.part_id is None
+    assert [(part.part_id, part.part_number) for part in mods.parts] == [(f"{PACKAGE}-pt1", 1)]
 
 
 @pytest.mark.parametrize("package", [PART_PACKAGE, "CRPT-112hrpt38"])
@@ -685,6 +687,8 @@ def test_a_report_with_two_parts_states_no_rendition_at_its_root() -> None:
     assert mods.access_ids == (package,)
     assert mods.part_id is None
     assert (mods.offered_formats, mods.moved_renditions, mods.other_renditions) == ((), (), ())
+    # ``acquire_parts`` reads both, each at its own stem.
+    assert [part.part_id for part in mods.parts] == [f"{package}-pt1", f"{package}-pt2"]
 
 
 def part_mods(
@@ -776,12 +780,13 @@ def test_a_part_at_the_root_with_a_constituent_part_beside_it_is_refused() -> No
     ("package", "part"),
     [
         (PACKAGE, "CRPT-119hrpt2-pt1"),
-        (PACKAGE, f"{PACKAGE}-pt2"),
+        (PACKAGE, f"{PACKAGE}-pt0"),
+        (PACKAGE, f"{PACKAGE}-pt02"),
         ("CHRG-119hhrg64242", "CHRG-119hhrg64242-pt1"),
     ],
 )
 def test_a_part_locator_is_only_this_packages_own_part(package: str, part: str) -> None:
-    """The locator derives no stem for another package's part, a later part, or a collection with no measured part."""
+    """The locator derives no stem for another package's part, an unnumbered one, or a collection with no parts."""
     with pytest.raises(GovInfoBodySourceError, match="not a part"):
         package_body_locator(package, "htm", part_id=part)
 
@@ -794,6 +799,163 @@ def test_a_part_body_is_proved_at_the_parts_stem_and_not_the_packages() -> None:
     assert (proved.part_id, proved.final_url) == (PART, part_url)
     with pytest.raises(GovInfoBodySourceError, match="final URL"):
         validate_package_body(BODY, final_url=package_body_locator(PART_PACKAGE, "htm"), part_id=PART, **common)
+
+
+def record(package: str) -> bytes:
+    """One retained package MODS, exactly as the publisher served it."""
+    return (FIXTURES / f"mods-{package}.xml").read_bytes()
+
+
+def parts_of(body: bytes, package: str = PACKAGE):
+    """The parts a package MODS states, through the sealed validator."""
+    return validate_package_mods(
+        body, package=package, final_url=package_mods_locator(package), max_bytes=200_000
+    ).parts
+
+
+#: A report in one part and the three shapes a multi-part report takes (fixture README), as
+#: ``(package, [(part_id, part_number, the part's PRIMARY bill number)])``.
+LAYOUTS = [
+    ("CRPT-119hrpt1", [("CRPT-119hrpt1", None, "53")]),
+    ("CRPT-119hrpt811", [("CRPT-119hrpt811-pt1", 1, "2317")]),
+    ("CRPT-112hrpt38", [("CRPT-112hrpt38-pt1", 1, "3")]),
+    ("CRPT-119hrpt455", [("CRPT-119hrpt455-pt1", 1, "5103"), ("CRPT-119hrpt455-pt2", 2, "5103")]),
+    ("CRPT-119hrpt494", [("CRPT-119hrpt494", 1, "3495"), ("CRPT-119hrpt494-pt2", 2, "3495")]),
+]
+
+
+@pytest.mark.parametrize(("package", "expected"), LAYOUTS)
+def test_every_published_part_is_read_with_its_number_renditions_and_address(package: str, expected: list) -> None:
+    """Every layout yields one part per published part: its own id, number, bill, renditions and stem."""
+    parts = parts_of(record(package), package)
+    assert [(part.part_id, part.part_number, part.primary_bill.number) for part in parts] == expected
+    for part in parts:
+        assert set(part.offered_formats) == {"htm", "pdf"}
+        assert part.moved_renditions == part.other_renditions == ()
+        assert part.body_locator("htm") == f"https://www.govinfo.gov/content/pkg/{package}/html/{part.part_id}.htm"
+
+
+def test_an_unsuffixed_part_1_is_at_the_package_stem_and_the_root_restates_it() -> None:
+    """CRPT-119hrpt494's Part 1 is the package's own stem; the root repeats its renditions and states no bill.
+
+    ``acquire`` reads the root, which is Part 1 alone, and the root names no bill at all, so the package-level
+    ``primary_bill`` is ``None`` where each part states H.R. 3495.
+    """
+    package = "CRPT-119hrpt494"
+    mods = validate_package_mods(
+        record(package), package=package, final_url=package_mods_locator(package), max_bytes=200_000
+    )
+    first, second = mods.parts
+    assert mods.part_id is None and mods.offered_formats == ("htm", "pdf")
+    assert first.body_locator("htm") == package_body_locator(package, "htm")
+    assert second.body_locator("htm") == granule_body_locator(package, f"{package}-pt2", "htm")
+    assert mods.primary_bill is None and first.primary_bill == second.primary_bill
+
+
+def test_a_collection_with_no_part_grammar_states_no_parts() -> None:
+    """A hearing lists constituents too, and none of them is a report part."""
+    package = "CHRG-119hhrg64242"
+    body = part_mods(package, package=package, collection="CHRG").replace(
+        b"</mods>", constituent([f"{package}-pt1"], package=package).encode() + b"</mods>"
+    )
+    assert parts_of(body, package) == ()
+
+
+def constituent(
+    access_ids: list[str], *, number: str | None = None, granule_class: str | None = "FIRSTPART", package: str = PACKAGE
+) -> str:
+    """One ``relatedItem type="constituent"`` shaped like CRPT-119hrpt455's, with one rendition at its stem."""
+    stem = access_ids[0] if access_ids else package
+    marker = f"<granuleClass>{granule_class}</granuleClass>" if granule_class else ""
+    stated = f"<partNumber>{number}</partNumber>" if number else ""
+    return (
+        '<relatedItem type="constituent"><location><url access="raw object" displayLabel="HTML rendition">'
+        f"https://www.govinfo.gov/content/pkg/{package}/html/{stem}.htm</url></location>"
+        f"<extension>{marker}{''.join(f'<accessId>{value}</accessId>' for value in access_ids)}{stated}</extension>"
+        "</relatedItem>"
+    )
+
+
+def parts_mods(*constituents: str, root: str = "") -> bytes:
+    """A package record listing the given constituents, with ``root`` renditions beside them."""
+    return (
+        '<mods xmlns="http://www.loc.gov/mods/v3">'
+        f"<extension><collectionCode>CRPT</collectionCode><accessId>{PACKAGE}</accessId></extension>"
+        f"<location>{root}</location>{''.join(constituents)}</mods>"
+    ).encode()
+
+
+PART_1 = constituent([f"{PACKAGE}-pt1"], number="1")
+PART_2 = constituent([f"{PACKAGE}-pt2"], number="2", granule_class="OTHERPART")
+PART_3 = constituent([f"{PACKAGE}-pt3"], granule_class="OTHERPART")
+ROOT_HTM = f'<url access="raw object" displayLabel="HTML rendition">{BODY_URL}</url>'
+
+
+def test_the_synthetic_record_the_refusals_start_from_is_read() -> None:
+    """Two numbered parts, parts 1 to 3 with a suffix-only later part, and an unsuffixed Part 1 the root restates
+    all read.
+    """
+    assert [(part.part_id, part.part_number) for part in parts_of(parts_mods(PART_1, PART_2))] == [
+        (f"{PACKAGE}-pt1", 1),
+        (f"{PACKAGE}-pt2", 2),
+    ]
+    assert [part.part_number for part in parts_of(parts_mods(PART_1, PART_2, PART_3))] == [1, 2, 3]
+    unsuffixed = constituent([PACKAGE], number="1")
+    assert [part.part_id for part in parts_of(parts_mods(unsuffixed, PART_2, root=ROOT_HTM))] == [
+        PACKAGE,
+        f"{PACKAGE}-pt2",
+    ]
+
+
+@pytest.mark.parametrize(
+    ("body", "message"),
+    [
+        (parts_mods(constituent(["CRPT-119hrpt2-pt1"], number="1")), "not a part of the requested package"),
+        # A longer report number is another report, not a part of this one.
+        (parts_mods(constituent(["CRPT-119hrpt11-pt1"], number="1")), "not a part of the requested package"),
+        (parts_mods(constituent([f"{PACKAGE}-pt01"])), "not a part of the requested package"),
+        (parts_mods(constituent([])), "exactly one accessId"),
+        (parts_mods(constituent([f"{PACKAGE}-pt1", f"{PACKAGE}-pt2"])), "exactly one accessId"),
+        (parts_mods(PART_1, constituent([f"{PACKAGE}-pt2"], number="1", granule_class="OTHERPART")), "partNumber"),
+        # The unsuffixed part's id carries no number, so the record must state it, and it must be 1.
+        (parts_mods(constituent([PACKAGE]), PART_2), "partNumber"),
+        (parts_mods(constituent([PACKAGE], number="2", granule_class="OTHERPART")), "partNumber"),
+        (parts_mods(constituent([f"{PACKAGE}-pt1"], granule_class="OTHERPART")), "granuleClass"),
+        (parts_mods(PART_1, constituent([f"{PACKAGE}-pt2"])), "granuleClass"),
+        (parts_mods(constituent([f"{PACKAGE}-pt1"], granule_class=None)), "granuleClass"),
+        (parts_mods(PART_1, PART_1), "one part_id for two parts"),
+        (parts_mods(constituent([PACKAGE], number="1"), PART_1), "one part_number for two parts"),
+        # Parts numbered other than exactly 1 to N: the report would be published missing a part.
+        (parts_mods(PART_1, PART_3), "numbers its parts 1, 3, missing 2"),
+        (parts_mods(PART_2), "numbers its parts 2, missing 1"),
+        # A body the root offers, or states at a stem that is not its own, that no part states belongs to none of them.
+        (parts_mods(PART_1, PART_2, root=ROOT_HTM), "no part states"),
+        (parts_mods(PART_1, PART_2, root=ROOT_HTM.replace(f"{PACKAGE}.htm", f"{PACKAGE}-pt3.htm")), "no part states"),
+    ],
+)
+def test_a_constituent_that_is_not_a_consistent_part_of_this_package_is_refused(body: bytes, message: str) -> None:
+    """Another report's part, a part stating two ids or none, or a number, class or root that disagrees refuse."""
+    with pytest.raises(GovInfoBodySourceError, match=message):
+        parts_of(body)
+
+
+@pytest.mark.parametrize(
+    ("package", "old", "new", "message"),
+    [
+        # CRPT-119hrpt455's Part 2 re-keyed to the next report.
+        ("CRPT-119hrpt455", b">CRPT-119hrpt455-pt2<", b">CRPT-119hrpt456-pt2<", "not a part"),
+        ("CRPT-119hrpt455", b"<partNumber>2</partNumber>", b"<partNumber>3</partNumber>", "partNumber"),
+        # CRPT-119hrpt494's Part 1 re-keyed to ``-pt1``: its renditions and the root's then sit at a stem no part is.
+        ("CRPT-119hrpt494", b"<accessId>CRPT-119hrpt494</accessId>\n              <action", None, "no part states"),
+    ],
+)
+def test_a_real_record_with_one_part_statement_changed_is_refused(package: str, old: bytes, new, message: str) -> None:
+    """The real records refuse when one of their part statements is made to disagree with the rest."""
+    body = record(package)
+    assert body.count(old) == 1
+    changed = old.replace(b"CRPT-119hrpt494<", b"CRPT-119hrpt494-pt1<") if new is None else new
+    with pytest.raises(GovInfoBodySourceError, match=message):
+        parts_of(body.replace(old, changed), package)
 
 
 def test_real_body_is_proved_by_its_locator_and_media_type() -> None:
