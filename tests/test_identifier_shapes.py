@@ -157,6 +157,32 @@ PROPERTY_CORPUS: tuple[str, ...] = tuple(CORPUS_SPECIMENS) + tuple(_mutations())
 # A validator answers "is", never "contains".
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "PMD–0778/1822–MD20",
+        "PMD–0778/1822–MD22",
+        "POK–0046/0072–OK22",
+        "1822-MD20/part",
+        "https://example.test/1822-MD20.html",
+        "A1822-MD20",
+        "91822-MD20",
+    ],
+)
+def test_a_rin_shaped_fragment_of_another_identifier_is_not_a_rin(text: str) -> None:
+    assert not [candidate for candidate in detect_identifier_shapes(text) if candidate.kind is IdentifierKind.RIN]
+
+
+def test_slash_qualified_identifiers_do_not_hide_separate_rins() -> None:
+    text = "PMD–0778/1822–MD20; RINs 1018-AU04, 1018-AU09; https://example.test/1822-MD20"
+    assert [
+        candidate.value for candidate in detect_identifier_shapes(text) if candidate.kind is IdentifierKind.RIN
+    ] == [
+        "1018-AU04",
+        "1018-AU09",
+    ]
+
+
 def test_a_validator_answers_is_not_contains() -> None:
     """56,364 of 64,537 catalog rin values are the literal "Not Assigned".
 

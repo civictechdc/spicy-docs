@@ -1,0 +1,124 @@
+[
+  {
+    "source": "BUDGET-2027-APP",
+    "kind": "public_law",
+    "text": "6013-Public Law 114–254 ........................................................",
+    "keys": [
+      "114-public-254"
+    ]
+  },
+  {
+    "source": "BUDGET-2027-APP",
+    "kind": "public_law",
+    "text": "6014-Public Law 115–123 ........................................................",
+    "keys": [
+      "115-public-123"
+    ]
+  },
+  {
+    "source": "BUDGET-2027-APP",
+    "kind": "public_law",
+    "text": "6015-Public Law 116–20 ..........................................................",
+    "keys": [
+      "116-public-20"
+    ]
+  },
+  {
+    "source": "BUDGET-2027-APP",
+    "kind": "public_law",
+    "text": "6013-Public Law 116–20 ..........................................................",
+    "keys": [
+      "116-public-20"
+    ]
+  },
+  {
+    "source": "BUDGET-2027-APP",
+    "kind": "public_law",
+    "text": "6014-Public Law 117–328 ........................................................",
+    "keys": [
+      "117-public-328"
+    ]
+  },
+  {
+    "source": "BUDGET-2027-APP",
+    "kind": "public_law",
+    "text": "6016-Public Law 118–158 ........................................................",
+    "keys": [
+      "118-public-158"
+    ]
+  },
+  {
+    "source": "BUDGET-2027-APP",
+    "kind": "public_law",
+    "text": "6015-Public Law 118–158 ........................................................",
+    "keys": [
+      "118-public-158"
+    ]
+  },
+  {
+    "source": "CRPT-117hrpt707",
+    "kind": "cfr_section",
+    "text": "velopment, Department of Agriculture,\ntransmitting the Department's final rule—Removal of 9 CFR 355—\nCertified Products for Dogs, Cats, and Other Carnivora; In",
+    "keys": [
+      "9-355"
+    ]
+  },
+  {
+    "source": "CRPT-117hrpt705",
+    "kind": "rin",
+    "text": "POK–0046/0072–OK22 ..................",
+    "keys": []
+  },
+  {
+    "source": "CRPT-117hrpt705",
+    "kind": "rin",
+    "text": "PMD–0778/1822–MD20 .................",
+    "keys": []
+  },
+  {
+    "source": "CRPT-117hrpt705",
+    "kind": "rin",
+    "text": "PMD–0778/1822–MD22 .................",
+    "keys": []
+  },
+  {
+    "source": "BUDGET-2026-APP",
+    "kind": "usc_section",
+    "text": "22\nU.S.C. 2151p1",
+    "keys": []
+  },
+  {
+    "source": "BUDGET-2026-APP",
+    "kind": "usc_section",
+    "text": "22 U.S.C. 286e2",
+    "keys": []
+  },
+  {
+    "source": "BUDGET-2027-APP",
+    "kind": "usc_section",
+    "text": "21 U.S.C. 379-j31",
+    "keys": []
+  },
+  {
+    "source": "BUDGET-2027-APP",
+    "kind": "usc_section",
+    "text": "22 U.S.C. 286e2",
+    "keys": []
+  },
+  {
+    "source": "BUDGET-2026-APP; BUDGET-2027-APP",
+    "kind": "cfr_section",
+    "text": "30 CFR 250 subparts D, E, F, and Q",
+    "keys": [
+      "30-250"
+    ]
+  },
+  {
+    "source": "BUDGET-2026-APP; BUDGET-2027-APP",
+    "kind": "cfr_section",
+    "text": "40 CFR part 60 subparts CCCC and DDDD",
+    "keys": [
+      "40-60"
+    ]
+  }
+]

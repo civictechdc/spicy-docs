@@ -1073,6 +1073,18 @@ since a reject that is no longer asserted cannot fail. The
 procedure when it fails: move the changed rule's `version`, re-pin the digest,
 and re-pin the per-print counts the fixtures assert.
 
+The September 24 print audit exercises that procedure with retained source
+snippets in `tests/fixtures/document_citations/a10-regressions.json`.
+`public_law` 003 admits a numeric schedule label before the law label;
+`cfr_section` 003 reads a heading wrapped after its dash and emits one part
+link for a subpart-letter list. `rin` 004 rejects fragments inside slash
+tokens. `usc_section` 003 emits no link when glued digits or a misplaced
+hyphen leave only the prefix of a damaged section readable; the grammar
+keeps the full occurrence with `usc_coordinate_continuation_unresolved`.
+Other unresolved scope readings retain their existing behavior. The before
+and after replays are in
+`~/Work/corpora/supply-2026-09-02/receipts/a10-grammar-followup-2026-09-24/`.
+
 **The rules have one home.** `tools/analysis/pdf_family_rollup.py` imports
 them rather than declaring them, so the measurement and the product cannot
 drift. Proof that the lift itself changed nothing: re-running `analyze` over

@@ -184,12 +184,12 @@ def test_the_rules_whose_published_keys_changed_moved_their_version() -> None:
     assert moved == {
         "us_reports_cite": "002",
         "bill_number": "002",
-        "public_law": "002",
+        "public_law": "003",
         "statutes_at_large": "002",
-        "usc_section": "002",
-        "cfr_section": "002",
+        "usc_section": "003",
+        "cfr_section": "003",
         "federal_register_cite": "002",
-        "rin": "003",
+        "rin": "004",
         "docket_number": "003",
     }
     assert {rule.name for rule in CITATION_RULES if rule.reader is not None} == set(GRAMMAR_KINDS)
@@ -206,7 +206,7 @@ def test_the_rule_set_version_is_pinned_to_these_rules() -> None:
     passed the whole suite, since a reject that is no longer asserted cannot
     fail.
     """
-    assert CITATION_RULE_SET_VERSION == "13d6b810b8f6"
+    assert CITATION_RULE_SET_VERSION == "5d39d7eaf2f9"
 
 
 def test_the_stored_kinds_are_every_rule_that_reaches_a_key() -> None:
@@ -228,6 +228,7 @@ def test_the_stored_kinds_are_every_rule_that_reaches_a_key() -> None:
 #: A retained sample of the parsing survey's Federal Register titles and
 #: abstracts, chosen for the shapes the grammar kinds read (README beside it).
 GRAMMAR_SPECIMENS = CITATION_FIXTURES / "grammar-specimens.jsonl"
+A10_REGRESSIONS = json.loads((CITATION_FIXTURES / "a10-regressions.json").read_text())
 
 
 def grammar_fixture_texts() -> list[str]:
@@ -242,7 +243,52 @@ def grammar_fixture_texts() -> list[str]:
         budget_body(WHOLE).text,
         budget_body(BEYOND_CAP).text,
         *specimens,
+        *(case["text"] for case in A10_REGRESSIONS),
     ]
+
+
+@pytest.mark.parametrize("case", A10_REGRESSIONS, ids=lambda case: f"{case['source']}-{case['kind']}")
+def test_production_citation_regressions(case: dict) -> None:
+    """Source snippets retained by the 2026-09-24 print-citations audit."""
+    findings = find_citations(case["text"], kinds=(case["kind"],))
+    assert [finding.target_key for finding in findings] == case["keys"]
+    assert all(finding.target_resolved for finding in findings)
+    assert all(case["text"][finding.span_start : finding.span_end] == finding.matched_text for finding in findings)
+
+
+@pytest.mark.parametrize(
+    "text", ["A6013-Public Law 114-254", "pre-6013-Pub. L. 114-254", "6012-6013-Public Law 114-254"]
+)
+def test_public_law_label_does_not_start_inside_a_word_compound(text: str) -> None:
+    assert find_citations(text, kinds=("public_law",)) == ()
+
+
+@pytest.mark.parametrize("text", ["30 CFR 1940-G", "30 CFR 1940–G"])
+def test_a_hyphenated_subpart_is_not_a_bare_part(text: str) -> None:
+    assert find_citations(text, kinds=("cfr_section",)) == ()
+
+
+def test_repeated_part_mentions_keep_separate_occurrences() -> None:
+    text = "30 CFR 250 subparts D, E, F, and Q; later 30 CFR 250 subpart D."
+    findings = find_citations(text, kinds=("cfr_section",))
+    assert [finding.target_key for finding in findings] == ["30-250", "30-250"]
+    assert findings[0].span_end < findings[1].span_start
+
+
+@pytest.mark.parametrize("text", ["22 U.S.C. 2151p1(f)", "22 U.S.C. 286e2(a)", "21 U.S.C. 379-j31"])
+def test_damaged_section_evidence_survives_without_a_link_to_its_prefix(text: str) -> None:
+    from spicy_docs.interpretation.citation_grammar import find_usc_citations
+
+    (occurrence,) = find_usc_citations(text)
+    assert occurrence.text == text
+    assert occurrence.refusal == "usc_coordinate_continuation_unresolved"
+    assert find_citations(text, kinds=("usc_section",)) == ()
+
+
+def test_unread_scope_keeps_its_unresolved_coordinate() -> None:
+    (finding,) = find_citations("44 U.S.C. 3508(copyright)(2)(A)", kinds=("usc_section",))
+    assert finding.target_key == "44-3508"
+    assert not finding.target_resolved
 
 
 def grammar_reading() -> dict[str, tuple[str, str]]:
@@ -262,12 +308,12 @@ def grammar_reading() -> dict[str, tuple[str, str]]:
 #: inside ``citation_grammar`` or ``identifier_shapes`` moves nothing there;
 #: this is what catches it.
 PINNED_GRAMMAR_READING = {
-    "public_law": ("002", "c9f4d1273027e4ce"),
+    "public_law": ("003", "c88e99a4d7752d5d"),
     "statutes_at_large": ("002", "ec88c4ad033cbbf0"),
-    "usc_section": ("002", "2b33e21e303a3be0"),
-    "cfr_section": ("002", "519dd4d3c7e02dda"),
+    "usc_section": ("003", "2b33e21e303a3be0"),
+    "cfr_section": ("003", "ad16a44f020d1ed6"),
     "federal_register_cite": ("002", "7c1ec1de2286fb0e"),
-    "rin": ("003", "5199b682929eb361"),
+    "rin": ("004", "5199b682929eb361"),
     "docket_number": ("003", "71c8b621b8e6e5fe"),
 }
 

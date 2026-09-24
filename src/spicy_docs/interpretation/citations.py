@@ -371,6 +371,10 @@ def _usc_section_hits(text: str) -> Iterator[GrammarHit]:
     """
     for occurrence in citation_grammar.find_usc_citations(text):
         citation = occurrence.citation
+        # The occurrence retains damaged source text, but its readable prefix
+        # names a different section ("2151p1" must not link to "2151p").
+        if occurrence.refusal == "usc_coordinate_continuation_unresolved":
+            continue
         if citation.authority_type != "usc" or citation.usc_title is None or citation.usc_section is None:
             continue
         title = f"{citation.usc_title}{'A' if citation.usc_appendix else ''}"
@@ -391,9 +395,11 @@ def _cfr_section_hits(text: str) -> Iterator[GrammarHit]:
     numbers carry one (``46 CFR 1.01-15``), so ``40 CFR Part 1500-1508`` keeps
     the printed token and is unresolved. Unresolved too where the title cannot
     exist or the part's digit run is longer than any real part's. A title with
-    no part (``40 CFR``) names nothing and is not read.
+    no part (``40 CFR``) names nothing and is not read. A subpart-letter list
+    names its part once: the link table has no subpart key. The grammar still
+    retains the complete qualifier text and any ambiguity verdict.
     """
-    for occurrence in citation_grammar.find_cfr_citations(text):
+    for occurrence in citation_grammar.find_cfr_citations(text, expand_qualifiers=False):
         citation = occurrence.citation
         endpoints = (
             (citation.start, citation.end) if isinstance(citation, citation_grammar.CfrCitationRange) else (citation,)
@@ -591,7 +597,7 @@ CITATION_RULES: tuple[CitationRule, ...] = (
     # ``part``; see ``docs/research/parsing-survey-2026-09-23.md`` section 2.
     CitationRule(
         name="public_law",
-        version="002",
+        version="003",
         reader=_public_law_hits,
         target_table="laws",
         target_key_shape="(congress, law_type, number), joined: {congress}-public-{number}",
@@ -612,7 +618,7 @@ CITATION_RULES: tuple[CitationRule, ...] = (
     ),
     CitationRule(
         name="usc_section",
-        version="002",
+        version="003",
         reader=_usc_section_hits,
         target_table="law_code_sections",
         target_key_shape="{usc_title}-{usc_section}; an appendix title as {title}A; a range as its two endpoints",
@@ -620,7 +626,7 @@ CITATION_RULES: tuple[CitationRule, ...] = (
     ),
     CitationRule(
         name="cfr_section",
-        version="002",
+        version="003",
         reader=_cfr_section_hits,
         target_table="cfr sections (host-side)",
         target_key_shape="{title}-{part}, or {title}-{part}.{section} where a section is cited",
@@ -644,7 +650,7 @@ CITATION_RULES: tuple[CitationRule, ...] = (
     ),
     CitationRule(
         name="rin",
-        version="003",
+        version="004",
         reader=_identifier_reader(IdentifierKind.RIN, published_rin, refused_after=_OMB_NUMBER_LABEL),
         target_table="federal_register",
         target_key_shape="the bare RIN, as regulation_id_numbers_json spells it: identifier_shapes.PUBLISHED_RIN",

@@ -1369,6 +1369,20 @@ _DETECTORS: tuple[tuple[IdentifierKind, re.Pattern[str], tuple[str, ...]], ...] 
 )
 
 
+def _in_slash_token(text: str, start: int, end: int) -> bool:
+    """A slash makes this a compound identifier or URL, not a bare RIN.
+
+    GSA prospectus numbers such as ``PMD-0778/1822-MD20`` contain a RIN-shaped
+    suffix. Inspect the whole whitespace-delimited token, including any URL
+    punctuation, without rescanning the document for each candidate.
+    """
+    while start > 0 and not text[start - 1].isspace():
+        start -= 1
+    while end < len(text) and not text[end].isspace():
+        end += 1
+    return "/" in text[start:end]
+
+
 def detect_identifier_shapes(text: str | None) -> list[IdentifierCandidate]:
     """Every catalog identifier a text names, longest-claim-wins.
 
@@ -1392,6 +1406,8 @@ def detect_identifier_shapes(text: str | None) -> list[IdentifierCandidate]:
     found: list[IdentifierCandidate] = []
     for kind, pattern, components in _DETECTORS:
         for match in pattern.finditer(normalized):
+            if kind is IdentifierKind.RIN and _in_slash_token(normalized, *match.span("value")):
+                continue
             candidate = IdentifierCandidate(
                 kind=kind,
                 value=match.group("value").upper(),

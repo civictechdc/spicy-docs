@@ -1,5 +1,12 @@
 # House committee activity report fixtures
 
+`a10-regressions.json` retains source snippets and expected keys from the
+September 24 print-citations audit. Each example names its GovInfo package.
+The full texts, source digests and original span observations are under
+`~/Work/corpora/fork-execution-2026-09-21/drift-audit-2026-09-24/print-citations/`;
+the extraction is recorded in `spot-check.json`. These snippets also
+participate in the per-kind grammar digest in `tests/test_citations.py`.
+
 Two of the eight House committee activity reports the
 [PDF-family rollup](../../../docs/research/pdf-family-rollup-yield-2026-09-20.md)
 read on 2026-09-20, plus the keyed GovInfo records that state what its

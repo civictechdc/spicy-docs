@@ -554,7 +554,9 @@ _DASHES = str.maketrans(dict.fromkeys(DASH_SPELLINGS, "-"))
 #: abstracts, 155 part citations were followed by one and read as no
 #: coordinate at all, and 8 section citations read the heading into the
 #: section ("60.5--Definitions").
-_CFR_HEADING_DASH = r"-{1,2}[ \t]?(?-i:[A-Z][a-z])"
+# A PDF can wrap the heading immediately after its dash (CRPT-117hrpt707).
+# One line break is a wrap; a blank line starts another paragraph.
+_CFR_HEADING_DASH = r"-{1,2}[ \t]*(?:\r?\n[ \t]*)?(?-i:[A-Z][a-z])"
 
 #: A section's inner dots and hyphens belong to its name ("60.5-1"); a
 #: trailing one is the sentence's punctuation, and a hyphen that opens a
@@ -1609,8 +1611,12 @@ _OMB_INSTRUMENT = re.compile(
 # citation went unread -- 34 zero-padded numbers and 5 zero-padded
 # Congresses in the parsing survey's Federal Register texts (2026-09-23).
 # Both halves are read as integers, so the pad never reaches a key.
+# A schedule line can glue its numeric label to the law ("6013-Public Law").
+# Admit that complete line prefix, not an arbitrary numeric suffix of a
+# compound token. The label group keeps the schedule number outside the cite.
+_PUBLIC_LAW_LEFT = rf"(?:{_LEFT}|(?m:^[ \t]*\d+-))"
 _PUBLIC_LAW = re.compile(
-    rf"{_LEFT}(?:pub(?:lic)?\.?\s*l(?:aw)?\.?|p\.?\s*l\.?)[\s-]*(?:no\.?:?\s*)?"
+    rf"{_PUBLIC_LAW_LEFT}(?P<label>pub(?:lic)?\.?\s*l(?:aw)?\.?|p\.?\s*l\.?)[\s-]*(?:no\.?:?\s*)?"
     rf"0*(?P<congress>[1-9]\d*)(?:\s*-\s*){{1,2}}0*(?P<number>[1-9]\d*){_RIGHT}",
     re.IGNORECASE,
 )
@@ -1621,7 +1627,7 @@ _PUBLIC_LAW = re.compile(
 #: law). The lookahead keeps dotted ranges out: "Pub. L. 205.600-205.607"
 #: is CFR-shaped, reads as no Public Law, and stays refused.
 _PUBLIC_LAW_DOT = re.compile(
-    rf"{_LEFT}(?:pub(?:lic)?\.?\s*l(?:aw)?\.?|p\.?\s*l\.?)\s*(?:no\.?\s*)?"
+    rf"{_PUBLIC_LAW_LEFT}(?P<label>pub(?:lic)?\.?\s*l(?:aw)?\.?|p\.?\s*l\.?)\s*(?:no\.?\s*)?"
     rf"(?P<congress>[1-9]\d{{1,2}})\.(?P<number>[1-9]\d{{0,2}})(?![.\-]?\d)",
     re.IGNORECASE,
 )
@@ -3678,6 +3684,9 @@ _USC_SUBCHAPTER_TAIL = re.compile(
 # Preserve an unread attached continuation as a refusal, not a shorter identity.
 # A final sentence period alone is not a token continuation.
 _USC_UNREAD_TAIL = re.compile(r"(?:[\w.-]*\w)?(?:\([^()\s]+\))*")
+# Glued digits after a section suffix (2151p1), or a misplaced hyphen
+# (379-j31), change the coordinate itself rather than its subsection scope.
+_USC_DAMAGED_COORDINATE_TAIL = re.compile(r"(?:\d+|-[A-Za-z]+\d+)(?!\w)")
 # Unlike the whole-field _IGNORABLE_TAIL, a source occurrence must retain
 # this scope marker inside prose, with the end of the range left unresolved.
 _USC_OPEN_END_TAIL = re.compile(r"[\s,]*(?:et\s+seq\.?|and\s+following|ff\.?)(?!\w)", re.IGNORECASE)
@@ -3749,6 +3758,10 @@ def find_usc_citations(text: str) -> tuple[UscCitationOccurrence, ...]:
         tail = _USC_UNREAD_TAIL.match(text, end)
         if tail is not None and tail.end() > end:
             end, refusal = tail.end(), "usc_token_continuation_unresolved"
+            if groups.get(section) is not None and _USC_DAMAGED_COORDINATE_TAIL.match(
+                normalized, offset + match.end(section)
+            ):
+                refusal = "usc_coordinate_continuation_unresolved"
         if groups.get("range_end") is not None and citation.usc_section_end is None:
             refusal = "usc_range_unresolved"
         continuation = _USC_OPEN_END_TAIL.match(text, end)
@@ -3804,9 +3817,9 @@ def find_public_law_citations(text: str) -> tuple[AuthorityCitationOccurrence, .
     found = [
         AuthorityCitationOccurrence(
             AuthorityCitation(**_public_law_fields(match)),
-            match.start(),
+            match.start("label"),
             match.end(),
-            text[match.start() : match.end()],
+            text[match.start("label") : match.end()],
         )
         for pattern in _PUBLIC_LAW_FORMS
         for match in pattern.finditer(normalized)
