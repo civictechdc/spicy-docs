@@ -22,7 +22,7 @@ from spicy_docs.schemas.document_citation_tables import (
     index_stated_keys,
     read_depth,
 )
-from spicy_docs.schemas.tables import Row, flag, json_column, natural_key, table_contract, text
+from spicy_docs.schemas.tables import VALUE_KEY, Row, flag, json_column, natural_key, table_contract, text
 
 #: The value ``document_citations.document_kind`` takes for a budget volume,
 #: beside ``document_citation_tables.GOVINFO_PACKAGE``.  snake_case, like every
@@ -36,6 +36,7 @@ BUDGET_VOLUMES = table_contract(
     grain="One row per published volume of the President's budget, with what its print adds to its own index.",
     identity=("package_id",),
     version_column="last_modified",
+    key_spelling=VALUE_KEY,
     columns={
         "package_id": "The GovInfo package id, which is this row's identity.",
         "fiscal_year": (

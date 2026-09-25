@@ -8,6 +8,7 @@ three-printing diff and a captured CRPT body under a CHRG identity), and the dif
 
 from __future__ import annotations
 
+import ast
 import json
 import re
 from dataclasses import dataclass, fields, replace
@@ -1174,8 +1175,16 @@ def _hearing_bill_link_cases() -> list[ShapedCase]:
 #: The id each row of ``regulations_gov_tables/published-rows.json`` was selected by, in file order, written here by
 #: hand rather than read back out of the row (the fixture's README states each selection).
 _PUBLISHED_REGULATIONS_IDS: dict[str, tuple[str, ...]] = {
-    "dockets": ("FAA-2016-6907", "ACF-2007-0125"),
-    "documents": ("FAA-2016-6907-0001", "ACF-2015-0002-0331", "DOE-HQ-2010-0016-0001"),
+    "dockets": ("FAA-2016-6907", "ACF-2007-0125", "ACF-2008-0001"),
+    "documents": (
+        "FAA-2016-6907-0001",
+        "ACF-2015-0002-0331",
+        "DOE-HQ-2010-0016-0001",
+        "ABMC-2017-0001-0001",
+        "ABMC-2005-0001-0001",
+        "ACF-2023-0002-0002",
+        "BIS-2018-0002-4451",
+    ),
     "comments": ("AHRQ-2025-0001-0411", "APHIS-2004-0018-0031"),
 }
 
@@ -1283,6 +1292,16 @@ def test_a_key_spelling_refuses_what_it_cannot_spell() -> None:
         documents.spelled_key(row)
 
 
+@pytest.mark.parametrize("contract", TABLE_CONTRACTS.values(), ids=lambda c: c.name)
+def test_a_single_column_identity_declares_value_1_and_a_composite_declares_none_yet(contract: TableContract) -> None:
+    """DocSpec keys an admitted table only on a spelling this package declares (its decision 0007, ruling R6).
+
+    A one-column identity is spelled as its value. A composite waits for a declared spelling, because one DocSpec
+    chose would flip every occurrence and Engine id when this package later declared its own.
+    """
+    assert contract.key_spelling == (VALUE_KEY if len(contract.identity) == 1 else None)
+
+
 # ---------------------------------------------------------------------------
 # Loop 2: every shaped row round-trips through its own column tuple.
 # ---------------------------------------------------------------------------
@@ -1294,6 +1313,9 @@ def test_every_shaped_row_round_trips_through_its_column_tuple(case: ShapedCase)
     assert tuple(row) == contract.columns
     assert all(value is None or isinstance(value, str) for value in row.values())
     assert contract.key(row) == case.identity
+    if contract.key_spelling == VALUE_KEY:
+        # The member key DocSpec would admit is the rebuilt identity itself, byte for byte.
+        assert contract.spelled_key(row) == case.identity[0]
     # Every *_json column reads back as JSON (json.loads raises otherwise), and
     # the ones this case names read back as the record's own value.
     for column, value in row.items():
@@ -1376,18 +1398,6 @@ def test_a_multi_part_report_is_one_row_per_part_and_its_blocks_key_under_their_
         for part in mods.parts
     ]
     assert len(set(keys)) == 2
-
-
-def test_the_regulations_gov_tables_key_on_the_publishers_id_itself() -> None:
-    """Each declares ``value/1``, and its reference returns the published id byte for byte: no trim, fold or prefix.
-
-    Uniqueness is not something seven rows can show; it was measured over the whole generation (``docs/tables.md``).
-    """
-    cases = _regulations_cases()
-    assert {case.contract.name for case in cases} == set(RECORD_TYPES)
-    for case in cases:
-        assert case.contract.key_spelling == VALUE_KEY
-        assert case.contract.spelled_key(case.row) == case.identity[0]
 
 
 def test_each_regulations_gov_table_publishes_its_extract_columns_first() -> None:
@@ -1539,7 +1549,8 @@ FILLED_BY: dict[str, tuple[str, ...]] = {
     ),
     # B4: the index CBO's own wall denies, read keyless out of BILLSTATUS.
     "cbo_cost_estimates": ("schemas/cost_estimate_tables.py", "sources/congress/bill_status.py"),
-    # The host fills these through its copy of the extract; its text steps fill the rest.
+    # The host shapes these through its copy of the extract here and fills its text columns itself; ``_evidence`` adds
+    # the rows it published and removes the contracts' own sentences.
     "dockets": ("schemas/regulations.py",),
     "documents": ("schemas/regulations.py",),
     "comments": ("schemas/regulations.py",),
@@ -1555,6 +1566,47 @@ def test_every_contract_declares_where_its_values_come_from() -> None:
     assert set(FILLED_BY) == set(TABLE_CONTRACTS)
 
 
+def _without_contract_prose(source: str) -> str:
+    """``source`` with every contract's grain and column sentences removed, so a sentence cannot be its own evidence.
+
+    The parser joins an implicitly concatenated literal into one constant, so each sentence is found whole.
+    """
+    prose = {contract.grain for contract in TABLE_CONTRACTS.values()}
+    prose |= {sentence for contract in TABLE_CONTRACTS.values() for sentence in contract.descriptions.values()}
+    segments = [
+        ast.get_source_segment(source, node)
+        for node in ast.walk(ast.parse(source))
+        if isinstance(node, ast.Constant) and isinstance(node.value, str) and node.value in prose
+    ]
+    for segment in segments:
+        source = source.replace(segment, "")
+    return source
+
+
+def _evidence(contract: TableContract) -> str:
+    """What a value a description names must appear in: the code that fills the table.
+
+    The host shapes the Regulations.gov tables, and the module holding their extract holds their sentences too, so for
+    those the sentences are removed and the rows the host published stand beside the code.
+    """
+    sources = [(SOURCE / path).read_text() for path in FILLED_BY[contract.name]]
+    if contract.name not in _PUBLISHED_REGULATIONS_IDS:
+        return "\n".join(sources)
+    rows = json.dumps(_published_regulations_rows()[contract.name], ensure_ascii=False)
+    return "\n".join([*map(_without_contract_prose, sources), rows])
+
+
+def _unevidenced(contract: TableContract) -> list[str]:
+    """Every ``column: value`` a description names in backticks that nothing filling the table produces."""
+    evidence = _evidence(contract)
+    return [
+        f"{column}: {value}"
+        for column in contract.columns
+        for value in _BACKTICKED.findall(contract.descriptions[column])
+        if value not in evidence
+    ]
+
+
 @pytest.mark.parametrize("contract", TABLE_CONTRACTS.values(), ids=lambda c: c.name)
 def test_a_description_that_names_a_value_names_one_the_code_produces(contract: TableContract) -> None:
     """The floor under the data dictionary: a named value has to exist somewhere.
@@ -1562,19 +1614,25 @@ def test_a_description_that_names_a_value_names_one_the_code_produces(contract: 
     A grep, deliberately: it cannot prove the column carries the value on any
     given row, only that the string is not invented. That is enough to catch the
     failure that matters here -- a sentence that survives a rename, or names a
-    value a reader will then look for and never find.
+    value a reader will then look for and never find. For a table shaped here the
+    module read also holds the table's sentences, so a value named only in prose
+    passes (``docs/tables.md``, "What the tests do not establish").
     """
-    filled = "\n".join((SOURCE / path).read_text() for path in FILLED_BY[contract.name])
-    for column in contract.columns:
-        for value in _BACKTICKED.findall(contract.descriptions[column]):
-            assert value in filled, f"{contract.name}.{column} names {value!r}, which its code never produces"
+    assert _unevidenced(contract) == []
 
 
 def test_the_value_check_would_notice_an_invented_value() -> None:
-    """The check above passes trivially if nothing is ever named; prove it bites."""
-    filled = "\n".join((SOURCE / path).read_text() for path in FILLED_BY["bill_versions"])
+    """The check above passes trivially if nothing is ever named, or if a sentence vouches for itself; prove neither
+    where the check claims it."""
+    filled = _evidence(TABLE_CONTRACTS["bill_versions"])
     assert "full_text_slug_thin" in filled
     assert "full_text_slug_thinned" not in filled
+    dockets = TABLE_CONTRACTS["dockets"]
+    phrase = "sorts as it reads"
+    assert phrase in dockets.descriptions["modify_date"] and phrase in (SOURCE / "schemas/regulations.py").read_text()
+    assert phrase not in _evidence(dockets)
+    invented = replace(dockets, descriptions={**dockets.descriptions, "rin": "Carries `Not Assigned` or `Unassigned`."})
+    assert _unevidenced(invented) == ["rin: Unassigned"]
 
 
 # ---------------------------------------------------------------------------

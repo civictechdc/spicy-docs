@@ -15,6 +15,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 
 from spicy_docs.schemas.tables import (
+    VALUE_KEY,
     Row,
     TableContractError,
     digest,
@@ -120,6 +121,7 @@ HOUSE_ACTIVITY_REPORTS = table_contract(
     grain="One row per end-of-Congress House committee activity report package, with what its print adds.",
     identity=("package_id",),
     version_column="last_modified",
+    key_spelling=VALUE_KEY,
     columns={
         "package_id": "The GovInfo package id, which is this row's identity.",
         "congress": "The numbered Congress, as the keyed summary states it.",

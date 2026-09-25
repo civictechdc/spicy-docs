@@ -18,6 +18,7 @@ from spicy_docs.schemas.federal_register import (
     project_federal_register_document,
 )
 from spicy_docs.schemas.regulations import COMMENT, DOCKET, DOCUMENT
+from spicy_docs.schemas.tables import value_key
 from spicy_docs.sources.federal_register.native import (
     SCHEMA_NAME as FEDERAL_REGISTER_SCHEMA_NAME,
 )
@@ -66,11 +67,15 @@ class PublicTableProfile:
         return self.primary_key if isinstance(self.primary_key, str) else list(self.primary_key)
 
     def row_key(self, row: Mapping[str, Any]) -> str:
-        """A collision-safe index key, distinct from the source's identity encoding."""
+        """A collision-safe index key, distinct from the source's identity encoding: a scalar key spelled ``value/1``
+        as its table contract spells it, a compound one as the canonical JSON array of its values.
+        """
         values = [row[name] for name in self.primary_key_columns]
         if any(not isinstance(value, str) or not value for value in values):
             raise PublicTableProjectionError("public-table primary key is empty")
-        return values[0] if isinstance(self.primary_key, str) else canonical_json_bytes(values).decode("utf-8")
+        if isinstance(self.primary_key, str):
+            return value_key((values[0],))
+        return canonical_json_bytes(values).decode("utf-8")
 
     def project(self, source_row: Mapping[str, Any]) -> dict[str, str | None]:
         """Project one source row, refusing a schema, column, identity, or empty-partition mismatch."""

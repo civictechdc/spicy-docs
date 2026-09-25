@@ -15,6 +15,7 @@ from types import MappingProxyType
 from typing import Any
 
 from spicy_docs.schemas.tables import (
+    VALUE_KEY,
     Row,
     digest,
     flag,
@@ -58,6 +59,7 @@ PRESS_RELEASES = table_contract(
     grain="One row per item in one appropriations committee press-release feed capture.",
     identity=("release_id",),
     version_column="observed_at",
+    key_spelling=VALUE_KEY,
     columns={
         "release_id": "Digest of the chamber and the item's full link; replaces a truncated-URL unique key.",
         "chamber": "Which committee feed this item came from.",

@@ -8,13 +8,14 @@ column asserted an image at an address nothing had checked.
 
 from __future__ import annotations
 
-from spicy_docs.schemas.tables import Row, json_column, table_contract, text
+from spicy_docs.schemas.tables import VALUE_KEY, Row, json_column, table_contract, text
 
 MEMBERS = table_contract(
     "members",
     grain="One row per legislator in one capture of the community crosswalk.",
     identity=("bioguide_id",),
     version_column="observed_at",
+    key_spelling=VALUE_KEY,
     columns={
         "bioguide_id": "The Biographical Directory id, which is this crosswalk's primary identifier.",
         "lis_id": "The Senate LIS id, which only senators carry.",

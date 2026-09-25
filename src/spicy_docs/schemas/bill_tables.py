@@ -11,6 +11,7 @@ model-backed ``bill_summaries`` on purpose: BillTrax used one name for both.
 from __future__ import annotations
 
 from spicy_docs.schemas.tables import (
+    VALUE_KEY,
     Row,
     bill_id,
     flag,
@@ -31,6 +32,7 @@ CONGRESS_BILLS = table_contract(
     grain="One row per bill or resolution, as one BILLSTATUS document states it.",
     identity=("bill_id",),
     version_column="update_date",
+    key_spelling=VALUE_KEY,
     columns={
         # --- frozen prefix: spicy-regs build_congress_bills.COLUMNS 1-10 ---
         "bill_id": "Natural key: congress, bill type and number joined with hyphens (119-hr-6028).",

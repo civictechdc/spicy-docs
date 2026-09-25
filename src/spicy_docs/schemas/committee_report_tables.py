@@ -9,7 +9,7 @@ is written because the print names no estimate key, and the join is on the bill 
 
 from __future__ import annotations
 
-from spicy_docs.schemas.tables import Row, flag, table_contract, text
+from spicy_docs.schemas.tables import VALUE_KEY, Row, flag, table_contract, text
 
 #: Processing identity for report heading segmentation and table shaping.
 #: Hosts include it in their read checkpoint alongside the CBO reader version;
@@ -198,6 +198,7 @@ HEARING_TRANSCRIPTS = table_contract(
     grain="One row per captured GovInfo hearing transcript package.",
     identity=("package_id",),
     version_column="last_modified",
+    key_spelling=VALUE_KEY,
     columns={
         **_package_columns(
             type_column="hearing_type",

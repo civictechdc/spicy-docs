@@ -2145,8 +2145,10 @@ table's member key in every admitted state's identity and in every Engine id,
 so the spelling belongs to the contract that owns the identity, not to its
 reader. `TableContract.key_spelling` names an entry of
 `schemas.tables.KEY_SPELLINGS`; each entry is a `name/version` with a Python
-reference, and `spelled_key(row)` applies it. `value/1` is the id itself.
-Behavior and measurements: [Table contracts](tables.md#the-regulationsgov-tables-are-keyed-on-the-publishers-id).
+reference, and `spelled_key(row)` applies it. Every contract with a one-column
+identity declares `value/1`, the value itself, and a test holds every
+composite to none. Behavior and measurements:
+[Table contracts](tables.md#the-regulationsgov-tables-are-keyed-on-the-publishers-id).
 
 **What a later change must preserve.** An entry's output never changes, even
 to fix it: a different spelling is a new `name/version`, and adopting it is an
@@ -2156,6 +2158,38 @@ under its own name, and says so in its docstring.
 
 **Why the publisher's id alone.** DocSpec decision 0004 found a cross-filed
 document to be one document under one `documentId`, not an identity question,
-and the id was unique and never NULL or empty on every row of two published
-generations of all three tables. A composite such as `(agency_code,
-document_id)` would split what the publisher states is one record.
+and that finding is what the key rests on. A composite such as `(agency_code,
+document_id)` would split what the publisher states is one record. The published
+files agree, but for `dockets` and `documents` they cannot disagree: the host's
+merge keeps one row per id. Only the `comments` export, which has no such step,
+could have shown a duplicate, and showed none.
+
+**What `modify_date` versions.** It is the publisher's instant. The host fills
+`text_content`, `text_extraction_status` and `pdf_extraction_results_json`
+without changing it (spicy-regs `transforms/regulations_correction.py`,
+`ENRICHMENT_COLUMNS`; `sources/derived_text.py`, `derived_fill`), so an admitted
+row can change while its version does not. For DocSpec that is ruling R5's
+churn, and a declared projection without those columns is the candidate.
+
+**What adopting it costs spicy-regs.** Read at spicy-regs `5df0722`; another
+session owns that repository, and nothing there is changed here.
+`TABLE_CONTRACTS` drives spicy-regs' Arrow schemas, merges, data dictionary and
+MCP views, as this package's `schemas/__init__.py` states. Adopting this
+release fails its `test_every_hosted_table_is_registered_everywhere`: the
+contract count moves, and the three new names are neither hosted nor unhosted.
+
+- `UNHOSTED_CONTRACTS` cannot take them, because that test requires an unhosted
+  contract to be absent from `data_dictionary.TABLES`, which already lists
+  `dockets`, `documents` and `comments` first.
+- Hosting them in `CONTRACT_TABLES` would list them twice in `TABLES`, which
+  appends every hosted table but `congress_bills`. It would also replace
+  spicy-regs' own column prose for them in `descriptions.yaml` with these
+  contracts' sentences.
+
+The change spicy-regs needs, in the release that vendors this one: a third
+class beside hosted and unhosted, the contracts it publishes through its own
+`RECORD_TYPES`; the partition assertion covering all three classes; the new
+contract count; and a test that each of its record types' schemas and dedup
+keys equal the contract's columns and identity, so the two declarations
+cannot drift. Both hold today. Its `TABLES`, `CONTRACT_TABLES` and prose stay
+as they are.

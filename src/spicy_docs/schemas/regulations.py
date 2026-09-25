@@ -182,8 +182,8 @@ RECORD_TYPES: dict[str, RecordType] = {
 
 # The published tables.  Each key is the publisher's own id, which DocSpec
 # decision 0004 keeps as the identity even for a document filed under two
-# agencies; verified unique and non-empty on two 2026-09-25 generations
-# (``docs/tables.md``).  The host's merge keeps the newest ``modify_date``.
+# agencies.  ``modify_date`` versions only the publisher's fields: the host's
+# text columns change without it (``docs/tables.md``).
 DOCKETS = table_contract(
     "dockets",
     grain="One row per Regulations.gov docket, the folder an agency opens for one rulemaking or other action.",
@@ -233,9 +233,7 @@ DOCUMENTS = table_contract(
         "reason_withdrawn": "The publisher's reason for a withdrawal, spelled as stated; NULL when it states none.",
         "additional_rins": "Further Regulation Identifier Numbers the publisher lists, a JSON array; NULL when none.",
         "text_content": "Text the host extracted from the document's PDF renditions; NULL until one produced text.",
-        "text_extraction_status": (
-            "The host's PDF extraction outcome, `ok`, `empty`, `encrypted` or `error`; NULL before an attempt."
-        ),
+        "text_extraction_status": "The outcome of the host's PDF extraction, in its vocabulary; NULL before one.",
         "pdf_extraction_results_json": (
             "The host's latest PDF attempt, a JSON array with each selected URL's outcome and the SHA-256 of the "
             "bytes read; NULL when none is recorded."
@@ -272,8 +270,8 @@ COMMENTS = table_contract(
             "NULL when neither produced text."
         ),
         "text_extraction_status": (
-            "Where `text_content` came from: `derived` for Mirrulations' extraction, else the host's PDF outcome "
-            "(`ok`, `empty`, `encrypted`, `error`); NULL before either."
+            "Where `text_content` came from: `derived` for Mirrulations' extraction, else the outcome of the host's "
+            "PDF step in its vocabulary; NULL before either."
         ),
         "pdf_extraction_results_json": (
             "Provenance of `text_content` as JSON: for `derived` text the Mirrulations objects it was read from, else "

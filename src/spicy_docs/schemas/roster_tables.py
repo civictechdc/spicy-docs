@@ -13,7 +13,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from spicy_docs.schemas.tables import Row, TableContractError, flag, json_column, table_contract, text
+from spicy_docs.schemas.tables import VALUE_KEY, Row, TableContractError, flag, json_column, table_contract, text
 
 #: The Senate file states no Congress; a row shaped from it carries the
 #: Congress the caller supplied and says so here.
@@ -24,6 +24,7 @@ COMMITTEES = table_contract(
     grain="One row per committee or subcommittee the Congress.gov committee list route states, with its detail record where captured.",
     identity=("system_code",),
     version_column="update_date",
+    key_spelling=VALUE_KEY,
     columns={
         "system_code": "The publisher's systemCode, the identifier every bill, report and communication refers to.",
         "chamber": "The chamber as the publisher spells it: House, Senate or Joint.",

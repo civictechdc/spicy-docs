@@ -171,32 +171,56 @@ on documents and comments, the host's `pdf_extraction_results_json`. The record
 types here, and the `public_tables` and public-comment profiles built on them,
 still lack that column; the contracts state what is published.
 
-Each identity is the publisher's own id. A document filed under two agencies
-is still one document (DocSpec decision 0004). Each contract declares the
-member-key spelling `value/1`, the id itself, so DocSpec can admit a generation
-by reference (its decision 0007, ruling R6). `TableContract.key_spelling` names
-an entry of `schemas.tables.KEY_SPELLINGS`, and `spelled_key(row)` is the Python
-reference DocSpec tests its compiled SQL against. An entry never changes; a new
-rule gets a new `name/version`. No other contract declares a spelling yet.
+Each identity is the publisher's own id, because a document filed under two
+agencies is still one document (DocSpec decision 0004).
 
-The key was measured on 2026-09-25 over two generations of the fork host's
-public objects. Each local copy was bound to its object by recomputing the
-multipart ETag.
+### Every one-column identity declares its member-key spelling
 
-| Table | Object SHA-256, live then prior | Rows | NULL, empty or duplicate ids |
+DocSpec admits a generation by reference only on a member-key spelling this
+package declares (its decision 0007, ruling R6). `TableContract.key_spelling`
+names an entry of `schemas.tables.KEY_SPELLINGS`, and `spelled_key(row)` is the
+Python reference DocSpec tests its compiled SQL against. Every contract with a
+one-column identity declares `value/1`, the value itself; a composite declares
+none until its spelling is decided. An entry never changes: a new rule gets a
+new `name/version`, and adopting it is an explicit re-key.
+
+### What the key measurement can and cannot see
+
+The ids were checked on 2026-09-25 over the fork host's public objects, each
+local copy bound to its object by recomputing the multipart ETag.
+
+| Table | Objects (SHA-256, Last-Modified) | Rows | NULL, empty or duplicate ids |
 | --- | --- | --- | --- |
-| `dockets` | `07bf427e…`, `680b86ad…` | 279,351; 279,336 | 0 |
-| `documents` | `ffa2da6c…`, `ff502e4b…` | 2,002,688; 2,002,562 | 0 |
-| `comments` | `bf81f764…`, `b90e1105…` | 26,303,691; 26,303,691 | 0 |
+| `dockets` | `308b35c6…` 20:51Z, `07bf427e…` 19:54Z, `680b86ad…` 10:11Z | 279,380; 279,351; 279,336 | 0 |
+| `documents` | `d7487819…` 20:51Z, `ffa2da6c…` 19:54Z, `ff502e4b…` 10:11Z | 2,002,831; 2,002,688; 2,002,562 | 0 |
+| `comments` | `bf81f764…` 18:15Z, `b90e1105…` 10:11Z | 26,303,691; 26,303,691 | 0 |
 
 DuckDB 1.5.5 counted NULL and empty ids and grouped the id column
-(`GROUP BY id HAVING count(*) > 1`) under a 2 GB memory limit. On the live
-generation Polars, a different reader, counted distinct ids per hash bucket
+(`GROUP BY id HAVING count(*) > 1`) under a 2 GB memory limit. On the 19:54 and
+18:15 objects Polars, a different reader, counted distinct ids per hash bucket
 against the footer's row count, and agreed. Both caught a planted duplicate and
-a planted NULL. Every id
-matches `^[A-Za-z0-9_.-]+$`, so none needs escaping in JSON framing; none
-differs from another only by case. `modify_date` is an ISO 8601 `Z` instant on
-every row of all three tables, so it orders chronologically as text.
+a planted NULL.
+
+- **Duplicates in `dockets` and `documents` could not have been found.** The
+  host's merge (`merge_staging_files`) keeps one row per id, the newest by
+  `modify_date`, so those zeros hold by construction. `comments` is exported
+  from the host's Iceberg catalog with no such step, and that catalog can hold
+  physical duplicates (spicy-regs `sources/iceberg.py`, `merge_comments`), so
+  its zero is a measurement that could have failed.
+- **What every table's check does establish:** every id matches
+  `^[A-Za-z0-9_.-]+$`, so none needs escaping in JSON framing, and none differs
+  from another only by case.
+
+### `modify_date` versions only the publisher's fields
+
+`modify_date` is an ISO 8601 `Z` instant on every row of each table's newest
+object above, so it orders chronologically as text. It is the publisher's
+instant. The host fills `text_content`, `text_extraction_status` and
+`pdf_extraction_results_json` in its own PDF and derived-text steps without
+changing it, so a row's value can change while its version does not. For
+DocSpec that is ruling R5's churn, and a declared projection without those
+columns is the candidate remedy. In the 19:54 and 20:51 `documents` objects all
+three columns are NULL on every row.
 
 The fixture rows and their selection are in
 `tests/fixtures/regulations_gov_tables/README.md`.
@@ -711,6 +735,15 @@ response, and neither says anything about what the publisher serves:
   Its identity is now the package the captured hearing detail (jacket 64431)
   names in its own `formats[].url`, so the `event_id` on that row is the real
   linkage the publisher stated, on a body that is still synthetic.
+
+The check that a value a description names in backticks appears in the code
+that fills its table reads, for a table shaped here, the module that also holds
+that table's sentences, so it cannot catch a value named only in prose. With the
+prose removed some contracts fail it, on backticked references to tables,
+columns, modules and templates that are not values; applying
+`_without_contract_prose` to every table lists them. Only the three
+Regulations.gov tables are held without their prose, to their extract and to
+the rows the host published.
 
 The five index tables are built from captured list pages (three rows each,
 `limit=3`) and the captured details for the rows that have one; where a list
