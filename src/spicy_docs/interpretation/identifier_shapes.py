@@ -90,7 +90,12 @@ unchanged since ``c9cc5410`` and so byte-identical to what the parsing survey
 measured at ``f83c0d7a``. Two cross-references now name this package, the
 layout is ``ruff format``'s, and :func:`unpadded_federal_register_document_number`
 is new here; nothing else differs, and every RefSpec test that exercises this
-module passed against this copy before it landed. The self-contained tests are
+module passed against this copy before it landed. Since the move this module
+also hosts the Federal Register document-number spelling the joins share --
+:func:`hyphenate_fr_doc_num`, :func:`fr_doc_num_mirror_series` and
+:func:`fr_doc_num_release_spelling`, the one core the SEC comments join's
+``normalize_fr_doc_num`` and :func:`unpadded_federal_register_document_number`
+both delegate their mechanics to. The self-contained tests are
 ported to ``tests/test_identifier_shapes.py``; the three that read RefSpec's
 built artifacts stay beside them. ``refspec.registry.*`` names are RefSpec
 modules that stay in RefSpec.
@@ -114,6 +119,9 @@ __all__ = [
     "corrected_rin",
     "detect_identifier_shapes",
     "docket_reference_as_stated",
+    "fr_doc_num_mirror_series",
+    "fr_doc_num_release_spelling",
+    "hyphenate_fr_doc_num",
     "is_federal_register_document_number",
     "is_regulation_identifier_number",
     "keep_longest_then_most_specific",
@@ -1120,6 +1128,17 @@ def corrected_rin(value: object, roster: Container[str]) -> tuple[str, str] | No
 _WIDEST_SEQUENCE = 6
 
 
+def _unpadded_sequence(sequence: str) -> str:
+    """A document-number sequence without its zero padding: ``00239`` -> ``239``, ``00000`` -> ``0``.
+
+    The one zero-padding rule the join-side document-number normalizers share:
+    the Office of the Federal Register pads some years and not others, and
+    regulations.gov pads where the Register did not.
+    """
+
+    return sequence.lstrip("0") or "0"
+
+
 def unpadded_federal_register_document_number(value: object) -> str | None:
     """The key a Federal Register document number is compared on: its sequence without zero padding.
 
@@ -1157,12 +1176,18 @@ def unpadded_federal_register_document_number(value: object) -> str | None:
     pairs from 1994-1997 reduce to one key each (``94-0190`` and ``94-190``
     are different documents, published 1994-04-26 and 1994-01-05), so a key
     that reaches more than one held number is refused, not chosen between.
+
+    The zero-padding rule itself is the shared :func:`_unpadded_sequence`;
+    this function keeps its own admission forms and its historical wide dash
+    fold (:func:`_folded_text`) -- the strict join-side normalizers below fold
+    only the measured en dash -- so its behavior is pinned and byte-identical
+    for consumers such as spicy-regs' ``FederalRegisterIndex``.
     """
 
     head, dash, sequence = _folded_text(value).rpartition("-")
     if not dash or not sequence.isdigit():
         return None
-    tail = sequence.lstrip("0") or "0"
+    tail = _unpadded_sequence(sequence)
     spellings = (f"{head}-{tail.zfill(width)}" for width in range(len(tail), max(len(tail), _WIDEST_SEQUENCE) + 1))
     if not any(
         is_federal_register_document_number(spelling, column_licensed=True) or _FR_DOCUMENT.fullmatch(spelling)
@@ -1170,6 +1195,84 @@ def unpadded_federal_register_document_number(value: object) -> str | None:
     ):
         return None
     return f"{head}-{tail}"
+
+
+# --------------------------------------------------------------------------- #
+# The Federal Register document-number spelling the joins share.
+#
+# Two public entry points -- the strict join's
+# ``normalize_fr_doc_num`` (spicy_docs.sources.sec_comments.join) and
+# :func:`unpadded_federal_register_document_number` above -- normalize the
+# same family of spellings and must never drift apart, so the mechanical
+# rules live here once: the measured en-dash fold
+# (:func:`hyphenate_fr_doc_num`), the zero-padding rule
+# (:func:`_unpadded_sequence`), the C/R year segment's last-dash-only
+# handling (``rpartition``), and the measured C7 -> Z7 mirror series
+# (:func:`fr_doc_num_mirror_series`). Each entry point keeps its own grammar
+# admission, error contract and fold width: ``unpadded_...`` admits the
+# module's forms and folds every dash spelling (:func:`_folded_text`), while
+# the strict join admits its own ``_DOC_NUM`` grammar and folds only the
+# measured en dash, refusing spellings it has not measured.
+#
+# What cannot be normalized is documented, not guessed. The mirror's five
+# truncated spellings -- ``C1-2017-11``, ``C1-2018-03``, ``C1-2018-08``,
+# ``C1-2019-09``, ``C1-2021-16`` -- are readable document numbers the Federal
+# Register never served under those spellings: the mirror dropped trailing
+# digits of the ``C1-YYYY-NNNNN`` numbers the Register did serve
+# (``C1-2017-11151`` and siblings). Truncation is lossy, so no normalization
+# recovers them; the SEC comments join bridges them with its title + date
+# fallback tier instead.
+
+#: The dash spelling the two document-number corpora were measured to disagree on: the
+#: mirror typed an en dash (``E8–27139``) where the Federal Register release hyphenated
+#: (``E8-27139``). It is one of :data:`_DASHES`' seven folds; the strict document-number
+#: normalizers fold only this one, refusing the spellings they have not measured.
+_FR_DOC_EN_DASH = "\u2013"
+
+
+def hyphenate_fr_doc_num(value: str) -> str:
+    """The measured en dash folded to the hyphen the Register uses: ``E8–27139`` -> ``E8-27139``."""
+
+    return value.replace(_FR_DOC_EN_DASH, "-")
+
+
+#: The mirror's C7 series spelling the Register served as Z7: the tail is exactly the unpadded
+#: five-digit form, so the mirror's padded C7 corrections (``C7-01476`` for ``C7-1476``) never fire it.
+#: (Not named ``_FR_*``: the ``_FR_`` census in the tests partitions the document-number *forms*,
+#: and this is a series remap, not a form.)
+_C7_MIRROR_SERIES = re.compile(r"C7-([1-9]\d{4})")
+
+
+def fr_doc_num_mirror_series(value: str) -> str:
+    """The Register spelling of the mirror's C7 PRA series, or the value unchanged.
+
+    Measured 2026-09-24 over the retained releases: regulations.gov spelled the two
+    2007 SEC PRA notices ``C7-14563`` and ``C7-15181`` where the Federal Register spelled
+    ``Z7-14563`` and ``Z7-15181`` (same dates, same titles). The remap fires only for the
+    C7 series' unpadded five-digit tail -- never C -> Z in general, and never the mirror's
+    padded C7 corrections (``C7-01476`` -> ``C7-1476``), which the Register does serve
+    under C7. The Register's own C7-* column holds only 2007-08 corrections with one- to
+    four-digit tails, so no Register-side key changes (measured, same date).
+    """
+
+    match = _C7_MIRROR_SERIES.fullmatch(value)
+    return f"Z7-{match[1]}" if match is not None else value
+
+
+def fr_doc_num_release_spelling(value: str) -> str:
+    """The Federal Register release's spelling of one admitted document number.
+
+    The spelling mechanics only -- grammar admission is the caller's: the measured
+    en dash folds to a hyphen, the mirror's C7 series remaps to Z7, and the final
+    sequence loses its zero padding (``2010-00239`` -> ``2010-239``;
+    ``C1-2013-00201`` -> ``C1-2013-201`` -- the C/R year segment never moves).
+    Raises ``ValueError`` when the final segment is not all digits.
+    """
+
+    head, dash, sequence = fr_doc_num_mirror_series(hyphenate_fr_doc_num(value)).rpartition("-")
+    if not dash or not sequence.isdigit():
+        raise ValueError(f"not a dash-final document number spelling: {value!r}")
+    return f"{head}-{_unpadded_sequence(sequence)}"
 
 
 def normalize_regsgov_identifier(identifier: object) -> str | None:
