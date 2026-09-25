@@ -1,0 +1,130 @@
+%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+3 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/Name /F1
+/BaseFont /Courier
+/Encoding 16 0 R
+>>
+endobj
+4 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/Name /F2
+/BaseFont /Courier-Bold
+/Encoding 16 0 R
+>>
+endobj
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/Name /F3
+/BaseFont /Courier-Oblique
+/Encoding 16 0 R
+>>
+endobj
+6 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/Name /F4
+/BaseFont /Courier-BoldOblique
+/Encoding 16 0 R
+>>
+endobj
+7 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/Name /F5
+/BaseFont /Helvetica
+/Encoding 16 0 R
+>>
+endobj
+8 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/Name /F6
+/BaseFont /Helvetica-Bold
+/Encoding 16 0 R
+>>
+endobj
+9 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/Name /F7
+/BaseFont /Helvetica-Oblique
+/Encoding 16 0 R
+>>
+endobj
+10 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/Name /F8
+/BaseFont /Helvetica-BoldOblique
+/Encoding 16 0 R
+>>
+endobj
+11 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/Name /F9
+/BaseFont /Times-Roman
+/Encoding 16 0 R
+>>
+endobj
+12 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/Name /F10
+/BaseFont /Times-Bold
+/Encoding 16 0 R
+>>
+endobj
+13 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/Name /F11
+/BaseFont /Times-Italic
+/Encoding 16 0 R
+>>
+endobj
+14 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/Name /F12
+/BaseFont /Times-BoldItalic
+/Encoding 16 0 R
+>>
+endobj
+15 0 obj
+[ /PDF /Text /ImageB /ImageC ]
+endobj
+16 0 obj
+	<<
+/Type /Encoding
+/Differences [ 128/.notdef/quoteleft/quoteright/quotedblleft/quotedblright/emdash/bullet/.notdef
+ /.notdef/.notdef/quotesinglbase/quotedblbase/.notdef/.notdef/.notdef/.notdef
+/onesuperior/grave/acute/circumflex/tilde/macron/breve/dotaccent
+/dieresis/.notdef/ring/cedilla/.notdef/hungarumlaut/ogonek/caron
+/.notdef/exclamdown/cent/sterling/currency/yen/brokenbar/section
+/dieresis/copyright/ordfeminine/guillemotleft/logicalnot/hyphen/registered/macron
+/degree/plusminus/twosuperior/threesuperior/acute/mu/paragraph/periodcentered
+/cedilla/onesuperior/ordmasculine/guillemotright/onequarter/onehalf/threequarters/questiondown
+/Agrave/Aacute/Acircumflex/Atilde/Adieresis/Aring/AE/Ccedilla
