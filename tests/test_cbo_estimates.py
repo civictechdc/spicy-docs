@@ -581,16 +581,18 @@ def test_the_nineteen_package_columns_keep_their_order_and_the_rest_are_appended
         "page_count",
         "text_sha256",
     )
-    # The part columns came after the estimate columns (decision 29), so both appendices keep their places.
-    assert COMMITTEE_REPORTS.columns[-2:] == ("part_id", "part_number")
+    # The part columns came after the estimate columns (decision 29), and the
+    # body-completeness pair after both (2026-09-25), so every appendix keeps its place.
+    assert COMMITTEE_REPORTS.columns[-4:] == ("part_id", "part_number", "body_completeness", "text_derivation")
     assert COMMITTEE_REPORTS.identity == ("package_id", "part_id")
     assert COMMITTEE_REPORTS.version_column == "last_modified"
-    assert len(COMMITTEE_REPORTS.columns) == 34
+    assert len(COMMITTEE_REPORTS.columns) == 36
 
 
 def test_the_hearing_table_did_not_take_the_estimate_columns() -> None:
-    """The hearing table did not take the estimate or part columns."""
-    assert not set(COMMITTEE_REPORTS.columns[19:]) & set(HEARING_TRANSCRIPTS.columns)
+    """The hearing table did not take the estimate or part columns; the two share only the body-completeness pair."""
+    shared = set(COMMITTEE_REPORTS.columns[19:]) & set(HEARING_TRANSCRIPTS.columns)
+    assert shared == {"body_completeness", "text_derivation"}
 
 
 def test_no_citation_kind_was_added_for_the_estimate() -> None:

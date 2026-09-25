@@ -9,7 +9,7 @@ list) and ``noticed`` (``docs_house_br``, an agenda states intent); a ``BODY`` m
 
 from __future__ import annotations
 
-from spicy_docs.schemas.tables import Row, table_contract, text
+from spicy_docs.schemas.tables import Row, json_column, table_contract, text
 
 HEARING_BILL_LINKS = table_contract(
     "hearing_bill_links",
@@ -35,7 +35,8 @@ HEARING_BILL_LINKS = table_contract(
             "identity check an agenda row passed before it was written."
         ),
         "held_date": (
-            "The `heldDate` the package MODS states: the day the hearing was held, which is not the day its "
+            "The day the hearing was held, where the package MODS states one distinct `heldDate`; NULL where it "
+            "states none or several (a compiled volume, whose dates are held_dates_json).  Not the day its "
             "transcript was issued.  The other half of the confirmation join key."
         ),
         "event_id": (
@@ -79,6 +80,13 @@ HEARING_BILL_LINKS = table_contract(
             "its prior regardless of digest spelling. Derived the way `citations.py` derives "
             "`CITATION_RULE_SET_VERSION`, and blind for the same reason to a change inside a reader."
         ),
+        # Appended last, the way a hosted table takes a new column (docs/tables.md).
+        "held_dates_json": (
+            "Every nonempty `heldDate` the package MODS states, as a JSON list in document order with "
+            "repetitions kept; `[]` where it states none.  A compiled volume states several, and which bill "
+            "was heard on which day is not stated, so no bill is paired with a date.  NULL on a row not "
+            "re-read since the column was added (`mods_cover` 002)."
+        ),
     },
 )
 
@@ -100,6 +108,7 @@ def shape_hearing_bill_link(link: object) -> Row:
         "evidence_rule": text(link.evidence_rule),
         "evidence_text": text(link.evidence_text),
         "link_rule_version": text(link.rule_version),
+        "held_dates_json": json_column(list(link.held_dates)),
     }
 
 

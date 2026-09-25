@@ -270,6 +270,11 @@ invented for either.
   `document_urls_json` over witness then meeting documents.
   `hearing_transcripts` gained `event_id`, appended last, filled from the
   `hearing-detail` route's `associatedMeeting.eventId`.
+  `committee_reports` and `hearing_transcripts` then append
+  `body_completeness` (`publisher_placeholder` when the native text is the
+  publisher's notice that the document is only in the PDF, `pdf_extracted` for
+  text from a PDF, `not_flagged` otherwise; no value asserts completeness) and
+  `text_derivation`, the named derivation behind `text_sha256`.
 - **`record_issues`** is keyed `(volume, issue)` and doubles as the
   legislative-day calendar: `chambers` is derived from the detail's section
   names by the map's rule (`House Section`, `Senate Section`), and
@@ -463,7 +468,9 @@ bills on `CHRG-118hhrg56198`.
   hearing this repository holds both records for, 8 cover bills and 8 agenda
   bills are **16 rows over 9 distinct bills**.
   `committee_system_code` and `held_date` are the MODS's own
-  `congCommittee` authority id and `heldDate`, which are the join key a
+  `congCommittee` authority id and its one stated `heldDate` (NULL when a
+  compiled volume states several; `held_dates_json`, appended last, keeps every
+  native date in source order), which are the join key a
   bill-side confirmation needs and the pair an agenda row had to match before
   it was written. `event_id` is the `associatedMeeting.eventId` the row was
   reached through, NULL on a cover row whose caller read no hearing detail.

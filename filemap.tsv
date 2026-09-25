@@ -499,6 +499,7 @@ tests/test_govinfo_premis_fixity.py	Fixity comparison requires an exact URL, sup
 tests/test_govinfo_resolve_unmatched.py	The keyed diagnostic records evidence without turning missing evidence into absence.	test
 tests/test_govinfo_uslm.py	USLM requests and response checks prove native identity and keep publisher spellings.	test
 tests/test_hearing_bill_links.py	The two hearing-to-bill link rules, over the records the measurement retained.	test
+tests/test_hearing_dates_repair.py	Native date conservation and bounded historical package grammar.	test
 tests/test_identifier_shapes.py	Catalog identifier shapes, each rule pinned by the case that bought it.	test
 tests/test_image_header.py	Image-header parsing from the leading bytes: format and dimensions.	test
 tests/test_interpretation_bill_signals.py	The thirty-six bill-identify cases from BillTrax, ported to the pure scorer.	test

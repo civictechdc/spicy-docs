@@ -69,6 +69,24 @@ def _package_columns(
     }
 
 
+#: The two columns both tables append last (docs/tables.md), after their own
+#: appendices, so every column before them keeps its position.
+_BODY_COMPLETENESS_COLUMNS = {
+    "body_completeness": (
+        "What the read text states about itself (`sources.govinfo.bodies.publisher_body_status`): "
+        "`publisher_placeholder` where it is the publisher's own notice that the text is only in the PDF, so "
+        "text_sha256 digests that notice, not the document; `pdf_extracted` for text extracted from a PDF, "
+        "including one read in place of a placeholder; `not_flagged` otherwise.  No value asserts the text is "
+        "complete.  NULL on a row not re-read since the column was added."
+    ),
+    "text_derivation": (
+        "The derivation that produced the text text_sha256 digests (`markup-reader`, `text-rendition-cleanup` or "
+        "`pdf-extraction-gpo-normalized`), from the body sha256 digests; NULL on a row not re-read since the "
+        "column was added."
+    ),
+}
+
+
 COMMITTEE_REPORTS = table_contract(
     "committee_reports",
     grain=(
@@ -171,6 +189,7 @@ COMMITTEE_REPORTS = table_contract(
             "none; a report the publisher issued as a lone `-pt1` is (`{package}-pt1`, 1), so a reader counts "
             "rows per package to tell it from Part 1 of several."
         ),
+        **_BODY_COMPLETENESS_COLUMNS,
     },
 )
 
@@ -202,6 +221,7 @@ HEARING_TRANSCRIPTS = table_contract(
             "The committee-meeting event id the Congress.gov hearing record names as its associatedMeeting, "
             "which committee_meetings.event_id joins on; NULL where the hearing names none or was not looked up."
         ),
+        **_BODY_COMPLETENESS_COLUMNS,
     },
 )
 
@@ -293,6 +313,8 @@ def shape_committee_report(
     text_sha256: str | None = None,
     estimate: object = None,
     recital_bill_id: str | None = None,
+    body_completeness: str | None = None,
+    text_derivation: str | None = None,
 ) -> Row:
     """One ``committee_reports`` row from one acquired part of a CRPT package.
 
@@ -334,6 +356,8 @@ def shape_committee_report(
         "estimate_absence_rule": text(None if estimate is None else estimate.absence_rule),
         "part_id": text(part.part_id),
         "part_number": text(part.part_number),
+        "body_completeness": text(body_completeness),
+        "text_derivation": text(text_derivation),
     }
     return row
 
@@ -344,6 +368,8 @@ def shape_hearing_transcript(
     page_count: int | None = None,
     text_sha256: str | None = None,
     event_id: str | None = None,
+    body_completeness: str | None = None,
+    text_derivation: str | None = None,
 ) -> Row:
     """One ``hearing_transcripts`` row from one acquired CHRG package.
 
@@ -360,6 +386,8 @@ def shape_hearing_transcript(
         text_sha256=text_sha256,
     )
     row["event_id"] = text(event_id)
+    row["body_completeness"] = text(body_completeness)
+    row["text_derivation"] = text(text_derivation)
     return row
 
 

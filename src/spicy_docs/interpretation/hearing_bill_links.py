@@ -82,7 +82,10 @@ class HearingBillLinkRule:
 HEARING_BILL_LINK_RULES: tuple[HearingBillLinkRule, ...] = (
     HearingBillLinkRule(
         name="mods_cover",
-        version="001",
+        # 002 (2026-09-25): every native heldDate is carried and the scalar
+        # only where the record states one distinct date; 001 published a
+        # compiled volume's first date as the date of every bill it covers.
+        version="002",
         publisher="govinfo_mods",
         relation="held_on",
         reads='the package MODS root extension\'s <bill context="COVER"> list',
@@ -96,7 +99,9 @@ HEARING_BILL_LINK_RULES: tuple[HearingBillLinkRule, ...] = (
     ),
     HearingBillLinkRule(
         name="docs_house_br",
-        version="001",
+        # 002 (2026-09-25): a compiled volume, stating several distinct
+        # heldDates, is refused the identity check; 001 matched its first date.
+        version="002",
         publisher="docs_house_gov",
         relation="noticed",
         reads='each <meeting-document type="BR">\'s file name, <legis-num> and <description>',
@@ -199,6 +204,7 @@ class HearingBillLink:
     evidence_rule: str
     evidence_text: str | None
     rule_version: str
+    held_dates: tuple[str, ...] = ()
 
 
 def _committee_system_code(mods: object) -> str | None:
@@ -258,6 +264,7 @@ def _links(
                 evidence_rule=evidence_rule,
                 evidence_text=evidence_text,
                 rule_version=HEARING_BILL_LINK_RULE_VERSION,
+                held_dates=getattr(mods, "held_dates", ()),
             ),
         )
     return tuple(rows.values())
@@ -290,17 +297,21 @@ def check_meeting_identity(mods: object, meeting: HouseCommitteeMeeting) -> None
 
     Two conditions, both the publishers' own statements about the event and
     neither of them the request URL: the meeting's ``<calendar-date>`` must
-    equal the MODS ``heldDate``, and one of the meeting's committees' parent
-    codes must be one of the MODS's ``congCommittee`` authority ids (held 9 of
-    9 on the sampled events). Checked per row rather than assumed once, because
+    equal the MODS ``heldDate``, the one distinct date it states (a compiled
+    volume's list of dates names no one event, so it is refused by name), and
+    one of the meeting's committees' parent codes must be one of the MODS's
+    ``congCommittee`` authority ids (held 9 of 9 on the sampled events).
+    Checked per row rather than assumed once, because
     the id equality this reaches through is documented by neither publisher.
     Raises ``HearingBillLinkError`` on either mismatch and ``TypeError`` for a
     non-``HouseCommitteeMeeting``.
     """
     if not isinstance(meeting, HouseCommitteeMeeting):
         raise TypeError("meeting must be a HouseCommitteeMeeting")
-    held = getattr(mods, "held_date", None)
     package_id = mods.identity.package_id
+    if len(set(getattr(mods, "held_dates", ()))) > 1:
+        raise HearingBillLinkError(f"{package_id} is a compiled hearing; its dates do not establish this meeting event")
+    held = getattr(mods, "held_date", None)
     if not held or meeting.calendar_date != held:
         raise HearingBillLinkError(
             f"meeting {meeting.event_id} states calendar-date {meeting.calendar_date!r} and {package_id} "

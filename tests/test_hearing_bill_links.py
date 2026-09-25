@@ -403,7 +403,7 @@ def test_the_rule_set_version_is_pinned_and_moves_when_a_rule_changes() -> None:
     """Derived, so editing what a rule reads moves it even if its own version stands still."""
     from spicy_docs.interpretation.hearing_bill_links import _rule_set_version
 
-    assert HEARING_BILL_LINK_RULE_VERSION == "27acfc7cf7ae"
+    assert HEARING_BILL_LINK_RULE_VERSION == "d06e0bd80ca1"
     assert _rule_set_version(HEARING_BILL_LINK_RULES) == HEARING_BILL_LINK_RULE_VERSION
     edited = (replace(HEARING_BILL_LINK_RULES[0], reads="something else"), *HEARING_BILL_LINK_RULES[1:])
     assert _rule_set_version(edited) != HEARING_BILL_LINK_RULE_VERSION
@@ -521,3 +521,9 @@ def test_a_scored_package_with_no_retained_mods_is_not_read_as_agreement(tmp_pat
     assert missing == [{"claim": "every scored package has a retained MODS", "receipt": [], "product": [SENATE]}]
     # Its own COVER comparison agrees, which is the point: nothing else fires.
     assert not [entry for entry in report["disagreements"] if "COVER set" in entry["claim"]]
+
+
+def test_compiled_date_membership_does_not_prove_an_agenda_event(meeting):
+    mods = replace(mods_for(BOTH), held_dates=("2023-05-23", "2023-05-24"), held_date=None)
+    with pytest.raises(HearingBillLinkError, match="compiled hearing"):
+        agenda_links(mods, meeting)

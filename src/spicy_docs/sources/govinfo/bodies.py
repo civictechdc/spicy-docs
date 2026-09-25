@@ -147,12 +147,18 @@ class PackageGrammar:
     measured stating a part. Only part 1 may stand at a record's root in place
     of the package's own stem (``_stated_part``); every part may be a
     constituent (``_constituent_part``).
+
+    ``volumes`` is a second, exact pattern for the stems the publisher
+    addresses as separate packages of one number, with the suffix as its
+    ``volume`` group, or ``None``. It names measured stems only and is never
+    widened into a general suffix, so an unmeasured one stays refused by name.
     """
 
     pattern: re.Pattern[str]
     example: str
     collection_code: str
     part: re.Pattern[str] | None = None
+    volumes: re.Pattern[str] | None = None
 
 
 _GRAMMARS: dict[str, PackageGrammar] = {
@@ -168,7 +174,15 @@ _GRAMMARS: dict[str, PackageGrammar] = {
         part=re.compile(r"-pt(?P<number>[1-9][0-9]*)"),
     ),
     "CHRG": PackageGrammar(
-        re.compile(rf"(?P<congress>{_CONGRESS})(?P<type>hhrg|shrg|jhrg)(?P<number>{_JACKET})"), "119hhrg64242", "CHRG"
+        re.compile(rf"(?P<congress>{_CONGRESS})(?P<type>hhrg|shrg|jhrg)(?P<number>{_JACKET})"),
+        "119hhrg64242",
+        "CHRG",
+        # Two volumes of the 79th Congress's Pearl Harbor attack hearings
+        # (jacket 79716), each its own package: the retained CHRG listing named
+        # them, and each summary's packageId and MODS accessId state the id
+        # exactly (captured 2026-09-25; tests/fixtures/govinfo_compiled_hearing).
+        # No other volume of 79716 has been listed, so none is admitted.
+        volumes=re.compile(r"(?P<congress>79)(?P<type>jhrg)(?P<number>79716)(?P<volume>p11|p19)"),
     ),
     "CDOC": PackageGrammar(
         re.compile(rf"(?P<congress>{_CONGRESS})(?P<type>hdoc|sdoc|tdoc)(?P<number>{_NUMBER})"), "119tdoc2", "CDOC"
@@ -372,6 +386,10 @@ class PackageIdentity:
     #: publisher's own grammar, not an arithmetic quantity. ``None`` for every
     #: collection whose ids carry no fiscal year.
     fiscal_year: str | None = None
+    #: The volume suffix a separately addressed package adds to its number
+    #: (``p11`` of ``CHRG-79jhrg79716p11``), read only through a grammar's
+    #: measured ``volumes`` pattern; ``None`` everywhere else.
+    volume: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -686,8 +704,14 @@ class PackageModsIdentity:
     #: was held 2023-05-23 and issued 2024-02-15). Read because it is half the
     #: join key every hearing-to-bill link rule checks itself against
     #: (``interpretation/hearing_bill_links.py``); ``None`` for a collection
-    #: whose records state none, which every sampled CRPT record does.
+    #: whose records state none, which every sampled CRPT record does. ``None``
+    #: too where the record states several distinct dates (``held_dates``).
     held_date: str | None = None
+    #: Every nonempty ``<heldDate>`` the root extension states, in document
+    #: order, repetitions kept: a compiled volume states several
+    #: (CHRG-117shrg56721 states eleven), and which bill was heard on which
+    #: day is not stated, so none is paired with a bill.
+    held_dates: tuple[str, ...] = ()
     #: The part 1 (``CRPT-119hrpt811-pt1``) the root states in place of the
     #: package's own stem, or ``None``. A granule of this package, never a
     #: package id: ``offered_formats`` were proved at its stem, which is where
@@ -836,17 +860,23 @@ def _mods_fiscal_year(root: ModsRecord) -> str | None:
     )
 
 
-def _mods_held_date(root: ModsRecord) -> str | None:
-    """The ``<heldDate>`` the root extension states, if any.
+def _mods_held_dates(root: ModsRecord) -> tuple[str, ...]:
+    """Every nonempty ``<heldDate>`` the root extension states, in document order, repetitions kept."""
+    return tuple(text for element in root.fields("extension", "heldDate") if (text := element.text.strip()))
+
+
+def _one_held_date(dates: tuple[str, ...]) -> str | None:
+    """The hearing's date when the record states exactly one distinct date, else ``None``.
 
     One per record on all 25 CHRG MODS retained by the
     [hearing-bill linkage measurement](../../../../docs/research/hearing-bill-linkage-2026-09-20.md),
     House and Senate alike, and it is the date Congress.gov's *Hearings Held*
     action and docs.house.gov's ``<calendar-date>`` were both checked against.
-    A record stating several would keep the first in document order rather
-    than guess between them; none measured states more than one.
+    A compiled volume states several (CHRG-117shrg56721, eleven; 2026-09-25
+    audit) and names no one event, so it gets no scalar: its first date was
+    once published as the date of every bill it covers.
     """
-    return next((text for element in root.fields("extension", "heldDate") if (text := element.text.strip())), None)
+    return dates[0] if len(set(dates)) == 1 else None
 
 
 def _mods_reports(root: ModsRecord) -> tuple[ModsReport, ...]:
@@ -999,7 +1029,8 @@ def parse_package_id(package_id: object) -> PackageIdentity:
         supported = ", ".join(sorted(_GRAMMARS))
         raise GovInfoBodySourceError(f"package id collection is unsupported; expected one of {supported}")
     grammar = _GRAMMARS[collection]
-    match = grammar.pattern.fullmatch(package_id[len(collection) + 1 :])
+    stem = package_id[len(collection) + 1 :]
+    match = grammar.pattern.fullmatch(stem) or (grammar.volumes.fullmatch(stem) if grammar.volumes else None)
     if match is None:
         raise GovInfoBodySourceError(
             f"{collection} package id does not match its grammar; expected {collection}-{grammar.example}"
@@ -1016,6 +1047,7 @@ def parse_package_id(package_id: object) -> PackageIdentity:
         issue_suffix=parts.get("suffix"),
         version=parts.get("version"),
         fiscal_year=parts.get("fiscal_year"),
+        volume=parts.get("volume"),
     )
 
 
@@ -1303,6 +1335,7 @@ def validate_package_mods(
     locators = {package_body_locator(identity, name, part_id=part_id): name for name in PACKAGE_BODY_FORMATS}
     offered, moved, other = _read_offered_renditions(root, locators, identity)
     bills = _mods_bills(root)
+    held_dates = _mods_held_dates(root)
     root_part = ReportPart(
         identity, part_id or identity.package_id, _part_number(identity, part_id), offered, moved, other, bills
     )
@@ -1324,7 +1357,8 @@ def validate_package_mods(
         members=_mods_members(root),
         session=next((element.text.strip() for element in root.fields("extension", "session")), None),
         fiscal_year=_mods_fiscal_year(root),
-        held_date=_mods_held_date(root),
+        held_date=_one_held_date(held_dates),
+        held_dates=held_dates,
         part_id=part_id,
         parts=_report_parts(parsed, identity, root_part),
     )
@@ -1656,12 +1690,34 @@ def validate_granule_body(
     )
 
 
+#: The publisher's own statement, inside a text rendition, that the prose is
+#: only in the PDF: it stands in for the text of the ``htm`` bodies of
+#: CRPT-119srpt35 (below its cover page) and CHRG-119hhrg64529 (2026-09-25
+#: report audit). ``[GRAPHIC(S) NOT AVAILABLE IN TIFF FORMAT]`` is not it:
+#: that marks a missing image, not missing prose.
+PUBLISHER_PLACEHOLDER = "[TEXT NOT AVAILABLE IN REFER TO PDF]"
+
+
+def publisher_body_status(text: str, *, rendition: str) -> str:
+    """What one body's derived text states about its own completeness, in ``O(T)``.
+
+    ``publisher_placeholder`` where the text carries ``PUBLISHER_PLACEHOLDER``,
+    else ``pdf_extracted`` for a PDF rendition and ``not_flagged`` for any
+    other. Only the publisher's marker flags a body; no status asserts that
+    unmarked text is complete.
+    """
+    if PUBLISHER_PLACEHOLDER in text:
+        return "publisher_placeholder"
+    return "pdf_extracted" if rendition == "pdf" else "not_flagged"
+
+
 __all__ = [
     "BODY_PREFERENCE",
     "GRANULE_BODY_PREFERENCE",
     "MEASURED_BUDGET_PARTS",
     "PACKAGE_BODY_FORMATS",
     "PRINT_BODY_PREFERENCE",
+    "PUBLISHER_PLACEHOLDER",
     "BodyFormat",
     "GovInfoBodySourceError",
     "GranuleBodyIdentity",
@@ -1690,6 +1746,7 @@ __all__ = [
     "package_summary_locator",
     "parse_granule_identity",
     "parse_package_id",
+    "publisher_body_status",
     "stated_collection_code",
     "validate_granule_body",
     "validate_granule_mods",

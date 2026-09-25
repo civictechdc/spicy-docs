@@ -1,0 +1,469 @@
+<mods xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:exslt="http://exslt.org/common" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.loc.gov/mods/v3" version="3.3" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-3.xsd" ID="P0b002ee1e74d322a">
+    <name type="corporate">
+         <namePart>United States Government Publishing Office</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">publisher</roleTerm>
+              <roleTerm authority="marcrelator" type="code">pbl</roleTerm>
+        </role>
+         <role>
+              <roleTerm authority="marcrelator" type="text">distributor</roleTerm>
+              <roleTerm authority="marcrelator" type="code">dst</roleTerm>
+        </role>
+    </name>
+    <name type="corporate">
+         <namePart>United States</namePart>
+         <namePart>Congress</namePart>
+         <namePart>Senate</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">author</roleTerm>
+              <roleTerm authority="marcrelator" type="code">aut</roleTerm>
+        </role>
+         <description>Government Organization</description>
+    </name>
+    <typeOfResource>text</typeOfResource>
+    <genre authority="marcgt">government publication</genre>
+    <language>
+         <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+    </language>
+    <extension>
+         <collectionCode>CHRG</collectionCode>
+         <category>Congressional Committee Materials</category>
+         <waisDatabaseName>117_senate_hearings</waisDatabaseName>
+         <branch>legislative</branch>
+         <dateIngested>2026-08-27</dateIngested>
+    </extension>
+    <titleInfo>
+         <title>DEPARTMENT OF DEFENSE AUTHORIZATION REQUEST FOR FISCAL YEAR 2022 AND THE FUTURE YEARS DEFENSE PROGRAM</title>
+    </titleInfo>
+    <titleInfo type="alternative"></titleInfo>
+    <location>
+         <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CHRG-117shrg56721</url>
+         <url displayLabel="HTML rendition" access="raw object">https://www.govinfo.gov/content/pkg/CHRG-117shrg56721/html/CHRG-117shrg56721.htm</url>
+         <url displayLabel="PDF rendition" access="raw object">https://www.govinfo.gov/content/pkg/CHRG-117shrg56721/pdf/CHRG-117shrg56721.pdf</url>
+    </location>
+    <originInfo>
+         <publisher>U.S. Government Publishing Office</publisher>
+         <dateIssued encoding="w3cdtf">2021-03-09</dateIssued>
+         <issuance>monographic</issuance>
+    </originInfo>
+    <physicalDescription>
+         <note type="source content type">deposited</note>
+         <digitalOrigin>born digital</digitalOrigin>
+         <extent>886 digital object pages</extent>
+    </physicalDescription>
+    <classification authority="sudocs">Y 4.AR 5/3:S.HRG.117-889</classification>
+    <identifier type="uri">https://www.govinfo.gov/app/details/CHRG-117shrg56721</identifier>
+    <identifier type="local">P0b002ee1e74d322a</identifier>
+    <identifier type="ILS system id">001478682</identifier>
+    <identifier type="former package identifier">f:56721.txt</identifier>
+    <recordInfo>
+         <recordContentSource authority="marcorg">DGPO</recordContentSource>
+         <recordCreationDate encoding="w3cdtf">2026-08-27</recordCreationDate>
+         <recordChangeDate encoding="w3cdtf">2026-08-27</recordChangeDate>
+         <recordIdentifier source="DGPO">CHRG-117shrg56721</recordIdentifier>
+         <recordOrigin>machine generated</recordOrigin>
+         <languageOfCataloging>
+              <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+        </languageOfCataloging>
+    </recordInfo>
+    <accessCondition type="GPO scope determination">fdlp</accessCondition>
+    <extension>
+         <docClass>SHRG</docClass>
+         <accessId>CHRG-117shrg56721</accessId>
+         <type>AU</type>
+         <chamber>SENATE</chamber>
+         <congress years="2021-2022">117</congress>
+         <session>1</session>
+         <number>889</number>
+         <heldDate>2021-03-09</heldDate>
+         <heldDate>2021-03-16</heldDate>
+         <heldDate>2021-03-25</heldDate>
+         <heldDate>2021-04-13</heldDate>
+         <heldDate>2021-04-20</heldDate>
+         <heldDate>2021-04-22</heldDate>
+         <heldDate>2021-06-10</heldDate>
+         <heldDate>2021-06-15</heldDate>
+         <heldDate>2021-06-17</heldDate>
+         <heldDate>2021-06-22</heldDate>
+         <heldDate>2021-06-24</heldDate>
+         <preferredCitation>S. Hrg. 117-889</preferredCitation>
+    </extension>
+    <extension>
+         <searchTitle>DEPARTMENT OF DEFENSE AUTHORIZATION REQUEST FOR FISCAL YEAR 2022 AND THE FUTURE YEARS DEFENSE PROGRAM</searchTitle>
+         <granuleClass>FIRSTPART</granuleClass>
+         <accessId>CHRG-117shrg56721</accessId>
+         <agency>
+                                    
+              <name>DEPARTMENT OF DEFENSE AUTHORIZATION FOR</name>
+                                
+        </agency>
+         <agency>
+                                    
+              <name>DEPARTMENT OF DEFENSE BUDGET POSTURE</name>
+                                
+        </agency>
+         <heading>Part 1</heading>
+         <partNumber>1</partNumber>
+         <fiscalyear>2022</fiscalyear>
+         <graphicsInPDF>true</graphicsInPDF>
+         <isAppropriation>false</isAppropriation>
+         <jacketId>56-721</jacketId>
+         <congCommittee authorityId="ssas00" chamber="S" congress="117" type="S">
+                                    
+              <name type="authority-standard">Committee on Armed Services</name>
+                                    
+              <name type="authority-short">Armed Services</name>
+                                
+        </congCommittee>
+         <congMember bioGuideId="B001277" chamber="S" congress="117" party="D" role="COMMMEMBER" state="CT">
+                                    
+              <name type="parsed">RICHARD BLUMENTHAL of Connecticut</name>
+                                    
+              <name type="authority-fnf">Richard Blumenthal</name>
+                                    
+              <name type="authority-lnf">Blumenthal, Richard</name>
+                                
+        </congMember>
+         <congMember bioGuideId="D000622" chamber="S" congress="117" party="D" role="COMMMEMBER" state="IL">
+                                    
+              <name type="parsed">TAMMY DUCKWORTH of Illinois</name>
+                                    
+              <name type="authority-fnf">Tammy Duckworth</name>
+                                    
+              <name type="authority-lnf">Duckworth, Tammy</name>
+                                
+        </congMember>
+         <congMember bioGuideId="G000555" chamber="S" congress="117" party="D" role="COMMMEMBER" state="NY">
+                                    
+              <name type="parsed">KIRSTEN E. GILLIBRAND of New York</name>
+                                    
+              <name type="authority-fnf">Kirsten E. Gillibrand</name>
+                                    
+              <name type="authority-lnf">Gillibrand, Kirsten E.</name>
+                                    
+              <name type="authority-other">Kirsten Gillibrand</name>
+                                
+        </congMember>
+         <congMember bioGuideId="H001042" chamber="S" congress="117" party="D" role="COMMMEMBER" state="HI">
+                                    
+              <name type="parsed">MAZIE K. HIRONO of Hawaii</name>
+                                    
+              <name type="authority-fnf">Mazie K. Hirono</name>
+                                    
+              <name type="authority-lnf">Hirono, Mazie K.</name>
+                                    
+              <name type="authority-other">Mazie Hirono</name>
+                                
+        </congMember>
+         <congMember bioGuideId="K000377" chamber="S" congress="117" party="D" role="COMMMEMBER" state="AZ">
+                                    
+              <name type="parsed">MARK KELLY of Arizona</name>
+                                    
+              <name type="authority-fnf">Mark Kelly</name>
+                                    
+              <name type="authority-lnf">Kelly, Mark</name>
+                                
+        </congMember>
+         <congMember bioGuideId="K000383" chamber="S" congress="117" party="I" role="COMMMEMBER" state="ME">
+                                    
+              <name type="parsed">ANGUS S. KING, Jr. of Maine</name>
+                                    
+              <name type="authority-fnf">Angus S. King Jr.</name>
+                                    
+              <name type="authority-lnf">King, Angus S., Jr.</name>
+                                    
+              <name type="authority-other">Angus King</name>
+                                    
+              <name type="authority-other">Angus S. King</name>
+                                
+        </congMember>
+         <congMember bioGuideId="K000384" chamber="S" congress="117" party="D" role="COMMMEMBER" state="VA">
+                                    
+              <name type="parsed">TIM KAINE of Virginia</name>
+                                    
+              <name type="authority-fnf">Tim Kaine</name>
+                                    
+              <name type="authority-lnf">Kaine, Tim</name>
+                                    
+              <name type="authority-other">Timothy Kaine</name>
+                                    
+              <name type="authority-other">Timothy M. Kaine</name>
+                                
+        </congMember>
+         <congMember bioGuideId="M001183" chamber="S" congress="117" party="D" role="COMMMEMBER" state="WV">
+                                    
+              <name type="parsed">JOE MANCHIN III of West Virginia</name>
+                                    
+              <name type="authority-fnf">Joe Manchin III</name>
+                                    
+              <name type="authority-lnf">Manchin, Joe, III</name>
+                                    
+              <name type="authority-other">Joseph Manchin</name>
+                                
+        </congMember>
+         <congMember bioGuideId="P000595" chamber="S" congress="117" party="D" role="COMMMEMBER" state="MI">
+                                    
+              <name type="parsed">GARY C. PETERS of Michigan</name>
+                                    
+              <name type="authority-fnf">Gary C. Peters</name>
+                                    
+              <name type="authority-lnf">Peters, Gary C.</name>
+                                    
+              <name type="authority-other">Gary Peters</name>
+                                
+        </congMember>
+         <congMember bioGuideId="R000122" chamber="S" congress="117" party="D" role="COMMMEMBER" state="RI">
+                                    
+              <name type="parsed">JACK REED of Rhode Island</name>
+                                    
+              <name type="authority-fnf">Jack Reed</name>
+                                    
+              <name type="authority-lnf">Reed, Jack</name>
+                                    
+              <name type="authority-other">John Reed</name>
+                                    
+              <name type="authority-other">John F. Reed</name>
+                                
+        </congMember>
+         <congMember bioGuideId="R000608" chamber="S" congress="117" party="D" role="COMMMEMBER" state="NV">
+                                    
+              <name type="parsed">JACKY ROSEN of Nevada</name>
+                                    
+              <name type="authority-fnf">Jacky Rosen</name>
+                                    
+              <name type="authority-lnf">Rosen, Jacky</name>
+                                
+        </congMember>
+         <congMember bioGuideId="S001181" chamber="S" congress="117" party="D" role="COMMMEMBER" state="NH">
+                                    
+              <name type="parsed">JEANNE SHAHEEN of New Hampshire</name>
+                                    
+              <name type="authority-fnf">Jeanne Shaheen</name>
+                                    
+              <name type="authority-lnf">Shaheen, Jeanne</name>
+                                
+        </congMember>
+         <congMember bioGuideId="T000476" chamber="S" congress="117" party="R" role="COMMMEMBER" state="NC">
+                                    
+              <name type="parsed">THOM TILLIS of North Carolina</name>
+                                    
+              <name type="authority-fnf">Thom Tillis</name>
+                                    
+              <name type="authority-lnf">Tillis, Thomas</name>
+                                    
+              <name type="authority-other">Thomas Tillis</name>
+                                    
+              <name type="authority-other">Thomas Roland Tillis</name>
+                                
+        </congMember>
+         <congMember bioGuideId="W000817" chamber="S" congress="117" party="D" role="COMMMEMBER" state="MA">
+                                    
+              <name type="parsed">ELIZABETH WARREN of Massachusetts</name>
+                                    
+              <name type="authority-fnf">Elizabeth Warren</name>
+                                    
+              <name type="authority-lnf">Warren, Elizabeth</name>
+                                    
+              <name type="authority-other">Elizabeth A. Warren</name>
+                                
+        </congMember>
+         <law congress="114" isPrivate="false" number="92"></law>
+         <law congress="116" isPrivate="false" number="283"></law>
+         <USCode title="10">
+                                    
+              <section number="127e"></section>
+                                    
+              <section number="127f"></section>
+                                    
+              <section number="284"></section>
+                                    
+              <section number="8431"></section>
+                                
+        </USCode>
+         <USCode title="50">
+                                    
+              <section number="2538a"></section>
+                                
+        </USCode>
+         <bill congress="117" context="COVER" number="2792" type="S"></bill>
+         <congReport congress="116" number="236" type="S"></congReport>
+         <isNomination>false</isNomination>
+         <isErrata>false</isErrata>
+    </extension>
+    <name type="corporate">
+         <namePart>United States</namePart>
+         <namePart>Congress</namePart>
+         <namePart>Senate</namePart>
+         <namePart>Committee on Armed Services</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">associated name</roleTerm>
+              <roleTerm authority="marcrelator" type="code">asn</roleTerm>
+        </role>
+         <description>Government Organization</description>
+    </name>
+    <name type="personal">
+         <namePart>Richard Blumenthal</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Tammy Duckworth</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Kirsten E. Gillibrand</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Mazie K. Hirono</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Mark Kelly</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Angus S. King Jr.</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Tim Kaine</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Joe Manchin III</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Gary C. Peters</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Jack Reed</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Jacky Rosen</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Jeanne Shaheen</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Thom Tillis</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Elizabeth Warren</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <relatedItem type="isReferencedBy">
+         <identifier type="Jacket citation"></identifier>
+    </relatedItem>
+    <relatedItem type="isReferencedBy">
+         <titleInfo>
+              <title>United States Senate Bill 2792 (117th Congress)</title>
+        </titleInfo>
+         <identifier type="Congressional Bill citation">S. 2792</identifier>
+         <extension>
+              <congress>117</congress>
+              <context>COVER</context>
+        </extension>
+    </relatedItem>
+    <relatedItem type="isReferencedBy">
+         <titleInfo>
+              <title>United States Code</title>
+              <partNumber>Title 10 Section 127e</partNumber>
+              <partNumber>Title 10 Section 127f</partNumber>
+              <partNumber>Title 10 Section 284</partNumber>
+              <partNumber>Title 10 Section 8431</partNumber>
+        </titleInfo>
+         <identifier type="USC citation">10 U.S.C. 127e</identifier>
+         <identifier type="USC citation">10 U.S.C. 127f</identifier>
+         <identifier type="USC citation">10 U.S.C. 284</identifier>
+         <identifier type="USC citation">10 U.S.C. 8431</identifier>
+    </relatedItem>
+    <relatedItem type="isReferencedBy">
+         <titleInfo>
+              <title>United States Code</title>
+              <partNumber>Title 50 Section 2538a</partNumber>
+        </titleInfo>
+         <identifier type="USC citation">50 U.S.C. 2538a</identifier>
+    </relatedItem>
+    <relatedItem type="isReferencedBy">
+         <titleInfo>
+              <title>United States Public Law 92 (114th Congress)</title>
+        </titleInfo>
+         <identifier type="public law citation">Public Law 114-92</identifier>
+         <identifier type="public law citation">Public Law No 114-92</identifier>
+    </relatedItem>
+    <relatedItem type="isReferencedBy">
+         <titleInfo>
+              <title>United States Public Law 283 (116th Congress)</title>
+        </titleInfo>
+         <identifier type="public law citation">Public Law 116-283</identifier>
+         <identifier type="public law citation">Public Law No 116-283</identifier>
+    </relatedItem>
+    <relatedItem type="isReferencedBy">
+         <titleInfo>
+              <title>United States Senate Report 236 (116th Congress)</title>
+        </titleInfo>
+         <identifier type="congressional report citation">S. Rept. 116-236</identifier>
+    </relatedItem>
+</mods>
