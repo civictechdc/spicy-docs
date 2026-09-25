@@ -1,0 +1,41 @@
+{
+  "DataList": [
+    {
+      "DocumentsItem": [
+        {
+          "document_id": 0,
+          "category_cd": 0,
+          "category": "Issuance",
+          "DOCKET_TEXT": "ER11-4046",
+          "SUBDOCKET_TEXT": "001",
+          "DOCKET_CODE": null,
+          "doc_desc": "Letter order accepting Gratiot County Wind LLC's et al 7/13/11 et al filing of application's for market-based rate authority each with an accompanying tariff under ER11-4044 et al. ",
+          "filed_date": "2011-08-16T00:00:00",
+          "issued_date": "0001-01-01T00:00:00",
+          "source": null,
+          "accession_date": "0001-01-01T00:00:00",
+          "accession_series": null,
+          "accession_no": "20110816-3002",
+          "subDocketNumber": 0,
+          "availability_code": null,
+          "Affiliation_Organization": [
+            "OFFICE OF ENERGY MARKET REGULATION"
+          ],
+          "fed_reg_num": null,
+          "fed_reg_date": "0001-01-01T00:00:00",
+          "comments_due_date": "0001-01-01T00:00:00",
+          "FEE_AMT_CUR": 0,
+          "FERC_CITE": null
+        }
+      ],
+      "AuthorsItem": [],
+      "FedCitesItem": []
+    }
+  ],
+  "ErrorList": [],
+  "Page": {
+    "totalHits": 3,
+    "numHits": 2,
+    "pageNumber": 1
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "DataList": [
+    {
+      "DocumentsItem": [
+        {
+          "document_id": 0,
+          "category_cd": 0,
+          "category": "Submittal",
+          "DOCKET_TEXT": "ER11-4046",
+          "SUBDOCKET_TEXT": "001",
+          "DOCKET_CODE": null,
+          "doc_desc": "Gratiot County Wind II LLC submits tariff filing per 35.17(b): Supplement to Market-Based Rate Application to be effective 9/12/2011 under ER11-4046 Filing Type : 130",
+          "filed_date": "2011-07-14T00:00:00",
+          "issued_date": "0001-01-01T00:00:00",
+          "source": null,
+          "accession_date": "0001-01-01T00:00:00",
+          "accession_series": null,
+          "accession_no": "20110714-5024",
+          "subDocketNumber": 0,
+          "availability_code": null,
+          "Affiliation_Organization": [
+            "Gratiot County Wind II LLC"
+          ],
+          "fed_reg_num": null,
+          "fed_reg_date": "0001-01-01T00:00:00",
+          "comments_due_date": "0001-01-01T00:00:00",
+          "FEE_AMT_CUR": 0,
+          "FERC_CITE": null
+        }
+      ],
+      "AuthorsItem": [],
+      "FedCitesItem": []
+    },
+    {
+      "DocumentsItem": [
+        {
+          "document_id": 0,
+          "category_cd": 0,
+          "category": "Issuance",
+          "DOCKET_TEXT": "ER11-4046",
+          "SUBDOCKET_TEXT": "001",
+          "DOCKET_CODE": null,
+          "doc_desc": "Combined Notice of Filings # 1, July 15, 2011: This notice contains information concerning multiple filings received by FERC. ",
+          "filed_date": "2011-07-15T00:00:00",
+          "issued_date": "0001-01-01T00:00:00",
+          "source": null,
+          "accession_date": "0001-01-01T00:00:00",
+          "accession_series": null,
+          "accession_no": "20110715-3051",
+          "subDocketNumber": 0,
+          "availability_code": null,
+          "Affiliation_Organization": [
+            "SECRETARY OF THE COMMISSION, FERC"
+          ],
+          "fed_reg_num": null,
+          "fed_reg_date": "0001-01-01T00:00:00",
+          "comments_due_date": "0001-01-01T00:00:00",
+          "FEE_AMT_CUR": 0,
+          "FERC_CITE": null
+        }
+      ],
+      "AuthorsItem": [],
+      "FedCitesItem": []
+    }
+  ],
+  "ErrorList": [],
+  "Page": {
+    "totalHits": 3,
+    "numHits": 2,
+    "pageNumber": 0
+  }
+}

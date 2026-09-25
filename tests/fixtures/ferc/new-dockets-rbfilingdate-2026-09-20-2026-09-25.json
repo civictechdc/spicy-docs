@@ -1,0 +1,60 @@
+{
+ "DataList": [
+  {
+   "DocketID": 764800,
+   "DocketShortNumber": "AC26-103",
+   "SubDocketNumber": "000",
+   "DocketFullNumber": "AC26-103-000",
+   "DocketCreationDate": "2026-09-22T08:35:45",
+   "DocketFilingDate": "2026-09-22T08:30:00",
+   "DocketDescription": "North Central Power Company, Inc. submits request for an extension of time, until 09/29/2026 to file its Second Quarter 2026 FERC Form No. 3-Q, under AC26-103.",
+   "CommaDelimitedApplicantsList": "North Central Power Co., Inc.",
+   "DocketSheetlink": "<a href=http://docketsearchsat.ferc.gov/docket_sheet.aspx?docket=AC26-103&Subdocket=000 target=\"_blank\">Docket Sheet</a>"
+  },
+  {
+   "DocketID": 764770,
+   "DocketShortNumber": "CD26-5",
+   "SubDocketNumber": "000",
+   "DocketFullNumber": "CD26-5-000",
+   "DocketCreationDate": "2026-09-21T14:31:11",
+   "DocketFilingDate": "2026-09-21T09:35:38",
+   "DocketDescription": "Breaker Water & Energy Park, LLC submits Notice of Intent to Construct Qualifying \r\nConduit Hydropower Facility for the Buckeye Hydrokinetic Project under CD26-5.",
+   "CommaDelimitedApplicantsList": "Breaker Water & Energy Park, LLC",
+   "DocketSheetlink": "<a href=http://docketsearchsat.ferc.gov/docket_sheet.aspx?docket=CD26-5&Subdocket=000 target=\"_blank\">Docket Sheet</a>"
+  },
+  {
+   "DocketID": 764850,
+   "DocketShortNumber": "CP26-584",
+   "SubDocketNumber": "000",
+   "DocketFullNumber": "CP26-584-000",
+   "DocketCreationDate": "2026-09-22T12:38:40",
+   "DocketFilingDate": "2026-09-22T10:59:07",
+   "DocketDescription": "Tennessee Gas Pipeline Company, L.L.C. submits Request for Waiver of Blanket Cost Limit under CP26-584.",
+   "CommaDelimitedApplicantsList": "Tennessee Gas Pipeline Company, L.L.C.",
+   "DocketSheetlink": "<a href=http://docketsearchsat.ferc.gov/docket_sheet.aspx?docket=CP26-584&Subdocket=000 target=\"_blank\">Docket Sheet</a>"
+  },
+  {
+   "DocketID": 764904,
+   "DocketShortNumber": "ER10-1874",
+   "SubDocketNumber": "021",
+   "DocketFullNumber": "ER10-1874-021",
+   "DocketCreationDate": "2026-09-23T10:15:41",
+   "DocketFilingDate": "2026-09-21T13:10:38",
+   "DocketDescription": "Notice of Non-Material Change in Status of AZ Solar 1, LLC, et al. under ER20-59, et al.",
+   "CommaDelimitedApplicantsList": "Mankato Energy Center, LLC",
+   "DocketSheetlink": "<a href=http://docketsearchsat.ferc.gov/docket_sheet.aspx?docket=ER10-1874&Subdocket=021 target=\"_blank\">Docket Sheet</a>"
+  },
+  {
+   "DocketID": 764968,
+   "DocketShortNumber": "ID-10800",
+   "SubDocketNumber": "000",
+   "DocketFullNumber": "ID-10800-000",
+   "DocketCreationDate": "2026-09-24T08:41:25",
+   "DocketFilingDate": "2026-09-23T08:30:00",
+   "DocketDescription": "Informational Report of Trina Zagar-Brown under ID-10800.",
+   "CommaDelimitedApplicantsList": "Zagar-Brown, Trina",
+   "DocketSheetlink": "<a href=http://docketsearchsat.ferc.gov/docket_sheet.aspx?docket=ID-10800&Subdocket=000 target=\"_blank\">Docket Sheet</a>"
+  }
+ ],
+ "ErrorList": []
+}

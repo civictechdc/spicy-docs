@@ -1,0 +1,27 @@
+{
+  "searchHits": [
+    {
+      "reference": "20240419-4000",
+      "acesssionNumber": "20240419-4000",
+      "parentAccessionNumber": "20240215-3020",
+      "documentId": 202404194000,
+      "docketNumber": "RM24-5-000",
+      "filedDate": "04/19/2024",
+      "docDate": "04/19/2024",
+      "postedDate": "04/19/2024",
+      "category": "Submittal",
+      "classTypes": "Comments/Protest | Rulemaking Comment",
+      "description": "Comments of the Electric Power Supply Association",
+      "affiliations": "Electric Power Supply Association",
+      "availCode": "PUB",
+      "fileName": "epsa.pdf",
+      "fileSize": 240117,
+      "transmittals": 1
+    }
+  ],
+  "totalHits": 3,
+  "numHits": 1,
+  "success": true,
+  "errorMessage": null,
+  "searchResultId": "SQ1-2-3"
+}

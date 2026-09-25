@@ -1,0 +1,40 @@
+{
+  "searchText": "*",
+  "searchFullText": true,
+  "searchDescription": true,
+  "dateSearches": [
+    {
+      "dateType": "filed_date",
+      "startDate": "2026-07-27",
+      "endDate": "2026-09-25"
+    }
+  ],
+  "availability": null,
+  "affiliations": [],
+  "categories": [],
+  "libraries": [],
+  "accessionNumber": null,
+  "eFiling": false,
+  "docketSearches": [
+    {
+      "docketNumber": "",
+      "subDocketNumbers": []
+    }
+  ],
+  "resultsPerPage": 100,
+  "curPage": 0,
+  "classTypes": [
+    {
+      "documentClass": "Approved Designation",
+      "documentType": "All"
+    },
+    {
+      "documentClass": "Application/Petition/Request",
+      "documentType": "All"
+    }
+  ],
+  "sortBy": "",
+  "groupBy": "NONE",
+  "idolResultID": "",
+  "allDates": false
+}

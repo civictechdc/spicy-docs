@@ -1,0 +1,37 @@
+[
+  {
+    "Class": "Comments/Protest",
+    "Type": "Settlement Comment",
+    "Library": "E/G/O/H/Gen",
+    "Category": "Submittal",
+    "Accession_Number": null
+  },
+  {
+    "Class": "Comments/Protest",
+    "Type": "Comment on Filing",
+    "Library": "E/G/O/H/Gen",
+    "Category": "Submittal",
+    "Accession_Number": null
+  },
+  {
+    "Class": "FERC Comment",
+    "Type": "Comment on Pending Legislation",
+    "Library": "E/G/O/H/Gen",
+    "Category": "Issuance",
+    "Accession_Number": null
+  },
+  {
+    "Class": "Comments/Protest",
+    "Type": "Rulemaking Comment",
+    "Library": "RM/O/Gen/H/G/E",
+    "Category": "Submittal",
+    "Accession_Number": null
+  },
+  {
+    "Class": "Uncertain",
+    "Type": "Untyped During RIMS II Conversion",
+    "Library": "H/Gen/E/G/O",
+    "Category": "Uncertain",
+    "Accession_Number": null
+  }
+]

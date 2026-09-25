@@ -1,0 +1,7 @@
+{
+    "apiUrl": "/eLibraryWebAPI/api/",
+    "applicationId": "52f6cc3e-3b73-4b1d-9668-05c32c17bf38",
+    "clientToken": "pubf6c30b2482a98640532213fe68c287c5",
+    "site": "ddog-gov.com",
+    "env": "prod"
+}

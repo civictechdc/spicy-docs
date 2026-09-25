@@ -1,0 +1,45 @@
+{
+  "searchHits": [
+    {
+      "reference": "20240418-4000",
+      "acesssionNumber": "20240418-4000",
+      "parentAccessionNumber": "20240215-3020",
+      "documentId": 202404184000,
+      "docketNumber": "RM24-5-000",
+      "filedDate": "04/18/2024",
+      "docDate": "04/18/2024",
+      "postedDate": "04/18/2024",
+      "category": "Submittal",
+      "classTypes": "Comments/Protest | Rulemaking Comment",
+      "description": "Comments of the American Public Power Association",
+      "affiliations": "American Public Power Association",
+      "availCode": "PUB",
+      "fileName": "comments.pdf",
+      "fileSize": 182044,
+      "transmittals": 1
+    },
+    {
+      "reference": "20240418-4001",
+      "acesssionNumber": "20240418-4001",
+      "parentAccessionNumber": "20240215-3020",
+      "documentId": 202404184001,
+      "docketNumber": "RM24-5-000",
+      "filedDate": "04/18/2024",
+      "docDate": "04/18/2024",
+      "postedDate": "04/18/2024",
+      "category": "Submittal",
+      "classTypes": "Comments/Protest | Rulemaking Comment",
+      "description": "Comments of the National Rural Electric Cooperative Association",
+      "affiliations": "National Rural Electric Cooperative Association",
+      "availCode": "PUB",
+      "fileName": "nreca.pdf",
+      "fileSize": 95331,
+      "transmittals": 1
+    }
+  ],
+  "totalHits": 3,
+  "numHits": 2,
+  "success": true,
+  "errorMessage": null,
+  "searchResultId": "SQ1-2-3"
+}
