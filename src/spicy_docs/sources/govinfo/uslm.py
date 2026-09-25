@@ -41,6 +41,14 @@ class UslmSourceError(ValueError):
     """The request or response cannot establish the selected USLM source."""
 
 
+class UslmIdentityError(UslmSourceError):
+    """A well-formed USLM document states another law or citation than the one requested.
+
+    Separate from a shape refusal (an HTML page served with HTTP 200, a missing
+    meta block), so a caller can report which of the two the publisher answered.
+    """
+
+
 def _positive(value: int, name: str, limit: int) -> int:
     if type(value) is not int or not 1 <= value <= limit:
         raise UslmSourceError(f"{name} must be an integer from 1 to {limit}")
@@ -304,10 +312,10 @@ def validate_public_law_xml(
     kind = scan.meta(_u("publicPrivate"), required=True)
     number = scan.meta(_u("docNumber"), required=True)
     if (congress, kind, number) != (str(selection.congress), selection.kind, str(selection.number)):
-        raise UslmSourceError("public law native identity differs from the request")
+        raise UslmIdentityError("public law native identity differs from the request")
     citations = scan.meta_values(_u("citableAs"))
     if _comparable(selection.citation) not in {_comparable(citation) for citation in citations}:
-        raise UslmSourceError("public law citable form differs from the request")
+        raise UslmIdentityError("public law citable form differs from the request")
     return UslmMetadata(
         "public-law",
         "pLaw",

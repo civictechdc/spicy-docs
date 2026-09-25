@@ -137,6 +137,16 @@ first. Rows published before the column carry NULL until their scope is
 captured again
 ([decision](decisions.md#us-code-section-join-keys-are-lower-cased-on-both-sides)).
 
+`laws` appends `uslm_citable_as_json`, `uslm_reason` and
+`uslm_reader_version`. Every attempted PLAW read states its outcome:
+`captured_partial` is a validated file that names no Statutes at Large
+citation (a private law, whose own `citableAs` is kept), `captured_refused` a
+`200` body the reader refused (another law's file, or not native USLM), and
+`request_failed` a read that established nothing. `not_requested` means no
+request was made. `table3_records.act_section` is NULL when a meaningful source
+row leaves its label blank; the `table3-native-rows-v2` reader keeps such rows
+instead of dropping them.
+
 `report_sections` preserves the source heading in its appended `heading`
 column. The older `agency_label` and `agency_key` columns remain in place but
 are NULL: the heading splitter does not resolve agency identities. Actual

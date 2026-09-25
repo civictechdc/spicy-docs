@@ -17,6 +17,7 @@ published before the column carry NULL until their scope is captured again.
 
 from __future__ import annotations
 
+import json
 import re
 from collections.abc import Mapping
 from typing import Any
@@ -30,7 +31,8 @@ _LAW_NUMBER = re.compile(r"(?P<congress>[1-9][0-9]{0,2})-(?P<number>[1-9][0-9]*)
 #: The PLAW bulkdata file grammar (``PLAW-119publ1.xml``), measured over every
 #: file in the 119th's folders; the package id is the stem.
 _PACKAGE_KINDS = {"public": "publ", "private": "pvtl"}
-USLM_OUTCOMES = ("captured", "unavailable", "not_requested")
+USLM_READER_VERSION = "laws-uslm-v2"
+USLM_OUTCOMES = ("captured", "captured_partial", "captured_refused", "request_failed", "unavailable", "not_requested")
 
 #: Both OLRC tables' appended join key, described once.
 _USC_SECTION_KEY = (
@@ -67,9 +69,8 @@ LAWS = table_contract(
         "update_date_including_text": "The publisher's updateDateIncludingText on the list row.",
         "url": "The publisher's own URL for the enacted measure.",
         "statutes_at_large_cite": (
-            "The Statutes at Large citation the PLAW USLM meta states in citableAs, spelled NNN Stat. NNN; "
-            "NULL exactly when uslm_outcome is not `captured` (the bulk folder lags the list route by several "
-            "laws). A captured file whose citableAs names no such citation is refused, never published here as NULL."
+            "The native Statutes at Large citation, when stated. NULL with captured_partial means the acquired "
+            "identity-matched USLM does not state this citation; see uslm_reason and uslm_citable_as_json."
         ),
         "statutes_at_large_volume": "The volume part of that citation.",
         "statutes_at_large_page": "The page part of that citation.",
@@ -79,9 +80,13 @@ LAWS = table_contract(
         "uslm_sha256": "Digest of the captured PLAW USLM bytes, so the citation is traceable to one file.",
         "uslm_observed_at": "When the PLAW USLM was captured.",
         "uslm_outcome": (
-            "`captured`, `unavailable` (the law's PLAW was absent from the bulkdata folder on the measured day: "
-            "the bulk lag) or `not_requested`; a NULL citation is read through this column, never as absence."
+            "captured or captured_partial retain validated native metadata; captured_refused retains a refused "
+            "capture without unvalidated metadata; request_failed records an attempted read without an accepted "
+            "body; unavailable records supported source absence; not_requested means no attempt."
         ),
+        "uslm_citable_as_json": "Every literal native USLM meta citableAs value, source order retained.",
+        "uslm_reason": "Bounded outcome reason token; NULL on complete capture or when no read was attempted.",
+        "uslm_reader_version": "Native mapping rule used for this attempted read; old or absent rules require rereading.",
     },
 )
 
@@ -130,7 +135,7 @@ TABLE3_RECORDS = table_contract(
         "act_date": "The act's date as the page states it.",
         "statutes_at_large_volume": "The volume the page states for the act.",
         "release_point": "The currency the page states in its Table III Tool banner.",
-        "act_section": "The act section this record classifies.",
+        "act_section": "The native act section; NULL when a meaningful source row leaves its label blank.",
         "record_volume": "The volume in this record's own statviewer link, where it carries one.",
         "record_page": "The Statutes at Large page for this record.",
         "usc_title": "The Code title the section went to; NULL where it went nowhere.",
@@ -166,20 +171,13 @@ def _split_law_number(law_number: object, congress: object) -> str:
     return match["number"]
 
 
-def _stat_cite(citable_as: tuple[str, ...]) -> tuple[str, str, str]:
-    """``(cite, volume, page)`` from the first ``NNN Stat. NNN`` in ``citableAs``; none is a refusal.
-
-    ``captured`` promises a citation: a validated PLAW whose meta names none
-    would otherwise publish a NULL that reads as the bulk lag. The pattern is
-    the one the legislative data map proved on one law (119-1); it has not
-    been surveyed across the 104 captured PLAWs of the 119th, so a refusal
-    here in production is an assumption held, not a corruption found.
-    """
+def _stat_cite(citable_as: tuple[str, ...]) -> tuple[str | None, str | None, str | None]:
+    """Read a stated Statutes citation without inventing one for a valid private law."""
     for citation in citable_as:
         match = STAT_CITE.fullmatch(citation.strip())
         if match is not None:
             return match[0], match["volume"], match["page"]
-    raise TableContractError(f"laws: the USLM meta's citableAs {citable_as!r} names no Statutes at Large citation")
+    return None, None, None
 
 
 def shape_law(
@@ -190,16 +188,22 @@ def shape_law(
     uslm_sha256: str | None = None,
     uslm_observed_at: str | None = None,
     uslm_outcome: str = "not_requested",
+    uslm_reason: str | None = None,
 ) -> Row:
     """One ``laws`` row from one law list record and one of its ``laws[]`` entries.
 
-    ``uslm`` is given exactly when ``uslm_outcome`` is ``captured``; its own congress, kind and number must agree with
-    the row or the join is refused, so a citation can never land on the wrong law.
+    ``uslm`` is given exactly when the read validated (``captured`` or ``captured_partial``); its own congress, kind
+    and number must agree with the row or the join is refused, so a citation can never land on the wrong law. The
+    outcome then follows from the file: ``captured`` when its meta states a Statutes at Large citation, otherwise
+    ``captured_partial`` with reason ``statutes_citation_not_stated`` (a private law's own ``citableAs`` is kept in
+    ``uslm_citable_as_json``). Without ``uslm``, ``uslm_outcome`` and ``uslm_reason`` say what the attempt found.
     """
+    if uslm_reason is not None and re.fullmatch(r"[a-z_]{1,128}", uslm_reason) is None:
+        raise TableContractError("laws: uslm_reason must be a bounded reason token")
     if uslm_outcome not in USLM_OUTCOMES:
         raise TableContractError(f"laws: uslm_outcome must be one of {USLM_OUTCOMES}")
-    if (uslm is not None) != (uslm_outcome == "captured"):
-        raise TableContractError("laws: uslm is given exactly when uslm_outcome is captured")
+    if (uslm is not None) != (uslm_outcome in ("captured", "captured_partial")):
+        raise TableContractError("laws: uslm is given exactly when uslm_outcome is captured or captured_partial")
     congress = record.get("congress")
     law_type = _law_type(law.get("type"))
     number = _split_law_number(law.get("number"), congress)
@@ -212,6 +216,8 @@ def shape_law(
         if stated != (str(congress), law_type, number):
             raise TableContractError(f"laws: USLM meta states {stated}, not {(str(congress), law_type, number)}")
         cite, volume, page = _stat_cite(uslm.citable_as)
+        uslm_outcome = "captured" if cite is not None else "captured_partial"
+        uslm_reason = None if cite is not None else "statutes_citation_not_stated"
     return {
         "law_id": law_id(congress, law_type, number),
         "congress": text(congress),
@@ -240,6 +246,9 @@ def shape_law(
         "uslm_sha256": text(uslm_sha256),
         "uslm_observed_at": text(uslm_observed_at),
         "uslm_outcome": uslm_outcome,
+        "uslm_citable_as_json": None if uslm is None else json.dumps(list(uslm.citable_as), ensure_ascii=False),
+        "uslm_reason": uslm_reason,
+        "uslm_reader_version": None if uslm_outcome == "not_requested" else USLM_READER_VERSION,
     }
 
 

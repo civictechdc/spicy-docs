@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Callable, Container, Generator, Iterator
-from dataclasses import dataclass
+from dataclasses import astuple, dataclass
 from html.parser import HTMLParser
 from typing import TYPE_CHECKING
 from urllib.parse import parse_qs, urlsplit
@@ -61,6 +61,8 @@ _TABLE3_CONTEXT = ("congress", "statutesatlargevolume", "textdate", "prioract", 
 #: the very span that states the act key.
 _TABLE3_NAVIGATION = ("table3congresses.htm", "table3statutesatlarge.htm", "table3years.htm", ".pdf")
 _TABLE3_ROW_CLASS = re.compile(r"table3row_(?:odd|even)")
+TABLE3_READER_VERSION = "table3-native-rows-v2"
+
 _TABLE3_CURRENCY = re.compile(r"Table III Tool \[Current through (?P<release_point>[0-9]+-[0-9]+)")
 
 
@@ -73,7 +75,7 @@ class Table3Record:
     "we know this went nowhere" into "we do not know".
     """
 
-    act_section: str
+    act_section: str | None
     statutes_at_large_volume: str | None = None
     statutes_at_large_page: str | None = None
     usc_title: str | None = None
@@ -154,7 +156,9 @@ class _Table3Reader(HTMLParser):
             self._span = None
             self._text = []
         elif tag == "tr" and self._row is not None:
-            if self._row.get("actsection"):
+            # Native row structure supplies identity; a missing act label must not
+            # erase a stated Code reference (for example the retained 119-37 page).
+            if any(self._row.values()) or self._links:
                 if len(self.rows) >= self.max_rows:
                     raise UsCodeSourceError("Table III page states more rows than max_rows")
                 self.rows.append(self._row)
@@ -203,16 +207,19 @@ def parse_table3_page(
                 volume = (query.get("volume") or [""])[0] or None
                 page = (query.get("page") or [""])[0] or None
                 break
-        records.append(
-            Table3Record(
-                act_section=row["actsection"],
-                statutes_at_large_volume=volume,
-                statutes_at_large_page=page or row.get("statutesatlargepage") or None,
-                usc_title=row.get("unitedstatescodetitle") or None,
-                usc_section=row.get("unitedstatescodesection") or None,
-                status=row.get("unitedstatescodestatus") or None,
-            )
+        record = Table3Record(
+            act_section=row.get("actsection") or None,
+            statutes_at_large_volume=volume,
+            statutes_at_large_page=page or row.get("statutesatlargepage") or None,
+            usc_title=row.get("unitedstatescodetitle") or None,
+            usc_section=row.get("unitedstatescodesection") or None,
+            status=row.get("unitedstatescodestatus") or None,
         )
+        # A row whose only content is a link to something other than the
+        # Statutes viewer states no observation; publishing it would be an
+        # all-NULL record with a position of its own.
+        if any(value is not None for value in astuple(record)):
+            records.append(record)
     return Table3Page(
         "table3-act",
         key,

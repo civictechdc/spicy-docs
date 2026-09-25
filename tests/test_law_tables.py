@@ -34,6 +34,8 @@ from spicy_docs.schemas.tables import (
 )
 from spicy_docs.sources.govinfo.uslm import (
     PublicLawSelection,
+    UslmIdentityError,
+    UslmSourceError,
     public_law_xml_locator,
     validate_public_law_xml,
 )
@@ -95,22 +97,33 @@ def test_a_null_citation_is_read_through_its_outcome_column():
     assert lagged["statutes_at_large_cite"] is None and lagged["uslm_outcome"] == "unavailable"
 
 
-def test_a_captured_uslm_that_names_no_statutes_citation_is_refused():
-    """A ``captured`` outcome whose USLM meta names no citation is refused, not published as a null."""
-    # ``captured`` promises a citation; a meta without one must not publish a NULL that reads as the bulk lag.
-    with pytest.raises(TableContractError, match="names no Statutes at Large citation"):
-        shape_law(
-            LAW_RECORD,
-            LAW_RECORD["laws"][0],
-            uslm=replace(USLM, citable_as=("Public Law 119-1",)),
-            uslm_outcome="captured",
-        )
+def test_a_captured_uslm_without_a_statutes_citation_retains_native_metadata():
+    row = shape_law(
+        LAW_RECORD,
+        LAW_RECORD["laws"][0],
+        uslm=replace(USLM, citable_as=("Public Law 119-1",)),
+        uslm_outcome="captured",
+        uslm_sha256=USLM_SHA256,
+        uslm_observed_at=OBSERVED_AT,
+    )
+    assert row["uslm_outcome"] == "captured_partial"
+    assert row["uslm_reason"] == "statutes_citation_not_stated"
+    assert row["statutes_at_large_cite"] is None
+    assert row["uslm_sha256"] == USLM_SHA256 and row["approved_date"] == USLM.approved_date
+    assert json.loads(row["uslm_citable_as_json"]) == ["Public Law 119-1"]
 
 
 def test_the_outcome_and_the_uslm_record_travel_together():
     """The USLM record and a non-``not_requested`` outcome must travel together, and an unknown outcome is refused."""
     for outcome in USLM_OUTCOMES:
-        assert outcome in ("captured", "unavailable", "not_requested")
+        assert outcome in (
+            "captured",
+            "captured_partial",
+            "captured_refused",
+            "request_failed",
+            "unavailable",
+            "not_requested",
+        )
     with pytest.raises(TableContractError, match="exactly when"):
         shape_law(LAW_RECORD, LAW_RECORD["laws"][0], uslm=USLM, uslm_outcome="not_requested")
     with pytest.raises(TableContractError, match="exactly when"):
@@ -293,3 +306,67 @@ def test_the_detail_wins_the_subcommittee_fold_even_when_it_lists_none():
     assert emptied["subcommittee_count"] == "0" and read_json_column(emptied["subcommittees_json"]) == []
     with pytest.raises(TableContractError, match="needs a systemCode"):
         shape_committee(list_row, {**detail, "subcommittees": [{"name": "no code"}]})
+
+
+@pytest.mark.parametrize("number", [1, 2])
+def test_native_private_laws_retain_their_actual_citations(number):
+    body = (FIXTURES / f"uslm/plaw-119pvtl{number}.xml").read_bytes()
+    selection = PublicLawSelection(119, "private", number)
+    meta = validate_public_law_xml(body, selection=selection, final_url=public_law_xml_locator(selection))
+    row = shape_law(
+        LAW_RECORD,
+        {"number": f"119-{number}", "type": "Private Law"},
+        uslm=meta,
+        uslm_outcome="captured",
+        uslm_sha256=digest(body.decode()),
+        uslm_observed_at=OBSERVED_AT,
+    )
+    assert row["uslm_outcome"] == "captured_partial"
+    assert row["approved_date"] == "2026-03-26"
+    assert row["uslm_title"] == meta.title
+    assert json.loads(row["uslm_citable_as_json"]) == [f"Private Law 119–{number}"]
+    assert row["statutes_at_large_cite"] is None
+
+
+def test_table3_preserves_meaningful_native_rows_without_act_labels():
+    body = (FIXTURES / "uscode/table3-119_37.htm").read_bytes()
+    page = parse_table3_page(body, key="119-37")
+    assert len(page.records) == 110  # Exact native data-row count in this retained publisher page.
+    blank = [
+        (r.statutes_at_large_page, r.usc_title, r.usc_section, r.status) for r in page.records if r.act_section is None
+    ]
+    assert blank == [
+        ("511", "7", "2254", None),
+        ("534", "42", "1769g", None),
+        ("534", "42", "1758", None),
+        ("563", "2", "60a nt", "Elim."),
+    ]
+    # A completely empty decorative data row carries no source observation.
+    empty = b'<tr class="table3row_even"><td class="actsection"></td></tr>'
+    decorated = body.replace(b"<!-- field-end:documentdata -->", empty + b"<!-- field-end:documentdata -->")
+    assert decorated != body
+    assert parse_table3_page(decorated, key="119-37").records == page.records
+
+
+def test_table3_drops_a_row_whose_only_content_is_a_non_statute_link():
+    body = (FIXTURES / "uscode/table3-119_37.htm").read_bytes()
+    page = parse_table3_page(body, key="119-37")
+    linked = b'<tr class="table3row_odd"><td class="actsection"><a href="/view.xhtml?req=nothing">&nbsp;</a></td></tr>'
+    decorated = body.replace(b"<!-- field-end:documentdata -->", linked + b"<!-- field-end:documentdata -->")
+    assert decorated != body
+    assert parse_table3_page(decorated, key="119-37").records == page.records
+
+
+def test_identity_and_shape_refusals_are_distinct_errors():
+    """A USLM file for another law is an identity refusal; an HTML page is only a shape refusal."""
+    body = (FIXTURES / "uslm/plaw-119pvtl1.xml").read_bytes()
+    other = PublicLawSelection(119, "private", 2)
+    with pytest.raises(UslmIdentityError, match="native identity"):
+        validate_public_law_xml(body, selection=other, final_url=public_law_xml_locator(other))
+    with pytest.raises(UslmSourceError) as refused:
+        validate_public_law_xml(
+            b"<html><body>not the requested native XML</body></html>",
+            selection=other,
+            final_url=public_law_xml_locator(other),
+        )
+    assert not isinstance(refused.value, UslmIdentityError)
