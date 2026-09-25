@@ -33,6 +33,7 @@ docs/sources/billstatus-guide.md	Read BILLSTATUS guide code tables	doc
 docs/sources/cbo.md	CBO cost estimates	doc
 docs/sources/cfr-roster-index.md	Read CFR agency and subject metadata	doc
 docs/sources/cfr.md	Capture CFR and eCFR XML	doc
+docs/sources/cftc-comments.md	Capture CFTC comment-portal comments	doc
 docs/sources/committee-rosters.md	Capture committee rosters and today's assignments	doc
 docs/sources/congress-bill-tree.md	Read a bill's sections and diff two versions	doc
 docs/sources/congress-bill-versions.md	Bill-version codes, format choice and bill PDFs	doc
@@ -41,6 +42,7 @@ docs/sources/congress-bulk-status.md	Back-fill BILLSTATUS one Congress and one b
 docs/sources/congress-votes.md	House Clerk and Senate LIS roll-call votes	doc
 docs/sources/crs-files.md	Capture a CRS report file	doc
 docs/sources/ecfr-authority.md	eCFR authority metadata	doc
+docs/sources/fcc-ecfs-attachments.md	Capture FCC ECFS filing documents, and backfill the filings that declare them	doc
 docs/sources/fec-bulk.md	Publish retained FEC bulk originals	doc
 docs/sources/fec-filing-fields.md	Label retained FEC filing fields	doc
 docs/sources/fec-rows.md	Publish rows from retained FEC originals	doc
@@ -49,6 +51,7 @@ docs/sources/federal-register-body-sources.md	Federal Register body sources and 
 docs/sources/federal-register-reference.md	Federal Register reference data	doc
 docs/sources/federal-register-topics.md		doc
 docs/sources/federal-register.md	Federal Register acquisition	doc
+docs/sources/ferc.md	FERC eLibrary: comments and docket documents from FERC's own systems	doc
 docs/sources/gao-files.md	GAO report files	doc
 docs/sources/gao.md	GAO product pages	doc
 docs/sources/govinfo-bodies.md	GovInfo package bodies and acquisition	doc
@@ -61,6 +64,7 @@ docs/sources/public-comments.md	Captured public comments	doc
 docs/sources/raw-readers.md	Raw readers and projections	doc
 docs/sources/regulations-gov-api.md	Regulations.gov through the official API	doc
 docs/sources/regulations-gov.md	Regulations.gov through Mirrulations	doc
+docs/sources/sec-comments.md	Capture SEC rulemaking comments	doc
 docs/sources/senate-secretary-report.md	Report of the Secretary of the Senate	doc
 docs/sources/supreme-court.md	Capture Supreme Court slip opinions	doc
 docs/sources/unified-agenda.md	Capture a Unified Agenda edition	doc
@@ -68,6 +72,7 @@ docs/sources/uscode-classification.md	Capture the OLRC classification tables	doc
 docs/sources/uscode-references.md	Read U.S. Code references and source credits	doc
 docs/sources/uscode-structure.md	Read retained U.S. Code structure	doc
 docs/sources/uscode.md	Capture the U.S. Code from its publisher	doc
+docs/sources/usitc-edis.md	USITC EDIS: investigation dockets, documents and attachments from EDIS's own web service	doc
 docs/sources/uslm-laws.md	Capture public laws and statute compilations	doc
 docs/superpowers/specs/2026-08-25-source-native-release-spec.md	SpicyDocs source-native release 2.0	doc
 docs/tables.md	Table contracts	doc
@@ -142,7 +147,7 @@ src/spicy_docs/reading/markup.py	Ordered markup observations with original-byte 
 src/spicy_docs/reading/media_types.py	Media types stated by publishers, with a deterministic URL-suffix fallback to application/octet-stream.	src
 src/spicy_docs/reading/paged_json.py	Bounded traversal of a publisher's paged JSON list operation with exact page evidence.	src
 src/spicy_docs/reading/parquet_footer.py	Footer-only Parquet facts: column names and row count without a data scan.	src
-src/spicy_docs/reading/pdf_bytes.py	The two PDF facts every document route checks: the magic header and the trailer.	src
+src/spicy_docs/reading/pdf_bytes.py	The PDF facts document routes check: the magic header, the trailer, the linearization length and the final xref.	src
 src/spicy_docs/reading/refusals.py	Carry exact refused response bytes to the caller without changing the error.	src
 src/spicy_docs/reading/rss.py	Shared RSS 2.0 envelope reading: root/version, one channel, item elements, namespace-safe text.	src
 src/spicy_docs/reading/s3_listing.py	Read an explicitly scoped public S3 XML listing without fetching objects.	src
@@ -239,6 +244,11 @@ src/spicy_docs/sources/cfr/edition.py	Annual publication facts from GovInfo pack
 src/spicy_docs/sources/cfr/models.py	Explicit CFR source requests and the native facts their XML can establish.	src
 src/spicy_docs/sources/cfr/subject_index.py	Read Archives CFR subject-index markup without assigning terms to parts.	src
 src/spicy_docs/sources/cfr_section_number.py	The printed CFR ``part.section`` number grammar, importable without the CFR source package.	src
+src/spicy_docs/sources/cftc_comments/__init__.py	CFTC public comments on proposed rules, from the Commission's own portal.	src
+src/spicy_docs/sources/cftc_comments/acquisition.py	Bounded capture of CFTC comment-portal pages with optional wall recovery.	src
+src/spicy_docs/sources/cftc_comments/attachments.py	Comment-letter PDFs from ``comments.cftc.gov/Handlers/PdfHandler.ashx``, one bounded capture at a time.	src
+src/spicy_docs/sources/cftc_comments/pages.py	CFTC comment-portal pages as comments.cftc.gov states them, read in one linear pass.	src
+src/spicy_docs/sources/cftc_comments/reader.py	The CFTC comments portal as a :class:`~spicy_docs.sources.base.Reader`.	src
 src/spicy_docs/sources/congress/__init__.py	Congress.gov acquisition commands.	src
 src/spicy_docs/sources/congress/bill_acquisition.py	Capture one bill's status and explicitly selected XML text from GovInfo.	src
 src/spicy_docs/sources/congress/bill_pdf.py	Fetch one bill version's PDF as a GovInfo BILLS package body.	src
@@ -263,7 +273,10 @@ src/spicy_docs/sources/courtlistener/http.py	HTTP admission for one CourtListene
 src/spicy_docs/sources/courtlistener/listing.py	Pure parsing of CourtListener's bulk-object listing and filename conventions.	src
 src/spicy_docs/sources/courtlistener/local.py	Decode a retained CourtListener export in record-aligned pieces, parsed by DuckDB in parallel.	src
 src/spicy_docs/sources/courtlistener/search.py	CourtListener v4 search: RECAP dockets and opinion clusters, page by page with exact evidence.	src
-src/spicy_docs/sources/fcc_ecfs.py	FCC ECFS proceedings and filings: offset walks over explicit date windows with exact evidence.	src
+src/spicy_docs/sources/fcc_ecfs.py	FCC ECFS proceedings and filings: explicit date selections with exact page evidence.	src
+src/spicy_docs/sources/fcc_ecfs_attachments.py	FCC ECFS filing documents: one bounded file per publisher-declared download URL.	src
+src/spicy_docs/sources/fcc_ecfs_capture.py	Durable FCC filing-to-document capture over the existing blob store.	src
+src/spicy_docs/sources/fcc_ecfs_filings.py	Counted FCC filing walks that partition crowded queries by submission timestamp.	src
 src/spicy_docs/sources/fec/__init__.py	Official FEC metadata and separately selected asset acquisition.	src
 src/spicy_docs/sources/fec/api_operations.json		config
 src/spicy_docs/sources/fec/assets.py	Select declared equivalent renditions, resolve retained embedded text, and check original prefixes.	src
@@ -296,6 +309,13 @@ src/spicy_docs/sources/federal_register/profile.py	Federal Register acquisition 
 src/spicy_docs/sources/federal_register/reference_data.py	Literal Federal Register agency, OpenAPI enum and type-facet observations.	src
 src/spicy_docs/sources/federal_register/replay.py	Republish a Federal Register release from its retained evidence, entirely offline.	src
 src/spicy_docs/sources/federal_register/topics.py	Literal rows from the mutable, undocumented FederalRegister.gov topics API.	src
+src/spicy_docs/sources/ferc/__init__.py	FERC sources: comments, new dockets, docket sheets, file lists, originals and generated PDFs from eLibrary.	src
+src/spicy_docs/sources/ferc/download.py	FERC eLibrary DownloadPDF: one bounded generated PDF per accession, POSTed exactly as the SPA posts it.	src
+src/spicy_docs/sources/ferc/elibrary.py	FERC eLibrary WebAPI routes and body-paged walks, each answer captured exactly.	src
+src/spicy_docs/sources/ferc/originals.py	One public P8 original from a retained eLibrary accession file list.	src
+src/spicy_docs/sources/ferc/readers.py	Reader connectors over the eLibrary routes: comments, accession file lists, new-docket windows and docket sheets.	src
+src/spicy_docs/sources/ferc/vocabulary.py	FERC's own docket-prefix and document class/type vocabularies, pinned with their publication identity.	src
+src/spicy_docs/sources/firecrawl.py	Bounded, secret-safe raw HTTP capture through Firecrawl's v2 scrape endpoint.	src
 src/spicy_docs/sources/gao/__init__.py	GAO product-page acquisition profile.	src
 src/spicy_docs/sources/gao/files.py	GAO report files on ``files.gao.gov``: the keyless route to a product's own bytes.	src
 src/spicy_docs/sources/gao/native.py	Exact GAO product-page evidence for one source-native release.	src
@@ -331,6 +351,11 @@ src/spicy_docs/sources/regulations_gov/scope.py	Regulations.gov query scope, com
 src/spicy_docs/sources/regulations_gov/validation.py	Validate exact Regulations.gov object fields and nested source structures.	src
 src/spicy_docs/sources/sam.py	SAM.gov entity registrations, page by page with exact evidence.	src
 src/spicy_docs/sources/sam_extract.py	SAM.gov bulk entity extracts: trigger, poll, defensive parse.	src
+src/spicy_docs/sources/sec_comments/__init__.py	SEC rulemaking public comments from sec.gov's own comment pages: index, listings, files, reader.	src
+src/spicy_docs/sources/sec_comments/acquisition.py	Keyless, paced capture of SEC comment pages and files under the publisher's fair-access policy.	src
+src/spicy_docs/sources/sec_comments/join.py	The SEC comments join: rulemakings, retained regulations.gov SEC documents, and SEC comment files.	src
+src/spicy_docs/sources/sec_comments/pages.py	SEC rulemaking and comment-listing pages as sec.gov states them, read in one linear pass.	src
+src/spicy_docs/sources/sec_comments/reader.py	SEC rule pages discover listings, which state the files captured with their evidence.	src
 src/spicy_docs/sources/source_domains.py	Compare published column values with pinned publisher documentation.	src
 src/spicy_docs/sources/supreme_court.py	Supreme Court slip opinions: one term index, then the exact PDFs that index names.	src
 src/spicy_docs/sources/unified_agenda/__init__.py	Unified Agenda editions from reginfo.gov: one XML file per semiannual edition, identity proved per record.	src
@@ -348,6 +373,15 @@ src/spicy_docs/sources/uscode/references.py	Literal U.S. Code references and sou
 src/spicy_docs/sources/uscode/structure.py	Literal U.S. Code structure observations from retained OLRC XML.	src
 src/spicy_docs/sources/uscode/table3.py	Table III: per-act pages, the chain of acts they link, and the bare-fragment bulk member.	src
 src/spicy_docs/sources/uscode/titles.py	Release-point title USLM: native identity proven against the request.	src
+src/spicy_docs/sources/usitc_edis/__init__.py	USITC EDIS investigation dockets: XML list pages, attachment metadata and the public notification feed.	src
+src/spicy_docs/sources/usitc_edis/api.py	Bounded capture of the EDIS `/data` XML routes: explicit pages, exact bytes, a named transport seam.	src
+src/spicy_docs/sources/usitc_edis/attachments.py	The EDIS attachment PDF route: ``/data/download/{documentId}/{attachmentId}``.	src
+src/spicy_docs/sources/usitc_edis/bulk.py	Validate a retained EDIS bulk ZIP against its index and selected attachment metadata.	src
+src/spicy_docs/sources/usitc_edis/credentialed.py	One bounded credentialed EDIS attachment download, direct or through Zyte.	src
+src/spicy_docs/sources/usitc_edis/feed.py	The EDIS document notification feed: RSS 2.0 items for newly arriving documents.	src
+src/spicy_docs/sources/usitc_edis/reader.py	One investigation's docket as records: identity proven first, every document with its attachments.	src
+src/spicy_docs/sources/usitc_edis/records.py	EDIS `/data` XML rows: one pass, publisher spellings, and the URL grammar each row states.	src
+src/spicy_docs/sources/walled_fetch.py	One fetch ladder for walled publishers, with one canonical wall vocabulary.	src
 src/spicy_docs/sources/zyte.py	Bounded, secret-safe raw HTTP capture through Zyte.	src
 src/spicy_docs/storage/__init__.py	Local blob storage and immutable filesystem publication.	src
 src/spicy_docs/storage/blobs.py	Content-addressed blob read/write boundary for source-native publication, with bounded verified reads.	src
@@ -359,6 +393,7 @@ src/spicy_docs/transport/captured.py	The exact captured response and its refusal
 src/spicy_docs/transport/credentials.py	Credential-file reading and scrubbing shared by acquisition commands.	src
 src/spicy_docs/transport/download.py	Bounded HTTP capture and streamed assets over the shared Rulespec writer.	src
 src/spicy_docs/transport/http.py	HTTPX acquisition and retry rules, loaded only for HTTP-backed operations.	src
+src/spicy_docs/transport/provider_api.py	Rules shared by the credentialed acquisition-provider clients (Zyte, Firecrawl).	src
 src/spicy_docs/transport/retry.py	Bounded HTTP retry timing shared by acquisition commands and tools.	src
 src/spicy_docs/transport/source_acquirer.py	Shared shape for explicit source acquirers: budget checks, client lifecycle, capture then validate.	src
 src/spicy_docs/transport/zyte.py	Route one bounded capture through Zyte as an injectable ``httpx`` transport.	src
@@ -418,6 +453,8 @@ tests/test_cfr_section_ancestry.py	Annual CFR sections take their part from the 
 tests/test_cfr_sources.py	CFR request locators and response checks retain source dates and refuse false identity.	test
 tests/test_cfr_subject_index.py	CFR subject-index HTML: literal source markup, anomalies and original-byte positions.	test
 tests/test_cfr_zero_parts.py	Part zero is published and fits the existing Rulespec identifier space.	test
+tests/test_cftc_comments.py	CFTC comments portal pages, captures and the walk, offline against pinned fixtures.	test
+tests/test_cftc_pdf_bounds_tool.py	CFTC PDF measurements enforce sample bounds and retain successful and failed outcomes offline.	test
 tests/test_citation_grammar.py	The single citation grammar, and the two defects the port fixed.	test
 tests/test_citations.py	The citation rules and the two activity reports they are pinned on.	test
 tests/test_cli_list_pages.py	One command walks any registered list route: exact page blobs, receipt rows, and refusals that exit non-zero.	test
@@ -452,7 +489,11 @@ tests/test_document_capture_xml.py	Full structural reversibility over every reta
 tests/test_download_public_fallback.py	One public-site fallback shared by metadata capture and original downloads.	test
 tests/test_dry_audit_tool.py	The dry-audit diagnostic must find edited copies without treating every shape as equal.	test
 tests/test_ecfr_authority.py	Known source excerpts and counterexamples for raw AUTH metadata capture.	test
-tests/test_fcc_ecfs.py	FCC ECFS routes walk explicit date windows by offset and end at the first short page.	test
+tests/test_fcc_ecfs.py	FCC low-level page routes preserve following-day bounds and stop at a short page.	test
+tests/test_fcc_ecfs_attachments.py	FCC ECFS filing documents read their filings row's declarations and prove their bytes.	test
+tests/test_fcc_ecfs_backfill_tool.py	The FCC ECFS backfill driver plans date slices, resumes verified outputs, and only fetches when told to.	test
+tests/test_fcc_ecfs_capture.py	The FCC operator path replays pinned pages and keeps durable, verified document outcomes.	test
+tests/test_fcc_ecfs_filings.py	FCC mirror traversal proves bounded leaves and reconciles inclusive timestamp partitions.	test
 tests/test_fec.py	FEC metadata/body separation, source paging and bounded acquisition.	test
 tests/test_fec_agency.py	Legacy report links published by the current FEC agency-report index.	test
 tests/test_fec_bulk_dictionary.py	Ordered bulk dictionaries retain the source cells that justify each name.	test
@@ -477,8 +518,13 @@ tests/test_federal_register_request_window.py	Current Federal Register requests 
 tests/test_federal_register_subjects.py	Publisher-shaped regression cases moved from SpicySearch with their source IDs.	test
 tests/test_federal_register_topics.py	Literal topics observations, source bounds and explicit mocked acquisition.	test
 tests/test_federal_register_xml_acquisition.py	Check XML preference without hiding refusals or resetting fetch bounds.	test
+tests/test_ferc_discovery.py	Date/class discovery retains native vocabulary and proves a complete, replayable walk.	test
+tests/test_ferc_download.py	FERC eLibrary DownloadPDF and P8 originals: bounded POSTed files, and the pinned FERC vocabularies.	test
+tests/test_ferc_elibrary.py	FERC eLibrary routes answer envelope JSON, page by body-advanced curPage, and record their empties.	test
 tests/test_fetch_crs_summaries.py	Fixture coverage for ``src/spicy_docs/sources/congress/crs_summaries.py``.	test
+tests/test_firecrawl.py	The shared Firecrawl adapter bounds bytes, captures provider provenance, and never surfaces its key.	test
 tests/test_fr_discarded_distinctness.py	Check discarded-observation analysis with synthetic Federal Register releases.	test
+tests/test_fr_doc_number_normalization.py	Cross-parity between the two public Federal Register document-number normalizers.	test
 tests/test_gao_files.py	GAO report files are selected by product ID and proved by their own bytes.	test
 tests/test_gao_product_pages_source_native.py	GAO product pages remain exact source evidence, not inferred topic tags.	test
 tests/test_gao_refused_responses.py	GAO refusals carry exact bounded target bytes without becoming valid pages.	test
@@ -521,6 +567,8 @@ tests/test_optional_dependencies.py	Core operations and setup failures with opti
 tests/test_paged_json.py	The shared paged-JSON reader: exact page capture, credential handling, traversal refusals and pooled walks.	test
 tests/test_pdf_family_rollup_tool.py	The PDF-family rollup's rules and the sidecar the report is written from.	test
 tests/test_pdf_yield_mods_recheck_tool.py	The MODS recheck's readings and the sidecar the report is written from.	test
+tests/test_provider_api.py	Provider-client refusals never chain to an exception that holds the credential or the provider payload.	test
+tests/test_proxy_client_smoke.py	The proxy client smoke harness: one bounded fetch per target, one fallback retry, scrubbed dated receipts.	test
 tests/test_public_table.py	Source-native-backed public Parquet and DuckDB behavior.	test
 tests/test_reader_closure.py	Reader imports stay independent of acquisition and optional table libraries.	test
 tests/test_reconstruction.py	Reconstruction: the profile registry, the evidence model, the parser, the serializer, and the five findings.	test
@@ -538,9 +586,14 @@ tests/test_report_sections.py	Parametrized ports of BillTrax's two committee-rep
 tests/test_retained_refusals.py	Retained refusals keep response evidence safe and recoverable.	test
 tests/test_sam_and_usaspending.py	SAM.gov and USAspending list routes: placeholder credentials dropped, POST pages recorded.	test
 tests/test_sam_extract.py	Hermetic tests for the SAM.gov bulk-extract path (no network).	test
+tests/test_sec_comments.py	SEC comment pages keep the publisher's spellings, prove their identity from their own statements, and never read an…	test
+tests/test_sec_comments_join.py	The SEC comments join connects rulemakings, retained mirror SEC documents, and comment files.	test
+tests/test_sec_comments_join_coverage_tool.py	SEC coverage receipts count actual mirror documents and retain the Federal Register chain independently.	test
+tests/test_sec_comments_rule_page_probe_tool.py	SEC probe receipts survive failures, requests go through the SEC acquirer, and trimming keeps the parser's statements.	test
 tests/test_section_diff.py	The DeltaTrack diff adapter: the rows it shapes, the provenance it keeps, and what upstream decides.	test
 tests/test_senate_expenditure_tables_tool.py	Pins the Senate expenditure census sidecar against the note that quotes it and an independent read of the print.	test
 tests/test_senate_expenditures.py	The Secretary of the Senate's ruled tables, read from two bounded page ranges.	test
+tests/test_source_acquirer.py	Shared request budgets and pacing include source-owned external transports.	test
 tests/test_source_coverage.py	Coverage facts stay bound to requested selectors and admitted source policies.	test
 tests/test_source_domain_drift.py	The documented-versus-observed enumeration gate.	test
 tests/test_source_helpers.py	The shared checks every document route calls: the final URL and the PDF bytes.	test
@@ -567,9 +620,12 @@ tests/test_uscode_archive.py	Archive delivery preserves the checked bytes withou
 tests/test_uscode_classification.py	OLRC classification tables prove their own Congress, session and rows.	test
 tests/test_uscode_references.py	scan_uscode_references retains literal USLM observations, including unfamiliar references.	test
 tests/test_uscode_structure.py	scan_uscode_structure retains native source facts; legal normalization and attestation remain downstream.	test
+tests/test_usitc_edis.py	USITC EDIS `/data` XML routes: one pilot investigation read end to end, refusals and evidence retained.	test
+tests/test_usitc_edis_bulk.py	A retained EDIS index binds every ZIP PDF to expected source attachment metadata.	test
 tests/test_uslm_acquisition.py	USLM source requests preserve exact responses, bounds and refusal evidence.	test
 tests/test_uslm_bill_renditions.py	Pin the five-package USLM bill-rendition measurement (gap B7's proof).	test
 tests/test_uslm_capture_example.py	The runnable USLM capture example retains exact bytes and truthful failure evidence.	test
+tests/test_walled_fetch.py	The walled fetch ladder: rung order, wall escalation, absence short-circuit, and scrubbed exhaustion.	test
 tests/test_xml_observations.py	Current-element capture matches the ancestry snapshot without copying it.	test
 tests/test_zip_archive.py	Expansion refusals happen before CRC decompression, even for ignored entries.	test
 tests/test_zyte_transport.py	The shared Zyte adapter bounds bytes, captures proxy provenance, and never surfaces its credential.	test
@@ -578,12 +634,15 @@ tools/analysis/__init__.py	Repository diagnostics that produce reproducible corp
 tools/analysis/audit_bill_identify.py	Measure how well bill-signal extraction reads real bill text, per bill type.	src
 tools/analysis/bill_action_relationship.py	Is a House activity report's *bill-action relationship* extractable, and what would it join to?	src
 tools/analysis/bill_html_xml_gap.py	Measure how far a bill's HTML rendition is from its XML, to size the ``bill_dtd`` profile.	src
+tools/analysis/cftc_pdf_bounds.py	Measure CFTC comment-letter PDF sizes and prove one full download through the wall.	src
 tools/analysis/compare_source_native_releases.py	Compare published records before and after a producer change.	src
 tools/analysis/cross_filing_census.py	Count duplicate identities and cross-filings in source-native releases.	src
 tools/analysis/document_capture.py	Worked conversions of real federal documents into the DocumentCapture v1 shape.	src
 tools/analysis/document_capture_pdf_tables.py	PDF table observations beside DocumentCapture's line-based text stream.	src
 tools/analysis/document_capture_sources.py	Offline source-record mapping for the bounded worked captures.	src
 tools/analysis/dry_audit.py	Find duplication candidates without importing or executing the scanned code.	src
+tools/analysis/fcc_ecfs_backfill.py	Plan and execute FCC ECFS filings date-window slices from a start date to today.	src
+tools/analysis/ferc_search_capture.py	Retain one bounded FERC search and its live vocabulary; replay completion offline.	src
 tools/analysis/fr_discarded_distinctness.py	Compare Federal Register observations discarded by historical identity policy 1.0.	src
 tools/analysis/govinfo_granule_census.py	Compare Federal Register document numbers with GovInfo granule ids by issue.	src
 tools/analysis/govinfo_resolve_unmatched.py	Check a keyed GovInfo listing for identifiers left unmatched by the MODS census.	src
@@ -604,8 +663,11 @@ tools/analysis/measure_document_capture_xml.py	Measure full capture XML reversib
 tools/analysis/observation_census.py	Census the multi-observation record identities in one published release.	src
 tools/analysis/pdf_family_rollup.py	Measure what the PDF-only source families would add to the hosted tables.	src
 tools/analysis/pdf_yield_mods_recheck.py	Re-check the PDF-family rollup's "beyond the index" figures against the package MODS.	src
+tools/analysis/proxy_client_smoke.py	Probe each publisher target once through one proxy provider (Zyte or Firecrawl) and record the answers.	src
 tools/analysis/reconstruction_benchmark.py	Build the CFR paired corpus, reconstruct each section from its PDF, and score it against the published XML.	src
 tools/analysis/record_communications_overlap.py	Score the Record parse rule against the publisher's own decomposition, field by field.	src
+tools/analysis/sec_comments_join_coverage.py	Measure the SEC comments join coverage over the retained releases, offline, through the join's own indexes.	src
+tools/analysis/sec_comments_rule_page_probe.py	One bounded live probe of SEC rule pages, to confirm the ``parse_rule_page`` shape.	src
 tools/analysis/senate_expenditure_tables.py	Measure what the Secretary of the Senate's ruled tables actually are.	src
 tools/analysis/shared.py	Shared keyless probe, request counter and publisher constants for the analysis tools.	src
 tools/build_fec_layouts.py	Rebuild literal field definitions from pinned official FEC workbooks.	src

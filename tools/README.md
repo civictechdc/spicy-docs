@@ -12,6 +12,50 @@ uv run --frozen python -m tools.analysis.observation_census --help
 Keep reports with their inputs and command receipts outside the repository.
 Each diagnostic answers one question; it does not verify a whole release.
 
+## Capture a FERC search
+
+[ferc_search_capture](analysis/ferc_search_capture.py) retains the live
+class/type vocabulary and every response in an explicit AdvancedSearch
+query. Supply `--request request.json --out FRESH_DIRECTORY`; use
+`--replay DIRECTORY` to verify the retained bytes, requests and complete
+result count offline. A refusal or interrupted walk stays incomplete, and
+an empty result stays an observation. See the [FERC source guide](../docs/sources/ferc.md#retain-and-replay-a-complete-search)
+for a complete command and the boundary between captured search metadata,
+downloaded originals and published data.
+
+## Qualify agency comment routes
+
+These tools spend live requests within fixed bounds. Each one writes its
+receipt under the campaign receipts directory.
+
+- [proxy_client_smoke](analysis/proxy_client_smoke.py): fetch each walled
+  publisher target, plus one unwalled control, once through one proxy
+  provider. Pass `--provider zyte` or `--provider firecrawl`. A target's own
+  403/429 earns one fallback fetch, and a run allows only a few fallbacks.
+  The receipt classifies each body as a wall, a publisher page or
+  unrecognized, using the shared `detect_wall` vocabulary. The default
+  receipt directory is named for the run's UTC date. The harness never
+  overwrites an existing receipt; pass `--receipt` to choose a new path.
+- [cftc_pdf_bounds](analysis/cftc_pdf_bounds.py): measure CFTC comment-letter
+  PDF sizes through the walled-fetch ladder and prove one full download
+  through the production PDF checks. Letter bytes go to the campaign blob
+  store. Requires `ZYTE_TOKEN` and `FIRECRAWL_API_KEY`. See the
+  [CFTC source guide](../docs/sources/cftc-comments.md).
+- [sec_comments_rule_page_probe](analysis/sec_comments_rule_page_probe.py):
+  fetch the S7-11-23 rule page and one SRO rule page with the declared
+  fair-access agent and bounded GETs, retaining complete responses in
+  `--out`. `--emit-fixture` writes the trimmed rule-page test fixture. See
+  the [SEC source guide](../docs/sources/sec-comments.md).
+- [sec_comments_join_coverage](analysis/sec_comments_join_coverage.py):
+  offline, measure how far the SEC comment join reaches over the retained
+  regulations.gov SEC documents and Federal Register release, using the join
+  module's own normalization. Input pins and counts land in one receipt under
+  `--receipts`.
+- [fcc_ecfs_backfill](analysis/fcc_ecfs_backfill.py): plan, and with
+  `--execute` run, FCC ECFS filing date-window slices with resume and
+  optional `--capture-documents`. See the
+  [FCC attachment guide](../docs/sources/fcc-ecfs-attachments.md).
+
 ## Compare local evidence
 
 These four commands write JSON to stdout:

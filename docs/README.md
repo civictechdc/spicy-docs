@@ -54,6 +54,8 @@
 - [Report of the Secretary of the Senate](sources/senate-secretary-report.md): the Senate's semiannual expenditure statement as a GovInfo `GPO-CDOC` package — what its listing and MODS state, and the ruled tables only the PDF holds.
 - [GovInfo metadata](sources/govinfo-metadata.md): published field definitions and mapped source records · [preservation metadata (PREMIS)](sources/govinfo-premis.md): retained GovInfo PREMIS 2 XML and digest comparison.
 - [Captured public comments](sources/public-comments.md)
+- Agency comment systems outside regulations.gov: [SEC rule comments](sources/sec-comments.md), [FERC eLibrary](sources/ferc.md), [CFTC comments](sources/cftc-comments.md) and [USITC EDIS](sources/usitc-edis.md), with the [FCC ECFS attachment route](sources/fcc-ecfs-attachments.md) beside its [listings](sources/listings.md).
+- [Agency scraper completion plan](research/agency-scraper-completion-2026-09-24.md): bounded live qualification, remaining source access and coverage work, and acceptance checks for durable acquisition and release verification.
 - [Fetcher formats](fetcher-formats.md): current inputs and XML/JSON opportunities.
 - [Source-field references](source-reference.md) · [Documented-value drift](source-domain-drift.md)
 - [FEC acquisition](sources/fec.md): official JSON/XML metadata and separate originals · [bulk originals](sources/fec-bulk.md) · [positional rows](sources/fec-rows.md) · [filing fields](sources/fec-filing-fields.md).

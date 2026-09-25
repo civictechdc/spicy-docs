@@ -375,6 +375,83 @@ A publisher that states its total elsewhere, such as FCC ECFS's aggregations,
 passes `pool_walks` a function returning one `WalkPass(records, declared)` per
 walk.
 
+## Enumerate FCC filings for a mirror
+
+Use `FccEcfsReader.iter_filings` for a received-date selection, optionally scoped
+to one proceeding. It returns unchanged native filing dictionaries and owns the
+FCC count, offset ceiling and timestamp partitioning. SpicyRegs uses this method
+and keeps its existing incremental overlap, Parquet staging, identity merge and
+publication. No second mirror database or scheduler is needed.
+
+```python
+from pathlib import Path
+
+from spicy_docs.reading.paged_json import PagedJsonBudget
+from spicy_docs.sources.fcc_ecfs import FccEcfsReader
+from spicy_docs.transport.credentials import read_api_key
+
+with FccEcfsReader(
+    api_key=read_api_key(Path(".env"), "API_GOV"),
+    budget=PagedJsonBudget(5, 16 * 1024**2, 60, 3.7),
+) as reader:
+    observed = sum(
+        1
+        for _ in reader.iter_filings(
+            received_from="2017-04-01",
+            received_to="2017-05-01",
+            proceeding="17-108",
+        )
+    )
+print(observed)
+```
+
+The default page size is 1,000; callers can request up to 5,000 filings while
+keeping the byte bound. Live page-sizing probes on September 25, 2026 retained
+1,000 filings in 1,569,021 bytes and 5,000 in 9,186,765 bytes. These measurements
+establish useful page sizes, not a maximum filing size or a throughput promise.
+If a page exceeds the caller's byte bound, the read refuses; retry with a smaller
+`limit` or an explicitly larger byte budget. Proceedings retain their separate
+page-size bound.
+
+The first page's exact `express_comment` aggregation decides whether a selection
+fits below the measured result ceiling. Crowded selections split on
+`date_submission`, preserving the caller's received-date and proceeding filters.
+This can divide a busy received day because submission times carry finer detail.
+Bounds are serialized in UTC; native timestamp strings remain unchanged. Two
+timezone-free legacy values were matched by exact UTC point queries in the live
+probes. A missing submission timestamp refuses a partitioned selection.
+
+**Every row must match the filters that were sent.** An ignored filter and one
+that matched nothing look the same, and the aggregation counts whatever the
+publisher selected, so a count cannot prove scope. Every page's rows are checked
+against the request: `date_received` inside the closed bound actually sent
+(the start date's midnight through the following day's midnight, in UTC), and,
+for a proceeding selection, a `proceedings[].name` equal to that docket. A row
+outside either refuses the selection, whether or not it was partitioned.
+
+Each leaf pools walks by `id_submission` until the unique records match its
+count. Closed child ranges share a midpoint: the reader compares those boundary
+IDs, emits them once, and reconciles the child counts with the parent. Missing or
+approximate counts, changed counts, disagreement between partitions, and a
+crowded single millisecond refuse; two crowded adjacent milliseconds split into
+two point queries. Memory follows a bounded leaf and its
+boundary IDs, not the entire selection. The download plan is not used: measured
+plan offsets exceeded the live ceiling and a plan bucket understated its rows.
+
+**Consume the iterator successfully before replacing an output.** A later page
+or partition check can still fail after earlier rows have been yielded. Pass
+`on_page=retain_page` to receive every exact `JsonPage`, including probes and
+repeated walks, for retention in the caller's existing evidence store. The caller
+owns scheduling, checkpoints and refresh. This is a counted observation of the
+selected query, not an atomic snapshot or a feed of all historical corrections
+and deletions. An empty selection is an observed empty answer, not proof that a
+docket never existed. Attachment bytes remain the separate
+[document acquisition](fcc-ecfs-attachments.md) operation.
+
+The lower-level `filings(url)` iterator keeps its page interface and does not
+acquire these checks merely by using a larger `limit`. The attachment-capture
+backfill tool enumerates each date window through `iter_filings`.
+
 ## Use the routes
 
 Install the `acquisition` extra. Read the key with `read_api_key`; the
@@ -463,27 +540,28 @@ live in the project env file: `API_GOV` for api.data.gov publishers and
   `registrationStatus=A` read 790,545 and then 790,559 twenty minutes later:
   a declared total is that instant's statement, and it is not reachability.
 - USAspending's recipient universe exceeded eighteen million rows on
-  2026-09-14; bound the walk. FCC ECFS states no count, so an offset walk
-  proves only what it saw; narrow the window rather than walk far.
-- **FCC ECFS date windows are inclusive of both dates, because the builders
-  add the day the publisher's bound leaves out.** `[gte]D[lte]E` selects
-  `D T00:00:00Z ≤ t ≤ E T00:00:00Z`, so the end date contributes only its
-  midnight instant: on 2026-09-14 `[gte]2026-09-08[lte]2026-09-08` returned
-  zero rows while `[gte]2026-09-08[lte]2026-09-09` returned the 8th, newest
-  `2026-09-08T23:56:03Z` and oldest `2026-09-08T04:47:28Z`. `filings_url` and
-  `proceedings_url` therefore send `end + 1 day`, and a same-day window means
-  that day. A time component does not widen the window — `[lte]D T23:59:59`
-  in either spelling answered the same zero-row page — and every empty filings
-  query answers the identical 1,037 bytes, so a filter the publisher ignored
-  and one that matched nothing look the same. No zero here is absence. One
-  consequence of keeping the publisher's inclusive `[lte]`: adjacent day
-  windows overlap by the single midnight instant between them.
+  2026-09-14; bound the walk. FCC's low-level offset iterator checks page shape;
+  use `iter_filings` above for counted, partitioned enumeration.
+- **FCC date builders keep the following-day end bound.** The September 14
+  same-day probe returned no rows while the following-day bound returned rows
+  from the requested day. That observation did not establish timezone or
+  timestamp precision. September 25 timestamp point queries matched exact
+  instants, and `[lt]` still included the boundary. Closed windows can therefore
+  share filings at their boundary; do not subtract an assumed timestamp unit
+  or treat `[lt]` as a proven exclusive operator.
 - The GAO feed is a recent-items window. Every item's link must be the
   canonical product URL, which supplies `product_id`; a duplicated product or
   a non-product link refuses the whole feed. Product pages remain the
   separate, Zyte-backed capture described in [GAO pages](gao.md).
 
 ## Evidence
+
+The FCC download-plan/offset measurements are retained in campaign receipts
+`fcc-pagination-research-2026-09-25T100156Z/`. Page sizing, UTC point-query
+checks and the counted traversal are under
+`fcc-mirror-implementation-2026-09-25/`, with exact bodies, hashes, requested
+URLs and runnable qualification scripts. Offline regressions are in
+[`test_fcc_ecfs_filings.py`](../../tests/test_fcc_ecfs_filings.py).
 
 Complete pinned pages with hashes are in
 [`tests/fixtures/listings/README.md`](../../tests/fixtures/listings/README.md).
