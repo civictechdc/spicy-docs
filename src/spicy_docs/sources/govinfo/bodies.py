@@ -1696,17 +1696,22 @@ def validate_granule_body(
 #: report audit). ``[GRAPHIC(S) NOT AVAILABLE IN TIFF FORMAT]`` is not it:
 #: that marks a missing image, not missing prose.
 PUBLISHER_PLACEHOLDER = "[TEXT NOT AVAILABLE IN REFER TO PDF]"
+#: Every spelling of that notice the publisher is measured to print. The
+#: 2026-09-25 qualification audit found the second, without "IN", as the whole
+#: text of CRPT-119hrpt649 and CHRG-119jhrg60491. Literals, not a pattern: a
+#: looser match could flag real prose that happens to mention a PDF.
+PUBLISHER_PLACEHOLDERS = (PUBLISHER_PLACEHOLDER, "[TEXT NOT AVAILABLE REFER TO PDF]")
 
 
 def publisher_body_status(text: str, *, rendition: str) -> str:
     """What one body's derived text states about its own completeness, in ``O(T)``.
 
-    ``publisher_placeholder`` where the text carries ``PUBLISHER_PLACEHOLDER``,
+    ``publisher_placeholder`` where the text carries one of ``PUBLISHER_PLACEHOLDERS``,
     else ``pdf_extracted`` for a PDF rendition and ``not_flagged`` for any
     other. Only the publisher's marker flags a body; no status asserts that
     unmarked text is complete.
     """
-    if PUBLISHER_PLACEHOLDER in text:
+    if any(marker in text for marker in PUBLISHER_PLACEHOLDERS):
         return "publisher_placeholder"
     return "pdf_extracted" if rendition == "pdf" else "not_flagged"
 
@@ -1718,6 +1723,7 @@ __all__ = [
     "PACKAGE_BODY_FORMATS",
     "PRINT_BODY_PREFERENCE",
     "PUBLISHER_PLACEHOLDER",
+    "PUBLISHER_PLACEHOLDERS",
     "BodyFormat",
     "GovInfoBodySourceError",
     "GranuleBodyIdentity",

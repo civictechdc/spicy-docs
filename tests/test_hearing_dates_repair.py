@@ -95,3 +95,21 @@ def test_historical_part_native_summary_and_mods_must_agree(package):
     other = package.replace("p11", "p19") if package.endswith("p11") else package.replace("p19", "p11")
     with pytest.raises(GovInfoBodySourceError):
         validate_package_mods(mods, package=other, final_url=package_mods_locator(other), max_bytes=1_000_000)
+
+
+@pytest.mark.parametrize("package", ["CRPT-119hrpt649", "CHRG-119jhrg60491"])
+def test_the_notice_spelled_without_in_is_a_placeholder(package):
+    """The publisher also prints the notice without "IN"; the derived text of these whole-notice bodies is flagged."""
+    from types import SimpleNamespace
+
+    from spicy_docs.extraction.body_text import body_text
+
+    raw = (Path(__file__).parent / f"fixtures/govinfo_bodies/body-{package}.htm").read_bytes()
+    body = SimpleNamespace(
+        format="htm",
+        body=SimpleNamespace(media_type="text/html", byte_size=len(raw)),
+        body_capture=SimpleNamespace(body=raw),
+    )
+    derived = body_text(body)
+    assert "[TEXT NOT AVAILABLE REFER TO PDF]" in derived.text
+    assert publisher_body_status(derived.text, rendition="htm") == "publisher_placeholder"
