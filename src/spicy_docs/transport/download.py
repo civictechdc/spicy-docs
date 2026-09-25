@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+import sys
 import time
 import xml.etree.ElementTree as ET
 from collections.abc import Callable, Iterator
@@ -17,7 +18,7 @@ from datetime import UTC, datetime
 from functools import cached_property
 from pathlib import Path
 from typing import Self
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit
 
 import httpx
 from rulespec_artifacts import LocalBlobWriter
@@ -41,6 +42,50 @@ class HttpRefusal(CredentialRefusedError):
 
 class _Retryable(AcquisitionError):
     pass
+
+
+class RateLimitExhausted(AcquisitionError):
+    """A quota host kept answering HTTP 429 past the wait the ``RateLimit`` allows."""
+
+
+class _RateLimited(AcquisitionError):
+    """HTTP 429 from a quota host; not ``_Retryable``, so no quick jittered retry spends it."""
+
+    def __init__(self, retry_after: float | None):
+        self.retry_after = retry_after
+        super().__init__("source answered HTTP 429")
+
+
+# api.data.gov's limiter (api-umbrella) estimates a rolling window as this
+# period's count plus the previous period's, time-weighted, and refuses above
+# the limit. Starting requests 10% slower than limit/window keeps a steady pace
+# under it despite start jitter or another client on the same key.
+_QUOTA_HEADROOM = 1.1
+
+
+@dataclass(frozen=True)
+class RateLimit:
+    """A publisher quota: pace requests to it and wait out its HTTP 429s.
+
+    On ``hosts``, requests start ``window / X-RateLimit-Limit`` seconds apart
+    (plus headroom) once a response states the limit, ``fallback_interval``
+    apart before. A 429 waits its delay-seconds ``Retry-After`` (one window
+    when absent or an HTTP-date) while that wait is at most ``max_wait`` and
+    all waits stay within ``wait_budget``; past either, or the acquirer's
+    deadline, it raises ``RateLimitExhausted``.
+    """
+
+    hosts: frozenset[str]
+    window: float
+    fallback_interval: float
+    max_wait: float
+    wait_budget: float
+
+
+def _retry_after_seconds(value: str | None) -> float | None:
+    """The delay-seconds a Retry-After header states; ``None`` for none or an HTTP-date."""
+    value = (value or "").strip()
+    return float(value) if value.isascii() and value.isdecimal() else None
 
 
 @dataclass(frozen=True)
@@ -70,6 +115,10 @@ class BoundedAcquirer:
     ``public_fallback_url`` predicate. Only public, header-free HTTP 403 requests
     qualify; authentication refusals and ETag-bound requests stop. Proxy bytes
     are buffered up to 32 MiB; ordinary originals continue to stream.
+
+    An optional ``RateLimit`` paces its hosts to their stated quota and waits
+    out their 429s; without one a 429 is an ordinary transient failure. No
+    request starts and no 429 wait ends after an optional monotonic ``deadline``.
     """
 
     def __init__(
@@ -83,6 +132,8 @@ class BoundedAcquirer:
         transport: httpx.BaseTransport | None = None,
         zyte_on_denial=None,
         public_fallback_url: Callable[[str], bool] | None = None,
+        rate_limit: RateLimit | None = None,
+        deadline: float | None = None,
     ) -> None:
         """``validate_url`` runs on every direct and proxy URL; ``headers`` decides per host what credential is sent."""
         if type(max_requests) is not int or max_requests <= 0:
@@ -97,6 +148,10 @@ class BoundedAcquirer:
         self.max_requests = max_requests
         self.min_interval = min_interval
         self.request_count = 0
+        self.rate_limit = rate_limit
+        self.deadline = deadline
+        self.rate_limit_waited = 0.0
+        self._stated_limits: dict[str, int] = {}
         self._last_start = 0.0
         self._client = httpx.Client(transport=transport, timeout=timeout, trust_env=False, follow_redirects=False)
 
@@ -106,10 +161,31 @@ class BoundedAcquirer:
     def __exit__(self, *_error: object) -> None:
         self._client.close()
 
-    def _start(self) -> None:
+    def _quota_host(self, url: str) -> str | None:
+        host = urlsplit(url).hostname
+        return host if self.rate_limit is not None and host in self.rate_limit.hosts else None
+
+    def _interval(self, url: str | None) -> float:
+        host = self._quota_host(url) if url else None
+        if host is None or self.rate_limit is None:
+            return self.min_interval
+        limit = self._stated_limits.get(host)
+        paced = self.rate_limit.window / limit * _QUOTA_HEADROOM if limit else self.rate_limit.fallback_interval
+        return max(self.min_interval, paced)
+
+    def _note_quota(self, url: str, headers: httpx.Headers) -> None:
+        host = self._quota_host(url)
+        limit = headers.get("x-ratelimit-limit", "").strip()
+        if host is not None and limit.isascii() and limit.isdecimal() and int(limit) > 0:
+            self._stated_limits[host] = int(limit)
+
+    def _start(self, url: str | None = None) -> None:
         if self.request_count >= self.max_requests:
             raise AcquisitionError("acquisition request budget exhausted")
-        delay = self.min_interval - (time.monotonic() - self._last_start)
+        now = time.monotonic()
+        delay = max(0.0, self._interval(url) - (now - self._last_start))
+        if self.deadline is not None and now + delay > self.deadline:
+            raise AcquisitionError("acquisition deadline reached before the next request")
         if delay > 0:
             time.sleep(delay)
         self._last_start = time.monotonic()
@@ -156,7 +232,7 @@ class BoundedAcquirer:
         current = self.validate_url(url)
         public_chain = True
         for _ in range(4):
-            self._start()
+            self._start(current)
             request_headers = {"User-Agent": "spicy-docs/0.2 FEC acquisition", "Accept-Encoding": "identity"}
             source_headers = self.headers(current)
             public_chain = public_chain and bool(self._public_fallback_url(current)) and not source_headers
@@ -167,6 +243,7 @@ class BoundedAcquirer:
                 self._client.cookies.clear()
                 with self._client.stream("GET", current, headers=request_headers) as response:
                     status = response.status_code
+                    self._note_quota(current, response.headers)
                     if status in (301, 302, 303, 307, 308):
                         location = response.headers.get("location")
                         if not location:
@@ -190,6 +267,8 @@ class BoundedAcquirer:
                         for offset in range(0, len(capture.body), 64 * 1024):
                             yield capture.body[offset : offset + 64 * 1024]
                         return
+                    if status == 429 and self._quota_host(current):
+                        raise _RateLimited(_retry_after_seconds(response.headers.get("retry-after")))
                     if status == 429 or status >= 500:
                         raise _Retryable(f"source answered retryable HTTP {status}")
                     if status != 200:
@@ -230,6 +309,34 @@ class BoundedAcquirer:
                 raise _Retryable("source transport failed") from None
         raise AcquisitionError("source exceeded redirect bound")
 
+    def _within_quota[Result](self, operation: Callable[[], Result]) -> Result:
+        """Run operation, waiting out each quota host's HTTP 429 while the ``RateLimit`` bounds allow."""
+        quota = self.rate_limit
+        if quota is None:  # without a quota no host raises _RateLimited
+            return operation()
+        while True:
+            try:
+                return operation()
+            except _RateLimited as limited:
+                wait = quota.window if limited.retry_after is None else limited.retry_after
+                if wait > quota.max_wait:
+                    reason = f"asked for {wait:.0f}s, beyond the {quota.max_wait:.0f}s bound"
+                elif self.rate_limit_waited + wait > quota.wait_budget:
+                    reason = f"waits would pass their {quota.wait_budget:.0f}s budget"
+                elif self.deadline is not None and time.monotonic() + wait > self.deadline:
+                    reason = "the wait would pass the acquisition deadline"
+                else:
+                    self.rate_limit_waited += wait
+                    print(
+                        f"source rate limit: HTTP 429; waiting {wait:.0f}s "
+                        f"({'one quota window' if limited.retry_after is None else 'Retry-After'}; "
+                        f"{self.rate_limit_waited:.0f}s of {quota.wait_budget:.0f}s)",
+                        file=sys.stderr,
+                    )
+                    time.sleep(wait)
+                    continue
+                raise RateLimitExhausted(f"source answered HTTP 429 and {reason}; acquisition stopped") from None
+
     def capture(self, url: str, *, max_bytes: int, extra_headers: dict | None = None) -> ResponseCapture:
         """Return the complete bounded metadata response, retrying transient failures up to three attempts.
 
@@ -255,7 +362,7 @@ class BoundedAcquirer:
                 url, facts["resolved_url"], facts["media_type"], facts["observed_at"], bytes(body), facts["via"]
             )
 
-        return retry_http(attempt, retryable=(_Retryable,), max_attempts=3)
+        return self._within_quota(lambda: retry_http(attempt, retryable=(_Retryable,), max_attempts=3))
 
     def download(
         self,
@@ -314,7 +421,7 @@ class BoundedAcquirer:
                 "response": facts,
             }
 
-        return retry_http(attempt, retryable=(_Retryable,), max_attempts=3)
+        return self._within_quota(lambda: retry_http(attempt, retryable=(_Retryable,), max_attempts=3))
 
 
 def validate_body_prefix(

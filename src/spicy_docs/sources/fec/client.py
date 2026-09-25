@@ -28,7 +28,25 @@ from spicy_docs.transport.credentials import CredentialRefusedError
 from spicy_docs.transport.download import (
     AcquisitionError,
     BoundedAcquirer,
+    RateLimit,
     ResponseCapture,
+)
+
+# OpenFEC is served through api.data.gov's limiter, which states the key's quota
+# as X-RateLimit-Limit requests per rolling minute and answers HTTP 429 with a
+# delay-seconds Retry-After of at most one window. Measured 2026-09-25: the
+# header read 60, and scheduled spicy-regs runs 36049323173 and 36180816422
+# (0.25 s pace) got exactly 60 committee pages per clock minute, then 429.
+# Until a response states its limit, pace to the documented standard key
+# (1,000 calls/hour, 3.6 s). A wait longer than two windows means a larger
+# quota is spent, so acquisition stops rather than sleeping it out; ten
+# windows of waiting in all bound a key another client is also spending.
+OPENFEC_QUOTA = RateLimit(
+    hosts=frozenset({"api.open.fec.gov"}),
+    window=60.0,
+    fallback_interval=3.6,
+    max_wait=120.0,
+    wait_budget=600.0,
 )
 
 
@@ -51,7 +69,8 @@ class FecClient:
     Every yielded page points to its retained exact response. Iterators are
     bounded by max_pages and fail if a continuation remains at that bound.
     Previously yielded pages remain partial observations when iteration fails;
-    only normal iterator exhaustion completes the selected traversal.
+    only normal iterator exhaustion completes the selected traversal. API
+    requests pace to ``OPENFEC_QUOTA`` unless ``rate_limit`` replaces it.
     """
 
     def __init__(self, *, store: Path, api_key: str | None = None, zyte_on_denial=None, **transport_options) -> None:
@@ -60,6 +79,7 @@ class FecClient:
         self.store = Path(store)
         self._writer = LocalBlobWriter(self.store)
         self._key = api_key
+        transport_options.setdefault("rate_limit", OPENFEC_QUOTA)
         self.http = BoundedAcquirer(
             validate_url=official_url,
             zyte_on_denial=zyte_on_denial,

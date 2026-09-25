@@ -98,8 +98,13 @@ def fixture_client(
         status = fail_asset if type(fail_asset) is int else 404 if fail_asset else 200
         return httpx.Response(status, content=PDF, headers={"Content-Type": "application/pdf", "ETag": '"e"'})
 
+    # The replayed API states no quota; OpenFEC pacing is pinned in test_fec.py.
     return FecClient(
-        store=root / "blobs", api_key="fixture-key", transport=httpx.MockTransport(handler), min_interval=0
+        store=root / "blobs",
+        api_key="fixture-key",
+        transport=httpx.MockTransport(handler),
+        min_interval=0,
+        rate_limit=None,
     ), calls
 
 

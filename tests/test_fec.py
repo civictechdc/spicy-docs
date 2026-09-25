@@ -11,7 +11,9 @@ from __future__ import annotations
 import hashlib
 import json
 from decimal import Decimal
+from itertools import pairwise
 from pathlib import Path
+from types import SimpleNamespace
 from urllib.parse import parse_qs
 
 import httpx
@@ -25,12 +27,27 @@ from spicy_docs.sources.fec.catalog import API_ROOT, BUCKET, BUCKET_URL, api_ope
 from spicy_docs.sources.fec.client import FecClient, api_page
 from spicy_docs.sources.fec.metadata import parse_api, parse_page_links, parse_sitemap, split_record
 from spicy_docs.sources.zyte import ZyteHttpResponse
-from spicy_docs.transport.download import AcquisitionError, HttpRefusal
+from spicy_docs.transport import download
+from spicy_docs.transport.download import AcquisitionError, BoundedAcquirer, HttpRefusal, RateLimitExhausted
 
 
 @pytest.fixture
-def client(tmp_path):
-    """An FEC client over a mock transport and blob store."""
+def clock(monkeypatch):
+    """A fake monotonic clock that sleeping advances: no test really waits."""
+    state = SimpleNamespace(now=1000.0, slept=[])
+
+    def sleep(seconds):
+        state.slept.append(seconds)
+        state.now += seconds
+
+    monkeypatch.setattr(download.time, "monotonic", lambda: state.now)
+    monkeypatch.setattr(download.time, "sleep", sleep)
+    return state
+
+
+@pytest.fixture
+def client(tmp_path, clock):
+    """An FEC client over a mock transport and blob store, paced on the fake clock."""
 
     def make(handler, **options):
         return FecClient(
@@ -379,6 +396,114 @@ def test_page_and_request_bounds_cannot_report_completion(client):
         pytest.raises(AcquisitionError, match="request budget"),
     ):
         list(c.api("/v1/committees/"))
+
+
+def _quota_pages(clock, responses, starts, pages=4):
+    """Serve ``responses`` (status, headers) in order as a paged walk, noting each request's start."""
+    served = iter(responses)
+
+    def serve(request):
+        starts.append(clock.now)
+        status, headers = next(served)
+        n = int(request.url.params.get("page", 1))
+        body = {"json": page([n], number=n, pages=pages)} if status == 200 else {}
+        return httpx.Response(status, headers=headers, **body)
+
+    return serve
+
+
+def test_openfec_paces_to_its_stated_quota_and_only_on_the_api_host(client, clock):
+    """API starts space window/limit with headroom once stated, 3.6 s before; S3 keeps the caller's pace."""
+    starts = []
+    responses = [(200, {}), (200, {"X-RateLimit-Limit": "60"}), (200, {"X-RateLimit-Limit": "120"}), (200, {})]
+    with client(_quota_pages(clock, [*responses, (200, {})], starts, pages=5)) as c:
+        assert len(list(c.api("/v1/committees/"))) == 5
+    gaps = [round(b - a, 3) for a, b in pairwise(starts)]
+    # Unstated: the documented 1,000/hour; then 60/min and 120/min; a later
+    # response without the header keeps the last stated limit.
+    assert gaps == [3.6, 1.1, 0.55, 0.55]
+    listing_starts = []
+
+    def serve_listing(_request):
+        listing_starts.append(clock.now)
+        n = len(listing_starts)
+        return httpx.Response(200, content=listing(f"bulk-downloads/{n}", token=f"t{n}"))
+
+    with client(serve_listing) as c:
+        rows = c.objects("bulk-downloads/", max_pages=2)
+        next(rows), next(rows)
+    assert listing_starts[1] == listing_starts[0]
+
+
+def test_openfec_429_waits_its_retry_after_then_succeeds(client, clock, capsys):
+    """A 429 waits its Retry-After instead of three quick retries, then the walk completes."""
+    starts = []
+    responses = [
+        (200, {"X-RateLimit-Limit": "60"}),
+        (429, {"Retry-After": "37", "X-RateLimit-Limit": "60", "X-RateLimit-Remaining": "0"}),
+        (200, {"X-RateLimit-Limit": "60"}),
+        (200, {"X-RateLimit-Limit": "60"}),
+        (200, {"X-RateLimit-Limit": "60"}),
+    ]
+    with client(_quota_pages(clock, responses, starts)) as c:
+        assert [row["records"][0]["metadata"] for row in c.api("/v1/committees/")] == [1, 2, 3, 4]
+        assert c.http.rate_limit_waited == 37
+    assert round(starts[2] - starts[1], 3) == 37
+    err = capsys.readouterr().err
+    assert "waiting 37s (Retry-After; 37s of 600s)" in err
+    assert "test-credential-123" not in err
+
+
+@pytest.mark.parametrize(
+    ("headers", "options", "requests", "match"),
+    [
+        # Each 61 s wait is honored until the next would pass the 600 s budget.
+        ({"Retry-After": "61"}, {}, 10, "600s budget"),
+        # Without Retry-After a 429 waits one 60 s window.
+        ({}, {}, 11, "600s budget"),
+        # An hour-long ask means a larger quota is spent: stop at once.
+        ({"Retry-After": "3600"}, {}, 1, "beyond the 120s bound"),
+        ({"Retry-After": "61"}, {"deadline": 1000.0 + 100}, 2, "deadline"),
+    ],
+)
+def test_openfec_429_past_its_bounds_stops_truthfully(client, clock, capsys, headers, options, requests, match):
+    """Repeated 429s end in RateLimitExhausted once a wait would pass the budget, bound or deadline."""
+    starts = []
+    with (
+        client(_quota_pages(clock, [(429, headers)] * requests, starts), **options) as c,
+        pytest.raises(RateLimitExhausted, match=match) as refused,
+    ):
+        list(c.api("/v1/committees/"))
+    assert len(starts) == requests
+    assert "HTTP 429" in str(refused.value)
+    assert "test-credential-123" not in str(refused.value) + capsys.readouterr().err
+
+
+def test_deadline_stops_before_a_new_request(client, clock):
+    """No request starts after the acquirer's deadline."""
+    with client(_quota_pages(clock, [(200, {"X-RateLimit-Limit": "60"})] * 4, []), deadline=1000.5) as c:
+        walk = c.api("/v1/committees/")
+        next(walk)
+        with pytest.raises(AcquisitionError, match="deadline"):
+            next(walk)
+
+
+def test_acquirer_without_a_quota_keeps_429_a_quick_transient_retry(clock, monkeypatch):
+    """Other BoundedAcquirer callers keep three jittered attempts on HTTP 429."""
+    monkeypatch.setattr("spicy_docs.transport.retry.random.uniform", lambda _low, high: high)
+    calls = []
+
+    def serve(_request):
+        calls.append(clock.now)
+        return httpx.Response(429, headers={"Retry-After": "600"})
+
+    with (
+        BoundedAcquirer(validate_url=lambda url: url, min_interval=0, transport=httpx.MockTransport(serve)) as http,
+        pytest.raises(AcquisitionError, match="retryable HTTP 429"),
+    ):
+        http.capture("https://example.test/", max_bytes=10)
+    assert len(calls) == 3
+    assert clock.slept == [2, 4]
 
 
 def test_html_index_keeps_labels_and_prefers_only_declared_equivalent_renditions():
