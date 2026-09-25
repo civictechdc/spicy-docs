@@ -153,12 +153,15 @@ class _BoundedZipReads:
         return True
 
 
-def inspect_archive_stream(stream, *, byte_size, max_entries, max_decoded_bytes, max_metadata_bytes):
+def inspect_archive_stream(stream, *, byte_size, max_entries, max_decoded_bytes, max_metadata_bytes, observe=None):
     """Inventory every ZIP entry, including directories and repeated full names.
 
     The caller supplies a seekable pinned stream. No extraction paths are used.
     Directory allocation, entry count, decompression and returned metadata are
     bounded before reading payloads. Every member is fully read for CRC and SHA-256.
+    ``observe(ordinal, info)`` may return a callable that receives that member's
+    decoded chunks in that same single pass, so a caller's own byte checks never
+    inflate the archive again.
     """
     for bound in (byte_size, max_entries, max_decoded_bytes, max_metadata_bytes):
         if type(bound) is not int or bound < 1:
@@ -170,6 +173,7 @@ def inspect_archive_stream(stream, *, byte_size, max_entries, max_decoded_bytes,
             max_entries=max_entries,
             max_decoded_bytes=max_decoded_bytes,
             max_metadata_bytes=max_metadata_bytes,
+            observe=observe,
         )
 
 
@@ -198,7 +202,7 @@ def seekable_stream(stream, *, byte_size):
         yield seekable
 
 
-def _inspect_seekable_archive(stream, *, byte_size, max_entries, max_decoded_bytes, max_metadata_bytes):
+def _inspect_seekable_archive(stream, *, byte_size, max_entries, max_decoded_bytes, max_metadata_bytes, observe):
     stream.seek(0)
     if stream.read(4) not in (b"PK\x03\x04", b"PK\x05\x06"):
         raise ValueError("ZIP original lacks a local file or empty-archive header")
@@ -242,7 +246,8 @@ def _inspect_seekable_archive(stream, *, byte_size, max_entries, max_decoded_byt
             metadata_bytes += len(canonical_json_bytes(row)) + 100  # Reserve the digest and verified-CRC fields.
             if metadata_bytes > max_metadata_bytes:
                 raise ValueError("ZIP inventory metadata exceeds its byte bound")
-            digest = _complete_member_digest(archive, info, view)
+            sink = None if observe is None else observe(ordinal, info)
+            digest = _complete_member_digest(archive, info, view, sink)
             rows.append({**row, "sha256": digest, "crcVerified": True})
         result = {"commentHex": archive.comment.hex(), "members": rows}
         if len(canonical_json_bytes(result)) > max_metadata_bytes:
@@ -250,8 +255,11 @@ def _inspect_seekable_archive(stream, *, byte_size, max_entries, max_decoded_byt
         return result
 
 
-def _complete_member_digest(archive, info, stream):
+def _complete_member_digest(archive, info, stream, sink=None):
     """Verify the full declared compressed range; ZipExtFile truncates to file_size.
+
+    ``sink`` sees every decoded chunk (at most 64 KiB) once, before the CRC is proved;
+    trust what it gathered only after this returns.
 
     zlib's max_length bounds each decoded chunk. Unsupported compressors refuse
     because ZipExtFile's bzip2/LZMA path cannot guarantee that memory bound.
@@ -288,6 +296,8 @@ def _complete_member_digest(archive, info, stream):
             raise ValueError("ZIP decoded member exceeds its declared size")
         checksum = zlib.crc32(data, checksum)
         digest.update(data)
+        if sink is not None and data:
+            sink(data)
 
     while remaining:
         requested = min(64 * 1024, remaining)

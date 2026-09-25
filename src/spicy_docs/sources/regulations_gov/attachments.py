@@ -66,7 +66,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal
 from urllib.parse import urlsplit
 
-from spicy_docs.reading.pdf_bytes import check_pdf_bytes
+from spicy_docs.reading.pdf_bytes import PDF_MAGIC, check_pdf_bytes
 from spicy_docs.sources.regulations_gov.definitions import _ASCII_ID
 from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.credentials import CredentialRefusedError
@@ -85,7 +85,6 @@ if TYPE_CHECKING:
 
 ATTACHMENT_HOST = "downloads.regulations.gov"
 PDF_MEDIA_TYPE = "application/pdf"
-PDF_MAGIC = b"%PDF-"
 DEFAULT_MAX_ATTACHMENT_BYTES = 16 * 1024 * 1024
 MAX_ATTACHMENT_BYTES = 640 * 1024 * 1024
 # downloads.regulations.gov answers 403 with a 919-byte HTML page to any agent

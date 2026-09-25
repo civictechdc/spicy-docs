@@ -15,6 +15,7 @@ from typing import Literal, Self
 
 import httpx
 
+from spicy_docs.reading.media_types import bare_media_type
 from spicy_docs.reading.refusals import attach_refused_response
 from spicy_docs.releases.format import MAX_EVIDENCE_BYTES
 from spicy_docs.sources.federal_register.body_sources import (
@@ -177,8 +178,7 @@ class FederalRegisterBodyAcquirer:
                     publisher_text_locator(document_number, publication_date), max_bytes=self.budget.max_body_bytes
                 )
                 active_capture = body
-                media_type = (body.content_type or "").split(";", 1)[0].strip().casefold()
-                if media_type not in ("text/plain", "text/html"):
+                if bare_media_type(body.content_type) not in ("text/plain", "text/html"):
                     raise FederalRegisterBodySourceError("Publisher text Content-Type must be text/plain or text/html")
                 text_identity = validate_publisher_text(
                     body.body,
@@ -205,8 +205,7 @@ class FederalRegisterBodyAcquirer:
                 )
                 active_capture = xml
                 if xml.status_code == 200:
-                    media_type = (xml.content_type or "").split(";", 1)[0].strip().casefold()
-                    if media_type not in ("application/xml", "text/xml"):
+                    if bare_media_type(xml.content_type) not in ("application/xml", "text/xml"):
                         raise FederalRegisterBodySourceError("Publisher body Content-Type must be XML")
                     xml_identity = validate_publisher_xml(
                         xml.body,

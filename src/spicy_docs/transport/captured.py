@@ -7,9 +7,19 @@ Validators and readers reference these; only the bounded client in
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Callable
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 
 from spicy_docs.reading.refusals import RefusedResponse
+
+
+def observed_instant(clock: Callable[[], datetime]) -> str:
+    """The clock's instant as the UTC ``Z`` string a capture records; a naive clock refuses."""
+    observed_at = clock()
+    if observed_at.tzinfo is None or observed_at.utcoffset() is None:
+        raise ValueError("Source acquisition clock must return a timezone-aware instant")
+    return observed_at.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
 @dataclass(frozen=True, slots=True)

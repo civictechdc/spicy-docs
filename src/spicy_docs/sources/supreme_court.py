@@ -47,7 +47,7 @@ from html.parser import HTMLParser
 from typing import TYPE_CHECKING
 from urllib.parse import urljoin, urlsplit
 
-from spicy_docs.reading.pdf_bytes import check_pdf_bytes
+from spicy_docs.reading.pdf_bytes import check_pdf_bytes, linearized_length
 from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.source_acquirer import (
     SourceAcquirer,
@@ -91,9 +91,6 @@ _REVISIONS_MARKER = "revisions"
 _OPINION_ROW_CELLS = 6
 #: The publisher spells a decision date ``9/04/26``; the term window proves the century.
 _DECIDED = re.compile(r"([0-9]{1,2})/([0-9]{1,2})/([0-9]{2})")
-#: Every retained opinion PDF is linearized and its ``/L`` states the file length.
-_LINEARIZED_LENGTH = re.compile(rb"/Linearized[^>]{0,64}?/L\s+([0-9]+)")
-_LINEARIZATION_WINDOW = 2048
 
 
 class SupremeCourtSourceError(ValueError):
@@ -449,8 +446,7 @@ def read_supreme_court_pdf(
     if len(body) > max_bytes:
         raise SupremeCourtSourceError("Supreme Court document exceeds its byte bound")
     version = check_pdf_bytes(body, error_type=SupremeCourtSourceError, label="Supreme Court document")
-    stated = _LINEARIZED_LENGTH.search(body, 0, _LINEARIZATION_WINDOW)
-    length = int(stated[1]) if stated else None
+    length = linearized_length(body)
     if length is not None and length != len(body):
         raise SupremeCourtSourceError("Supreme Court document length differs from the length it states")
     return SupremeCourtDocument(url, version, len(body), length)

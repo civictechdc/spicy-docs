@@ -28,9 +28,9 @@ import httpx
 from spicy_docs.transport.credentials import (
     ACCESS_REFUSED_STATUSES,
     CredentialRefusedError,
+    failure_reason,
     read_api_key,
     refusal_message,
-    scrub_credential,
 )
 from spicy_docs.transport.retry import retry_http
 
@@ -130,7 +130,7 @@ def run(
                 row = {
                     "reportId": report_id,
                     "status": "failed",
-                    "error": scrub_credential(f"{type(error).__name__}: {error}", api_key)[:300],
+                    "error": failure_reason(error, api_key),
                     "sourceParquet": str(parquet),
                 }
                 failed += 1

@@ -1,14 +1,16 @@
 """Credential-file reading and scrubbing shared by acquisition commands.
 
 ``read_api_key`` reads one name from an env file; 401/403 ends a run rather than producing a row;
-``scrub_credential`` removes a key and known credential query parameters from any recorded text.
+``scrub_credential`` removes keys and known credential query parameters from any recorded text,
+``scrub_record`` does so for every string of a JSON-shaped record, and ``failure_reason`` is the
+one scrubbed-then-truncated line a failed row records.
 """
 
 from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Final
+from typing import Any, Final
 
 
 class CredentialRefusedError(RuntimeError):
@@ -58,7 +60,7 @@ _CREDENTIAL_PARAMETER_PATTERN: Final = re.compile(
 )
 
 
-def scrub_credential(text: str, api_key: str = "") -> str:
+def scrub_credential(text: str, *api_keys: str) -> str:
     """Remove the credential from anything this tool records or prints.
 
     Two passes, because either alone leaves a hole. The pattern catches a
@@ -69,13 +71,35 @@ def scrub_credential(text: str, api_key: str = "") -> str:
     truncation, never after: truncating first can cut a key in half and
     leave the front of it standing.
 
-    ``api_key`` defaults to empty for the keyless and anonymous routes: they
-    hold no literal to remove, but their transports still render URLs into
-    exception messages, so the pattern pass still has work to do.
-    The parameter pattern uses ``re.IGNORECASE`` to scrub names regardless of
-    how a transport capitalizes them.
+    ``api_keys`` may be none for the keyless and anonymous routes: they hold
+    no literal to remove, but their transports still render URLs into
+    exception messages, so the pattern pass still has work to do. A route
+    holding several secrets (a target token and a proxy credential) passes
+    them all. The parameter pattern uses ``re.IGNORECASE`` to scrub names
+    regardless of how a transport capitalizes them.
     """
     scrubbed = _CREDENTIAL_PARAMETER_PATTERN.sub(r"\1<redacted>", text)
-    if len(api_key) >= 8:
-        scrubbed = scrubbed.replace(api_key, "<redacted>")
+    for api_key in api_keys:
+        if len(api_key) >= 8:
+            scrubbed = scrubbed.replace(api_key, "<redacted>")
     return scrubbed
+
+
+def scrub_record(value: Any, *api_keys: str) -> Any:
+    """Every string and key of a JSON-shaped value through :func:`scrub_credential`; tuples come back as lists."""
+    if isinstance(value, str):
+        return scrub_credential(value, *api_keys)
+    if isinstance(value, dict):
+        return {scrub_credential(str(key), *api_keys): scrub_record(item, *api_keys) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [scrub_record(item, *api_keys) for item in value]
+    return value
+
+
+#: Enough of an answer to act on, short enough that a receipt can print it whole.
+REASON_CHARACTERS: Final = 300
+
+
+def failure_reason(error: BaseException, api_key: str = "") -> str:
+    """One line naming a failure, scrubbed *then* truncated so no cut can leave a key prefix standing."""
+    return scrub_credential(f"{type(error).__name__}: {error}", api_key)[:REASON_CHARACTERS]

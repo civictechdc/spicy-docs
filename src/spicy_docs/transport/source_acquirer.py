@@ -14,12 +14,15 @@ from contextlib import contextmanager
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Self
 
+from spicy_docs.reading.media_types import bare_media_type
 from spicy_docs.reading.refusals import attach_refused_response
-from spicy_docs.transport.captured import CapturedBodyResponse, attach_capture, refused_capture
+from spicy_docs.transport.captured import CapturedBodyResponse, attach_capture, observed_instant, refused_capture
 from spicy_docs.transport.credentials import CredentialRefusedError
 
 if TYPE_CHECKING:
     import httpx
+
+    from spicy_docs.sources.walled_fetch import ProxyFetchers, WalledFetchResult
 
 
 def check_request_count(value: object, name: str = "max_requests") -> None:
@@ -159,6 +162,9 @@ class SourceAcquirer:
         self.error_type = error_type
         self.context_key = context_key
         self._credential = credential
+        self._clock = clock
+        self._timeout_seconds = timeout_seconds
+        self._proxies: ProxyFetchers | None = None
         # The client needs the optional HTTPX dependency; locators and validators do not.
         from spicy_docs.transport.capture import BoundedHttpCapture
 
@@ -187,6 +193,39 @@ class SourceAcquirer:
 
     def close(self) -> None:
         self._http.close()
+
+    def start_external_request(self, *, reset_budget: bool = False) -> None:
+        """Charge and pace an attempt made outside the shared client; ``reset_budget`` starts a new operation."""
+        if reset_budget:
+            self._http.reset_budget()
+        self._http.start_request()
+
+    def _checked[Result](
+        self,
+        capture: CapturedBodyResponse,
+        *,
+        media_types: tuple[str, ...],
+        parse: Callable[[CapturedBodyResponse, int], Result],
+        max_bytes: int,
+        unavailable: Callable[[CapturedBodyResponse], Exception],
+    ) -> Result:
+        """The checks every capture passes, whichever route carried it; 404/410 raise ``unavailable``."""
+        if capture.status_code in (404, 410):
+            raise unavailable(capture)
+        if self._credential and self._credential.encode() in capture.body:
+            raise CredentialRefusedError("source response echoed the API credential; capture was not retained")
+        if bare_media_type(capture.content_type) not in media_types:
+            raise self.error_type(f"{self.label} source Content-Type differs from the requested format")
+        return parse(capture, max_bytes)
+
+    def _attach(self, error: Exception, capture: CapturedBodyResponse | None, context: Mapping[str, object]) -> None:
+        """A failing call's error carries its capture, refusal record and operation context."""
+        # Transport already attaches bounded public refusal evidence. Do not
+        # attach a capture after a credential refusal: its body may have echoed the key.
+        if capture is not None and not isinstance(error, CredentialRefusedError):
+            attach_capture(error, capture)
+            attach_refused_response(error, refused_capture(capture, stage="source-validation"))
+        error.__dict__[self.context_key] = {**dict(context), "requestCount": self._http.request_count}
 
     def capture_validated[Result](
         self,
@@ -233,20 +272,93 @@ class SourceAcquirer:
                 request_headers=request_headers,
                 retain_dropped_body=retain_dropped_body,
             )
-            if capture.status_code in (404, 410):
-                raise unavailable(capture)
-            if self._credential and self._credential.encode() in capture.body:
-                raise CredentialRefusedError("source response echoed the API credential; capture was not retained")
-            media_type = (capture.content_type or "").split(";", 1)[0].strip().casefold()
-            if media_type not in media_types:
-                raise self.error_type(f"{self.label} source Content-Type differs from the requested format")
-            return parse(capture, max_bytes), capture
+            result = self._checked(
+                capture, media_types=media_types, parse=parse, max_bytes=max_bytes, unavailable=unavailable
+            )
         except Exception as error:
-            # Transport already attaches bounded public refusal evidence.
-            # Do not attach a capture here after a credential refusal: its body
-            # may have echoed the key.
-            if capture is not None and not isinstance(error, CredentialRefusedError):
-                attach_capture(error, capture)
-                attach_refused_response(error, refused_capture(capture, stage="source-validation"))
-            error.__dict__[self.context_key] = {**dict(context), "requestCount": self._http.request_count}
+            self._attach(error, capture, context)
             raise
+        return result, capture
+
+    def capture_walled[Result](
+        self,
+        url: str,
+        *,
+        media_types: tuple[str, ...],
+        parse: Callable[[CapturedBodyResponse, int], Result],
+        max_bytes: int,
+        unavailable: Callable[[CapturedBodyResponse], Exception],
+        context: Mapping[str, object],
+        publisher_page: Callable[[bytes], bool] | None = None,
+        refusal: Callable[[str], Exception] | None = None,
+    ) -> tuple[Result, CapturedBodyResponse, WalledFetchResult]:
+        """One operation through the shared ``walled_fetch`` ladder, then :meth:`capture_validated`'s checks.
+
+        The DIRECT rung is this acquirer's own client (one attempt, its
+        transport, headers and user agent); each proxy rung is charged and
+        paced on the same budget, with provider credentials resolved once per
+        acquirer. Every answer is held to the byte bound and the exact locator.
+        ``publisher_page`` vouches for this family's own 2xx bodies (see
+        :func:`~spicy_docs.sources.walled_fetch.walled_fetch`). Ladder
+        exhaustion raises ``WalledFetchError``, or ``refusal(url)`` carrying its
+        ``refused_response`` and ``rung_outcomes``. Returns the parsed result,
+        the capture, and the ladder's answer (its ``transport`` and provider
+        ``request_id``).
+        """
+        # The ladder imports this module, so it is imported where it is used.
+        from spicy_docs.sources.walled_fetch import ProxyFetchers, WalledFetchError, walled_fetch
+
+        if not self._http.retain_refusal_bodies:
+            raise ValueError("capture_walled is for keyless routes: a keyed route aborts on 401/403, never escalates")
+        if self._proxies is None:
+            self._proxies = ProxyFetchers.from_environment()
+        self._http.reset_budget()
+        context = {**dict(context), "route": "walled-ladder"}
+        capture = None
+        try:
+            try:
+                answer = walled_fetch(
+                    url,
+                    max_bytes=max_bytes,
+                    timeout_seconds=self._timeout_seconds,
+                    max_requests=self._http.max_requests,
+                    before_request=self._http.start_request,
+                    publisher_page=publisher_page,
+                    direct=self._direct_attempt,
+                    proxies=self._proxies,
+                )
+            except WalledFetchError as error:
+                if refusal is None:
+                    raise
+                named = refusal(url)
+                if "refused_response" in error.__dict__:
+                    named.__dict__["refused_response"] = error.__dict__["refused_response"]
+                named.__dict__["rung_outcomes"] = error.rung_outcomes
+                raise named from error
+            capture = CapturedBodyResponse(
+                requested_url=url,
+                resolved_url=answer.final_url,
+                status_code=answer.status_code,
+                content_type=answer.content_type,
+                observed_at=observed_instant(self._clock),
+                body=answer.body,
+            )
+            if capture.byte_size > max_bytes:
+                raise self.error_type(f"{self.label} exceeds its {max_bytes}-byte bound")
+            check_final_url(
+                capture.resolved_url,
+                url,
+                error_type=self.error_type,
+                message=f"{self.label} final URL differs from its locator",
+            )
+            result = self._checked(
+                capture, media_types=media_types, parse=parse, max_bytes=max_bytes, unavailable=unavailable
+            )
+        except Exception as error:
+            self._attach(error, capture, context)
+            raise
+        return result, capture, answer
+
+    def _direct_attempt(self, url: str, max_bytes: int) -> CapturedBodyResponse:
+        """The ladder's DIRECT rung on this acquirer's own client: one attempt, charged and paced like any capture."""
+        return self._http.capture(url, max_bytes=max_bytes, allow_unavailable=True, max_attempts=1)

@@ -274,7 +274,8 @@ def _key_label(records_key: str | tuple[str, ...]) -> str:
     return records_key if isinstance(records_key, str) else ".".join(records_key)
 
 
-def _encode_body(body: Mapping[str, Any]) -> bytes:
+def encode_body(body: Mapping[str, Any]) -> bytes:
+    """A JSON request body as sent and retained: sorted keys, no spaces, UTF-8."""
     return json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
 
@@ -489,7 +490,7 @@ class PagedJsonReader(SourceAcquirer):
                 f"{self.family.label} {self.family.method} pages "
                 f"{'require' if self.family.method == 'POST' else 'forbid'} a request body"
             )
-        content = _encode_body(body) if body is not None else None
+        content = encode_body(body) if body is not None else None
         if content is not None and self._key and self._key.encode() in content:
             raise PagedJsonSourceError(f"{self.family.label} request body must not carry the credential")
         page, _capture = self.capture_validated(
@@ -590,7 +591,7 @@ class PagedJsonReader(SourceAcquirer):
             return traced(PagedJsonSourceError(f"{self.family.label} {message}"))
 
         for index in range(max_pages):
-            request = (url, _encode_body(body) if body is not None else None)
+            request = (url, encode_body(body) if body is not None else None)
             if request in seen:
                 raise refuse("repeated its continuation")
             seen.add(request)
@@ -647,6 +648,16 @@ class PagedJsonReader(SourceAcquirer):
 def family_with(family: JsonPageFamily, **changes: object) -> JsonPageFamily:
     """A publisher variant (another endpoint's row key or method) without restating the contract."""
     return replace(family, **changes)
+
+
+def walk_page_sizes(limit: int) -> tuple[int, ...]:
+    """The page size and two smaller ones that move every pooled walk's boundaries: 250 gives 250, 237 and 223."""
+    return tuple(dict.fromkeys((limit, limit - limit // 19, limit - limit // 9)))
+
+
+def pooled_reach(limit: int, ceiling: int) -> int:
+    """Records every pooled walk from ``limit`` can reach in whole pages below an offset ``ceiling``."""
+    return min(ceiling // size * size for size in walk_page_sizes(limit))
 
 
 @dataclass(frozen=True, slots=True)

@@ -12,6 +12,7 @@ from dataclasses import asdict, dataclass, replace
 from datetime import datetime
 from typing import TYPE_CHECKING
 
+from spicy_docs.reading.media_types import bare_media_type
 from spicy_docs.reading.refusals import attach_refused_response
 from spicy_docs.releases.format import MAX_EVIDENCE_BYTES
 from spicy_docs.sources.congress.bill_status import (
@@ -88,8 +89,7 @@ def _require_xml_capture(capture: CapturedBodyResponse, *, expected_url: str) ->
         raise BillSourceUnavailableError(capture)
     if capture.status_code != 200:
         raise BillSourceError("Bill capture must contain an HTTP 200 response")
-    media_type = (capture.content_type or "").split(";", 1)[0].strip().casefold()
-    if media_type not in ("application/xml", "text/xml"):
+    if bare_media_type(capture.content_type) not in ("application/xml", "text/xml"):
         raise BillSourceError("Bill source Content-Type must be XML")
 
 

@@ -73,7 +73,6 @@ MAX_FEED_BYTES = 64 * 1024 * 1024
 DEFAULT_MAX_DOCUMENT_BYTES = 32 * 1024 * 1024
 MAX_DOCUMENT_BYTES = 256 * 1024 * 1024
 MAX_FEED_ITEMS = 20_000
-PDF_MAGIC = b"%PDF-"
 
 FEED_MEDIA_TYPES = ("text/xml", "application/xml", "application/rss+xml")
 DOCUMENT_MEDIA_TYPES = ("application/pdf",)

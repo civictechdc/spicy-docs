@@ -3,7 +3,8 @@
 Why this lives here: some public publishers, including GAO, refuse ordinary
 direct clients while allowing browser-backed acquisition.  The transport is
 source acquisition, not vocabulary meaning, so SpicyDocs owns its copy instead
-of importing a sibling product at runtime.
+of importing a sibling product at runtime. The rigor shared with the other
+provider clients lives in :mod:`spicy_docs.transport.provider_api`.
 """
 
 from __future__ import annotations
@@ -11,15 +12,24 @@ from __future__ import annotations
 import base64
 import binascii
 import json
-import os
 import re
 import urllib.error
-import urllib.parse
 import urllib.request
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Any, Final
 
-from spicy_docs.reading.refusals import RefusedResponse, attach_refused_response
+from spicy_docs.transport.provider_api import (
+    PROVIDER_ERROR_BYTES,
+    absolute_public_http_url,
+    read_provider_payload,
+    refuse_oversized_target,
+    refuse_reflected_credential,
+    require_provider_credential,
+    strict_provider_json,
+    validate_provider_api_url,
+    validate_provider_credential,
+)
 
 ZYTE_API_URL: Final = "https://api.zyte.com/v1/extract"
 ZYTE_TOKEN_ENV: Final = "ZYTE_TOKEN"
@@ -29,64 +39,27 @@ HTTP_RESPONSE_BODY: Final = "httpResponseBody"
 #: publisher's bytes. Kept distinct because the two are different evidence.
 BROWSER_HTML: Final = "browserHtml"
 MODES: Final = (HTTP_RESPONSE_BODY, BROWSER_HTML)
-_MIN_PROVIDER_BYTES: Final = 1024 * 1024
-_PROVIDER_OVERHEAD_BYTES: Final = 64 * 1024
+_PROVIDER: Final = "Zyte"
 
 
 class ZyteTransportError(ValueError):
-    """Zyte could not return one exact, bounded target response."""
+    """Zyte could not return one exact, bounded target response.
+
+    ``target_status`` is the target's own status when the provider stated one
+    before the failure, so a caller can let a 401/403 decide before any body check.
+    """
+
+    target_status: int | None = None
 
 
 def validate_zyte_token(token: str) -> str:
     """Validate without ever including the credential in an error."""
-
-    stripped = token.strip()
-    if not stripped:
-        raise ZyteTransportError("ZYTE_TOKEN must not be empty")
-    if stripped != token:
-        raise ZyteTransportError("ZYTE_TOKEN must not contain surrounding whitespace")
-    if len(token) >= 2 and token[0] == token[-1] and token[0] in {"'", '"'}:
-        raise ZyteTransportError("ZYTE_TOKEN must not include dotenv quote characters")
-    try:
-        token.encode("iso-8859-1")
-    except UnicodeEncodeError as error:
-        raise ZyteTransportError("ZYTE_TOKEN contains unsupported credential characters") from error
-    return token
+    return validate_provider_credential(token, name=ZYTE_TOKEN_ENV, error_type=ZyteTransportError)
 
 
 def require_zyte_token_from_environment() -> str:
     """Read only the named credential; never discover or parse dotenv files."""
-
-    token = os.environ.get(ZYTE_TOKEN_ENV)
-    if token is None:
-        raise ZyteTransportError(f"{ZYTE_TOKEN_ENV} is required for live acquisition")
-    return validate_zyte_token(token)
-
-
-def _absolute_public_http_url(value: str, *, label: str) -> str:
-    parsed = urllib.parse.urlsplit(value)
-    if (
-        parsed.scheme not in {"http", "https"}
-        or not parsed.netloc
-        or parsed.username is not None
-        or parsed.password is not None
-    ):
-        raise ZyteTransportError(f"{label} must be an absolute credential-free HTTP(S) URL")
-    return value
-
-
-def _validate_api_url(value: str) -> str:
-    parsed = urllib.parse.urlsplit(value)
-    if (
-        parsed.scheme != "https"
-        or not parsed.netloc
-        or parsed.username is not None
-        or parsed.password is not None
-        or parsed.query
-        or parsed.fragment
-    ):
-        raise ZyteTransportError("Zyte API URL must be an absolute credential-free HTTPS URL")
-    return value
+    return require_provider_credential(ZYTE_TOKEN_ENV, error_type=ZyteTransportError)
 
 
 @dataclass(frozen=True, slots=True)
@@ -134,18 +107,20 @@ def _content_type_from_headers(value: object) -> str | None:
 #: a slug says whether the target was banned, unreachable or refused, which a
 #: bare status code cannot, while free provider prose is never recorded.
 _PROVIDER_ERROR_TYPE = re.compile(r'"type"\s*:\s*"(/[a-z0-9/_-]{1,64})"')
-_PROVIDER_ERROR_BYTES: Final = 4096
 
 
-def _provider_error_kind(error: urllib.error.HTTPError) -> str:
+def _provider_error_kind(error: urllib.error.HTTPError, secrets: tuple[str, ...]) -> str:
     """The provider's own error slug, for a receipt; never its prose and never a credential."""
-
     try:
-        payload = error.read(_PROVIDER_ERROR_BYTES)
+        payload = error.read(PROVIDER_ERROR_BYTES)
     except (OSError, ValueError):
         return ""
+    finally:
+        error.close()
     match = _PROVIDER_ERROR_TYPE.search(payload.decode("utf-8", "replace"))
-    return f" ({match.group(1)})" if match else ""
+    if match is None or any(secret in match[1] for secret in secrets):
+        return ""
+    return f" ({match[1]})"
 
 
 def _request_id_from_provider_headers(headers: Any) -> str | None:
@@ -171,26 +146,6 @@ def _request_id_from_provider_headers(headers: Any) -> str | None:
     return None
 
 
-def _provider_json(payload: bytes) -> dict[str, Any]:
-    def closed_pairs(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-        result: dict[str, Any] = {}
-        for key, value in pairs:
-            if key in result:
-                raise ZyteTransportError(f"Zyte response repeats field {key!r}")
-            result[key] = value
-        return result
-
-    try:
-        value = json.loads(payload, object_pairs_hook=closed_pairs)
-    except ZyteTransportError:
-        raise
-    except (UnicodeDecodeError, json.JSONDecodeError) as error:
-        raise ZyteTransportError("Zyte returned an invalid JSON response") from error
-    if not isinstance(value, dict):
-        raise ZyteTransportError("Zyte response must be a JSON object")
-    return value
-
-
 @dataclass(frozen=True, slots=True)
 class ZyteHttpFetcher:
     """Fetch exact target bytes in O(P + B) time and O(P + B) space.
@@ -205,7 +160,7 @@ class ZyteHttpFetcher:
 
     def __post_init__(self) -> None:
         validate_zyte_token(self.token)
-        _validate_api_url(self.api_url)
+        validate_provider_api_url(self.api_url, provider=_PROVIDER, error_type=ZyteTransportError)
 
     @classmethod
     def from_environment(cls) -> ZyteHttpFetcher:
@@ -218,27 +173,47 @@ class ZyteHttpFetcher:
         timeout_seconds: float,
         max_bytes: int,
         mode: str = HTTP_RESPONSE_BODY,
+        target_headers: Sequence[tuple[str, str]] = (),
+        extra_secrets: Sequence[str] = (),
     ) -> ZyteHttpResponse:
-        """One provider call, no retry and no second URL; ``mode`` states what the body is."""
+        """One provider call, no retry and no second URL; ``mode`` states what the body is.
+
+        ``target_headers`` travel to the target (``httpResponseBody`` only).
+        ``extra_secrets`` join this fetcher's own credential: none is ever
+        repeated in an error, and a response reflecting one is not retained.
+        """
         if timeout_seconds <= 0:
             raise ZyteTransportError("timeout_seconds must be positive")
         if max_bytes <= 0:
             raise ZyteTransportError("max_bytes must be positive")
         if mode not in MODES:
             raise ZyteTransportError(f"Zyte mode must be one of {MODES}")
-        _absolute_public_http_url(url, label="target URL")
+        if target_headers and mode != HTTP_RESPONSE_BODY:
+            raise ZyteTransportError("Zyte target headers need httpResponseBody mode")
+        if any(
+            not isinstance(part, str) or not part or any(character in part for character in "\r\n\0")
+            for header in target_headers
+            for part in header
+        ) or any(not isinstance(secret, str) or not secret for secret in extra_secrets):
+            raise ZyteTransportError("Zyte target headers and secrets must be nonempty single-line strings")
+        absolute_public_http_url(url, label="target URL", error_type=ZyteTransportError)
         request_fields: dict[str, Any] = {"url": url}
         if mode == HTTP_RESPONSE_BODY:
             request_fields["httpResponseBody"] = True
             request_fields["httpResponseHeaders"] = True
         else:
             request_fields["browserHtml"] = True
+        if target_headers:
+            request_fields["customHttpRequestHeaders"] = [
+                {"name": name, "value": value} for name, value in target_headers
+            ]
         request_payload = json.dumps(
             request_fields,
             separators=(",", ":"),
             sort_keys=True,
         ).encode()
         basic = base64.b64encode(f"{self.token}:".encode("iso-8859-1")).decode("ascii")
+        secrets = (self.token, basic, *extra_secrets)
         request = urllib.request.Request(
             self.api_url,
             data=request_payload,
@@ -250,83 +225,34 @@ class ZyteHttpFetcher:
             },
             method="POST",
         )
-        provider_max_bytes = max(
-            _MIN_PROVIDER_BYTES,
-            max_bytes * 2 + _PROVIDER_OVERHEAD_BYTES,
-        )
+        # Provider and socket errors can carry request text; none is chained or copied.
         try:
             response = urllib.request.urlopen(request, timeout=timeout_seconds)
         except urllib.error.HTTPError as error:
-            raise ZyteTransportError(
-                f"Zyte acquisition failed with HTTP {error.code}{_provider_error_kind(error)}"
-            ) from error
-        except (OSError, urllib.error.URLError) as error:
-            raise ZyteTransportError("Zyte acquisition failed before receiving a response") from error
-        with response:
-            provider_payload = response.read(provider_max_bytes + 1)
-            request_id = _request_id_from_provider_headers(response.headers)
-        if len(provider_payload) > provider_max_bytes:
-            raise ZyteTransportError("Zyte response exceeded the bounded provider payload size")
+            kind = _provider_error_kind(error, secrets)
+            raise ZyteTransportError(f"Zyte acquisition failed with HTTP {error.code}{kind}") from None
+        except (OSError, urllib.error.URLError):
+            raise ZyteTransportError("Zyte acquisition failed before receiving a response") from None
+        try:
+            with response:
+                provider_payload = read_provider_payload(
+                    response, max_bytes=max_bytes, provider=_PROVIDER, error_type=ZyteTransportError
+                )
+                request_id = _request_id_from_provider_headers(response.headers)
+        except OSError:
+            raise ZyteTransportError("Zyte acquisition failed while reading the provider response") from None
 
-        value = _provider_json(provider_payload)
+        value = strict_provider_json(provider_payload, provider=_PROVIDER, error_type=ZyteTransportError)
         target_status = value.get("statusCode")
-        resolved_url = value.get("url", url)
         if not isinstance(target_status, int) or isinstance(target_status, bool):
             raise ZyteTransportError("Zyte response omitted target statusCode")
-        if not isinstance(resolved_url, str):
-            raise ZyteTransportError("Zyte response returned an invalid target URL")
-        _absolute_public_http_url(resolved_url, label="resolved target URL")
-        if mode == HTTP_RESPONSE_BODY:
-            encoded_body = value.get("httpResponseBody")
-            if not isinstance(encoded_body, str):
-                raise ZyteTransportError("Zyte response omitted httpResponseBody")
-            content_type = _content_type_from_headers(value.get("httpResponseHeaders"))
-            try:
-                body = base64.b64decode(encoded_body, validate=True)
-            except (ValueError, binascii.Error) as error:
-                raise ZyteTransportError("Zyte returned invalid base64 target bytes") from error
-        else:
-            rendered = value.get("browserHtml")
-            if not isinstance(rendered, str):
-                raise ZyteTransportError("Zyte response omitted browserHtml")
-            # No Content-Type is stated, and inventing one would describe a
-            # rendered DOM as a publisher's declared media type.
-            content_type = None
-            body = rendered.encode("utf-8")
-        # Retained evidence must be exact. Suppress a reflected credential at
-        # the transport that knows it, rather than redacting publisher bytes
-        # and later describing them as an exact capture.
-        public_metadata = (url, resolved_url, content_type or "", request_id or "")
-        if any(secret in value for secret in (self.token, basic) for value in public_metadata) or any(
-            secret.encode(encoding) in body for secret in (self.token, basic) for encoding in ("utf-8", "iso-8859-1")
-        ):
-            error = ZyteTransportError("Zyte target response contains a reflected transport credential")
-            attach_refused_response(
-                error,
-                RefusedResponse(
-                    request_key="[credential-suppressed]",
-                    stage="transport",
-                    response_bytes=None,
-                    media_type="application/octet-stream",
-                    unavailable_reason="credential-suppressed",
-                    observed_byte_size=len(body),
-                ),
+        try:
+            resolved_url, content_type, body = _target_answer(
+                value, url=url, mode=mode, max_bytes=max_bytes, secrets=secrets, request_id=request_id
             )
-            raise error
-        if len(body) > max_bytes:
-            error = ZyteTransportError(f"Zyte target response exceeds max_bytes={max_bytes}")
-            attach_refused_response(
-                error,
-                RefusedResponse(
-                    request_key=url,
-                    stage="transport",
-                    response_bytes=None,
-                    media_type="application/octet-stream",
-                    unavailable_reason="response-byte-limit",
-                    observed_byte_size=len(body),
-                ),
-            )
-            raise error
+        except ZyteTransportError as error:
+            error.target_status = target_status
+            raise
         return ZyteHttpResponse(
             requested_url=url,
             resolved_url=resolved_url,
@@ -336,6 +262,50 @@ class ZyteHttpFetcher:
             mode=mode,
             request_id=request_id,
         )
+
+
+def _target_answer(
+    value: dict[str, Any],
+    *,
+    url: str,
+    mode: str,
+    max_bytes: int,
+    secrets: tuple[str, ...],
+    request_id: str | None,
+) -> tuple[str, str | None, bytes]:
+    """The target's final URL, media type and exact bytes, refused when unproven, reflected or over bound."""
+    # A final URL the provider did not state is unproven; defaulting it to the
+    # requested URL would make every caller's final-URL check agree with itself.
+    resolved_url = value.get("url")
+    if not isinstance(resolved_url, str):
+        raise ZyteTransportError("Zyte response omitted the target's final URL")
+    absolute_public_http_url(resolved_url, label="resolved target URL", error_type=ZyteTransportError)
+    if mode == HTTP_RESPONSE_BODY:
+        encoded_body = value.get("httpResponseBody")
+        if not isinstance(encoded_body, str):
+            raise ZyteTransportError("Zyte response omitted httpResponseBody")
+        content_type = _content_type_from_headers(value.get("httpResponseHeaders"))
+        try:
+            body = base64.b64decode(encoded_body, validate=True)
+        except (ValueError, binascii.Error):
+            raise ZyteTransportError("Zyte returned invalid base64 target bytes") from None
+    else:
+        rendered = value.get("browserHtml")
+        if not isinstance(rendered, str):
+            raise ZyteTransportError("Zyte response omitted browserHtml")
+        # No Content-Type is stated, and inventing one would describe a
+        # rendered DOM as a publisher's declared media type.
+        content_type = None
+        body = rendered.encode("utf-8")
+    refuse_reflected_credential(
+        body,
+        secrets=secrets,
+        metadata=(url, resolved_url, content_type or "", request_id or ""),
+        error_type=ZyteTransportError,
+        message="Zyte target response contains a reflected transport credential",
+    )
+    refuse_oversized_target(body, url=url, max_bytes=max_bytes, provider=_PROVIDER, error_type=ZyteTransportError)
+    return resolved_url, content_type, body
 
 
 __all__ = [

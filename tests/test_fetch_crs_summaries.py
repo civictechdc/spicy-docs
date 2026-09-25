@@ -306,3 +306,20 @@ def test_the_scrub_removes_the_configured_key_in_a_form_the_pattern_misses() -> 
     ):
         assert secret not in scrub_credential(carrier, secret), carrier
         assert "<redacted>" in scrub_credential(carrier, secret), carrier
+
+
+def test_every_key_is_scrubbed_through_a_nested_record_and_before_a_reason_is_cut() -> None:
+    """A route holding a target token and a proxy credential scrubs both, in every string and key."""
+    from spicy_docs.transport.credentials import REASON_CHARACTERS, failure_reason, scrub_record
+
+    target, proxy = "target-token-value", "proxy-token-value"
+    record = {"message": f"{target} then {proxy}", target: [(proxy, 7)], "url": "https://x.test/?api_key=abc"}
+    assert scrub_record(record, target, proxy) == {
+        "message": "<redacted> then <redacted>",
+        "<redacted>": [["<redacted>", 7]],
+        "url": "https://x.test/?api_key=<redacted>",
+    }
+    # The key straddles the cut: truncating first would leave its prefix standing.
+    straddling = ValueError("x" * (REASON_CHARACTERS - len("ValueError: ") - 8) + target)
+    reason = failure_reason(straddling, target)
+    assert len(reason) == REASON_CHARACTERS and target[:8] not in reason

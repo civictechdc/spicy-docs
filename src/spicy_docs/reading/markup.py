@@ -1,4 +1,9 @@
-"""Ordered markup observations with original-byte text positions and no layout policy."""
+"""Ordered markup observations with original-byte text positions and no layout policy.
+
+Also the three steps a source's own ``HTMLParser`` page reader repeats: decode
+one bounded page, feed it, and join a field's text parts under a length bound.
+Each raises the source's own error type.
+"""
 
 from __future__ import annotations
 
@@ -7,6 +12,8 @@ from html import unescape
 from html.parser import HTMLParser
 from typing import Literal
 from xml.parsers import expat
+
+from spicy_docs.transport.source_acquirer import check_payload, limit_byte_bound
 
 from .xml import _configure_xml_parser, _feed_xml, _validate_xml_input
 
@@ -364,3 +371,36 @@ def read_html_events(
             raise
         raise MarkupReadError(f"HTML markup cannot be parsed: {error}") from error
     return parser.events.result()
+
+
+def decode_html_page(body: object, max_bytes: object, *, label: str, cap: int, error_type: type[ValueError]) -> str:
+    """One page's exact bytes as the UTF-8 its publisher declares: nonempty, within a bound no greater than ``cap``."""
+    limit = limit_byte_bound(max_bytes, name=f"{label} byte bound", cap=cap, error_type=error_type)
+    exact = check_payload(body, limit, label=label, error_type=error_type, allow_empty=False)
+    try:
+        return exact.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise error_type(f"{label} is not the UTF-8 the publisher declares") from error
+
+
+def feed_html(parser: HTMLParser, text: str, *, label: str, error_type: type[Exception]) -> None:
+    """Feed and close one page; a parser failure is the source's own refusal, never an empty page."""
+    try:
+        parser.feed(text)
+        parser.close()
+    except error_type:
+        raise
+    except Exception as error:  # pragma: no cover - HTMLParser is lenient by design
+        raise error_type(f"{label} HTML could not be parsed") from error
+
+
+def joined_text(parts: object, *, label: str, bound: int, error_type: type[ValueError]) -> str:
+    """A field's text parts joined with whitespace collapsed; a string is one part, anything else none."""
+    if isinstance(parts, str):
+        parts = [parts]
+    elif not isinstance(parts, list):
+        parts = []
+    value = " ".join("".join(parts).split())
+    if len(value) > bound:
+        raise error_type(f"{label} exceeds its length bound")
+    return value

@@ -8,7 +8,7 @@ import zipfile
 
 import pytest
 
-from spicy_docs.reading.zip_archive import open_archive, read_member
+from spicy_docs.reading.zip_archive import inspect_archive_stream, open_archive, read_member
 
 
 def archive(*members):
@@ -74,3 +74,31 @@ def test_member_read_never_requests_unbounded_inflation(monkeypatch):
         monkeypatch.setattr(zipfile.ZipExtFile, "read", bounded)
         assert read_member(bundle, bundle.infolist()[0], max_bytes=128, error_type=ValueError, label="zip") == b"source"
         assert requests == [129]
+
+
+@pytest.mark.parametrize("compression", [zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED])
+def test_inventory_hands_each_member_to_its_observer_in_the_single_pass(monkeypatch, compression):
+    payload = bytes(range(256)) * 700  # larger than one 64 KiB decoded chunk
+    output = io.BytesIO()
+    with zipfile.ZipFile(output, "w", compression) as bundle:
+        bundle.writestr("a.bin", payload)
+        bundle.writestr("b.bin", b"small")
+    body = output.getvalue()
+    monkeypatch.setattr(zipfile.ZipExtFile, "read", lambda *_a, **_k: pytest.fail("a member was decoded twice"))
+    seen: dict[int, list[bytes]] = {}
+
+    def observe(ordinal, info):
+        assert info.filename in ("a.bin", "b.bin")
+        return seen.setdefault(ordinal, []).append
+
+    inventory = inspect_archive_stream(
+        io.BytesIO(body),
+        byte_size=len(body),
+        max_entries=4,
+        max_decoded_bytes=1 << 20,
+        max_metadata_bytes=1 << 16,
+        observe=observe,
+    )
+    assert b"".join(seen[0]) == payload and b"".join(seen[1]) == b"small"
+    assert max(len(chunk) for chunk in seen[0]) <= 64 * 1024
+    assert [member["crcVerified"] for member in inventory["members"]] == [True, True]

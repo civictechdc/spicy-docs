@@ -9,12 +9,12 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable, Mapping
-from datetime import UTC, datetime
+from datetime import datetime
 
 import httpx
 
 from spicy_docs.reading.refusals import RefusedResponse, attach_refused_response
-from spicy_docs.transport.captured import CapturedBodyResponse, attach_capture, refused_capture
+from spicy_docs.transport.captured import CapturedBodyResponse, attach_capture, observed_instant, refused_capture
 from spicy_docs.transport.credentials import CredentialRefusedError
 from spicy_docs.transport.http import RetryableHTTPStatusError
 from spicy_docs.transport.retry import retry_http
@@ -104,7 +104,10 @@ class BoundedHttpCapture:
             self._closed = True
             self._client.close()
 
-    def _start_request(self) -> None:
+    def start_request(self) -> None:
+        """Charge one attempt to this operation's budget and pace it; any transport's attempt may call it."""
+        if self._closed:
+            raise ValueError("Source acquisition client is closed")
         if self._request_count >= self.max_requests:
             raise self.error_type("Source acquisition exhausted its total request budget")
         if self._last_request_start is not None:
@@ -124,8 +127,12 @@ class BoundedHttpCapture:
         content: bytes | None = None,
         request_headers: Mapping[str, str] | None = None,
         retain_dropped_body: bool = False,
+        max_attempts: int | None = None,
     ) -> CapturedBodyResponse:
         """``POST`` sends ``content`` verbatim and records it on the capture; credentials never belong in it.
+
+        ``max_attempts`` caps this call's retries below the remaining budget; a
+        ladder rung passes ``1`` so its one attempt is recorded, not retried.
 
         ``retain_dropped_body`` keeps what a body delivered before any
         ``httpx.RequestError`` cut it short (a dropped connection, a reset, a read
@@ -141,10 +148,14 @@ class BoundedHttpCapture:
             raise ValueError("method must be GET or POST")
         if (content is not None) != (method == "POST"):
             raise ValueError("POST requires a request body and GET forbids one")
+        if max_attempts is not None and (
+            isinstance(max_attempts, bool) or not isinstance(max_attempts, int) or max_attempts <= 0
+        ):
+            raise ValueError("max_attempts must be a positive integer")
         headers = {"Accept-Encoding": "gzip" if allow_gzip else "identity", **dict(request_headers or {})}
 
         def attempt() -> CapturedBodyResponse:
-            self._start_request()
+            self.start_request()
             # A cookie set by one response must not steer the next request:
             # a publisher that keys page selection on session state would
             # otherwise answer a different page than the URL names.
@@ -216,15 +227,12 @@ class BoundedHttpCapture:
                             ),
                         )
                         raise dropped from None
-                    observed_at = self._clock()
-                    if observed_at.tzinfo is None or observed_at.utcoffset() is None:
-                        raise ValueError("Source acquisition clock must return a timezone-aware instant")
                     capture = CapturedBodyResponse(
                         requested_url=url,
                         resolved_url=str(response.url),
                         status_code=response.status_code,
                         content_type=response.headers.get("content-type"),
-                        observed_at=observed_at.astimezone(UTC).isoformat().replace("+00:00", "Z"),
+                        observed_at=observed_instant(self._clock),
                         body=bytes(body),
                         content_encoding=encoding,
                         method=method,
@@ -261,7 +269,7 @@ class BoundedHttpCapture:
             return retry_http(
                 attempt,
                 retryable=(_RetryableTransportError, RetryableHTTPStatusError),
-                max_attempts=remaining,
+                max_attempts=remaining if max_attempts is None else min(remaining, max_attempts),
             )
         except Exception as error:
             attach_refused_response(

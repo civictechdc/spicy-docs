@@ -60,6 +60,7 @@ from spicy_docs.reading.paged_json import (
     WalkPass,
     pool_walks,
     query_value,
+    walk_page_sizes,
     with_query,
 )
 from spicy_docs.sources.congress.bill_status import BILL_TYPES
@@ -785,7 +786,7 @@ def _pass_urls(route: CongressListRoute, url: str) -> tuple[str, ...]:
     one ``url`` names, descending when it names none.
     """
     limit = query_value(url, "limit")
-    sizes = _pass_limits(int(limit)) if limit is not None and limit.isdigit() else (limit,)
+    sizes = tuple(map(str, walk_page_sizes(int(limit)))) if limit is not None and limit.isdigit() else (limit,)
     orders: tuple[str | None, ...] = (None,)
     if route.sort_honored:
         first = query_value(url, "sort")
@@ -800,11 +801,6 @@ def _pass_urls(route: CongressListRoute, url: str) -> tuple[str, ...]:
         spelled = url if sort == orders[0] else with_query(url, "sort", str(sort))
         passes.append(spelled if size == limit else with_query(spelled, "limit", str(size)))
     return tuple(passes)
-
-
-def _pass_limits(limit: int) -> tuple[str, ...]:
-    """The URL's page size and two smaller ones that move every boundary: 250 gives 250, 237 and 223."""
-    return tuple(dict.fromkeys(str(size) for size in (limit, limit - limit // 19, limit - limit // 9)))
 
 
 class CongressListingReader(PagedJsonReader):

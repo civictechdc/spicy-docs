@@ -7,14 +7,12 @@ import sys
 import time
 from collections.abc import Callable
 
-from spicy_docs.transport.credentials import scrub_credential
+from spicy_docs.transport.credentials import failure_reason
 
 # Allow temporary network congestion ~542s of total sleep across 13 retries.
 # Callers classify errors; terminal refusals still fail on the first attempt.
 MAX_HTTP_ATTEMPTS = 14
 RETRY_BACKOFF_CEILING_SECONDS = 60.0
-# Match retained error rows: enough context to diagnose a failed request.
-_REASON_CHARACTERS = 300
 
 
 def retry_http[FetchResult](
@@ -46,7 +44,7 @@ def retry_http[FetchResult](
             delay = random.uniform(0.0, ceiling)
             # A later success bypasses the caller's error-row scrub. Scrub here,
             # before truncation can leave a partial credential in the log.
-            reason = scrub_credential(f"{type(error).__name__}: {error}", api_key)[:_REASON_CHARACTERS]
+            reason = failure_reason(error, api_key)
             print(
                 f"source-native fetch: retry {attempt}/{attempts - 1} "
                 f"in {delay:.1f}s (cap {ceiling:.0f}s) after "

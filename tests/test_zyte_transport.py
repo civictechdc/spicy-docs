@@ -8,6 +8,7 @@ from __future__ import annotations
 import base64
 import io
 import json
+import traceback
 from datetime import UTC, datetime
 
 import httpx
@@ -142,6 +143,7 @@ def test_empty_received_target_body_is_distinct_from_missing_provider_field(monk
             "httpResponseBody": "",
             "httpResponseHeaders": [{"name": "Content-Type", "value": "text/html"}],
             "statusCode": 200,
+            "url": PRODUCT_URL,
         }
     ).encode()
     monkeypatch.setattr(zyte.urllib.request, "urlopen", lambda *_args, **_kwargs: _Response(provider))
@@ -149,6 +151,48 @@ def test_empty_received_target_body_is_distinct_from_missing_provider_field(monk
         "https://www.gao.gov/products/gao-26-107693", timeout_seconds=9, max_bytes=1024
     )
     assert response.body == b""
+
+
+def test_an_omitted_final_url_is_unproven_not_the_requested_url(monkeypatch) -> None:
+    """Defaulting the final URL to the request would make every redirect gate agree with itself."""
+    provider = json.loads(_ok_provider(b"body"))
+    del provider["url"]
+    monkeypatch.setattr(zyte.urllib.request, "urlopen", lambda *_a, **_k: _Response(json.dumps(provider).encode()))
+    with pytest.raises(zyte.ZyteTransportError, match="omitted the target's final URL") as raised:
+        zyte.ZyteHttpFetcher(token="test-token").fetch(PRODUCT_URL, timeout_seconds=9, max_bytes=1024)
+    assert raised.value.target_status == 200
+
+
+def test_target_headers_travel_and_extra_secrets_are_never_retained(monkeypatch) -> None:
+    sent: list[bytes] = []
+
+    def open_request(request, *, timeout: float):
+        sent.append(request.data)
+        return _Response(_ok_provider(b"<html>echo target-secret</html>"))
+
+    monkeypatch.setattr(zyte.urllib.request, "urlopen", open_request)
+    with pytest.raises(zyte.ZyteTransportError, match="reflected") as raised:
+        zyte.ZyteHttpFetcher(token="test-token").fetch(
+            PRODUCT_URL,
+            timeout_seconds=9,
+            max_bytes=1024,
+            target_headers=(("Authorization", "Bearer target-secret"),),
+            extra_secrets=("target-secret",),
+        )
+    assert json.loads(sent[0])["customHttpRequestHeaders"] == [
+        {"name": "Authorization", "value": "Bearer target-secret"}
+    ]
+    assert raised.value.target_status == 200
+    assert raised.value.refused_response.response_bytes is None
+    for bad in ((("X", "a\r\nInjected: b"),), (("", "value"),)):
+        with pytest.raises(zyte.ZyteTransportError, match="single-line"):
+            zyte.ZyteHttpFetcher(token="test-token").fetch(
+                PRODUCT_URL, timeout_seconds=9, max_bytes=1024, target_headers=bad
+            )
+    with pytest.raises(zyte.ZyteTransportError, match="httpResponseBody"):
+        zyte.ZyteHttpFetcher(token="test-token").fetch(
+            PRODUCT_URL, timeout_seconds=9, max_bytes=1024, mode=zyte.BROWSER_HTML, target_headers=(("X", "y"),)
+        )
 
 
 def test_browser_html_is_a_rendering_and_states_no_publisher_media_type(monkeypatch) -> None:
@@ -206,6 +250,35 @@ def test_a_provider_error_names_its_own_kind_and_never_its_prose_or_the_credenti
     assert "/download/temporary-error" in str(raised.value)
     assert "secret-value" not in str(raised.value)
     assert "prose" not in str(raised.value)
+
+
+@pytest.mark.parametrize("failure", ["http-slug", "open", "read"])
+def test_provider_failures_never_chain_or_repeat_a_secret_and_close_the_error(monkeypatch, failure) -> None:
+    secret, provider_errors = "target-secret", []
+
+    class ReadFailure(_Response):
+        def read(self, _limit):
+            raise OSError(f"reset while sending {secret}")
+
+    def open_request(*_args, **_kwargs):
+        if failure == "open":
+            raise OSError(f"refused {secret}")
+        if failure == "read":
+            return ReadFailure(b"")
+        error = zyte.urllib.error.HTTPError(
+            zyte.ZYTE_API_URL, 520, f"{secret} prose", {}, io.BytesIO(json.dumps({"type": f"/{secret}"}).encode())
+        )
+        provider_errors.append(error)
+        raise error
+
+    monkeypatch.setattr(zyte.urllib.request, "urlopen", open_request)
+    with pytest.raises(zyte.ZyteTransportError) as raised:
+        zyte.ZyteHttpFetcher(token="test-token").fetch(
+            PRODUCT_URL, timeout_seconds=9, max_bytes=1024, extra_secrets=(secret,)
+        )
+    assert secret not in "".join(traceback.format_exception(raised.value))
+    assert raised.value.__cause__ is None and raised.value.__suppress_context__
+    assert all(error.closed for error in provider_errors)
 
 
 def _ok_provider(body: bytes, url: str = PRODUCT_URL) -> bytes:

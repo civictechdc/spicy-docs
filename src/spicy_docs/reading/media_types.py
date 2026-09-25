@@ -26,6 +26,11 @@ _ALIASES = {
 }
 
 
+def bare_media_type(content_type: str | None) -> str:
+    """A stated Content-Type without its parameters, trimmed and case-folded; empty when none was stated."""
+    return (content_type or "").split(";", 1)[0].strip().casefold()
+
+
 def media_type_policy() -> dict[str, object]:
     """Describe rendition typing in the source's hashed acquisition policy."""
     return {
