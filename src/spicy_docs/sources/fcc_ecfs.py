@@ -1,35 +1,24 @@
-"""FCC ECFS proceedings and filings: offset walks over explicit date windows with exact evidence.
+"""FCC ECFS proceedings and filings: explicit date selections with exact page evidence.
 
-The Electronic Comment Filing System API answers rows under ``proceeding`` or
-``filing`` beside ``aggregations``, with no count and no continuation, so the
-reader advances ``offset`` by the rows received and stops at the first short
-page. The api.data.gov key travels as ``X-Api-Key``. Date filters use the
-publisher's bracketed literal ``[gte]YYYY-MM-DD[lte]YYYY-MM-DD``; deep offsets
-are capped by the publisher, so callers narrow windows rather than walk far.
+The low-level page iterators stop at the first short page. ``iter_filings``
+also checks the native aggregation, pools shifted walks by submission ID and
+partitions crowded selections before reaching the publisher's offset ceiling.
+The api.data.gov key travels as ``X-Api-Key``.
 
-**Both bracketed bounds are instants, not days, so a caller's inclusive end day
-is sent as the following date.** ``[gte]D[lte]E`` selects
-``D T00:00:00Z <= t <= E T00:00:00Z``: the end date contributes its midnight
-instant and none of its own day. Measured live on 2026-09-14 (receipt
-``supply-2026-09-02/receipts/publisher-questions-2026-09-14/q1-fcc-same-day``),
-``[gte]D[lte]D`` answered zero rows while ``[gte]D[lte]D+1`` was exactly day D,
-so ``_window_url`` spells the caller's inclusive ``*_to`` date as ``end + 1
-day``; a time component does **not** widen the window. That empty filings page
-is byte-identical for every empty query, so an ignored filter and a
-matched-nothing filter cannot be told apart here, and no zero on this route
-establishes absence. Two consequences: a row stamped exactly
-``E+1 T00:00:00.000Z`` falls in the window, so adjacent day windows overlap by
-that one instant; and ``[lt]`` was observed once honoured as an end bound, which
-would close that instant but is one observation of an undocumented operator.
+Date builders retain the established following-day end bound. Closed timestamp
+ranges can overlap at their boundary; ``[lt]`` did not exclude that boundary in
+the September 25, 2026 probes. The earlier empty same-day response did not
+establish timestamp precision or timezone semantics. See ``docs/sources/listings.md``
+and campaign receipts ``fcc-pagination-research-2026-09-25T100156Z``.
 """
 
 from __future__ import annotations
 
 import re
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Mapping
 from datetime import date as Date
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlencode
 
 from spicy_docs.reading.paged_json import (
@@ -47,6 +36,8 @@ if TYPE_CHECKING:
 
 API = "https://publicapi.fcc.gov/ecfs"
 MAX_LIMIT = 250
+MAX_FILINGS_LIMIT = 5_000
+DEFAULT_FILINGS_LIMIT = 1_000
 PROCEEDINGS_KEY = "proceeding"
 FILINGS_KEY = "filing"
 FCC_ECFS = JsonPageFamily(
@@ -70,12 +61,7 @@ def _date(value: str, name: str) -> str:
 
 
 def _end_bound(end: str) -> str:
-    """The date whose midnight closes an inclusive window ending on ``end`` -- the day after it.
-
-    The publisher's ``[lte]`` names an instant at ``00:00:00Z``, so the caller's
-    last wanted day is bounded by the following date's midnight. See the module
-    docstring for the measurement.
-    """
+    """Keep the established following-day bound for a caller's inclusive end date."""
     try:
         return (Date.fromisoformat(end) + timedelta(days=1)).isoformat()
     except OverflowError as error:
@@ -89,8 +75,9 @@ def _window_url(
     start, end = _date(start, "start"), _date(end, "end")
     if end < start:
         raise PagedJsonSourceError("end precedes start")
-    if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= MAX_LIMIT:
-        raise PagedJsonSourceError(f"limit must be an integer from 1 to {MAX_LIMIT}")
+    maximum = MAX_FILINGS_LIMIT if endpoint == "filings" else MAX_LIMIT
+    if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= maximum:
+        raise PagedJsonSourceError(f"limit must be an integer from 1 to {maximum}")
     if isinstance(offset, bool) or not isinstance(offset, int) or offset < 0:
         raise PagedJsonSourceError("offset must be a non-negative integer")
     query = [
@@ -150,3 +137,34 @@ class FccEcfsReader(PagedJsonReader):
     def filings(self, url: str, *, max_pages: int = DEFAULT_MAX_PAGES) -> Iterator[JsonPage]:
         """Walk filing pages for one window URL under the family's shared budget."""
         return self.pages(url, records_key=FILINGS_KEY, max_pages=max_pages)
+
+    def iter_filings(
+        self,
+        *,
+        received_from: str,
+        received_to: str,
+        proceeding: str | None = None,
+        limit: int = DEFAULT_FILINGS_LIMIT,
+        on_page: Callable[[JsonPage], None] | None = None,
+    ) -> Iterator[Mapping[str, Any]]:
+        """Enumerate a received-date selection, splitting crowded submission timestamp ranges.
+
+        Yield native filings with bounded memory. ``on_page`` receives every
+        exact page, including probes and repeated walks, for caller-owned
+        evidence retention. Stage outputs until normal iterator exhaustion:
+        later pages or partition reconciliation can still refuse the selection.
+        A row outside the received dates or proceeding actually sent refuses:
+        an ignored filter and one that matched nothing look the same.
+        Refresh, checkpoints, attachment acquisition and publication remain
+        caller-owned. This is an observed selection, not an atomic API snapshot.
+        """
+        from spicy_docs.sources.fcc_ecfs_filings import iter_filings
+
+        return iter_filings(
+            self,
+            received_from=received_from,
+            received_to=received_to,
+            proceeding=proceeding,
+            limit=limit,
+            on_page=on_page,
+        )

@@ -1,9 +1,6 @@
-"""FCC ECFS routes walk explicit date windows by offset and end at the first short page.
+"""FCC low-level page routes preserve following-day bounds and stop at a short page.
 
-The publisher's bracketed bounds are instants at ``00:00:00Z``, so an inclusive
-caller window ending on day E is sent as ``[lte]E+1``; see the module docstring
-for the live measurement behind that. ECFS states no count, so a pooled walk of
-a window pools against a total its host supplies.
+Counted mirror traversal is covered in ``test_fcc_ecfs_filings.py``.
 """
 
 import json
@@ -71,8 +68,7 @@ def test_family_and_window_urls():
 @pytest.mark.parametrize(
     "start,end,literal",
     [
-        # A same-day window means that whole day: [gte]D[lte]D matched only the
-        # midnight instant and answered zero rows live on 2026-09-14.
+        # Keep the established following-day end bound, including a same-day selection.
         ("2026-09-08", "2026-09-08", "[gte]2026-09-08[lte]2026-09-09"),
         ("2026-09-01", "2026-09-02", "[gte]2026-09-01[lte]2026-09-03"),
         # Month, year and leap-day ends roll over rather than being clamped.
