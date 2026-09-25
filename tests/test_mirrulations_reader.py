@@ -11,16 +11,27 @@ comment, missing attachments, stray keys, refusals, and capped, ETag-pinned fetc
 
 from collections.abc import Iterable
 from json import dumps
+from types import SimpleNamespace
 
 import pytest
 from botocore.exceptions import ClientError
 
 from spicy_docs.schemas import COMMENT, DOCKET, DOCUMENT, RECORD_TYPES, RecordType
+from spicy_docs.sources import mirrulations
 from spicy_docs.sources.mirrulations import MirrulationsReader
 
 BUCKET = "mirrulations"
 PREFIX = "raw-data"
 AGENCY = "EPA"
+
+
+_REAL_LISTING_CLIENT = mirrulations.listing_client
+
+
+@pytest.fixture(autouse=True)
+def _list_through_fake_resources(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Fake resources supply their own listing client; ``listing_client`` builds a real botocore one."""
+    monkeypatch.setattr(mirrulations, "listing_client", lambda resource: resource.meta.client)
 
 
 def _docket_payload(docket_id: str) -> dict:
@@ -90,10 +101,34 @@ class _FakeBucket:
         self.objects = _FakeObjects(store)
 
 
+class _FakeListingClient:
+    """ListObjectsV2 pages over a fake resource's object listing, so its refusals and scan counts still apply."""
+
+    def __init__(self, resource: "_FakeS3Resource") -> None:
+        self._resource = resource
+
+    def get_paginator(self, name: str) -> "_FakeListingClient":
+        assert name == "list_objects_v2"
+        return self
+
+    def paginate(self, *, Bucket: str, Prefix: str, Delimiter: str | None = None, StartAfter: str | None = None):
+        keys = sorted(obj.key for obj in self._resource.Bucket(Bucket).objects.filter(Prefix=Prefix))
+        if Delimiter is None:
+            yield {"Contents": [{"Key": key} for key in keys if StartAfter is None or key > StartAfter]}
+            return
+        rests = (key[len(Prefix) :] for key in keys)
+        prefixes = sorted({Prefix + rest.split(Delimiter)[0] + Delimiter for rest in rests if Delimiter in rest})
+        yield {"CommonPrefixes": [{"Prefix": prefix} for prefix in prefixes]}
+
+
 class _FakeS3Resource:
     def __init__(self, store: dict[str, bytes]) -> None:
         self._store = store
         self.get_requests: list[tuple[str, dict[str, str]]] = []
+
+    @property
+    def meta(self) -> SimpleNamespace:
+        return SimpleNamespace(client=_FakeListingClient(self))
 
     def Bucket(self, name: str) -> _FakeBucket:
         return _FakeBucket(self._store)
@@ -687,7 +722,7 @@ def test_single_scan_buckets_keys_by_record_type() -> None:
 
     result = list_agency_files_by_type(resource, BUCKET, PREFIX, AGENCY, [DOCKET, DOCUMENT, COMMENT])
 
-    assert scans[0] == 1
+    assert scans[0] == 2  # one docket enumeration and one range listing, not one scan per record type
     assert result["dockets"] == [f"{PREFIX}/{AGENCY}/EPA-2024-0001/text-EPA-2024-0001/docket/EPA-2024-0001.json"]
     assert result["documents"] == [
         f"{PREFIX}/{AGENCY}/EPA-2024-0001/text-EPA-2024-0001/documents/EPA-2024-0001-0001.json"
@@ -695,6 +730,40 @@ def test_single_scan_buckets_keys_by_record_type() -> None:
     assert result["comments"] == [
         f"{PREFIX}/{AGENCY}/EPA-2024-0001/text-EPA-2024-0001/comments/EPA-2024-0001-0002.json"
     ]
+
+
+def test_docket_ranges_list_every_key_once_in_key_order(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Concurrent docket ranges return exactly the serial listing, including dockets that prefix one another."""
+    from spicy_docs.sources.mirrulations import list_agency_files_by_type
+
+    monkeypatch.setattr(mirrulations, "_DOCKETS_PER_RANGE", 2)
+    dockets = [f"EPA-{n}" for n in range(1, 13)] + ["EPA-1-2", "EPA-1.5", "EPA-10-A"]
+    store = {
+        f"{PREFIX}/{AGENCY}/{docket}/text-{docket}/comments/{docket}-{i}.json": b"{}"
+        for docket in dockets
+        for i in range(3)
+    }
+    store[f"{PREFIX}/{AGENCY}/stray.json"] = b"{}"
+    scans = [0]
+    resource = _CountingResource(store, scans)
+
+    result = list_agency_files_by_type(resource, BUCKET, PREFIX, AGENCY, [COMMENT], listing_workers=3)
+
+    assert result["comments"] == sorted(key for key in store if "/comments/" in key)
+    assert scans[0] == 1 + len(dockets) // 2  # one docket enumeration, then one listing per range
+
+
+def test_listing_client_copies_the_resource_configuration() -> None:
+    """The listing client keeps the resource's region, signing, pool and retry settings."""
+    from spicy_docs.sources.mirrulations import s3_resource
+
+    resource = s3_resource(max_pool_connections=7)
+    real = _REAL_LISTING_CLIENT(resource)
+    assert real is not resource.meta.client
+    assert real.meta.region_name == resource.meta.client.meta.region_name
+    assert real.meta.config.max_pool_connections == 7
+    assert real.meta.config.signature_version == resource.meta.client.meta.config.signature_version
+    assert real.meta.config.retries == resource.meta.client.meta.config.retries
 
 
 def test_reader_factory_scans_each_agency_once() -> None:
@@ -711,7 +780,7 @@ def test_reader_factory_scans_each_agency_once() -> None:
         list(reader.iter_records())
         keys_by_type[record_type.name] = reader.last_keys
 
-    assert scans[0] == 1  # one scan for the agency, not one per record type
+    assert scans[0] == 2  # one docket enumeration and one range listing for the agency, not one per record type
     assert len(keys_by_type["dockets"]) == 1
     assert len(keys_by_type["documents"]) == 1
     assert len(keys_by_type["comments"]) == 1

@@ -39,12 +39,13 @@ from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from functools import partial
-from itertools import chain
+from itertools import chain, pairwise
 from json import loads
 from threading import Lock
 from typing import Any, Final
 
 import boto3
+import botocore.session
 from botocore import UNSIGNED
 from botocore.config import Config as BotoConfig
 from botocore.exceptions import ClientError, HTTPClientError
@@ -71,6 +72,13 @@ PREFIX = "raw-data"
 # anonymous resource is shared across the pool: unsigned read-only GetObject has
 # no credential-refresh race, and botocore's connection pool is thread-safe.
 DEFAULT_DOWNLOAD_WORKERS = 16
+
+# An agency listing is split into contiguous docket ranges listed concurrently.
+# One stream lists ~5.2k objects/s and a sweep lists ~32M objects, so a serial
+# agency listing made each batch wait on its largest agency (FWS: ~9 min).
+# Ranges hold at least this many dockets, so the extra partial page each range
+# costs stays small (median docket ~70 keys); measured 2026-09-25.
+_DOCKETS_PER_RANGE = 100
 
 # Emit a download-progress line every this many files, so a large agency's
 # multi-hour download reports how far along it is (small agencies finish before
@@ -217,6 +225,48 @@ def list_json_files(
     )
 
 
+def listing_client(s3_resource: Any) -> Any:
+    """A client configured like ``s3_resource``'s that leaves ``LastModified`` unparsed.
+
+    Listing reads only keys, and dateutil parsing of every listed timestamp was
+    about 60% of listing CPU, which caps threaded listing under the GIL.
+    """
+    meta = s3_resource.meta.client.meta
+    session = botocore.session.get_session()
+    session.get_component("response_parser_factory").set_parser_defaults(timestamp_parser=str)
+    return session.create_client("s3", region_name=meta.region_name, config=meta.config)
+
+
+def _key_ranges(
+    client: Any, bucket_name: str, agency_prefix: str, max_ranges: int
+) -> list[tuple[str | None, str | None]]:
+    """Split an agency's keys into contiguous ``(start_after, stop)`` docket ranges.
+
+    Docket prefixes come back in key order, and every key under a docket sorts
+    between that docket's prefix and the next one's, so the ranges cover each
+    key exactly once, in listing order.
+    """
+    pages = client.get_paginator("list_objects_v2").paginate(Bucket=bucket_name, Prefix=agency_prefix, Delimiter="/")
+    dockets = [entry["Prefix"] for page in pages for entry in page.get("CommonPrefixes", ())]
+    count = max(1, min(max_ranges, len(dockets) // _DOCKETS_PER_RANGE))
+    bounds = [None, *(dockets[i * len(dockets) // count] for i in range(1, count)), None]
+    return list(pairwise(bounds))
+
+
+def _iter_key_range(
+    client: Any, bucket_name: str, agency_prefix: str, start_after: str | None, stop: str | None
+) -> Iterator[str]:
+    """Yield the keys in ``(start_after, stop)`` under ``agency_prefix``, in key order."""
+    request = {"Bucket": bucket_name, "Prefix": agency_prefix}
+    if start_after is not None:
+        request["StartAfter"] = start_after
+    for page in client.get_paginator("list_objects_v2").paginate(**request):
+        for entry in page.get("Contents", ()):
+            if stop is not None and entry["Key"] >= stop:
+                return
+            yield entry["Key"]
+
+
 def list_agency_files_by_type(
     s3_resource: Any,
     bucket_name: str,
@@ -226,6 +276,7 @@ def list_agency_files_by_type(
     processed_keys: Any = None,
     verbose: bool = False,
     since_year: int | None = None,
+    listing_workers: int = DEFAULT_DOWNLOAD_WORKERS,
 ) -> dict[str, list[str]]:
     """List one agency's JSON files in a single pass, bucketed by record type.
 
@@ -234,31 +285,46 @@ def list_agency_files_by_type(
     (potentially millions of objects) prefix N times. This scans it once and
     classifies each key by which record type's ``path_pattern`` it contains —
     the patterns (``/docket/``, ``/documents/``, ``/comments/``) are mutually
-    exclusive, so each key maps to at most one type.
+    exclusive, so each key maps to at most one type. Contiguous docket ranges
+    are listed concurrently and merged in key order.
     """
     year_pattern = re.compile(rf"{re.escape(prefix)}/{re.escape(agency)}/{re.escape(agency)}-(\d{{4}})-")
     patterns = [(rt.name, rt.path_pattern) for rt in record_types if rt.path_pattern]
-    result: dict[str, list[str]] = {rt.name: [] for rt in record_types}
+    agency_prefix = f"{prefix}/{agency}/"
+    client = listing_client(s3_resource)
 
-    bucket = s3_resource.Bucket(bucket_name)
-    for obj in _iter_objects(bucket, f"{prefix}/{agency}/"):
-        key = obj.key
-        if "/text-" not in key or not key.endswith(".json"):
-            continue
-        matched = next((name for name, pattern in patterns if pattern in key), None)
-        if matched is None:
-            continue
-        if since_year:
-            m = year_pattern.search(key)
-            if m and int(m.group(1)) < since_year:
+    def scan(key_range: tuple[str | None, str | None]) -> list[tuple[str, str]]:
+        matched_keys = []
+        for key in _iter_key_range(client, bucket_name, agency_prefix, *key_range):
+            if "/text-" not in key or not key.endswith(".json"):
                 continue
-        if processed_keys and key in processed_keys:
-            continue
-        result[matched].append(key)
+            matched = next((name for name, pattern in patterns if pattern in key), None)
+            if matched is None:
+                continue
+            if since_year:
+                m = year_pattern.search(key)
+                if m and int(m.group(1)) < since_year:
+                    continue
+            if processed_keys and key in processed_keys:
+                continue
+            matched_keys.append((matched, key))
+        return matched_keys
+
+    result: dict[str, list[str]] = {rt.name: [] for rt in record_types}
+    workers = max(1, listing_workers)
+    try:
+        ranges = _key_ranges(client, bucket_name, agency_prefix, workers * 4)
+        with ThreadPoolExecutor(max_workers=min(workers, len(ranges))) as executor:
+            for matched_keys in executor.map(scan, ranges):
+                for name, key in matched_keys:
+                    result[name].append(key)
+    except ClientError as error:
+        _raise_if_access_refused(error, agency_prefix)
+        raise
 
     if verbose:
         summary = ", ".join(f"{name} {len(keys)}" for name, keys in result.items())
-        tqdm.write(f"    [{agency}] single-scan listing: {summary}")
+        tqdm.write(f"    [{agency}] single-scan listing ({len(ranges)} ranges): {summary}")
 
     return result
 
