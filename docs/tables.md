@@ -1,8 +1,9 @@
 # Table contracts
 
 `spicy_docs.schemas` states every row shape this repository offers a host, and
-one pure `shape_*` function per table that turns a record into that row. The
-build brief is
+one pure `shape_*` function per table that turns a record into that row, except
+for the [host-shaped Regulations.gov tables](#the-regulationsgov-tables-are-keyed-on-the-publishers-id).
+The build brief is
 [the table-contract design](research/table-contracts-2026-09-19.md); this page
 is what landed.
 
@@ -71,6 +72,9 @@ table's columns.
 | `senate_expenditures` | One row per ruled row of one ruled table on one page of a Report of the Secretary of the Senate, with the cells exactly as the print states them and the roles its own header band names. | `package_id`, `file_name`, `page`, `table_ordinal`, `row_ordinal`, `text_sha256` | `extraction_rule_version` | `schemas.senate_expenditure_tables` |
 | `bill_committee_actions` | One row per action phrase a committee print states about one bill it names in the same sentence: the print's own phrasing, what it maps to, and how reliable the pairing is. | `document_key`, `text_sha256`, `bill_id`, `print_phrasing`, `span_start` | `rule_set_version` | `schemas.bill_action_tables`, `interpretation.bill_actions` |
 | `hearing_bill_links` | One row per bill one source states a hearing was held on or noticed for: the pair, the source that stated it, and the committee-and-date key the statement was checked against. | `package_id`, `bill_id`, `link_source` | `link_rule_version` | `schemas.hearing_bill_link_tables`, `interpretation.hearing_bill_links`, `sources.congress.house_committee_repository` |
+| `dockets` | One row per Regulations.gov docket, the folder an agency opens for one rulemaking or other action. | `docket_id` | `modify_date` | the host, through its copy of `schemas.regulations`' extract |
+| `documents` | One row per document an agency posted on Regulations.gov: a rule, notice or supporting material. | `document_id` | `modify_date` | the host, through its copy of `schemas.regulations`' extract |
+| `comments` | One row per public comment posted on Regulations.gov. | `comment_id` | `modify_date` | the host, through its copy of `schemas.regulations`' extract |
 
 Every column carries its own sentence.
 
@@ -157,6 +161,45 @@ spans and row identity are unchanged. Hosts must include
 `REPORT_SECTION_READER_VERSION` from `schemas.committee_report_tables` in
 their processing checkpoint and regenerate old rows; publisher modification
 timestamps cannot establish that this correction has run.
+
+## The Regulations.gov tables are keyed on the publisher's id
+
+`dockets`, `documents` and `comments` are shaped by the host, from Mirrulations
+records through its copy of the extract in `schemas.regulations`, so they have
+no `shape_*` here. Each contract lists the extract's columns in its order, then,
+on documents and comments, the host's `pdf_extraction_results_json`. The record
+types here, and the `public_tables` and public-comment profiles built on them,
+still lack that column; the contracts state what is published.
+
+Each identity is the publisher's own id. A document filed under two agencies
+is still one document (DocSpec decision 0004). Each contract declares the
+member-key spelling `value/1`, the id itself, so DocSpec can admit a generation
+by reference (its decision 0007, ruling R6). `TableContract.key_spelling` names
+an entry of `schemas.tables.KEY_SPELLINGS`, and `spelled_key(row)` is the Python
+reference DocSpec tests its compiled SQL against. An entry never changes; a new
+rule gets a new `name/version`. No other contract declares a spelling yet.
+
+The key was measured on 2026-09-25 over two generations of the fork host's
+public objects. Each local copy was bound to its object by recomputing the
+multipart ETag.
+
+| Table | Object SHA-256, live then prior | Rows | NULL, empty or duplicate ids |
+| --- | --- | --- | --- |
+| `dockets` | `07bf427e…`, `680b86ad…` | 279,351; 279,336 | 0 |
+| `documents` | `ffa2da6c…`, `ff502e4b…` | 2,002,688; 2,002,562 | 0 |
+| `comments` | `bf81f764…`, `b90e1105…` | 26,303,691; 26,303,691 | 0 |
+
+DuckDB 1.5.5 counted NULL and empty ids and grouped the id column
+(`GROUP BY id HAVING count(*) > 1`) under a 2 GB memory limit. On the live
+generation Polars, a different reader, counted distinct ids per hash bucket
+against the footer's row count, and agreed. Both caught a planted duplicate and
+a planted NULL. Every id
+matches `^[A-Za-z0-9_.-]+$`, so none needs escaping in JSON framing; none
+differs from another only by case. `modify_date` is an ISO 8601 `Z` instant on
+every row of all three tables, so it orders chronologically as text.
+
+The fixture rows and their selection are in
+`tests/fixtures/regulations_gov_tables/README.md`.
 
 ## The bill family is one pass
 

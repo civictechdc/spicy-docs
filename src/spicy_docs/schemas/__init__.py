@@ -58,7 +58,15 @@ from spicy_docs.schemas.document_citation_tables import (
 from spicy_docs.schemas.hearing_bill_link_tables import HEARING_BILL_LINKS
 from spicy_docs.schemas.law_tables import LAW_CODE_SECTIONS, LAWS, TABLE3_RECORDS
 from spicy_docs.schemas.legislator_tables import MEMBER_TERMS, MEMBERS
-from spicy_docs.schemas.regulations import COMMENT, DOCKET, DOCUMENT, RECORD_TYPES
+from spicy_docs.schemas.regulations import (
+    COMMENT,
+    COMMENTS,
+    DOCKET,
+    DOCKETS,
+    DOCUMENT,
+    DOCUMENTS,
+    RECORD_TYPES,
+)
 from spicy_docs.schemas.roster_tables import COMMITTEE_ASSIGNMENTS, COMMITTEES
 from spicy_docs.schemas.senate_expenditure_tables import SENATE_EXPENDITURES
 from spicy_docs.schemas.tables import Row, TableContract, TableContractError
@@ -117,6 +125,11 @@ _REGISTERED: tuple[TableContract, ...] = (
     # A2 reopened: a hearing is held on a list, so the linkage is a table and
     # not a column, keyed on the source that stated each pair.
     HEARING_BILL_LINKS,
+    # The Regulations.gov tables, keyed on the publisher's id so DocSpec can
+    # admit a generation by reference (its decision 0007).
+    DOCKETS,
+    DOCUMENTS,
+    COMMENTS,
 )
 
 if len({contract.name for contract in _REGISTERED}) != len(_REGISTERED):
@@ -139,6 +152,7 @@ __all__ = [
     "BUDGET_VOLUMES",
     "CBO_COST_ESTIMATES",
     "COMMENT",
+    "COMMENTS",
     "COMMITTEES",
     "COMMITTEE_ASSIGNMENTS",
     "COMMITTEE_MEETINGS",
@@ -146,7 +160,9 @@ __all__ = [
     "CONGRESS_BILLS",
     "DIFF_SUMMARIES",
     "DOCKET",
+    "DOCKETS",
     "DOCUMENT",
+    "DOCUMENTS",
     "DOCUMENT_CITATIONS",
     "FINANCIAL_CHANGES",
     "HEARING_BILL_LINKS",

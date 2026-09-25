@@ -1,9 +1,10 @@
 """Four loops over every registered contract, and the shaped rows they run against.
 
 One property per loop, asserted in one place: internal consistency, round-trip through the column tuple, identity
-uniqueness, and a description for every column. Rows come from real captures wherever one exists, except two named
-borrowings -- the three-printing diff and a captured CRPT body under a CHRG identity -- and the diff-dependent cases
-skip without the ``bill-diff`` extra."""
+uniqueness, and a description for every column. Rows come from real captures wherever one exists -- for the
+host-shaped Regulations.gov tables, rows read back from the host's publication -- except two named borrowings (the
+three-printing diff and a captured CRPT body under a CHRG identity), and the diff-dependent cases skip without the
+``bill-diff`` extra."""
 
 from __future__ import annotations
 
@@ -57,7 +58,8 @@ from spicy_docs.schemas.cost_estimate_tables import (
     shape_cbo_cost_estimate,
 )
 from spicy_docs.schemas.legislator_tables import shape_member, shape_member_term
-from spicy_docs.schemas.tables import bill_id, digest, joined
+from spicy_docs.schemas.regulations import DOCUMENT, RECORD_TYPES
+from spicy_docs.schemas.tables import VALUE_KEY, bill_id, digest, joined, table_contract, text, value_key
 from spicy_docs.sources.agency_reports.report_blocks import parse_agency_blocks
 from spicy_docs.sources.congress.bill_status import BillIdentity, parse_bill_status
 from spicy_docs.sources.congress.bill_tree import engine_available
@@ -1164,6 +1166,39 @@ def _hearing_bill_link_cases() -> list[ShapedCase]:
     ]
 
 
+# ---------------------------------------------------------------------------
+# The Regulations.gov tables, over rows the host published.
+# ---------------------------------------------------------------------------
+
+
+#: The id each row of ``regulations_gov_tables/published-rows.json`` was selected by, in file order, written here by
+#: hand rather than read back out of the row (the fixture's README states each selection).
+_PUBLISHED_REGULATIONS_IDS: dict[str, tuple[str, ...]] = {
+    "dockets": ("FAA-2016-6907", "ACF-2007-0125"),
+    "documents": ("FAA-2016-6907-0001", "ACF-2015-0002-0331", "DOE-HQ-2010-0016-0001"),
+    "comments": ("AHRQ-2025-0001-0411", "APHIS-2004-0018-0031"),
+}
+
+
+def _published_regulations_rows() -> dict[str, list[dict[str, str | None]]]:
+    return json.loads((FIXTURES / "regulations_gov_tables" / "published-rows.json").read_text(encoding="utf-8"))
+
+
+def _regulations_cases() -> list[ShapedCase]:
+    """The three Regulations.gov tables, over rows read back unchanged from the host's published generation.
+
+    The host shapes these rows, not a ``shape_*`` here, so the published row is the one under test: the round-trip
+    loop holds each contract's column order to the Parquet footer's, and the identity is the id the row was selected by.
+    """
+    published = _published_regulations_rows()
+    assert set(published) == set(_PUBLISHED_REGULATIONS_IDS)
+    return [
+        _case(table, row, (identity,))
+        for table, identities in _PUBLISHED_REGULATIONS_IDS.items()
+        for row, identity in zip(published[table], identities, strict=True)
+    ]
+
+
 def all_cases() -> list[ShapedCase]:
     cases = (
         _billstatus_only_cases()
@@ -1182,6 +1217,7 @@ def all_cases() -> list[ShapedCase]:
         # --- The build order's step 4: the Senate expenditure tables. ---
         + _senate_expenditure_cases()
         + _hearing_bill_link_cases()
+        + _regulations_cases()
     )
     if engine_available():
         cases = _family_cases() + cases
@@ -1211,8 +1247,6 @@ def test_the_registry_is_keyed_by_each_contracts_own_name() -> None:
 
 
 def test_a_contract_that_names_a_column_it_does_not_have_refuses() -> None:
-    from spicy_docs.schemas.tables import table_contract
-
     with pytest.raises(TableContractError, match="identity column"):
         table_contract(
             "broken", grain="x.", identity=("missing",), version_column=None, columns={"present": "A column."}
@@ -1223,6 +1257,30 @@ def test_a_contract_that_names_a_column_it_does_not_have_refuses() -> None:
         )
     with pytest.raises(TableContractError, match="snake_case"):
         table_contract("Broken", grain="x.", identity=("a",), version_column=None, columns={"a": "A column."})
+
+
+def test_a_key_spelling_refuses_what_it_cannot_spell() -> None:
+    """``value/1`` spells one non-empty component; anything else refuses, at construction or per row."""
+    two = {"a": "A column.", "b": "B column."}
+    with pytest.raises(TableContractError, match="one-column identity"):
+        table_contract(
+            "broken", grain="x.", identity=("a", "b"), version_column=None, columns=two, key_spelling=VALUE_KEY
+        )
+    with pytest.raises(TableContractError, match="unknown key spelling"):
+        table_contract("broken", grain="x.", identity=("a",), version_column=None, columns=two, key_spelling="value/2")
+    undeclared = table_contract("plain", grain="x.", identity=("a",), version_column=None, columns=two)
+    with pytest.raises(TableContractError, match="declares no key spelling"):
+        undeclared.spelled_key({"a": "x", "b": None})
+    with pytest.raises(TableContractError, match="one-column identity"):
+        value_key(("x", "y"))
+
+    documents = TABLE_CONTRACTS["documents"]
+    row = dict.fromkeys(documents.columns)
+    with pytest.raises(TableContractError, match="is null"):
+        documents.spelled_key(row)
+    row["document_id"] = ""
+    with pytest.raises(TableContractError, match="empty"):
+        documents.spelled_key(row)
 
 
 # ---------------------------------------------------------------------------
@@ -1318,6 +1376,42 @@ def test_a_multi_part_report_is_one_row_per_part_and_its_blocks_key_under_their_
         for part in mods.parts
     ]
     assert len(set(keys)) == 2
+
+
+def test_the_regulations_gov_tables_key_on_the_publishers_id_itself() -> None:
+    """Each declares ``value/1``, and its reference returns the published id byte for byte: no trim, fold or prefix.
+
+    Uniqueness is not something seven rows can show; it was measured over the whole generation (``docs/tables.md``).
+    """
+    cases = _regulations_cases()
+    assert {case.contract.name for case in cases} == set(RECORD_TYPES)
+    for case in cases:
+        assert case.contract.key_spelling == VALUE_KEY
+        assert case.contract.spelled_key(case.row) == case.identity[0]
+
+
+def test_each_regulations_gov_table_publishes_its_extract_columns_first() -> None:
+    """The extract's columns lead each published table in the extract's order; only host columns may follow."""
+    for record_type in RECORD_TYPES.values():
+        contract = TABLE_CONTRACTS[record_type.name]
+        assert contract.columns[: len(record_type.schema)] == tuple(record_type.schema)
+
+
+def test_the_published_document_row_is_the_extract_of_its_captured_record() -> None:
+    """The keyed API detail of FAA-2016-6907-0001 (2026-09-14) and the host's published row (2026-09-25) agree on every
+    column ``DOCUMENT.extract`` fills, each spelled through ``text``; the host's appended column is NULL.
+
+    Two acquisitions of one record by different routes, the API and the host's Mirrulations ETL, so agreement shows the
+    host publishes the extract's values unreformatted, not a row agreeing with itself.
+    """
+    record = json.loads((FIXTURES / "listings" / "regulations-gov-document-detail.json").read_text(encoding="utf-8"))
+    extracted = {column: text(value) for column, value in DOCUMENT.extract(record).items()}
+    (published,) = (
+        row for row in _published_regulations_rows()["documents"] if row["document_id"] == "FAA-2016-6907-0001"
+    )
+    assert {column: published[column] for column in extracted} == extracted
+    assert published.keys() - extracted.keys() == {"pdf_extraction_results_json"}
+    assert published["pdf_extraction_results_json"] is None
 
 
 def test_every_hearing_bill_link_row_keys_uniquely_and_the_sources_do_not_collide() -> None:
@@ -1445,6 +1539,10 @@ FILLED_BY: dict[str, tuple[str, ...]] = {
     ),
     # B4: the index CBO's own wall denies, read keyless out of BILLSTATUS.
     "cbo_cost_estimates": ("schemas/cost_estimate_tables.py", "sources/congress/bill_status.py"),
+    # The host fills these through its copy of the extract; its text steps fill the rest.
+    "dockets": ("schemas/regulations.py",),
+    "documents": ("schemas/regulations.py",),
+    "comments": ("schemas/regulations.py",),
 }
 
 #: A value a description names in backticks.  Prose that says a column carries

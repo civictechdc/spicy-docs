@@ -1,5 +1,5 @@
-"""The :class:`TableContract` record every published table declares, and the value helpers every ``shape_*`` row goes
-through.
+"""The :class:`TableContract` record every published table declares, its member-key spellings, and the value helpers
+every ``shape_*`` row goes through.
 
 The package is a stdlib-only leaf (``docs/research/table-contracts-2026-09-19.md`` §1), so anything a shaper needs from
 ``sources`` or ``interpretation`` -- a referral vocabulary, a prompt frame, a version-kind label -- arrives as a
@@ -12,7 +12,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
 
@@ -89,6 +89,31 @@ def digest(value: str | None) -> str | None:
     return "sha256:" + hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
+#: The member-key spelling of a one-column identity: the value itself.
+VALUE_KEY = "value/1"
+
+
+def value_key(parts: tuple[str, ...]) -> str:
+    """The ``value/1`` spelling: a one-column identity's value, byte for byte, refusing an empty one.
+
+    Nothing is trimmed, folded or prefixed, so the key equals the published column and a SQL compilation of it is the
+    bare column.
+    """
+    if len(parts) != 1:
+        raise TableContractError(f"{VALUE_KEY} spells a one-column identity, not {len(parts)} columns")
+    if not parts[0]:
+        raise TableContractError(f"{VALUE_KEY} refuses an empty identity value")
+    return parts[0]
+
+
+#: Every member-key spelling a contract can declare, by ``name/version``, with its Python reference.  DocSpec compiles
+#: a declared spelling to SQL, tests it against the reference, and puts the spelling in every admitted state's identity
+#: (its decision 0007 §6), so an entry never changes: a new rule is a new ``name/version`` and an explicit re-key.  A
+#: composite identity declares none until one is needed (ruling R6); that one spells the ordered canonical JSON array
+#: of its components, under its own versioned name.
+KEY_SPELLINGS: Mapping[str, Callable[[tuple[str, ...]], str]] = MappingProxyType({VALUE_KEY: value_key})
+
+
 @dataclass(frozen=True, slots=True)
 class TableContract:
     """One published table: its columns in publish order, its identity, its version column and one sentence per column.
@@ -98,9 +123,12 @@ class TableContract:
     order, and ``None`` means none is declared: dates and explicitly ordered revisions can order, rule digests support
     equality only, and a host chooses which input generation supersedes another before merging. ``descriptions`` is what
     spicy-regs's data dictionary reads, so a column added here fails that check until the prose catches up (§5.3).
+    ``key_spelling`` names the :data:`KEY_SPELLINGS` entry that spells the identity as one member-key string, and
+    ``None`` means none is declared yet.
 
     Construction refuses a non-snake_case name or column, a duplicate column, an empty identity, an identity or version
-    column that is not a column, and a description set not keyed exactly by the columns.
+    column that is not a column, a description set not keyed exactly by the columns, and an unknown key spelling or one
+    that cannot spell this identity.
     """
 
     name: str
@@ -109,6 +137,7 @@ class TableContract:
     version_column: str | None
     descriptions: Mapping[str, str]
     grain: str
+    key_spelling: str | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.name, str) or _SNAKE_CASE.fullmatch(self.name) is None:
@@ -142,6 +171,11 @@ class TableContract:
                 raise TableContractError(f"{self.name}: column {column!r} needs a description")
         if not isinstance(self.grain, str) or not self.grain.strip():
             raise TableContractError(f"{self.name}: a table needs a one-sentence grain")
+        if self.key_spelling is not None:
+            if self.key_spelling not in KEY_SPELLINGS:
+                raise TableContractError(f"{self.name}: unknown key spelling {self.key_spelling!r}")
+            if self.key_spelling == VALUE_KEY and len(self.identity) != 1:
+                raise TableContractError(f"{self.name}: {VALUE_KEY} spells a one-column identity")
         object.__setattr__(self, "descriptions", MappingProxyType(dict(self.descriptions)))
 
     def key(self, row: Row) -> tuple[str, ...]:
@@ -160,6 +194,15 @@ class TableContract:
                 raise TableContractError(f"{self.name}: identity column {column!r} is null")
             parts.append(value)
         return tuple(parts)
+
+    def spelled_key(self, row: Row) -> str:
+        """This row's member key under :attr:`key_spelling`, the reference a SQL compilation of it is tested against.
+
+        Refuses a contract that declares no spelling, and every row :meth:`key` refuses.
+        """
+        if self.key_spelling is None:
+            raise TableContractError(f"{self.name}: declares no key spelling")
+        return KEY_SPELLINGS[self.key_spelling](self.key(row))
 
     def checked(self, row: Row) -> Row:
         """Prove one shaped row has exactly this contract's columns, each a string or NULL, and return it unchanged.
@@ -189,6 +232,7 @@ def table_contract(
     identity: tuple[str, ...],
     version_column: str | None,
     columns: Mapping[str, str],
+    key_spelling: str | None = None,
 ) -> TableContract:
     """Build a contract from one ordered ``column -> description`` mapping.
 
@@ -202,6 +246,7 @@ def table_contract(
         version_column=version_column,
         descriptions=columns,
         grain=grain,
+        key_spelling=key_spelling,
     )
 
 
@@ -248,7 +293,9 @@ def usc_section_key(section: object) -> str | None:
 
 __all__ = [
     "DASH_SPELLINGS",
+    "KEY_SPELLINGS",
     "UNIT_SEPARATOR",
+    "VALUE_KEY",
     "Row",
     "TableContract",
     "TableContractError",
@@ -262,4 +309,5 @@ __all__ = [
     "table_contract",
     "text",
     "usc_section_key",
+    "value_key",
 ]

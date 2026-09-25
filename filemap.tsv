@@ -207,7 +207,7 @@ src/spicy_docs/schemas/federal_register.py	Stable public Federal Register source
 src/spicy_docs/schemas/hearing_bill_link_tables.py	One row per (hearing, bill, source) stating a hearing was held on or noticed for a bill.	src
 src/spicy_docs/schemas/law_tables.py	The ``laws`` table (Congress.gov law list rows joined to their PLAW USLM citation), ``law_code_sections`` (OLRC…	src
 src/spicy_docs/schemas/legislator_tables.py	The ``members`` and ``member_terms`` tables: one row per legislator in one capture of the community crosswalk, and one…	src
-src/spicy_docs/schemas/regulations.py	Concrete :class:`RecordType` instances for the regulations.gov docket, document and comment shapes.	src
+src/spicy_docs/schemas/regulations.py	The regulations.gov docket, document and comment record types, and the contracts of the tables published from them.	src
 src/spicy_docs/schemas/roster_tables.py	The ``committees`` table (Congress.gov ``committee/{congress}`` list rows with the ``committee-detail`` record folded…	src
 src/spicy_docs/schemas/senate_expenditure_tables.py	``senate_expenditures``: one row per ruled row of one of the print's three ruled grids (``appropriation_summary``,…	src
 src/spicy_docs/schemas/source_native_release/2.0/acquisition-ledger.schema.json		config
@@ -220,7 +220,7 @@ src/spicy_docs/schemas/source_native_release/2.0/scope.schema.json		config
 src/spicy_docs/schemas/source_native_release/2.0/source-native-record.schema.json		config
 src/spicy_docs/schemas/source_native_release/2.0/source-schema-declaration.schema.json		config
 src/spicy_docs/schemas/spicy_regs_public_tables.py	The sixteen-column logical spicy-regs public comment row, the fifteen-column partition file, and the one projection…	src
-src/spicy_docs/schemas/tables.py	The :class:`TableContract` record every published table declares, and the value helpers every ``shape_*`` row goes…	src
+src/spicy_docs/schemas/tables.py	The :class:`TableContract` record every published table declares, its member-key spellings, and the value helpers…	src
 src/spicy_docs/source_native/__init__.py	Supported source-native API; implementations live in :mod:`spicy_docs.releases`.	src
 src/spicy_docs/source_native/federal_register.py	Current Federal Register API; source implementation lives with its profile.	src
 src/spicy_docs/source_native/profiles.py	Public profiles for supported source-native releases.	src

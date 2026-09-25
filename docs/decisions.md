@@ -2136,3 +2136,26 @@ and ships in 0.32.0, whose consumer must adopt it in the same release it vendors
 package id would publish two bodies, two digests and two CBO findings as one,
 and `CRPT-119hrpt494`'s Part 2 is a supplemental report correcting Part 1's
 committee votes, not a continuation of it.
+
+## A table contract declares its member-key spelling, and the Regulations.gov tables key on the publisher's id
+
+2026-09-25, for DocSpec decision 0007 (admitting a generation by reference),
+whose owner ruling R6 left key spellings to this package. DocSpec puts each
+table's member key in every admitted state's identity and in every Engine id,
+so the spelling belongs to the contract that owns the identity, not to its
+reader. `TableContract.key_spelling` names an entry of
+`schemas.tables.KEY_SPELLINGS`; each entry is a `name/version` with a Python
+reference, and `spelled_key(row)` applies it. `value/1` is the id itself.
+Behavior and measurements: [Table contracts](tables.md#the-regulationsgov-tables-are-keyed-on-the-publishers-id).
+
+**What a later change must preserve.** An entry's output never changes, even
+to fix it: a different spelling is a new `name/version`, and adopting it is an
+explicit re-key downstream. A composite identity declares no spelling until it
+needs one; that one spells the ordered canonical JSON array of its components
+under its own name, and says so in its docstring.
+
+**Why the publisher's id alone.** DocSpec decision 0004 found a cross-filed
+document to be one document under one `documentId`, not an identity question,
+and the id was unique and never NULL or empty on every row of two published
+generations of all three tables. A composite such as `(agency_code,
+document_id)` would split what the publisher states is one record.
