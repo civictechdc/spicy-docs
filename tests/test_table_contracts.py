@@ -815,18 +815,20 @@ def _activity_rows(package: str):
     from spicy_docs.interpretation.citations import CITATION_RULE_SET_VERSION
     from spicy_docs.schemas.document_citation_tables import (
         GOVINFO_PACKAGE,
+        activity_report_stated_keys,
         document_provenance,
-        index_stated_keys,
         shape_activity_report,
         shape_document_citation,
     )
-    from tests.test_citations import body_for, citations_for, mods_for, summary_for
+    from tests.test_citations import body_for, citations_for, covered_for, mods_for, summary_for
 
-    body, summary, mods = body_for(package), summary_for(package), mods_for(package)
+    body, summary, mods, covered = body_for(package), summary_for(package), mods_for(package), covered_for(package)
     findings = citations_for(package)
-    stated = index_stated_keys(mods)
+    stated = activity_report_stated_keys(mods, covered)
     provenance = document_provenance(body, document_key=package, document_kind=GOVINFO_PACKAGE)
-    document = shape_activity_report(summary, mods, body, findings, rule_set_version=CITATION_RULE_SET_VERSION)
+    document = shape_activity_report(
+        summary, mods, body, findings, covered=covered, rule_set_version=CITATION_RULE_SET_VERSION
+    )
     rows = [shape_document_citation(finding, provenance, stated_by_index=stated) for finding in findings]
     return document, rows, findings, mods
 

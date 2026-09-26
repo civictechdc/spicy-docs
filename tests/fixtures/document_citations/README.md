@@ -1,4 +1,4 @@
-# House committee activity report fixtures
+# Committee activity report fixtures
 
 `a10-regressions.json` retains source snippets and expected keys from the
 September 24 print-citations audit. Each example names its GovInfo package.
@@ -119,3 +119,43 @@ and names the version to move.
 | Fixture | Bytes | SHA-256 |
 | --- | --- | --- |
 | `grammar-specimens.jsonl` | 298,203 | `7fbfd98619e2b6c1190ea1cf70aaf7a4e0fdcdbde0f77ca0f7ce23e431b6c6ed` |
+
+## The 2026-09-26 print-citations audit (`print-citations-2026-09-26.json`, `mods-CRPT-118srpt99.xml`)
+
+The drift audit in
+`corpora/fork-execution-2026-09-21/drift-qualification-2026-09-26/bills-citations/`
+found Senate activity reports -- filed in the Congress after the one they
+cover -- publishing their bills in the filing Congress, and two bill misreads.
+Receipt: `corpora/supply-2026-09-02/receipts/fix-print-citations-2026-09-26/`
+(`build_fixtures.py` writes both files from retained bytes only; nothing was
+re-fetched for them). Public-domain government text.
+
+- **`covered`**: four of the 40 reports in the print-citations window, one per
+  path through `activity_reports.covered_congress` -- CRPT-118srpt99 and
+  CRPT-118srpt3 (title), CRPT-118srpt1 (cover), CRPT-118hrpt941 (front matter)
+  -- each with its published index title and its first five pages of
+  normalized text, cut from the full text whose digest (`text_sha256`) equals
+  the published `house_activity_reports.text_sha256`. `pdf_sha256` names the
+  PDF it was derived from: the audit's own native read for -118srpt99 and
+  -118srpt3, this receipt's keyless fetch (`fetch-ledger.json`) for the others.
+  `expected` is the Congress each report covers, checked two ways over all 40
+  (`check_covered.py`): the reader's answer, and the chamber rule that a House
+  report is filed in the Congress it covers and a Senate report in the next.
+- **`bill_snippets`**: the two misreads (`CLAUSE S 2(N)` in CRPT-117hrpt702 and
+  `S. Con. Res.\n2022:` in CRPT-117hrpt708) and the true readings nearest each
+  refusal -- year-shaped numbers wrapped under their designator, a colon after
+  an unwrapped number, and CRPT-118srpt99's `H.R. 5376`. Each is a whole-line
+  slice `[span_start, span_end)` of the text its `text_sha256` names; `keys`
+  lists every bill the slice names, stated by reading it.
+- **`mods-CRPT-118srpt99.xml`**: **reduced** exactly as the two MODS above --
+  everything before the first `<relatedItem>`, then `</mods>`, 62 constituent
+  records dropped -- from
+  `https://www.govinfo.gov/metadata/pkg/CRPT-118srpt99/mods.xml` (32,601 bytes,
+  `sha256:775f4aac44924271b8d284cfb40372008cb942e5e5503ec60746d90c9f0002a9`).
+  Its 34 root `<bill>` elements, H.R. 5376 among them, all state
+  `congress="118"` for a report on the 117th.
+
+| Fixture | Bytes | SHA-256 |
+| --- | --- | --- |
+| `print-citations-2026-09-26.json` | 33,109 | `66e1db446d210a641261727fed38fabda2ecf0f5b695834c9f5783938e439ad2` |
+| `mods-CRPT-118srpt99.xml` | 11,679 | `824fe705c4ab450ca53f98ad4a53682daeb0a4d59c5b1a22835ae9493bfd481f` |

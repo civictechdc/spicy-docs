@@ -681,7 +681,8 @@ def find_bill_actions(
     read out of ``text`` -- passed in so one document is read once and citation
     and action rows cannot disagree about where a bill was named -- and
     anything else is ignored, so a caller may hand over the whole finding
-    tuple. ``committee_chamber`` is used for one thing only: a hearing or
+    tuple. A mention whose key did not resolve (a document stating no
+    Congress) names no ``bill_id``, so nothing attaches to it. ``committee_chamber`` is used for one thing only: a hearing or
     markup is the committee's own act, so its code follows the actor rather
     than the measure (see :func:`chamber_of`), while every other row's chamber
     is read off the row. Attachment is nearest-mention-in-sentence, ties to the
@@ -695,7 +696,9 @@ def find_bill_actions(
     mentions = [
         finding
         for finding in citations
-        if getattr(finding, "kind", None) == "bill_number" and getattr(finding, "span_start", None) is not None
+        if getattr(finding, "kind", None) == "bill_number"
+        and getattr(finding, "span_start", None) is not None
+        and getattr(finding, "target_resolved", True)
     ]
     flat = flatten(text)
     starts = sentence_starts(flat.flat)

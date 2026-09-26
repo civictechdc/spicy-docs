@@ -494,12 +494,15 @@ rollup estimated.
   `<congReport>` sibling reports. What the PDF adds is counts — distinct
   bills, laws and Code sections, how many of each the MODS does not already
   state, committees resolved and unresolved, pages read and whether the read
-  was capped. `bills_congress_mismatch` is the check on the one assumption the
-  rules make: a print writes `H.R. 7806` and never a Congress, so every bare
-  designator is stamped with the document's own, and the index comparison runs
-  a second time on `(bill_type, number)` alone so a measure from another
-  Congress shows as a discrepancy rather than a confidently wrong `bill_id`.
-  Measured zero on both packages.
+  was capped. A print writes `H.R. 7806` and never a Congress beside it, so
+  every bare designator is stamped with `covered_congress` -- the Congress the
+  report states it covers, from its title, cover or front matter
+  (`covered_congress_source`), kept beside the summary's filing `congress`
+  because a Senate report is filed in the next Congress. No statement, no bill
+  key. `bills_congress_mismatch` runs the index comparison a second time on
+  `(bill_type, number)` alone, so a bill the MODS keys under another Congress
+  shows as a discrepancy -- on a Senate report, the MODS's own filing-Congress
+  stamp. Zero on both House fixture packages.
 
   It overlaps `committee_reports` on seven columns under the same
   `package_id` — `package_id`, `congress`, `title`, `date_issued`,
@@ -781,7 +784,8 @@ that bounds what they establish:
   its content. The re-check measured them; this repository holds no fixture
   that does;
 - **`bills_congress_mismatch` is zero on both**, which says those two
-  documents name no measure from another Congress — not that none ever does;
+  documents name no measure from another Congress — not that none ever does.
+  The Senate report fixture (CRPT-118srpt99) is where it is nonzero;
 - **the MODS comparison here is two packages**; the eight-report, full-depth
   figures quoted above are the [MODS re-check](research/pdf-yield-mods-recheck-2026-09-20.md)'s,
   not this branch's. The request budget for this build was four keyed records

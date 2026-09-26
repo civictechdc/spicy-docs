@@ -86,6 +86,24 @@ CONGRESS_CHAMBER = (
     r"|S\.?\s?J\.?\s?Res|S\.?\s?Con\.?\s?Res|S\.?\s?Res|S)"
 )
 
+#: What may follow a bill number, since ``bill_number`` 003. Two refusals,
+#: each the only reading of its shape in the retained corpora -- the 40
+#: activity reports, the audit's five budget volumes and the parsing survey's
+#: 143,964 bill and 60,000 Federal Register texts, 31,955 matches of the 002
+#: rule (receipt ``fix-print-citations-2026-09-26/``):
+#:
+#: * a parenthesized subdivision attached to the number is a provision, not a
+#:   measure. ``CLAUSE S 2(N), (O), OR (P) OF RULE XI`` (a spaced-out
+#:   ``CLAUSES``, CRPT-117hrpt702) read as Senate bill 2; the two matches it
+#:   removes are the only ones followed by ``(``;
+#: * a year opening a line and closing with a colon is a heading. ``S. Con.
+#:   Res.\n2022:`` (CRPT-117hrpt708, whose contents lost the ``14``) read as a
+#:   concurrent resolution numbered 2022; the seven other year-shaped numbers
+#:   wrapped onto a line of their own (``H.R.\n2021``) are real bills and none
+#:   closes with a colon, while an unwrapped ``H.R. 7593: Modernizing ...``
+#:   (CRPT-118hrpt964) still reads.
+BILL_NUMBER_END = r"\b(?!\()(?!(?<=\n(?:19|20)\d\d):)"
+
 
 # --- the committee vocabulary and the resolver ---------------------------------------
 
@@ -219,10 +237,11 @@ class CitationContext:
     """What a target key needs that the matched text alone does not state.
 
     ``congress`` is the Congress a bare bill designator belongs to: a print
-    writes ``H.R. 7806`` and never the Congress, so the caller supplies the one
-    its own index record states, and a bill key is built only from a stated
-    Congress -- with none, the finding keeps the printed form and says it is
-    unresolved. ``committees`` is the ``{canonical candidate:
+    writes ``H.R. 7806`` and never the Congress beside it, so the caller
+    supplies the one the document states it covers (for an activity report,
+    ``sources.govinfo.activity_reports.covered_congress``), and a bill key is
+    built only from a stated Congress -- with none, the finding keeps the
+    printed form and says it is unresolved. ``committees`` is the ``{canonical candidate:
     CommitteeResolution}`` map :func:`resolve_committee_names` produced for this
     one document.
     """
@@ -261,14 +280,15 @@ def bill_type_and_number(value: str) -> tuple[str, str] | None:
 def _bill_target(value: str, context: CitationContext) -> tuple[str, bool, str]:
     """``H.R. 7806`` in a 118th-Congress document is ``118-hr-7806``.
 
-    **The Congress is an assumption, and a bounded one**: a print never states
-    one, so every bare designator is stamped with the caller's, and an activity
-    report that discusses an earlier Congress's law publishes a ``bill_id`` for
-    the wrong Congress with ``target_resolved`` true -- which is why
-    ``house_activity_reports`` carries ``bills_congress_mismatch``. Without a
-    stated Congress the canonical printed form stands and the finding says the
-    key is not the catalog's; the type/number split runs longest-name-first so
-    ``S. Res. 21`` is ``sres`` and not ``s``.
+    **The Congress is the document's statement, and a bounded one**: every
+    bare designator is stamped with the Congress the caller read from the
+    document, so an activity report that discusses an earlier Congress's law
+    still publishes a ``bill_id`` for the wrong Congress with
+    ``target_resolved`` true -- which is why ``house_activity_reports`` carries
+    ``bills_congress_mismatch``. Without a stated Congress the canonical
+    printed form stands and the finding says the key is not the catalog's; the
+    type/number split runs longest-name-first so ``S. Res. 21`` is ``sres`` and
+    not ``s``.
     """
     parts = bill_type_and_number(value)
     if parts is None or context.congress is None:
@@ -569,8 +589,8 @@ class CitationRule:
 CITATION_RULES: tuple[CitationRule, ...] = (
     CitationRule(
         name="bill_number",
-        version="002",
-        pattern=rf"{CONGRESS_CHAMBER}[.\s]\s?\d{{1,5}}\b",
+        version="003",
+        pattern=rf"{CONGRESS_CHAMBER}[.\s]\s?\d{{1,5}}{BILL_NUMBER_END}",
         target_table="congress_bills",
         target_key_shape="bill_id: {congress}-{bill_type}-{number}, from the caller's stated Congress",
         rejects=(
@@ -585,8 +605,10 @@ CITATION_RULES: tuple[CitationRule, ...] = (
             "ANALYSIS. 12",
             "R.S. 2477",
             "W.S. 11-6-302",
+            "CLAUSE S 2(N), (O), OR (P) OF RULE XI",
+            "S. Con. Res.\n2022:",
         ),
-        note="chamber designator plus number; the Congress must come from the document's own date or index row",
+        note="chamber designator plus number; the Congress must come from the document's own statement of it",
         target=_bill_target,
     ),
     # The four kinds below have been read by the citation grammar since their

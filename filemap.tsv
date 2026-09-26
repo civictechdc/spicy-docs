@@ -322,7 +322,7 @@ src/spicy_docs/sources/gao/native.py	Exact GAO product-page evidence for one sou
 src/spicy_docs/sources/gao/profile.py	GAO product-page acquisition profile.	src
 src/spicy_docs/sources/gao/rss.py	The GAO reports feed: the one keyless, machine-readable listing of recent products.	src
 src/spicy_docs/sources/govinfo/__init__.py	GovInfo source metadata and USLM identity checks, available without acquisition dependencies.	src
-src/spicy_docs/sources/govinfo/activity_reports.py	Which CRPT package is a committee activity report, by its index title.	src
+src/spicy_docs/sources/govinfo/activity_reports.py	Which CRPT package is a committee activity report, and which Congress it says it reports on.	src
 src/spicy_docs/sources/govinfo/bodies.py	Locate and prove one GovInfo package or granule body, offline.	src
 src/spicy_docs/sources/govinfo/body_acquisition.py	Acquire one GovInfo package or granule body: keyed summary, keyed MODS, then the keyless rendition.	src
 src/spicy_docs/sources/govinfo/discovery.py	Bounded GovInfo JSON discovery: what packages a collection published or changed, and a package's granules.	src
@@ -432,6 +432,7 @@ tests/source_json_input_oracle.py	Parse source JSON without accepting ambiguous 
 tests/source_native_release_fixtures.py	Hand-built source-native release fixtures for the receipt-helper tools.	test
 tests/test_acquisition_policy_history.py	Only the selected profile's current acquisition policy version is admissible.	test
 tests/test_activity_events.py	What changed between two runs, built from the contracts' own shaped rows.	test
+tests/test_activity_report_congress.py	An activity report's bills are keyed in the Congress the report says it covers, not the one it was filed in.	test
 tests/test_agency_reports.py	Native FOIA and Oversight report boundaries on retained inputs.	test
 tests/test_audit_bill_identify_tool.py	The bill-identify acceptance harness: CSV in, per-type extraction tally out.	test
 tests/test_bill_acquisition.py	Bounded status-to-selected-text acquisition with retained responses.	test

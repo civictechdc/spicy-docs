@@ -124,7 +124,11 @@ HOUSE_ACTIVITY_REPORTS = table_contract(
     key_spelling=VALUE_KEY,
     columns={
         "package_id": "The GovInfo package id, which is this row's identity.",
-        "congress": "The numbered Congress, as the keyed summary states it.",
+        "congress": (
+            "The numbered Congress, as the keyed summary states it: the Congress the report was *filed* in.  "
+            "For a Senate report that is the Congress after the one it covers; `covered_congress` is the one "
+            "its printed bills belong to."
+        ),
         "session": "The session of Congress the summary states.",
         "title": "The package title as the keyed summary states it.",
         "date_issued": "The date the package was issued.",
@@ -173,21 +177,25 @@ HOUSE_ACTIVITY_REPORTS = table_contract(
         ),
         "distinct_bills": (
             "How many distinct bill keys the print names, by the shared citation rules.  A floor, not a total: "
-            "it counts what pages_read reached, and the MODS is the authoritative list.  Every key carries the "
-            "Congress the summary states for this document, because a print writes `H.R. 7806` and never a "
-            "Congress; bills_congress_mismatch is what makes that assumption checkable."
+            "it counts what pages_read reached, and the MODS is the authoritative list.  Every key carries "
+            "`covered_congress`, because a print writes `H.R. 7806` and never a Congress beside it; where the "
+            "report states none, these are the printed forms, unresolved."
         ),
         "distinct_bills_beyond_index": (
             "How many of those the MODS does not already state, which is a measured floor and not a discovery "
             "rate: 0 of 1,406 across all eight sampled reports at full page depth.  The per-row "
             "`document_citations.stated_by_index` carries the same comparison exactly; this column is its "
-            "summary for one document."
+            "summary for one document.  NULL where `covered_congress` is, because a printed bill without a "
+            "Congress cannot be compared with the MODS's keys."
         ),
         "bills_congress_mismatch": (
-            "How many printed bills the MODS states under a *different* Congress than the one stamped on them: "
-            "the same comparison run a second time on `(bill_type, number)` alone.  Nonzero means the document "
-            "names a measure from another Congress and its published `bill_id` is wrong for that row, which no "
-            "amount of reading the print can settle.  Measured zero on both fixture packages."
+            "How many printed bills the MODS states under a *different* Congress than `covered_congress`: the "
+            "same comparison run a second time on `(bill_type, number)` alone.  Nonzero on a Senate report is "
+            "the publisher's index disagreeing with the report -- GovInfo stamps a Senate report's `<bill>` "
+            "list with the filing Congress, so CRPT-118srpt99's H.R. 5376 is `118` in its MODS and `117` "
+            "in its print, which reports on the 117th.  Nonzero on a report whose index agrees means the "
+            "document names a measure from another Congress and that row's `bill_id` is wrong, which no "
+            "amount of reading the print can settle.  NULL where `covered_congress` is."
         ),
         "distinct_laws": "How many distinct public laws the print names; a floor bounded by pages_read.",
         "distinct_laws_beyond_index": (
@@ -232,6 +240,20 @@ HOUSE_ACTIVITY_REPORTS = table_contract(
         "rule_set_version": (
             "Digest over every citation rule's name, version, pattern and rejects, so these counts name the "
             "rules that produced them."
+        ),
+        "covered_congress": (
+            "The Congress the report says it reports on, read from its own words -- the index title, else the "
+            "print's cover, else its first five pages, and `covered_congress_source` says which -- and the "
+            "Congress every printed bill key is built in.  Beside `congress` rather than replacing it: the two "
+            "differ on every Senate report, which is filed early in the following Congress (CRPT-118srpt99 "
+            "reports on the 117th).  NULL where the report states no Congress, or where the first source "
+            "stating one states several; its printed bills then stay unresolved rather than being stamped "
+            "with a guess."
+        ),
+        "covered_congress_source": (
+            "Which of the report's own statements `covered_congress` was read from: `title`, `cover` or "
+            "`front_matter`, strongest first, the first to state any Congress deciding.  Set beside a NULL "
+            "`covered_congress` where that source states several; NULL where none states one."
         ),
     },
 )
@@ -347,6 +369,21 @@ def index_stated_bill_pairs(mods: object) -> frozenset[str]:
     )
 
 
+def activity_report_stated_keys(mods: object, covered: object) -> dict[str, frozenset[str]]:
+    """The MODS keys an activity report's print can be compared against.
+
+    :func:`index_stated_keys`, less ``bill_number`` when ``covered`` (a
+    ``sources.govinfo.activity_reports.CoveredCongress``, read by attribute)
+    settled no Congress: the printed bills are then unresolved printed forms,
+    and comparing them with the MODS's Congress-keyed bills would claim a
+    comparison that cannot be made, so the kind lands NULL rather than ``false``.
+    """
+    stated = index_stated_keys(mods)
+    if getattr(covered, "congress", None) is None:
+        del stated["bill_number"]
+    return stated
+
+
 def shape_document_citation(
     finding: object,
     provenance: DocumentProvenance,
@@ -395,27 +432,33 @@ def shape_activity_report(
     body: object,
     citations: Sequence[object],
     *,
+    covered: object,
     rule_set_version: str,
 ) -> Row:
-    """One ``house_activity_reports`` row from the two keyed records, the text and its cites, all read structurally with
-    nothing fetched.
+    """One ``house_activity_reports`` row from the two keyed records, the text, the Congress it covers and its cites,
+    all read structurally with nothing fetched.
 
-    Every descriptive field including ``stated_page_count`` is the publisher's, the Congress stamped on every printed
-    bill key is this document's because no print states one, and ``bills_congress_mismatch`` reruns the index comparison
-    with the Congress dropped so a measure from another Congress shows as a discrepancy rather than a confidently wrong
-    ``bill_id``.
+    Every descriptive field including ``stated_page_count`` is the publisher's.  ``covered`` is the
+    ``CoveredCongress`` the caller built the citations' bill keys in -- the report's own statement, never the index's
+    -- and ``bills_congress_mismatch`` reruns the index comparison with the Congress dropped so a bill the MODS keys
+    under another Congress shows as a discrepancy rather than as agreement.  With no covered Congress neither bill
+    comparison can be made, and both land NULL.
     """
     identity = summary.identity
     provenance = document_provenance(body, document_key=identity.package_id, document_kind=GOVINFO_PACKAGE)
-    stated = index_stated_keys(mods)
+    stated = activity_report_stated_keys(mods, covered)
     bills = distinct_targets(citations, "bill_number")
     laws = distinct_targets(citations, "public_law")
     sections = distinct_targets(citations, "usc_section")
     committees = [finding for finding in citations if finding.kind == "committee_name"]
-    # A bill the index states only under another Congress: it misses the
-    # strict key and matches the Congress-free one.
-    loose = index_stated_bill_pairs(mods)
-    mismatched = {key for key in bills - stated["bill_number"] if "-".join(key.split("-")[1:]) in loose}
+    stated_bills = stated.get("bill_number")
+    beyond = mismatched = None
+    if stated_bills is not None:
+        # A bill the index states only under another Congress: it misses the
+        # strict key and matches the Congress-free one.
+        loose = index_stated_bill_pairs(mods)
+        beyond = bills - stated_bills
+        mismatched = {key for key in beyond if "-".join(key.split("-")[1:]) in loose}
     pages_read, page_count, capped = read_depth(body, summary)
     submitter = getattr(mods, "submitted_by", None)
     return {
@@ -456,8 +499,8 @@ def shape_activity_report(
         "related_report_count": text(len(mods.reports)),
         "related_reports_json": json_column([report.package_id for report in mods.reports]),
         "distinct_bills": text(len(bills)),
-        "distinct_bills_beyond_index": text(len(bills - stated["bill_number"])),
-        "bills_congress_mismatch": text(len(mismatched)),
+        "distinct_bills_beyond_index": text(None if beyond is None else len(beyond)),
+        "bills_congress_mismatch": text(None if mismatched is None else len(mismatched)),
         "distinct_laws": text(len(laws)),
         "distinct_laws_beyond_index": text(len(laws - stated["public_law"])),
         "distinct_usc_sections": text(len(sections)),
@@ -472,6 +515,8 @@ def shape_activity_report(
         "body_derivation": text(provenance.body_derivation),
         "text_sha256": text(provenance.text_sha256),
         "rule_set_version": text(rule_set_version),
+        "covered_congress": text(getattr(covered, "congress", None)),
+        "covered_congress_source": text(getattr(covered, "source", None)),
     }
 
 
@@ -480,6 +525,7 @@ __all__ = [
     "GOVINFO_PACKAGE",
     "HOUSE_ACTIVITY_REPORTS",
     "DocumentProvenance",
+    "activity_report_stated_keys",
     "bill_key",
     "distinct_targets",
     "document_provenance",

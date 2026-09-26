@@ -33,6 +33,7 @@ from spicy_docs.interpretation.citations import (
 )
 from spicy_docs.schemas.document_citation_tables import index_stated_keys
 from spicy_docs.sources.congress.committee_rosters import parse_house_member_data, parse_senate_cvc
+from spicy_docs.sources.govinfo.activity_reports import covered_congress
 from spicy_docs.sources.govinfo.bodies import (
     ModsLaw,
     ModsUsCodeSection,
@@ -117,13 +118,18 @@ def rosters() -> tuple[tuple[str, str], ...]:
     return committee_vocabulary(house=(house,), senate=(senate,))
 
 
+def covered_for(package: str):
+    """The Congress a fixture report says it covers, read the way a host reads it: title, cover, front matter."""
+    return covered_congress(summary_for(package).title, body_for(package).pages)
+
+
 def citations_for(package: str):
-    """Every citation the shared rules find in a fixture's retained text."""
+    """Every citation the shared rules find in a fixture's retained text, bills in its covered Congress."""
     body = body_for(package)
     return find_citations(
         body.text,
         pages=body.pages,
-        congress=summary_for(package).identity.congress,
+        congress=covered_for(package).congress,
         committees=rosters(),
     )
 
@@ -177,13 +183,15 @@ def test_the_rules_whose_published_keys_changed_moved_their_version() -> None:
     through the shared grammar since 2026-09-23, which respells, splits and
     newly reads keys; ``rin`` and ``docket_number`` had already moved once
     for their own target readers. ``bill_number`` 002 refuses a designator
-    after a letter and a period (``R.S. 2477``). In every case the procedure
+    after a letter and a period (``R.S. 2477``), and 003 a number carrying a
+    subdivision (``CLAUSE S 2(N)``) or a year heading wrapped under a
+    designator (``S. Con. Res.\n2022:``). In every case the procedure
     applied: move the version, re-pin the digests, re-pin the fixture counts.
     """
     moved = {rule.name: rule.version for rule in CITATION_RULES if rule.version != "001"}
     assert moved == {
         "us_reports_cite": "002",
-        "bill_number": "002",
+        "bill_number": "003",
         "public_law": "003",
         "statutes_at_large": "002",
         "usc_section": "003",
@@ -206,7 +214,7 @@ def test_the_rule_set_version_is_pinned_to_these_rules() -> None:
     passed the whole suite, since a reject that is no longer asserted cannot
     fail.
     """
-    assert CITATION_RULE_SET_VERSION == "5d39d7eaf2f9"
+    assert CITATION_RULE_SET_VERSION == "1440da23543e"
 
 
 def test_the_stored_kinds_are_every_rule_that_reaches_a_key() -> None:
@@ -251,6 +259,25 @@ def grammar_fixture_texts() -> list[str]:
 def test_production_citation_regressions(case: dict) -> None:
     """Source snippets retained by the 2026-09-24 print-citations audit."""
     findings = find_citations(case["text"], kinds=(case["kind"],))
+    assert [finding.target_key for finding in findings] == case["keys"]
+    assert all(finding.target_resolved for finding in findings)
+    assert all(case["text"][finding.span_start : finding.span_end] == finding.matched_text for finding in findings)
+
+
+BILL_SNIPPETS_2026_09_26 = json.loads(
+    (CITATION_FIXTURES / "print-citations-2026-09-26.json").read_text(encoding="utf-8")
+)["bill_snippets"]
+
+
+@pytest.mark.parametrize("case", BILL_SNIPPETS_2026_09_26, ids=lambda case: f"{case['package']}-{case['span_start']}")
+def test_the_2026_09_26_misreads_are_refused_and_their_nearest_true_readings_kept(case: dict) -> None:
+    """``CLAUSE S 2(N)`` and ``S. Con. Res.\\n2022:`` name no bill; a wrapped ``H.R.\\n2021`` and ``H.R. 7593:`` do.
+
+    Every snippet's ``keys`` were stated by reading it, not by running the
+    rule, and they are every bill it names, so a refusal that widened past its
+    one shape would drop a key here.
+    """
+    findings = find_citations(case["text"], kinds=("bill_number",), congress=case["covered_congress"])
     assert [finding.target_key for finding in findings] == case["keys"]
     assert all(finding.target_resolved for finding in findings)
     assert all(case["text"][finding.span_start : finding.span_end] == finding.matched_text for finding in findings)

@@ -1058,6 +1058,31 @@ second time on `(bill_type, number)` alone: a bill the MODS states only under
 another Congress misses the strict key and matches the loose one, so it shows
 as a discrepancy rather than as confident wrongness. Zero on both packages.
 
+**Corrected 2026-09-26: the bill Congress is the one the report states it
+covers, never the filing Congress.** A Senate committee files its activity
+report early in the *following* Congress, so the package id, the summary and
+every MODS `<bill>` carry the filing Congress: the eight Senate reports on the
+117th in the print-citations window published 1,915 citations and 369 actions
+against 118th-Congress bills (CRPT-118srpt99's `H.R. 5376`, the reconciliation
+act, as `118-hr-5376`), and because the MODS made the same mistake
+`bills_congress_mismatch` stayed zero. The check above could only look one way:
+it compared the print with an index that shared the assumption.
+`sources.govinfo.activity_reports.covered_congress` now reads the Congress from
+the report's own words -- the index title, else the cover's `during/for/in the
+Nth Congress`, else the same phrase in the first five pages -- and the host
+builds bill keys in it. `house_activity_reports` keeps both: `congress` (filed)
+and `covered_congress` with `covered_congress_source`. `bills_congress_mismatch`
+then counts the MODS disagreeing, truthfully nonzero on every Senate report. A
+report that states no Congress, or whose first stating source states several,
+gets no bill key, no bill comparison (NULL, not `false`) and no action row,
+rather than the filing Congress as a guess. Measured over all 40 reports:
+33 read from the title, 4 from the cover, 3 from the front matter, none wrong
+(`~/Work/corpora/supply-2026-09-02/receipts/fix-print-citations-2026-09-26/`).
+The same audit's two bill misreads moved `bill_number` to 003: a number with an
+attached parenthesized subdivision (`CLAUSE S 2(N)`) and a year opening a line
+and closing with a colon (`S. Con. Res.\n2022:`) are refused -- exactly those
+three matches of the 31,955 the 002 rule reads over the retained corpora.
+
 **A rule change moves that rule's version and re-pins its fixture counts.**
 Each `CitationRule` in `interpretation/citations.py` carries a `version`, and
 `document_citations.rule_version` is the table's version column, so a
