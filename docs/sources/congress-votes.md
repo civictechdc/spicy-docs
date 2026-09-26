@@ -25,7 +25,7 @@ every recorded vote carries (congress, chamber, session, roll number):
 | Root element | `<rollcall-vote>` | `<roll_call_vote>` |
 | DOCTYPE | External (`-//US Congress//DTDs/vote v1.0 20031119 //EN`), tolerated but not resolved | None |
 | Member key | bioguide (`legislator/@name-id`) | LIS (`member/lis_member_id`) |
-| Vote values seen | `Yea`, `Nay`, `Not Voting` (measured; `Aye`/`No`/`Present` are in the wider DTD vocabulary this module also accepts) | `Yea`, `Nay`, `Not Voting` (measured) |
+| Vote values seen | `Yea`, `Nay`, `Not Voting` (measured; `Aye`/`No`/`Present` are in the wider DTD vocabulary this module also accepts) | `Yea`, `Nay`, `Not Voting`, `Present`; rarely `Guilty`, `Not Guilty`, `Present, Giving Live Pair` (measured) |
 
 Senate votes carry no bioguide id at all -- only `lis_member_id`. The only
 LIS-to-bioguide crosswalk already in this package is
@@ -143,7 +143,13 @@ Clerk-only field is `None`/`()` on a Senate record and vice versa.
 
 `normalize_vote` maps every spelled value either chamber's DTD carries to one
 of four buckets, case-insensitively: `Yea`/`Aye` → `yea`; `Nay`/`No` → `nay`;
-`Present` → `present`; `Not Voting` → `not_voting`. `MemberVote.vote` keeps
+`Present` → `present`; `Not Voting` → `not_voting`. The Senate's rarer
+spellings fold where its own `<count>` block counts them: an impeachment
+verdict's `Guilty` → `yea` and `Not Guilty` → `nay` (counted in `yeas`/`nays`),
+and `Present, Giving Live Pair` → `present`. Measured 2026-09-26 over 72 LIS
+files of the 108th-118th (every vote Voteview codes Present, plus the three
+impeachment verdicts); the fixtures README pins one of each. Any other
+spelling still refuses the file. `MemberVote.vote` keeps
 the exact publisher spelling beside `.vote_normalized`. Both pinned fixtures
 only ever spell `Yea`, `Nay` and `Not Voting`; `Aye`/`No`/`Present` are
 accepted but unexercised by them (a plain RECORDED VOTE, rather than a

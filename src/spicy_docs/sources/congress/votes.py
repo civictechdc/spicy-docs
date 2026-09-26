@@ -152,13 +152,22 @@ _CLERK_INDEX_CELL_BOUND = 4096
 # RECORDED VOTEs; both fixtures pinned here only ever carry Yea/Nay/Not
 # Voting (measured), but the DTD's wider vocabulary is accepted so a future
 # RECORDED VOTE fixture does not need a second normalization table.
+#
+# The Senate's older and rarer spellings fold where its own ``<count>`` block
+# counts them (measured 2026-09-26 over 72 LIS files of the 108th-118th: every
+# vote Voteview codes Present, and the three impeachment verdicts): an
+# impeachment verdict's Guilty/Not Guilty in ``yeas``/``nays`` (116-2-33 and
+# -34, 117-1-59), and a present senator's live pair in ``present`` (108-2-213).
 _VOTE_NORMALIZATION: Mapping[str, NormalizedVote] = MappingProxyType(
     {
         "yea": "yea",
         "aye": "yea",
+        "guilty": "yea",
         "nay": "nay",
         "no": "nay",
+        "not guilty": "nay",
         "present": "present",
+        "present, giving live pair": "present",
         "not voting": "not_voting",
     }
 )

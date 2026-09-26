@@ -13,6 +13,7 @@ called, so no member-level vote ever reached its database).
 from __future__ import annotations
 
 import hashlib
+from collections import Counter
 from pathlib import Path
 
 import httpx
@@ -149,11 +150,33 @@ def test_the_fixtures_only_ever_spell_yea_nay_and_not_voting():
         ("Present", "present"),
         ("Not Voting", "not_voting"),
         ("not   voting", "not_voting"),  # collapsed whitespace, still recognized
+        ("Guilty", "yea"),
+        ("Not Guilty", "nay"),
+        ("Present, Giving Live Pair", "present"),
     ],
 )
 def test_normalize_vote_covers_the_full_clerk_and_senate_vocabulary(spelled, expected):
     """Every Clerk and Senate vote spelling normalizes to its canonical value."""
     assert normalize_vote(spelled) == expected
+
+
+@pytest.mark.parametrize(
+    "fixture,counted",
+    [
+        # An impeachment verdict: Guilty is counted in yeas, Not Guilty in nays.
+        ("senate-vote-117-1-00059.xml", {"yeas": 57, "nays": 43, "present": 0, "absent": 0}),
+        # A present senator's live pair is counted in present.
+        ("senate-vote-108-2-00213.xml", {"yeas": 52, "nays": 44, "present": 1, "absent": 3}),
+    ],
+)
+def test_the_senates_rarer_spellings_fold_where_its_own_count_counts_them(fixture, counted):
+    """Each member's normalized position reconciles with the file's own ``<count>`` block."""
+    congress, session, roll = (int(part) for part in fixture.removesuffix(".xml").split("-")[2:])
+    vote = parse_senate_vote((FIXTURES / fixture).read_bytes(), VoteLocator("senate", congress, session, roll))
+    assert dict(vote.tallies) == counted
+    folded = Counter(member.vote_normalized for member in vote.member_votes)
+    bucket = {"yeas": "yea", "nays": "nay", "present": "present", "absent": "not_voting"}
+    assert {name: folded[bucket[name]] for name in counted} == counted
 
 
 def test_normalize_vote_refuses_an_unrecognized_spelling():

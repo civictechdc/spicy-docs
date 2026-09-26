@@ -105,6 +105,24 @@ the December 28, 2020 veto override on H.R. 6395. `index.asp` lists rolls
 (`QUORUM`, `Call of the House`) with an empty title cell. Dropping
 `ROLL_100.asp` leaves a gap the assembly refuses.
 
+## Rarer Senate spellings
+
+Two complete, unchanged Senate LIS responses, captured keyless on September
+26, 2026 at 12:54 UTC, pin the spellings the 108th-118th surfaced beyond
+Yea/Nay/Not Voting/Present, each counted in the file's own `<count>` block:
+
+| Fixture | Publisher response | Bytes | SHA-256 |
+| --- | --- | --- | --- |
+| `senate-vote-117-1-00059.xml` | [`vote1171/vote_117_1_00059.xml`](https://www.senate.gov/legislative/LIS/roll_call_votes/vote1171/vote_117_1_00059.xml) | 29,316 | `a7fd32fce350da7ff2a71be80145d893765da3dd47f4a40c4ba6ef693582354d` |
+| `senate-vote-108-2-00213.xml` | [`vote1082/vote_108_2_00213.xml`](https://www.senate.gov/legislative/LIS/roll_call_votes/vote1082/vote_108_2_00213.xml) | 23,445 | `1c61d147bfac9f3692ee1a2a78c2785fa2c67aca0c719c10cba325097ed5123d` |
+
+Vote 117-1-59 is the verdict on H.Res. 24's article of impeachment: 57
+`Guilty` and 43 `Not Guilty`, counted as 57 yeas and 43 nays. Vote 108-2-213
+(passage of S. 2986) has one `Present, Giving Live Pair`, counted as 1
+present. The survey that found them read 72 files: every 108th-118th Senate
+vote Voteview codes Present, plus the three impeachment verdicts (receipt
+`~/Work/corpora/fork-execution-2026-09-21/votes-backfill-2026-09-26/survey/vocab.json`).
+
 ## Candidate election fixture
 
 `clerk-speaker-119-1-2.xml` is the complete, unchanged House Clerk response for
