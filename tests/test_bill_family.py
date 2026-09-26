@@ -1222,6 +1222,17 @@ def test_printings_alone_are_the_family_printing_rows_without_the_status_rows() 
 
 
 @needs_engine
+def test_a_printing_is_summarized_from_the_published_bill_row_the_family_wrote() -> None:
+    """Title, stage and money-bill kind from the ``congress_bills`` row give the family's own summary rows."""
+    capture = native_capture(HR983, HR983_BODIES)
+    whole = family(capture, summarize=StubSummarizer())
+    alone = printings(capture, summarize=StubSummarizer(), bill=whole.bills[0])
+    assert alone.bill_summaries == whole.bill_summaries and alone.bill_summaries
+    assert printings(capture, summarize=StubSummarizer()).bill_summaries == ()
+    assert printings(capture, summarize=StubSummarizer(), bill={**whole.bills[0], "stage": None}).bill_summaries == ()
+
+
+@needs_engine
 def test_a_context_printing_is_compared_but_emits_no_rows_of_its_own() -> None:
     """A printing newly read between two held ones: its own rows and its two comparisons, and nothing else.
 

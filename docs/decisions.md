@@ -2556,4 +2556,6 @@ once, and decompressed only for the members a `keep` predicate names.
 builds one bill's printing tables from its listed printings without a fresh
 BILLSTATUS, with a `context` set that takes part in order and comparison but
 emits no rows: a caller reading bodies in bulk passes the newly read printings,
-the held neighbours they are compared with, and the rest as placeholders.
+the held neighbours they are compared with, and the rest as placeholders. A
+plain-language summary needs the bill's title, stage and money-bill kind, not its
+status document, so it reads them from the bill's published `congress_bills` row.

@@ -15,7 +15,7 @@ summarizer declined or the model's own reader refused each becomes a named
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Callable, Collection, Iterable, Iterator, Sequence
+from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from functools import partial
@@ -621,7 +621,14 @@ def build_bill_family(
     summarize_version = (
         None
         if summarize is None
-        else partial(_summarize_version, status=status, stage=stage, money=money, summarize=summarize)
+        else partial(
+            _summarize_version,
+            identity=identity,
+            title=status.title,
+            stage=stage.stage,
+            money_bill_kind=money.kind,
+            summarize=summarize,
+        )
     )
     printed = _printing_tables(
         identity,
@@ -654,6 +661,8 @@ def build_bill_printings(
     engine: EngineStamp,
     context: Collection[tuple[str, str]] = (),
     classify: SectionClassifier | None = None,
+    summarize: BillSummarizer | None = None,
+    bill: Mapping[str, Any] | None = None,
     summarize_diff: DiffSummarizer | None = None,
     clock: Callable[[], datetime] | None = None,
     diff: bool = True,
@@ -670,18 +679,33 @@ def build_bill_printings(
     by ``(version_code, source)`` that emit no version, section or model rows of
     their own: placeholders, and held printings whose documents are here only to
     be compared with a newly captured neighbour.
-    Only the model work that needs no status runs (``classify``,
-    ``summarize_diff``); a plain-language summary needs the status's stage and
-    money-bill finding and stays with :func:`build_bill_family`.
+    A plain-language summary (``summarize``) reads three facts of the bill, not
+    its printing: its title, stage and money-bill kind. Without a status they
+    come from ``bill``, the bill's ``congress_bills`` row, where
+    :func:`build_bill_family` published them from the status; with no row, or
+    one stating no title or stage, no summary is asked for.
     """
     admit = _Admitter()
+    title, stage = (bill or {}).get("title"), (bill or {}).get("stage")
+    summarize_version = (
+        None
+        if summarize is None or not title or not stage
+        else partial(
+            _summarize_version,
+            identity=identity,
+            title=title,
+            stage=stage,
+            money_bill_kind=(bill or {}).get("money_bill_kind"),
+            summarize=summarize,
+        )
+    )
     tables = _printing_tables(
         identity,
         versions,
         admit=admit,
         engine=engine,
         classify=classify,
-        summarize_version=None,
+        summarize_version=summarize_version,
         summarize_diff=summarize_diff,
         now=clock if clock is not None else _now,
         diff=diff,
@@ -1112,9 +1136,10 @@ def _classify_version(
 def _summarize_version(
     entry: BillVersionCapture,
     *,
-    status: Any,
-    stage: Any,
-    money: Any,
+    identity: Any,
+    title: str,
+    stage: str,
+    money_bill_kind: str | None,
     summarize: BillSummarizer,
     admit: _Admitter,
     rows: list[Row],
@@ -1125,16 +1150,16 @@ def _summarize_version(
         partial(
             summarize,
             BillVersionText(
-                identity=status.identity,
+                identity=identity,
                 version_id=entry.version_code,
                 version_label=entry.version.type or entry.version_code,
-                title=status.title,
+                title=title,
                 # The stage key, not the latest action's prose: it is a
                 # published column, so a summary's stated status is checkable
                 # against a row.
-                status=stage.stage,
+                status=stage,
                 text=_body_text(entry.document),
-                money_bill_kind=money.kind,
+                money_bill_kind=money_bill_kind,
             ),
         ),
         table=BILL_SUMMARIES.name,
@@ -1158,8 +1183,8 @@ def _summarize_version(
             shape_bill_summary,
             result,
             source=entry.source,
-            money_bill_kind=money.kind,
-            frame=frame_for_kind(money.kind),
+            money_bill_kind=money_bill_kind,
+            frame=frame_for_kind(money_bill_kind),
         ),
     )
 

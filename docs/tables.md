@@ -254,9 +254,9 @@ apart from the status (the [BILLS bulk zips](sources/congress-bulk-bills.md)):
 it takes every listed printing of one bill and a `context` set of
 `(version_code, source)` printings that emit no rows of their own -- placeholders,
 and held printings whose documents are there only to be compared with a newly
-read neighbour. Its rows equal `build_bill_family`'s for the same printings; the
-plain-language summary, which needs the status's stage and money-bill finding,
-stays with the family.
+read neighbour. Its rows equal `build_bill_family`'s for the same printings. A
+plain-language summary reads three facts of the bill -- title, stage, money-bill
+kind -- which it takes from the bill's published `congress_bills` row (`bill`).
 
 The three model calls are injected at this boundary rather than as a
 `ModelCall`: a caller binds `functools.partial(classify_sections, call=…,
