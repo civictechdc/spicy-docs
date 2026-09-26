@@ -106,12 +106,35 @@ def value_key(parts: tuple[str, ...]) -> str:
     return parts[0]
 
 
+#: The Federal Register's dated-record spelling, ``<document_number>@<publication_date>``: the id and version DocSpec
+#: already records for every admitted Federal Register generation (its decision 0003), so declaring it here re-keys
+#: nothing.
+FEDERAL_REGISTER_RECORD_KEY = "federal-register-source-record-id/1"
+
+
+def federal_register_record_key(parts: tuple[str, ...]) -> str:
+    """The ``federal-register-source-record-id/1`` spelling: ``document_number@publication_date``, reversible on ``@``.
+
+    Neither part can hold ``@``: the Register's numbers are ASCII ids and its dates canonical ``YYYY-MM-DD``, so
+    splitting the key on ``@`` recovers both values exactly. A number alone is not an identity, because the Register
+    reuses one for unrelated documents (``00-111`` names a 2000-01-18 notice and a 2000-01-14 rule).
+    """
+    if len(parts) != 2:
+        raise TableContractError(
+            f"{FEDERAL_REGISTER_RECORD_KEY} spells a two-column identity, not {len(parts)} columns"
+        )
+    return f"{parts[0]}@{parts[1]}"
+
+
 #: Every member-key spelling a contract can declare, by ``name/version``, with its Python reference.  DocSpec compiles
 #: a declared spelling to SQL, tests it against the reference, and puts the spelling in every admitted state's identity
 #: (its decision 0007 §6), so an entry never changes: a new rule is a new ``name/version`` and an explicit re-key.  A
-#: composite identity declares none until one is needed (ruling R6); that one spells the ordered canonical JSON array
-#: of its components, under its own versioned name.
-KEY_SPELLINGS: Mapping[str, Callable[[tuple[str, ...]], str]] = MappingProxyType({VALUE_KEY: value_key})
+#: composite identity declares none until one is needed (ruling R6); a new one spells the ordered canonical JSON array
+#: of its components, under its own versioned name. ``federal-register-source-record-id/1`` is the exception R6 leaves room for:
+#: it keeps the spelling DocSpec already sealed, so no admitted identity moves.
+KEY_SPELLINGS: Mapping[str, Callable[[tuple[str, ...]], str]] = MappingProxyType(
+    {VALUE_KEY: value_key, FEDERAL_REGISTER_RECORD_KEY: federal_register_record_key}
+)
 
 
 @dataclass(frozen=True, slots=True)

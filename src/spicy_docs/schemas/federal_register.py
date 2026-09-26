@@ -6,7 +6,7 @@ import json
 from collections.abc import Mapping
 from typing import Any
 
-from spicy_docs.schemas.tables import table_contract
+from spicy_docs.schemas.tables import FEDERAL_REGISTER_RECORD_KEY, table_contract
 
 FEDERAL_REGISTER_COLUMNS: tuple[str, ...] = (
     "document_number",
@@ -78,8 +78,8 @@ def project_federal_register_document(document: Mapping[str, Any]) -> dict[str, 
 
 
 #: The published table: the projection plus the host's derived ``rin``. The identity is the dated record, because
-#: the Register reuses a document number when it republishes a correction under it on another date. As a composite
-#: identity it declares no key spelling until one is needed (ruling R6). ``documents.fr_doc_num`` names a document
+#: the Register reuses a document number when it republishes a correction under it on another date. Its key spelling is
+#: the ``number@date`` DocSpec already records (``federal-register-source-record-id/1``). ``documents.fr_doc_num`` names a document
 #: number only, so it is not a :class:`~spicy_docs.schemas.tables.Reference`: the host's ``table_joins`` watches it,
 #: and the resolved link, on ``unpadded_federal_register_document_number``, is a DocSpec layer.
 FEDERAL_REGISTER = table_contract(
@@ -87,6 +87,7 @@ FEDERAL_REGISTER = table_contract(
     grain="One row per dated Federal Register document: a rule, proposed rule, notice or presidential document.",
     identity=("document_number", "publication_date"),
     version_column=None,
+    key_spelling=FEDERAL_REGISTER_RECORD_KEY,
     columns={
         "document_number": "The Register's document number, spelled as it serves it (`2017-07442`, unpadded before 2013).",
         "title": "The document's title.",

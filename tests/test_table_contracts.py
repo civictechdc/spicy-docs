@@ -60,7 +60,16 @@ from spicy_docs.schemas.cost_estimate_tables import (
 )
 from spicy_docs.schemas.legislator_tables import shape_member, shape_member_term
 from spicy_docs.schemas.regulations import DOCUMENT, RECORD_TYPES
-from spicy_docs.schemas.tables import VALUE_KEY, bill_id, digest, joined, table_contract, text, value_key
+from spicy_docs.schemas.tables import (
+    FEDERAL_REGISTER_RECORD_KEY,
+    VALUE_KEY,
+    bill_id,
+    digest,
+    joined,
+    table_contract,
+    text,
+    value_key,
+)
 from spicy_docs.sources.agency_reports.report_blocks import parse_agency_blocks
 from spicy_docs.sources.congress.bill_status import BillIdentity, parse_bill_status
 from spicy_docs.sources.congress.bill_tree import engine_available
@@ -1307,9 +1316,12 @@ def test_a_single_column_identity_declares_value_1_and_a_composite_declares_none
     """DocSpec keys an admitted table only on a spelling this package declares (its decision 0007, ruling R6).
 
     A one-column identity is spelled as its value. A composite waits for a declared spelling, because one DocSpec
-    chose would flip every occurrence and Engine id when this package later declared its own.
+    chose would flip every occurrence and Engine id when this package later declared its own. The one composite that
+    declares one keeps the spelling DocSpec's decision 0003 already sealed for the Federal Register, so nothing flips.
     """
-    assert contract.key_spelling == (VALUE_KEY if len(contract.identity) == 1 else None)
+    declared = {"federal_register": FEDERAL_REGISTER_RECORD_KEY}
+    expected = VALUE_KEY if len(contract.identity) == 1 else declared.get(contract.name)
+    assert contract.key_spelling == expected
 
 
 # ---------------------------------------------------------------------------
@@ -1865,5 +1877,12 @@ def test_the_federal_register_contract_is_the_projection_plus_the_hosts_rin():
     assert contract.columns == (*FEDERAL_REGISTER_COLUMNS, "rin")
     assert tuple(project_federal_register_document({})) == FEDERAL_REGISTER_COLUMNS
     assert contract.identity == ("document_number", "publication_date")
+    # The spelling DocSpec's decision 0003 already sealed, so admitted Federal Register identities do not move.
+    from spicy_docs.sources.federal_register.native import federal_register_source_record_id
+
+    record = {"document_number": "00-111", "publication_date": "2000-01-18"}
+    row = {**dict.fromkeys(contract.columns), **record}
+    assert contract.spelled_key(row) == federal_register_source_record_id(record) == "00-111@2000-01-18"
+    assert contract.key_spelling == "federal-register-source-record-id/1"  # DocSpec's recorded id and version
     # A number alone is not the dated identity, so no table references it; the host's joins watch fr_doc_num.
     assert not any(ref.parent_table == "federal_register" for c in TABLE_CONTRACTS.values() for ref in c.references)

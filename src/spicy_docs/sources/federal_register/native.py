@@ -721,9 +721,9 @@ def federal_register_source_record_id(record: Mapping[str, Any]) -> str:
     recovers both source-issued values exactly.
     """
 
-    document_number = str(record["document_number"])
-    publication_date = str(record["publication_date"])
-    return f"{document_number}@{publication_date}"
+    from spicy_docs.schemas.tables import federal_register_record_key
+
+    return federal_register_record_key((str(record["document_number"]), str(record["publication_date"])))
 
 
 def source_record(record: Mapping[str, Any], *, schema_digest: str) -> dict[str, Any]:
