@@ -1837,14 +1837,23 @@ def test_a_former_identifier_is_not_read(reference: str, dockets: tuple[str, ...
     assert normalize_docket_references(reference) == dockets
 
 
-def test_a_counter_word_that_runs_into_letters_is_not_a_label() -> None:
-    """Constructed from the single reader's own known reading: behind "Docket", "NO" is the head of NOAA.
+def test_a_counter_word_ends_at_a_word_boundary_or_its_period() -> None:
+    """ "NO" is the head of NOAA, "No" of Notice and NOP: a counter word ends at a word, not inside one.
 
-    Only the search is held to it here; the single reader still reads
-    "Docket NOAA-NOS-2024-0104" as AA-NOS-2024-0104, a separate defect.
+    The single reader read "Docket NOAA-NOS-2024-0104" as AA-NOS-2024-0104;
+    the plural reader's opening read the real values "Notice-MVC-2015-01,
+    Docket No. 2015-0054, Sequence 1" and "NOP-13-01 PR" as TICE-MVC-2015-01
+    and P-13-01. The period still ends it where it abuts the identifier.
     """
-    assert normalize_docket_references("RTID NOAA-NOS-2024-0104") == ("NOAA-NOS-2024-0104",)
+    assert normalize_docket_reference("Docket NOAA-NOS-2024-0104") == "NOAA-NOS-2024-0104"
     assert normalize_docket_references("Public Notice: X, Docket NOAA-NOS-2024-0104") == ("NOAA-NOS-2024-0104",)
+    assert normalize_docket_references("Notice-MVC-2015-01, Docket No. 2015-0054, Sequence 1") == (
+        "NOTICE-MVC-2015-01",
+    )
+    assert normalize_docket_references("NOP-13-01 PR") == ("NOP-13-01",)
+    assert normalize_docket_reference("Docket No.CDC-2018-0075") == "CDC-2018-0075"
+    assert normalize_docket_reference("Docket ID-OSHA-2007-0066") == "OSHA-2007-0066"
+    assert numbering_system("File No. SR-Amex-2003-102") is NumberingSystem.FILE_NUMBER
 
 
 def _best_of_three(read, text: str) -> float:

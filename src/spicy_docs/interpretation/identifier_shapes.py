@@ -224,16 +224,21 @@ class NumberingSystem(StrEnum):
 #: spellings read 9,067 distinct references (12,970 occurrences) in the
 #: pinned docket column differently.
 #:
-#: Unlike the label noun it is NOT fenced to a whole word, and the fence was
-#: tried and measured: ``(?![A-Za-z])`` refuses "Docket No.CDC-2018-0075",
-#: where the counter word's own period abuts the identifier with no space.
-#: 239 references in the pinned docket column are written that way, and 90 of
-#: them resolve to a real docket only because the fence is off; the rest were
-#: not dockets behind the label either way. The cost of leaving it off
-#: is that "Identifier" can be read as "Id" plus a payload of "entifier",
-#: which changes no answer in the pinned columns because the payload is
-#: non-empty either way.
-_LABEL_COUNTER_WORD = r"(?:nos?\.?|numbers?|ids?)"
+#: It ends at a word boundary or on its own period. Unfenced, it took the head
+#: of the next word: "Docket NOAA-NOS-2024-0104" read as AA-NOS-2024-0104, and
+#: a value opening "Notice-MVC-2015-01" or "NOP-13-01" as TICE-MVC-2015-01 and
+#: P-13-01. The fence is at the word, not after the period, because the period
+#: may abut the identifier: ``(?![A-Za-z])`` after ``no\.?`` was tried and
+#: refuses "Docket No.CDC-2018-0075" (239 references in the pinned docket
+#: column are written that way, 90 of them real dockets). Measured 2026-09-26
+#: over the drift audit's inputs (receipt ``fork-execution-2026-09-21/
+#: drift-qualification-2026-09-26/regulatory/d1d2-fix``, ``step-3``): the
+#: single reader, ``numbering_system`` and the prose reader change no answer
+#: over 1,170,347 docket values and 1,105,084 texts, and the plural reader
+#: changes the four above, none a held docket before or after. A docket whose
+#: organization IS a counter word ("NOS-…") would still lose it behind
+#: "Docket"; no held docket has one.
+_LABEL_COUNTER_WORD = r"(?:nos?(?:\.|\b)|numbers?\b|ids?\b)"
 
 #: The punctuation an agency may put between the label and its number, and
 #: which therefore belongs to neither.
@@ -1438,7 +1443,7 @@ _TOKEN_REST = re.compile(r"[A-Za-z0-9_-]*")
 #: Identifier", "Funding Announcement Number:", "CIS No."). The words are
 #: bounded so the scan stays linear in the value.
 _COUNTED_LABEL = re.compile(
-    r"\b(?P<words>(?:[A-Za-z][A-Za-z.']*\s+){1,3}?)(?:nos?\b\.?|numbers?\b|ids?\b|identifiers?\b)[\s:#.\-]*",
+    rf"\b(?P<words>(?:[A-Za-z][A-Za-z.']*\s+){{1,3}}?)(?:{_LABEL_COUNTER_WORD}|identifiers?\b)[\s:#.\-]*",
     re.IGNORECASE,
 )
 #: A docket noun among a counted label's words makes it a docket's label
@@ -1545,19 +1550,13 @@ def _read_in_prose(text: str, start: int) -> list[tuple[int, str]]:
     ("File No. SR-Amex-2003-102"); a docket label's reading is a docket's.
     """
 
-    # A label ends at a separator. Its optional counter word also matches the
-    # head of an identifier ("Docket NOAA-NOS-2024-0104" read behind "Docket
-    # NO" is AA-NOS-2024-0104), and a label that runs straight into letters
-    # is that: the head, not a label. A docket value ends where its token
-    # does, so a labelled and a bare reading of one token share an end, and
-    # the labelled one is kept: the label says where the identifier begins
-    # ("Docket ID-OSHA-2007-0066" is OSHA-2007-0066, not ID-OSHA-2007-0066).
+    # A docket value ends where its token does, so a labelled and a bare
+    # reading of one token share an end, and the labelled one is kept: the
+    # label says where the identifier begins ("Docket ID-OSHA-2007-0066" is
+    # OSHA-2007-0066, not ID-OSHA-2007-0066). The counter word ends at a word
+    # boundary, so no label ends inside the identifier's own first word.
     bare = {match.end("value"): match for match in _DOCKET_BARE.finditer(text, start)}
-    labelled = {
-        match.end("value"): match
-        for match in _DOCKET_LABELED_TOKEN.finditer(text, start)
-        if not text[match.start("value") - 1].isalnum()
-    }
+    labelled = {match.end("value"): match for match in _DOCKET_LABELED_TOKEN.finditer(text, start)}
     unlabelled = [(bare[end].start("value"), bare[end].group("value")) for end in sorted(bare) if end not in labelled]
     if unlabelled:
         unlabelled = _outside(_numbered_by_other_labels(text), unlabelled)
