@@ -100,3 +100,55 @@ The operator path needs these explicit inputs and outputs:
 These checks define completion for an explicitly selected scope. They do not
 claim historical completeness, continuous availability, or public publication
 from local test results.
+
+## Open items after the 2026-09-25 validation
+
+Seven independent reviews (one per source package, one for the shared
+transport and docs, one for the SpicyRegs consumer) validated the tree above,
+their agreed findings were fixed, three bounded live probes requalified the
+changed paths, and the result is spicy-docs 0.34.0. Reports with `file:line`
+evidence are outside the repository (session scratchpad); receipts are under
+`~/Work/corpora/supply-2026-09-02/receipts/` (`wall-marker-prevalence`,
+`sec-file-number-grammar`, `edis-partial-number-probe`,
+`fcc-capture-requalification`, `cftc-reader-multipage`, all `2026-09-25`).
+What remains, by owner:
+
+- **All five sources.** Delivery items 2–4 above are still open: durable
+  checkpoints for SEC, FERC, CFTC and EDIS (their resume is a full re-walk;
+  only FCC verifies retained bytes before skipping), retained-capture release
+  profiles, and `publish` registration in `cli/sources.py`.
+- **EDIS.** The publisher matches partial investigation numbers; whether by
+  prefix or substring, and whether `/data/investigation/{n}` matches
+  partially too, needs one more bounded probe. Deletions during a listing
+  walk are undetectable (insertions surface as repeats); a confirming
+  identity-set re-walk would cost one extra pass. The bulk ZIP job
+  (create/status/download over a signed-in session) has no package client.
+- **FERC.** The search and docket-sheet walks stay in a local `_walk`: folding
+  them into `reading/paged_json.pages()` needs a per-call family and would
+  drop the offending-page capture every other consumer lacks. Docket-sheet
+  paging beyond one page is unqualified offline; the new-docket and sheet
+  readers have no production caller; the comment and accession readers still
+  yield bare rows without an identity or page digest;
+  `interpretation/identifier_shapes.py` keeps a separate FERC prefix list that
+  lacks the `ID-` spelling.
+- **FCC.** The capture journal fsyncs once per window, so a power loss can
+  lose one window's rows (files are durable and refetched). A traversal has
+  no explicit total request cap; its bound is structural (depth times leaves).
+  `build_fcc_proceedings` in SpicyRegs still materializes the whole proceedings
+  walk by design; `MAX_RESULT_WINDOW` stays restated there because a
+  module-level import would break its optional-dependency contract.
+- **SEC.** The join keys rulemakings by file number, so comments reached
+  through a slug-only rule page cannot join. Shared Federal Register start
+  pages whose record states no release or file number remain refused, and a
+  handful of sub-1000-page citations fall on such pages (measured in the
+  `sec-file-number-grammar` receipt).
+- **CFTC.** No route memory in the wall ladder: a persistent wall costs every
+  rung per item (rejected, since one success does not establish a route).
+  Listing-page provenance is not carried per record.
+- **Shared.** `sources/zyte.py` and `sources/firecrawl.py` still chain the
+  provider `HTTPError` (`from error`), which keeps the provider response
+  reachable from the exception; `BoundedAcquirer` compares whole header
+  values, which matters once a client carries a session cookie; the older
+  media-type and PDF-magic copies outside the five packages were left where
+  merging was not net smaller. `tests/test_cbo.py` skips one case whose
+  fixture path points outside the workspace.
