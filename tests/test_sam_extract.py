@@ -347,7 +347,8 @@ def test_a_stalled_trigger_is_abandoned_and_the_selection_triggered_afresh():
     reader = sam.reader(attempt_wait=300.0, max_wait=900.0)
     assert _ueis(reader.records()) == ["A", "B"]
     [abandoned] = reader.abandoned
-    assert (abandoned["attempt"], abandoned["token"], abandoned["waited_seconds"]) == (1, "Tok1", 300.0)
+    assert (abandoned["attempt"], abandoned["token"], abandoned["waited_seconds"]) == (1, "Tok1", 300)
+    assert all(type(value) in (int, str) for value in abandoned.values())  # journal-safe: no floats
     assert abandoned["last_poll"] == "HTTP 400" and abandoned["triggered_at"] == _at(TRIGGER_DAY).isoformat()
 
 

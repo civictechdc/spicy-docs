@@ -501,7 +501,7 @@ class SamBulkExtract:
                 )
             except _ExtractNotReady as stalled:
                 token = parse_qs(urlparse(download_url).query).get("token", [None])[0]
-                waited = round(self.clock() - started, 1)
+                waited = round(self.clock() - started)  # whole seconds: evidence journals refuse floats
                 self.abandoned.append(
                     {
                         "attempt": attempt,
