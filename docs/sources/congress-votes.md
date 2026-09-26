@@ -7,11 +7,13 @@ touches a vote -- `bill/{c}/{type}/{n}/actions`'s `recordedVotes` references
 and `house-vote/{c}/{session}/{roll}/members` -- carries the tally or, for
 the Senate, any member-level detail at all; see "Decision" below.
 
-Congress.gov's `house-vote` route is a House-only index; it has no Senate
-counterpart. `VoteAcquirer.list_senate_votes` reads the Senate's own session
-index instead -- the LIS vote-menu file -- so a consumer that needs "every
-roll call this session" for the Senate has a route at all. See "Senate vote
-menu" below.
+Each chamber also publishes its own session index, and a consumer that needs
+"every roll call this session" reads that:
+`VoteAcquirer.list_senate_votes` reads the Senate's LIS vote-menu file and
+`VoteAcquirer.list_house_votes` reads the Clerk's EVS year pages. Congress.gov's
+`house-vote` route is House-only and answers an empty success before the
+115th Congress, so it is linkage, not the House population. See "Senate vote
+menu" and "House vote index" below.
 
 ## What the files are
 
@@ -240,6 +242,54 @@ row (always `"senate"`, since every row on the menu is a Senate vote by
 construction), so a caller can walk the menu and then `VoteAcquirer.acquire`
 each roll's full tally and roster without building the url by hand.
 
+## House vote index
+
+The Clerk's EVS directory for a session's year has an `index.asp` page that
+links hundred-row pages (`ROLL_000.asp`, `ROLL_100.asp`, ... `ROLL_1100.asp`),
+each row one roll call. `VoteAcquirer.list_house_votes(congress, session)`
+reads `index.asp` and every page it links, and `assemble_clerk_vote_index`
+joins them into one `ClerkVoteIndex`, newest roll first.
+
+**Why not Congress.gov.** Measured 2026-09-26: `house-vote/{c}/1` answers 200
+with `pagination.count` 0 for every Congress from the 108th through the 114th,
+and 710 for the 115th. An empty success is not absence, so it cannot bound a
+backfill; the Clerk's own pages can.
+
+**URL grammar.** `clerk.house.gov/evs/{year}/{page}`, where `{year}` is the
+session's year by the same rule `clerk_url` uses and `{page}` is `index.asp` or
+a name `index.asp` links; `clerk_vote_index_url` builds nothing else. Pages are
+HTML (`text/html`, no declared charset); every measured page is ASCII, which
+`decode_html_page` reads as the UTF-8 it requires.
+
+**Field table** (`parse_clerk_vote_index`) -- every cell one row states:
+
+| Field | Source | Kept as |
+| --- | --- | --- |
+| congress, session, year (shared identity) | the page's `<H2>` heading, e.g. `116th Congress - 2nd Session (2020)` | checked against the request, then `ClerkVoteIndexPage.congress`, `.session`, `.year` |
+| roll | cell 1 and its link `cgi-bin/vote.asp?year={year}&rollnumber={roll}` | `ClerkVoteIndexEntry.roll_number`; the link's year must be the page's and its roll the printed one |
+| date | cell 2 (`28-Dec`; no year of its own) | `.vote_date` |
+| issue | cell 3 (`H R 6395`, `QUORUM`) | `.issue`, `None` when empty |
+| question | cell 4 | `.question`, `None` when empty |
+| result | cell 5 (`P` passed, `F` failed, `A` agreed to, and rarer letters the page does not define) | `.result`, `None` when empty |
+| title | cell 6 | `.title`, `None` when empty |
+
+**Identity and completeness.** Each page's heading must state the requested
+congress and session (`VoteMenuIdentityError`) and the session's year. A row
+that is not six cells, does not link its own roll call, or states no date
+refuses, as does a page with neither rows nor page links. `index.asp` repeats
+the newest rows its last page lists, and a vote cast between two fetches
+appears only on the later page, so a later page's row for a roll replaces an
+earlier one's. The Clerk numbers a session's roll calls consecutively, so the
+assembled rolls must run 1..N; a gap means a page was not read whole and
+refuses rather than shortening the population.
+
+Measured 2026-09-26 over every page of 2003-2024 (the 108th-118th Congresses;
+201 requests, 11.9 MB with the Senate menus): all 14,774 rows have six cells,
+every page is ASCII, and every session runs 1..N -- 14,509 House roll calls in
+all. Empty cells: title 575, issue 35, question 5, result 5; roll and date
+never. The survey script and every page are in
+`~/Work/corpora/fork-execution-2026-09-21/votes-backfill-2026-09-26/survey/`.
+
 ## Refusals
 
 | Error | When |
@@ -247,13 +297,15 @@ each roll's full tally and roster without building the url by hand.
 | `VoteUnavailableError` | HTTP 404 or 410 |
 | `VoteRefusedError` | HTTP 401/403 on either keyless host -- no credential exists to reject, so this is recast from `CredentialRefusedError` the way `LegislatorsRefusedError` and `PressReleaseFeedRefusedError` already are |
 | `VoteIdentityError` | The fetched file's own congress/session/roll number does not match the locator |
-| `VoteMenuIdentityError` | The fetched vote menu's own congress/session does not match what `list_senate_votes`/`parse_senate_vote_menu` was called with |
-| `VoteSourceError` | Any other shape violation (wrong root element, a missing required field, an unrecognized vote value, a non-integer count, or a well-formed file with zero `recorded-vote`/`member`/`vote` rows -- empty success is not absence) |
+| `VoteMenuIdentityError` | A fetched session index (the Senate vote menu or a Clerk EVS index page) states a congress/session other than the one requested |
+| `VoteSourceError` | Any other shape violation (wrong root element, a missing required field, an unrecognized vote value, a non-integer count, a well-formed file with zero `recorded-vote`/`member`/`vote` rows -- empty success is not absence -- or a Clerk index whose rolls do not run 1..N) |
 
-Every refusal from `VoteAcquirer.acquire`/`.list_senate_votes` carries the
-fetched bytes: `.capture` (when a body was received) and `.refused_response`
-(bounded evidence, credential-safe by construction since neither host takes
-one).
+Every refusal of one fetched file (`VoteAcquirer.acquire`, `.list_senate_votes`,
+or one page of `.list_house_votes`) carries the fetched bytes: `.capture`
+(when a body was received) and `.refused_response` (bounded evidence,
+credential-safe by construction since neither host takes one). A Clerk index
+gap is found after every page parsed, so it names the session and the first
+missing roll instead; a caller's transport has already seen each page.
 
 ## Use the route
 
@@ -301,14 +353,29 @@ print(menu.votes[0].vote_number, menu.votes[0].title)
 print(newest.vote.tallies)
 ```
 
+The House side is the same walk over the Clerk's index; each page is one
+request under the budget, and `request_count` totals them:
+
+```python
+from spicy_docs.sources.congress.votes import VoteAcquirer, VoteBudget, locator_from_index_entry
+
+index_budget = VoteBudget(max_requests=2, max_bytes=512 * 1024, timeout_seconds=30, min_request_interval_seconds=1.0)
+with VoteAcquirer(budget=index_budget) as source:
+    index = source.list_house_votes(116, 2).index
+    newest = source.acquire(locator_from_index_entry(index, index.votes[0]))
+
+print(len(index.votes), index.votes[0].title)  # 253 William M. (Mac) Thornberry National Defense Authorization Act
+```
+
 ## Evidence
 
 Real, unmodified vote-body fixtures with provenance, plus the Senate vote
 menu's byte-exact head-and-tail excerpt (over the 200 KB fixture bound; the
 full body's digest is recorded beside it):
 [`tests/fixtures/congress_votes/README.md`](../../tests/fixtures/congress_votes/README.md).
-`tests/test_congress_votes.py` includes three `@pytest.mark.integration`
-tests, one per publisher route (House vote, Senate vote, Senate vote menu),
+`tests/test_congress_votes.py` includes four `@pytest.mark.integration`
+tests, one per publisher route (House vote, House vote index, Senate vote,
+Senate vote menu),
 excluded by default (`-m 'not integration and not httpfs'`).
 
 ## Change and check
@@ -327,8 +394,10 @@ uv run --frozen pytest -q -m integration tests/test_congress_votes.py
 
 ## Decision
 
-**The Clerk and Senate LIS files are the tally source; the Congress.gov
-house-vote route and `recordedVotes` references are the index.** Neither
+**The Clerk and Senate LIS files are the tally source; each chamber's own
+session index (the Clerk's EVS pages, the Senate's vote menu) is the
+population; the Congress.gov house-vote route and `recordedVotes` references
+are linkage.** Neither
 Congress.gov route this package already reads carries a vote's actual tally.
 `recordedVotes` is a reference -- six identity fields plus the url this
 module resolves, nothing else (`billtrax-raw-data-2026-09-19.md` §5).

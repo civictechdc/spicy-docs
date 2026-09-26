@@ -37,6 +37,13 @@ well-formed file with zero listed votes refused rather than returned as an
 empty success. ``locator_from_menu_entry`` turns one row into the
 ``VoteLocator`` that resolves its full tally and roster.
 
+**The House roll-call index.** Congress.gov's ``house-vote`` route answers an
+empty success before the 115th Congress, so the House's own index is the
+Clerk's EVS year page and the hundred-row pages it links.
+``VoteAcquirer.list_house_votes`` reads every page, proves each page's stated
+congress/session against the request (``VoteMenuIdentityError``) and refuses a
+session whose rolls do not run 1..N without a gap.
+
 **The vote day.** Each publisher prints the day it voted in its own spelling
 (Clerk ``8-Sep-2025``; Senate ``January 9, 2025,  02:54 PM``), both in Eastern
 local time. ``vote_day`` reads either into an ISO date and is the one owner of
@@ -48,15 +55,17 @@ from __future__ import annotations
 
 import re
 from collections import Counter
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from contextlib import suppress
 from dataclasses import dataclass
 from datetime import date
+from html.parser import HTMLParser
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Literal
 from xml.etree.ElementTree import Element
 
 from spicy_docs.interpretation.vote_matching import VOTE_CHAMBERS, VoteKey, VoteMatchError
+from spicy_docs.reading.markup import decode_html_page, feed_html, joined_text
 from spicy_docs.reading.rss import child_text, single_child
 from spicy_docs.reading.xml import parse_xml
 from spicy_docs.sources.legislators import LegislatorsFile
@@ -121,6 +130,23 @@ _SENATE_COUNT_FIELDS = ("yeas", "nays", "present", "absent")
 # 659/659 entries of vote_menu_119_1.xml) -- present/absent live only on the
 # per-vote file this menu indexes, not the index itself.
 _SENATE_MENU_TALLY_FIELDS = ("yeas", "nays")
+
+# The Clerk's own session index: ``evs/{year}/index.asp`` links hundred-row pages
+# (``ROLL_000.asp`` .. ``ROLL_1100.asp``), one six-cell row per roll call.
+# Measured 2026-09-26 over every page of 2003-2024 (108th-118th Congresses, 201
+# requests): all 14,774 rows have six cells, every page is ASCII, and every
+# session's rolls run 1..N without a gap (receipt:
+# ~/Work/corpora/fork-execution-2026-09-21/votes-backfill-2026-09-26/survey/).
+CLERK_INDEX_MEDIA_TYPES = ("text/html",)
+_CLERK_INDEX_PAGE_RE = re.compile(r"ROLL_\d{3,}\.asp")
+_CLERK_INDEX_VOTE_RE = re.compile(
+    r"https?://clerk\.house\.gov/cgi-bin/vote\.asp\?year=(?P<year>\d{4})&rollnumber=(?P<roll>\d+)"
+)
+_CLERK_INDEX_HEADING_RE = re.compile(
+    r"(?P<congress>\d+)(?:st|nd|rd|th) Congress - (?P<session>\d)(?:st|nd|rd|th) Session \((?P<year>\d{4})\)"
+)
+_CLERK_INDEX_CELLS = 6
+_CLERK_INDEX_CELL_BOUND = 4096
 
 # The Clerk spells Yea/Nay on a YEA-AND-NAY vote and Aye/No on some
 # RECORDED VOTEs; both fixtures pinned here only ever carry Yea/Nay/Not
@@ -216,9 +242,9 @@ class VoteMenuIdentityError(VoteSourceError):
     ``<session>`` before any of its listed votes are returned.
     """
 
-    def __init__(self, *, requested: tuple[int, int], parsed: tuple[int, int]) -> None:
+    def __init__(self, *, requested: tuple[int, int], parsed: tuple[int, int], index: str = "senate vote menu") -> None:
         super().__init__(
-            f"senate vote menu fetched for congress={requested[0]} session={requested[1]} "
+            f"{index} fetched for congress={requested[0]} session={requested[1]} "
             f"states a different identity: congress={parsed[0]} session={parsed[1]}"
         )
         self.requested = requested
@@ -330,6 +356,18 @@ def senate_vote_menu_url(congress: int, session: int) -> str:
             f"congress {congress} predates the Senate LIS archive (measured floor: the 101st Congress)"
         )
     return f"https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_{congress:03d}_{session}.xml"
+
+
+def clerk_vote_index_url(congress: int, session: int, page: str = "index.asp") -> str:
+    """Build one Clerk EVS session-index page url: ``index.asp`` or a page it links (``ROLL_100.asp``).
+
+    The year comes from ``_clerk_year``, the rule ``clerk_url`` uses for a vote
+    file in the same directory.
+    """
+    _check_congress_session(congress, session)
+    if page != "index.asp" and not _CLERK_INDEX_PAGE_RE.fullmatch(page):
+        raise VoteSourceError(f"{page!r} is not a Clerk EVS index page")
+    return f"https://clerk.house.gov/evs/{_clerk_year(congress, session)}/{page}"
 
 
 def locator_from_recorded_vote_url(url: str) -> VoteLocator:
@@ -1053,6 +1091,195 @@ def locator_from_menu_entry(menu: SenateVoteMenu, entry: SenateVoteMenuEntry) ->
 
 
 @dataclass(frozen=True, slots=True)
+class ClerkVoteIndexEntry:
+    """One row of the Clerk's EVS session index, every cell it states, as spelled.
+
+    ``vote_date`` is a bare day-month (``"28-Dec"``); the index's year is the
+    session's. ``result`` is the Clerk's designator (``P`` passed, ``F``
+    failed, ``A`` agreed to, and rarer letters the page does not define). An
+    empty cell is ``None``: of the 14,774 measured rows the title is empty on
+    575, the issue on 35, the question and result on 5 each; the roll and date
+    never are.
+    """
+
+    roll_number: int
+    vote_date: str
+    issue: str | None
+    question: str | None
+    result: str | None
+    title: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class ClerkVoteIndexPage:
+    """One fetched EVS index page: its own proven session, its rows, and the index pages it links."""
+
+    congress: int
+    session: int
+    year: int
+    votes: tuple[ClerkVoteIndexEntry, ...]
+    pages: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ClerkVoteIndex:
+    """One session's House roll calls from the Clerk's own index, newest first, rolls 1..N without a gap."""
+
+    congress: int
+    session: int
+    year: int
+    votes: tuple[ClerkVoteIndexEntry, ...]
+
+
+class _ClerkIndexHtml(HTMLParser):
+    """Collect the heading, each table row's cells (text and first link) and the index-page links."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.headings: list[str] = []
+        self.rows: list[list[tuple[list[str], str | None]]] = []
+        self.pages: list[str] = []
+        self._heading: list[str] | None = None
+        self._row: list[tuple[list[str], str | None]] | None = None
+        self._cell: tuple[list[str], str | None] | None = None
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag == "h2":
+            self._heading = []
+        elif tag == "tr":
+            self._close_row()
+            self._row = []
+        elif tag == "td" and self._row is not None:
+            self._cell = ([], None)
+            self._row.append(self._cell)
+        elif tag == "a":
+            href = dict(attrs).get("href") or ""
+            if _CLERK_INDEX_PAGE_RE.fullmatch(href):
+                self.pages.append(href)
+            elif self._cell is not None and self._cell[1] is None and self._row is not None:
+                self._cell = (self._cell[0], href)
+                self._row[-1] = self._cell
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "h2" and self._heading is not None:
+            self.headings.append(" ".join("".join(self._heading).split()))
+            self._heading = None
+        elif tag == "td":
+            self._cell = None
+        elif tag in ("tr", "table"):
+            self._close_row()
+
+    def handle_data(self, data: str) -> None:
+        if self._heading is not None:
+            self._heading.append(data)
+        if self._cell is not None:
+            self._cell[0].append(data)
+
+    def close(self) -> None:
+        super().close()
+        self._close_row()
+
+    def _close_row(self) -> None:
+        if self._row:
+            self.rows.append(self._row)
+        self._row = self._cell = None
+
+
+def _read_clerk_index_row(row: list[tuple[list[str], str | None]], *, year: int, label: str) -> ClerkVoteIndexEntry:
+    if len(row) != _CLERK_INDEX_CELLS:
+        raise VoteSourceError(f"{label} row has {len(row)} cells, not the measured {_CLERK_INDEX_CELLS}")
+    roll_text, date, issue, question, result, title = (
+        joined_text(parts, label=label, bound=_CLERK_INDEX_CELL_BOUND, error_type=VoteSourceError)
+        for parts, _href in row
+    )
+    link = _CLERK_INDEX_VOTE_RE.fullmatch(row[0][1] or "")
+    if link is None or int(link["year"]) != year or link["roll"].lstrip("0") != roll_text.lstrip("0"):
+        raise VoteSourceError(f"{label} row {roll_text!r} does not link its own {year} roll call")
+    if not date:
+        raise VoteSourceError(f"{label} roll {roll_text} states no date")
+    return ClerkVoteIndexEntry(
+        roll_number=int(link["roll"]),
+        vote_date=date,
+        issue=issue or None,
+        question=question or None,
+        result=result or None,
+        title=title or None,
+    )
+
+
+def parse_clerk_vote_index(body: bytes, *, congress: int, session: int) -> ClerkVoteIndexPage:
+    """Read one Clerk EVS index page (``index.asp`` or ``ROLL_*.asp``), its heading proven against the request.
+
+    The heading's congress/session must be the ones requested
+    (``VoteMenuIdentityError``) and its year the session's; every row must link
+    that year's roll call under the number it prints. A page with neither rows
+    nor index links is a refusal, not an empty success.
+    """
+    _check_congress_session(congress, session)
+    label = "Clerk EVS vote index"
+    parser = _ClerkIndexHtml()
+    text = decode_html_page(body, len(body), label=label, cap=MAX_VOTE_BYTES, error_type=VoteSourceError)
+    feed_html(parser, text, label=label, error_type=VoteSourceError)
+    headings = [match for heading in parser.headings if (match := _CLERK_INDEX_HEADING_RE.search(heading))]
+    if len(headings) != 1:
+        raise VoteSourceError(f"{label} states {len(headings)} congress/session headings, not one")
+    parsed = (int(headings[0]["congress"]), int(headings[0]["session"]))
+    if parsed != (congress, session):
+        raise VoteMenuIdentityError(requested=(congress, session), parsed=parsed, index=label)
+    year = int(headings[0]["year"])
+    if year != _clerk_year(congress, session):
+        raise VoteSourceError(f"{label} for congress={congress} session={session} states the year {year}")
+    votes = tuple(_read_clerk_index_row(row, year=year, label=label) for row in parser.rows)
+    pages = tuple(dict.fromkeys(parser.pages))
+    if not votes and not pages:
+        raise VoteSourceError(f"{label} for congress={congress} session={session} lists no roll calls")
+    return ClerkVoteIndexPage(congress=congress, session=session, year=year, votes=votes, pages=pages)
+
+
+def assemble_clerk_vote_index(pages: Sequence[ClerkVoteIndexPage]) -> ClerkVoteIndex:
+    """One session's complete index from its fetched pages; a later page's row for a roll replaces an earlier one's.
+
+    ``index.asp`` repeats the newest rows its last page also lists, and a vote
+    cast between two fetches appears only on the later one. Rolls must run
+    1..N: the Clerk numbers each session's roll calls consecutively, so a gap
+    means a page was not read whole and is refused rather than published as
+    the session's population.
+    """
+    if not pages:
+        raise VoteSourceError("a Clerk EVS vote index needs at least one page")
+    first = pages[0]
+    identity = (first.congress, first.session, first.year)
+    by_roll: dict[int, ClerkVoteIndexEntry] = {}
+    for page in pages:
+        if (page.congress, page.session, page.year) != identity:
+            raise VoteSourceError(
+                f"Clerk EVS vote index pages state two sessions: {identity} and {page.congress, page.session, page.year}"
+            )
+        by_roll.update((entry.roll_number, entry) for entry in page.votes)
+    if not by_roll:
+        raise VoteSourceError(
+            f"Clerk EVS vote index for congress={first.congress} session={first.session} lists no roll calls"
+        )
+    missing = sorted(set(range(1, max(by_roll) + 1)) - set(by_roll))
+    if missing:
+        raise VoteSourceError(
+            f"Clerk EVS vote index for congress={first.congress} session={first.session} lists rolls up to "
+            f"{max(by_roll)} without {len(missing)} of them (first {missing[0]})"
+        )
+    votes = tuple(by_roll[roll] for roll in sorted(by_roll, reverse=True))
+    return ClerkVoteIndex(congress=first.congress, session=first.session, year=first.year, votes=votes)
+
+
+def locator_from_index_entry(index: ClerkVoteIndex, entry: ClerkVoteIndexEntry) -> VoteLocator:
+    """Build the ``VoteLocator`` for one Clerk index row: the index's proven session plus its roll number."""
+    if not isinstance(index, ClerkVoteIndex):
+        raise TypeError("index must be a ClerkVoteIndex")
+    if not isinstance(entry, ClerkVoteIndexEntry):
+        raise TypeError("entry must be a ClerkVoteIndexEntry")
+    return VoteLocator("house", index.congress, index.session, entry.roll_number)
+
+
+@dataclass(frozen=True, slots=True)
 class VoteBudget:
     max_requests: int
     max_bytes: int
@@ -1077,6 +1304,16 @@ class VoteAcquisition:
 class SenateVoteMenuAcquisition:
     menu: SenateVoteMenu
     capture: CapturedBodyResponse
+    request_count: int
+    budget: VoteBudget
+
+
+@dataclass(frozen=True, slots=True)
+class ClerkVoteIndexAcquisition:
+    """``captures`` are in fetch order, ``index.asp`` first; ``request_count`` totals every page's requests."""
+
+    index: ClerkVoteIndex
+    captures: tuple[CapturedBodyResponse, ...]
     request_count: int
     budget: VoteBudget
 
@@ -1168,14 +1405,52 @@ class VoteAcquirer(SourceAcquirer):
             )
         return SenateVoteMenuAcquisition(menu, capture, self.request_count, self.budget)
 
+    def list_house_votes(self, congress: int, session: int) -> ClerkVoteIndexAcquisition:
+        """Capture one session's House roll-call index from the Clerk's EVS pages -- ``index.asp`` and each page it links.
+
+        Each page is its own request under this acquirer's budget, so
+        ``max_requests`` bounds the retries of one page, not the whole walk;
+        ``request_count`` on the result totals them. Every page's heading is
+        proven against the request, and ``assemble_clerk_vote_index`` refuses a
+        session whose rolls do not run 1..N.
+        """
+        first = self._capture_clerk_index_page(congress, session, "index.asp")
+        fetched = [first, *(self._capture_clerk_index_page(congress, session, name) for name in first[0].pages)]
+        pages, captures, requests = zip(*fetched, strict=True)
+        return ClerkVoteIndexAcquisition(assemble_clerk_vote_index(pages), captures, sum(requests), self.budget)
+
+    def _capture_clerk_index_page(
+        self, congress: int, session: int, name: str
+    ) -> tuple[ClerkVoteIndexPage, CapturedBodyResponse, int]:
+        url = clerk_vote_index_url(congress, session, name)
+
+        def parse(response: CapturedBodyResponse, _allowance: int) -> ClerkVoteIndexPage:
+            return parse_clerk_vote_index(response.body, congress=congress, session=session)
+
+        with named_challenge(url, error_type=VoteRefusedError, context_key="vote_acquisition"):
+            page, capture = self.capture_validated(
+                url,
+                media_types=CLERK_INDEX_MEDIA_TYPES,
+                parse=parse,
+                max_bytes=self.budget.max_bytes,
+                unavailable=VoteUnavailableError,
+                context={"operation": "clerk-vote-index", "chamber": "house", "url": url},
+            )
+        return page, capture, self.request_count
+
 
 __all__ = [
+    "CLERK_INDEX_MEDIA_TYPES",
     "CLERK_URL_RE",
     "DEFAULT_MAX_BYTES",
     "DEFAULT_MENU_MAX_BYTES",
     "MAX_VOTE_BYTES",
     "MEDIA_TYPES",
     "SENATE_URL_RE",
+    "ClerkVoteIndex",
+    "ClerkVoteIndexAcquisition",
+    "ClerkVoteIndexEntry",
+    "ClerkVoteIndexPage",
     "MemberVote",
     "PartyTotal",
     "RollCallVote",
@@ -1195,11 +1470,15 @@ __all__ = [
     "VoteRefusedError",
     "VoteSourceError",
     "VoteUnavailableError",
+    "assemble_clerk_vote_index",
     "clerk_url",
+    "clerk_vote_index_url",
+    "locator_from_index_entry",
     "locator_from_menu_entry",
     "locator_from_recorded_vote_url",
     "normalize_vote",
     "parse_clerk_vote",
+    "parse_clerk_vote_index",
     "parse_senate_vote",
     "parse_senate_vote_menu",
     "senate_url",

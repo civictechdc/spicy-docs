@@ -12,6 +12,7 @@ called, so no member-level vote ever reached its database).
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 
 import httpx
@@ -23,6 +24,7 @@ from spicy_docs.sources.congress.votes import (
     DEFAULT_MENU_MAX_BYTES,
     MAX_VOTE_BYTES,
     SENATE_URL_RE,
+    ClerkVoteIndex,
     RollCallVote,
     SenateVoteMenu,
     SenateVoteMenuEntry,
@@ -34,11 +36,15 @@ from spicy_docs.sources.congress.votes import (
     VoteRefusedError,
     VoteSourceError,
     VoteUnavailableError,
+    assemble_clerk_vote_index,
     clerk_url,
+    clerk_vote_index_url,
+    locator_from_index_entry,
     locator_from_menu_entry,
     locator_from_recorded_vote_url,
     normalize_vote,
     parse_clerk_vote,
+    parse_clerk_vote_index,
     parse_senate_vote,
     parse_senate_vote_menu,
     senate_url,
@@ -52,6 +58,8 @@ FIXTURES = Path(__file__).parent / "fixtures" / "congress_votes"
 CLERK_FIXTURE = (FIXTURES / "clerk-roll240.xml").read_bytes()
 SENATE_FIXTURE = (FIXTURES / "senate-vote-119-1-00001.xml").read_bytes()
 SENATE_MENU_FIXTURE = (FIXTURES / "senate-vote-menu-119-1.xml").read_bytes()
+#: The Clerk's complete 116th-Congress, 2nd-session index: ``index.asp`` and the three pages it links.
+CLERK_INDEX_PAGES = {path.name: path.read_bytes() for path in sorted((FIXTURES / "clerk-index-2020").glob("*.asp"))}
 
 LEGISLATORS_FIXTURE = Path(__file__).parent / "fixtures" / "legislators" / "legislators-current-excerpt.json"
 CURRENT_LEGISLATORS = parse_legislators(LEGISLATORS_FIXTURE.read_bytes(), max_bytes=DEFAULT_MAX_BYTES)
@@ -664,6 +672,109 @@ def test_locator_from_menu_entry_requires_the_right_types():
         locator_from_menu_entry(menu, "not-an-entry")  # type: ignore[arg-type]
 
 
+# --- the Clerk's EVS session index ------------------------------------------------------------------------
+
+CLERK_INDEX_ROW = (
+    '<TR><TD><A HREF="http://clerk.house.gov/cgi-bin/vote.asp?year=2020&rollnumber={roll}">{printed}</A></TD>'
+    "<TD>28-Dec</TD><TD>H R 6395</TD><TD>On Passage</TD><TD>P</TD><TD>An Act</TD></TR>"
+)
+
+
+def clerk_index_page(*rows: str, heading: str = "116<SUP>th</SUP> Congress - 2<SUP>nd</SUP> Session (2020)", links=()):
+    """A minimal EVS index page in the measured layout: one heading, a header row, the given rows and links."""
+    return (
+        f"<HTML><BODY><H2>U.S. House of Representatives Roll Call Votes<BR>{heading}</H2>"
+        "<TABLE><TR><TH>Roll</TH><TH>Date</TH><TH>Issue</TH><TH>Question</TH><TH>Result</TH><TH>Title</TH></TR>"
+        + "".join(rows)
+        + "</TABLE>"
+        + "".join(f'<A HREF="{link}">Roll Calls</A>' for link in links)
+        + "</BODY></HTML>"
+    ).encode()
+
+
+def _fixture_index_pages():
+    first = parse_clerk_vote_index(CLERK_INDEX_PAGES["index.asp"], congress=116, session=2)
+    return [first, *(parse_clerk_vote_index(CLERK_INDEX_PAGES[name], congress=116, session=2) for name in first.pages)]
+
+
+def test_the_clerk_index_fixture_digests_match_the_readme():
+    """The four pages are the publisher's exact bytes (CRLF kept by .gitattributes), as the README records."""
+    digests = {name: hashlib.sha256(body).hexdigest()[:16] for name, body in CLERK_INDEX_PAGES.items()}
+    assert digests == {
+        "ROLL_000.asp": "ec0ee3c6164fbc42",
+        "ROLL_100.asp": "851c3d2a5068536d",
+        "ROLL_200.asp": "18b887e630f79d15",
+        "index.asp": "2a3e69d3ba53d0d4",
+    }
+
+
+def test_the_clerk_index_fixture_is_the_complete_second_session_of_the_116th():
+    """index.asp links three pages; together they list rolls 1..253, newest first, every cell as spelled."""
+    pages = _fixture_index_pages()
+    assert pages[0].pages == ("ROLL_200.asp", "ROLL_100.asp", "ROLL_000.asp")
+    assert [len(page.votes) for page in pages] == [5, 54, 100, 99]
+    index = assemble_clerk_vote_index(pages)
+    assert isinstance(index, ClerkVoteIndex)
+    assert (index.congress, index.session, index.year) == (116, 2, 2020)
+    assert [vote.roll_number for vote in index.votes] == list(range(253, 0, -1))
+    newest = index.votes[0]
+    assert (newest.vote_date, newest.issue, newest.result) == ("28-Dec", "H R 6395", "P")
+    assert newest.question == "On Passage, Objections of the President to the Contrary Notwithstanding"
+    assert newest.title == "William M. (Mac) Thornberry National Defense Authorization Act"
+    assert locator_from_index_entry(index, newest).url() == "https://clerk.house.gov/evs/2020/roll253.xml"
+
+
+def test_a_clerk_index_missing_a_page_is_refused_not_published_short():
+    """Without ROLL_100.asp the rolls stop being consecutive; the assembly refuses rather than drop them."""
+    pages = [page for page in _fixture_index_pages() if not any(100 <= v.roll_number < 200 for v in page.votes)]
+    with pytest.raises(VoteSourceError, match="without 100 of them \\(first 100\\)"):
+        assemble_clerk_vote_index(pages)
+
+
+def test_a_clerk_index_page_for_another_session_is_an_identity_refusal():
+    """The page's own heading is proven against the requested congress and session."""
+    with pytest.raises(VoteMenuIdentityError, match="Clerk EVS vote index fetched for congress=116 session=1"):
+        parse_clerk_vote_index(CLERK_INDEX_PAGES["index.asp"], congress=116, session=1)
+
+
+@pytest.mark.parametrize(
+    "body,message",
+    [
+        (clerk_index_page(), "lists no roll calls"),
+        (clerk_index_page(CLERK_INDEX_ROW.format(roll=1, printed=1), heading="Roll Call Votes"), "0 congress/session"),
+        (clerk_index_page(heading="116th Congress - 2nd Session (2021)", links=("ROLL_000.asp",)), "states the year"),
+        (clerk_index_page(CLERK_INDEX_ROW.format(roll=1, printed=1).replace("<TD>P</TD>", "")), "5 cells"),
+        (clerk_index_page(CLERK_INDEX_ROW.format(roll=1, printed=2)), "does not link its own"),
+        (
+            clerk_index_page(CLERK_INDEX_ROW.format(roll=1, printed=1).replace("year=2020", "year=2019")),
+            "does not link",
+        ),
+        (clerk_index_page(CLERK_INDEX_ROW.format(roll=1, printed=1).replace("28-Dec", "")), "states no date"),
+    ],
+)
+def test_clerk_index_shape_refusals_name_the_failed_check(body, message):
+    """Each measured invariant refuses on its own: heading, year, six cells, own link, date, nonempty page."""
+    with pytest.raises(VoteSourceError, match=message):
+        parse_clerk_vote_index(body, congress=116, session=2)
+
+
+def test_a_minimal_clerk_index_page_parses_with_empty_cells_as_none():
+    """Measured empty cells (title, issue, question, result) read as None; the page's links are kept in order."""
+    row = CLERK_INDEX_ROW.format(roll=7, printed=7).replace("<TD>An Act</TD>", "<TD></TD>")
+    page = parse_clerk_vote_index(clerk_index_page(row, links=("ROLL_000.asp",)), congress=116, session=2)
+    assert page.pages == ("ROLL_000.asp",)
+    assert page.votes[0].roll_number == 7 and page.votes[0].title is None
+
+
+def test_clerk_vote_index_url_builds_only_the_index_and_its_page_names():
+    """The session's year comes from the fixed calendar; only index.asp and ROLL_<hundreds>.asp are built."""
+    assert clerk_vote_index_url(116, 2) == "https://clerk.house.gov/evs/2020/index.asp"
+    assert clerk_vote_index_url(110, 1, "ROLL_1100.asp") == "https://clerk.house.gov/evs/2007/ROLL_1100.asp"
+    for page in ("../index.asp", "ROLL_1.asp", "roll001.xml"):
+        with pytest.raises(VoteSourceError, match="not a Clerk EVS index page"):
+            clerk_vote_index_url(116, 2, page)
+
+
 # --- acquisition, mocked ----------------------------------------------------------------------------------
 
 
@@ -750,6 +861,28 @@ def test_list_senate_votes_refusal_on_a_keyless_route_is_named_not_a_credential_
         source.list_senate_votes(119, 1)
     assert raised.value.url == senate_vote_menu_url(119, 1)
     assert raised.value.refused_response.response_bytes == body
+
+
+def test_list_house_votes_reads_the_index_and_every_page_it_links_keyless():
+    """Four keyless requests, index first then the linked pages in the publisher's order, one assembled index."""
+    names = ("index.asp", "ROLL_200.asp", "ROLL_100.asp", "ROLL_000.asp")
+    transport = Transport(*(response(CLERK_INDEX_PAGES[name], content_type="text/html") for name in names))
+    with VoteAcquirer(budget=BUDGET, transport=transport) as source:
+        result = source.list_house_votes(116, 2)
+    assert [str(call.url) for call in transport.calls] == [clerk_vote_index_url(116, 2, name) for name in names]
+    assert [capture.body for capture in result.captures] == [CLERK_INDEX_PAGES[name] for name in names]
+    assert result.request_count == 4 and result.budget == BUDGET
+    assert len(result.index.votes) == 253
+    assert "x-api-key" not in transport.calls[0].headers
+
+
+def test_list_house_votes_identity_refusal_retains_the_fetched_bytes_as_evidence():
+    """A real index fetched for the wrong session refuses on its first page, with the bytes attached."""
+    transport = Transport(response(CLERK_INDEX_PAGES["index.asp"], content_type="text/html"))
+    with VoteAcquirer(budget=BUDGET, transport=transport) as source, pytest.raises(VoteSourceError) as raised:
+        source.list_house_votes(117, 2)
+    assert raised.value.capture.body == CLERK_INDEX_PAGES["index.asp"]
+    assert len(transport.calls) == 1
 
 
 @pytest.mark.parametrize(
@@ -841,6 +974,15 @@ def test_live_senate_vote_meets_the_2026_09_18_measured_floor():
     assert result.vote.roll_number == 1 and len(result.vote.member_votes) >= 90
     assert result.capture.sha256.startswith("sha256:")
     assert result.request_count == 1
+
+
+@pytest.mark.integration
+def test_live_clerk_vote_index_still_lists_the_closed_second_session_of_the_116th():
+    """The 116th Congress's 2nd session is closed: 253 rolls on 2026-09-26 (README provenance), and forever."""
+    budget = VoteBudget(2, DEFAULT_MAX_BYTES, 30, 1.0)
+    with VoteAcquirer(budget=budget) as source:
+        result = source.list_house_votes(116, 2)
+    assert len(result.index.votes) == 253 and len(result.captures) == 4
 
 
 @pytest.mark.integration

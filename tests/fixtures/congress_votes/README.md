@@ -84,6 +84,27 @@ isolated to exactly the field under test. The identity-proof tests reuse the
 real fixtures directly, parsed against a deliberately wrong `VoteLocator` or
 a deliberately wrong `(congress, session)` pair.
 
+## Clerk EVS session-index fixture
+
+`clerk-index-2020/` holds the complete, unchanged House Clerk index for the
+116th Congress, 2nd session: `index.asp` and the three pages it links,
+captured keyless on September 26, 2026 at 12:32 UTC. The pages end lines in
+CRLF, as served; `.gitattributes` marks them `-text` so Git keeps the bytes.
+
+| Fixture | Publisher response | Bytes | SHA-256 |
+| --- | --- | --- | --- |
+| `index.asp` | [`clerk.house.gov/evs/2020/index.asp`](https://clerk.house.gov/evs/2020/index.asp) | 4,149 | `2a3e69d3ba53d0d40dc548d596f89e23cdeecd86e701d2c54b3be4b7006c88a8` |
+| `ROLL_200.asp` | [`clerk.house.gov/evs/2020/ROLL_200.asp`](https://clerk.house.gov/evs/2020/ROLL_200.asp) | 31,035 | `18b887e630f79d15588f847fdeebbd1195c4cb9c613163eff91de702b000c392` |
+| `ROLL_100.asp` | [`clerk.house.gov/evs/2020/ROLL_100.asp`](https://clerk.house.gov/evs/2020/ROLL_100.asp) | 57,640 | `851c3d2a5068536dde62a0a35444ae842097aaef73f8952870db84d1cdc415ad` |
+| `ROLL_000.asp` | [`clerk.house.gov/evs/2020/ROLL_000.asp`](https://clerk.house.gov/evs/2020/ROLL_000.asp) | 56,635 | `ec0ee3c6164fbc42a999d540d73a5d8f596f92d579eb0136a40212cac562f53f` |
+
+The session is closed, so the population is fixed: rolls 1..253, the newest
+the December 28, 2020 veto override on H.R. 6395. `index.asp` lists rolls
+253-249 and links the three pages; `ROLL_200.asp` lists 253-200,
+`ROLL_100.asp` 199-100 and `ROLL_000.asp` 99-1. Roll 1 is a quorum call
+(`QUORUM`, `Call of the House`) with an empty title cell. Dropping
+`ROLL_100.asp` leaves a gap the assembly refuses.
+
 ## Candidate election fixture
 
 `clerk-speaker-119-1-2.xml` is the complete, unchanged House Clerk response for
