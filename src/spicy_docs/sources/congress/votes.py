@@ -612,23 +612,34 @@ class SenateVoteMenuEntry:
     on the roughly 1-in-70 "en_bloc" batch confirmation votes (measured: 9 of
     659, 119th Congress 1st session), because the menu states no single
     issue/question/result for the vote as a whole there, only per-item rows.
-    ``question_measure`` is the nested ``<measure>`` some amendment votes carry
-    (measured 113 of the 650 non-en_bloc votes); it refuses if the
-    ``<question>`` carries any text after ``</measure>``, an unmeasured shape
-    this module has no rule for keeping. ``tallies`` keeps the menu's own
+    ``question_measures`` are the nested ``<measure>`` elements some amendment
+    votes carry, in order (measured 113 of the 650 non-en_bloc votes, 119th
+    Congress 1st session; two votes of the 110th's 1st session name two and
+    three amendments, e.g. 110-1-335, a motion to table S.Amdt. 2812-2814);
+    it refuses if the ``<question>`` carries any text after a ``</measure>``,
+    an unmeasured shape this module has no rule for keeping. ``tallies`` keeps the menu's own
     count names (``yeas``, ``nays``) -- the menu states no
     ``present``/``absent``, unlike the vote file itself.
+
+    ``data_available`` is ``False`` where the menu states it holds no data for
+    the vote (``data_available="no"``; measured once in the 108th-118th menus,
+    116-2 vote 216, titled "Vote data is unavailable due to secret session.").
+    Such an entry states only its number, date and title: ``issue``,
+    ``question`` and ``result`` are ``None`` and ``tallies`` is empty. The
+    vote's own file may still be served; whether its contents are the vote's
+    record is the caller's decision, since the menu says they are not.
     """
 
     vote_number: int
     vote_date: str
     issue: str | None
     question: str | None
-    question_measure: str | None
+    question_measures: tuple[str, ...]
     result: str | None
     tallies: Mapping[str, int]
     title: str
     matters: tuple[SenateVoteMenuMatter, ...] = ()
+    data_available: bool = True
 
 
 @dataclass(frozen=True, slots=True)
@@ -1002,6 +1013,33 @@ def _read_menu_entry(element: Element, label: str) -> SenateVoteMenuEntry:
     tally_element = single_child(element, "vote_tally", error_type=VoteSourceError, label=label)
     if tally_element is None:
         raise VoteSourceError(f"{label} vote {vote_number} is missing <vote_tally>")
+    availability = element.get("data_available")
+    if availability == "no":
+        # The menu's statement that it holds no data for this vote: every other
+        # field is empty by that statement, so any text there is a shape this
+        # module has no rule for and refuses rather than drops.
+        stated = [
+            tag
+            for tag in ("issue", "question", "result")
+            if (child_text(element, tag, error_type=VoteSourceError, label=label) or "").strip()
+        ] + [tag for tag in _SENATE_MENU_TALLY_FIELDS if (tally_element.findtext(tag) or "").strip()]
+        if stated or element.find("en_bloc") is not None:
+            raise VoteSourceError(
+                f'{label} vote {vote_number} states data_available="no" but carries {stated or ["en_bloc"]}'
+            )
+        return SenateVoteMenuEntry(
+            vote_number=vote_number,
+            vote_date=vote_date,
+            issue=None,
+            question=None,
+            question_measures=(),
+            result=None,
+            tallies={},
+            title=title,
+            data_available=False,
+        )
+    if availability is not None:
+        raise VoteSourceError(f"{label} vote {vote_number} has an unmeasured data_available={availability!r}")
     tallies = _read_counts(tally_element, _SENATE_MENU_TALLY_FIELDS, label)
 
     en_bloc_element = single_child(element, "en_bloc", error_type=VoteSourceError, label=label)
@@ -1009,7 +1047,8 @@ def _read_menu_entry(element: Element, label: str) -> SenateVoteMenuEntry:
         matters = tuple(_read_menu_matter(el, label) for el in en_bloc_element.findall("matter"))
         if not matters:
             raise VoteSourceError(f"{label} vote {vote_number} en_bloc lists no matters")
-        issue = question = question_measure = result = None
+        issue = question = result = None
+        question_measures: tuple[str, ...] = ()
     else:
         matters = ()
         issue, result = required("issue"), required("result")
@@ -1019,23 +1058,21 @@ def _read_menu_entry(element: Element, label: str) -> SenateVoteMenuEntry:
         question = (question_element.text or "").strip() or None
         if question is None:
             raise VoteSourceError(f"{label} vote {vote_number} <question> is empty")
-        measure_element = single_child(question_element, "measure", error_type=VoteSourceError, label=label)
-        question_measure = None
-        if measure_element is not None:
-            if (measure_element.tail or "").strip():
-                # Every measured occurrence (113 of 650 non-en_bloc votes,
-                # 119th Congress 1st session) carries no text after
-                # </measure>; refuse rather than silently drop text this
-                # module has no rule for keeping.
-                raise VoteSourceError(f"{label} vote {vote_number} <question> carries text after <measure>")
-            question_measure = (measure_element.text or "").strip() or None
+        measures = question_element.findall("measure")
+        if any((measure.tail or "").strip() for measure in measures):
+            # Every measured occurrence (113 of 650 non-en_bloc votes, 119th
+            # Congress 1st session, and every menu of the 108th-118th) carries
+            # no text after </measure>; refuse rather than silently drop text
+            # this module has no rule for keeping.
+            raise VoteSourceError(f"{label} vote {vote_number} <question> carries text after <measure>")
+        question_measures = tuple(text for measure in measures if (text := (measure.text or "").strip()))
 
     return SenateVoteMenuEntry(
         vote_number=vote_number,
         vote_date=vote_date,
         issue=issue,
         question=question,
-        question_measure=question_measure,
+        question_measures=question_measures,
         result=result,
         tallies=tallies,
         title=title,

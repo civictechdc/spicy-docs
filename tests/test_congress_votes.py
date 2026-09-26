@@ -577,7 +577,7 @@ def test_senate_vote_menu_first_and_last_entries_carry_every_field():
     assert first.vote_date == "18-Dec"
     assert first.issue == "PN373"
     assert first.question == "On the Cloture Motion"
-    assert first.question_measure is None
+    assert first.question_measures == ()
     assert first.result == "Agreed to"
     assert dict(first.tallies) == {"yeas": 51, "nays": 42}
     assert first.title == "Motion to Invoke Cloture: Sara Bailey to be Director of National Drug Control Policy"
@@ -587,7 +587,7 @@ def test_senate_vote_menu_first_and_last_entries_carry_every_field():
     assert last.vote_date == "09-Jan"
     assert last.issue == "S. 5"
     assert last.question == "On Cloture on the Motion to Proceed"
-    assert last.question_measure is None
+    assert last.question_measures == ()
     assert last.result == "Agreed to"
     assert dict(last.tallies) == {"yeas": 84, "nays": 9}
     assert last.title == (
@@ -615,14 +615,29 @@ def test_senate_vote_menu_question_measure_is_kept_when_the_question_names_an_am
     """A question naming an amendment keeps its measure string."""
     menu = parse_senate_vote_menu(SENATE_MENU_FIXTURE, congress=119, session=1)
     by_number = {entry.vote_number: entry for entry in menu.votes}
-    assert by_number[4].question_measure == "S.Amdt. 23"
-    assert by_number[3].question_measure == "S.Amdt. 14"
+    assert by_number[4].question_measures == ("S.Amdt. 23",)
+    assert by_number[3].question_measures == ("S.Amdt. 14",)
 
 
 SENATE_MENU_QUESTION_WITH_MEASURE_TAIL = SENATE_MENU_MINIMAL.replace(
     b"<question>On Cloture on the Motion to Proceed</question>",
     b"<question>On the Amendment<measure>S.Amdt. 99</measure> to the bill</question>",
 )
+
+
+# 110-1-335 as published (senate.gov vote_menu_110_1.xml): one motion tables three amendments.
+SENATE_MENU_QUESTION_WITH_THREE_MEASURES = SENATE_MENU_MINIMAL.replace(
+    b"<question>On Cloture on the Motion to Proceed</question>",
+    b"<question>On the Motion to Table\n        <measure>S.Amdt. 2812</measure>\n"
+    b"        <measure>S.Amdt. 2813</measure>\n        <measure>S.Amdt. 2814</measure>\n      </question>",
+)
+
+
+def test_senate_vote_menu_keeps_every_measure_a_question_names_in_order():
+    """A question naming several amendments keeps all of them, in the menu's order."""
+    (entry,) = parse_senate_vote_menu(SENATE_MENU_QUESTION_WITH_THREE_MEASURES, congress=119, session=1).votes
+    assert entry.question == "On the Motion to Table"
+    assert entry.question_measures == ("S.Amdt. 2812", "S.Amdt. 2813", "S.Amdt. 2814")
 
 
 def test_senate_vote_menu_refuses_text_after_a_question_measure():
@@ -645,6 +660,43 @@ def test_senate_vote_menu_minimal_body_parses_cleanly():
     """A minimal menu body parses to one vote."""
     menu = parse_senate_vote_menu(SENATE_MENU_MINIMAL, congress=119, session=1)
     assert len(menu.votes) == 1 and menu.votes[0].vote_number == 1
+
+
+# The 116th Congress 2nd session menu's one withheld vote (senate.gov vote_menu_116_2.xml, digest
+# 5f624154..., unchanged 2026-09-26), spelled as published.
+SENATE_MENU_SECRET_SESSION = SENATE_MENU_MINIMAL.replace(
+    b"<vote><vote_number>1</vote_number>",
+    b'<vote data_available="no"><vote_number>00216</vote_number><vote_date>23-Oct</vote_date>'
+    b"<issue /><question /><result /><vote_tally><yeas /><nays /></vote_tally>"
+    b"<title>Vote data is unavailable due to secret session.</title></vote>"
+    b"<vote><vote_number>1</vote_number>",
+)
+
+
+def test_senate_vote_menu_lists_a_vote_whose_data_it_states_is_unavailable():
+    """A `data_available="no"` entry states only its number, date and title; it is listed, not refused."""
+    menu = parse_senate_vote_menu(SENATE_MENU_SECRET_SESSION, congress=119, session=1)
+    withheld, ordinary = menu.votes
+    assert (withheld.vote_number, withheld.vote_date, withheld.data_available) == (216, "23-Oct", False)
+    assert (withheld.issue, withheld.question, withheld.result, withheld.question_measures) == (None, None, None, ())
+    assert withheld.tallies == {} and withheld.title == "Vote data is unavailable due to secret session."
+    assert ordinary.data_available and ordinary.tallies == {"yeas": 84, "nays": 9}
+
+
+@pytest.mark.parametrize(
+    ("mutation", "match"),
+    [
+        ((b"<yeas />", b"<yeas>3</yeas>"), "carries \\['yeas'\\]"),
+        ((b"<issue />", b"<issue>S. 5</issue>"), "carries \\['issue'\\]"),
+        ((b'data_available="no"', b'data_available="partial"'), "unmeasured data_available='partial'"),
+    ],
+)
+def test_senate_vote_menu_refuses_an_unavailable_entry_that_states_data_or_an_unmeasured_marker(mutation, match):
+    """An entry saying it holds no data but stating some, or an availability marker never measured, refuses."""
+    body = SENATE_MENU_SECRET_SESSION.replace(*mutation)
+    assert body != SENATE_MENU_SECRET_SESSION
+    with pytest.raises(VoteSourceError, match=match):
+        parse_senate_vote_menu(body, congress=119, session=1)
 
 
 SENATE_MENU_EMPTY_ROSTER = SENATE_MENU_MINIMAL.replace(
