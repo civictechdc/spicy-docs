@@ -19,6 +19,7 @@ from __future__ import annotations
 import itertools
 import random
 import re
+import time
 
 import pytest
 
@@ -1725,18 +1726,217 @@ def test_every_docket_a_reference_names_is_read(reference: str, dockets: tuple[s
 @pytest.mark.parametrize(
     "reference",
     [
-        "File No. SR-Amex-2003-102",  # another system's label: no docket noun, nothing read
+        "File No. SR-Amex-2003-102",  # another system's label numbers it
         "MM Docket No. 98-213",
         "ER00-2089-000",  # FERC, fenced as the single reader fences it
+        "Docket No. RM00-12-000 and Docket No. RM05-32-000",
         "Internal Agency Docket No. FEMA-4319-DR",
         "WO-150-1820-00 1A",  # a serial with a number after it, not a docket with a note
-        "FAR Case 2017-014, Docket No. FAR-2017-0014",  # not a search: it must open on a docket
-        "see the docket for FDA-2015-N-1837",
         "Docket No.",
         "",
         None,
     ],
 )
-def test_a_reference_that_does_not_open_on_a_docket_names_none(reference: object) -> None:
-    """The reader walks a docket column's value; it does not search prose for anything docket-shaped."""
+def test_a_reference_that_names_no_docket_names_none(reference: object) -> None:
+    """Neither the walk nor the prose after it reads a docket where the value names none."""
     assert normalize_docket_references(reference) == ()
+
+
+# --------------------------------------------------------------------------- #
+# New in spicy-docs (2026-09-26): a docket named after prose is read. The
+# owner reversed "deliberately not a search" after the rulemaking drift audit
+# (``fork-execution-2026-09-21/drift-qualification-2026-09-26/regulatory``,
+# defect D1): the walk missed 442 (FR document, held docket) pairs, 175 of
+# them from action documents, and two dockets were retired as shells although
+# an action notice names them. Every specimen is a real
+# ``fr_docket_links.docket_id``; the before-and-after measurement is in that
+# receipt's ``d1d2-fix/``.
+
+
+@pytest.mark.parametrize(
+    ("reference", "dockets"),
+    [
+        # Prose first: the two dockets the audit found retired as shells.
+        ("FAR Case 2018-003, Docket No. FAR-2018-0003, Sequence No. 1", ("FAR-2018-0003",)),
+        ("CIS No. 2295-03 and DHS-2004-0009", ("DHS-2004-0009",)),
+        ("FAR Case 2017-014, Docket No. FAR-2017-0014", ("FAR-2017-0014",)),
+        ("Docket No. 50-271, NRC-2011-0168", ("NRC-2011-0168",)),
+        ("Public Notice: EIB-2023-0003", ("EIB-2023-0003",)),
+        ("Internal Agency Docket No. FEMA-4411-DR: Docket ID FEMA-2019-0001", ("FEMA-2019-0001",)),
+        # An agency path in front of the docket.
+        ("Docket No. HHS/CDC-2011-0001", ("CDC-2011-0001",)),
+        # An ampersand list, which the walk now continues too.
+        ("EPA-R04-OAR-2012-0814 & EPA-R04-OAR-2012-0692", ("EPA-R04-OAR-2012-0814", "EPA-R04-OAR-2012-0692")),
+        ("Docket ID No. EPA-HQ-ORD-2008-0111 & EPA-HQ-ORD-2008-0315", ("EPA-HQ-ORD-2008-0111", "EPA-HQ-ORD-2008-0315")),
+        ("Docket Nos. OST-95-179 & OST-95-623", ("OST-95-179", "OST-95-623")),  # only the walk reads the second
+        # A trailing RIN, and a trailing period.
+        ("DOD-2014-OS-0097/RIN 0790-AJ29", ("DOD-2014-OS-0097",)),
+        ("Docket No. PHMSA-2008-0334.", ("PHMSA-2008-0334",)),
+        # A list that goes on after a member's note.
+        ("Docket No. FRA-2011-0060, Notice No. 12 and FRA-2009-0038, Notice No. 8", ("FRA-2011-0060", "FRA-2009-0038")),
+        ("Docket Nos. PHMSA-2007-0065 (HM-224D) and PHMSA-2008-0005 (HM-215J)", ("PHMSA-2007-0065", "PHMSA-2008-0005")),
+        # A label fused to the docket by a hyphen, after prose: the label says where it begins.
+        ("Document Number NASA-17-071: Docket Number-NASA-2017-0004", ("NASA-17-071", "NASA-2017-0004")),
+        ("Docket ID-OSHA-2007-0066", ("OSHA-2007-0066",)),
+        # A label licenses the two-digit year after prose as it does in front.
+        ("Docket No. AMS-SC-24-0046.", ("AMS-SC-24-0046",)),
+    ],
+)
+def test_a_docket_named_after_prose_is_read(reference: str, dockets: tuple[str, ...]) -> None:
+    """Prose, an agency path, an ampersand, a trailing RIN or period: the docket behind them is read, in order."""
+    assert normalize_docket_references(reference) == dockets
+
+
+@pytest.mark.parametrize(
+    ("reference", "dockets"),
+    [
+        # Another system's label numbers what follows it, a list of its own included.
+        ("File Nos. SR-ISE-2009-04, SR-CBOE-2009-001, SR-NYSEArca-2009-10, and SR-NYSEALTR-2009-11", ()),
+        ("File No. SR-LCH SA-2017-006", ()),
+        ("Document Identifier OS-0990-0243", ()),
+        ("Summary Notice No. PE-2016-119", ()),
+        ("Investigation Nos. TA-131-038 and TA-2104-030", ()),
+        # A note's own numbers are refused after prose as they are in a list.
+        ("EPA-HQ-OAR-2002-0086, FRL-8231-8", ("EPA-HQ-OAR-2002-0086",)),
+        ("Document Number AMS-SC-19-0103, SC-20-326", ("AMS-SC-19-0103",)),
+        ("Docket Number CDC-2018-0050, NIOSH-314", ("CDC-2018-0050",)),
+        # Unlabelled in prose, a two-digit year stays a report number's silhouette.
+        ("Document No. DA-11-03: AMS-DA-08-0050", ("DA-11-03",)),
+    ],
+)
+def test_prose_reads_only_what_its_label_calls_a_docket(reference: str, dockets: tuple[str, ...]) -> None:
+    """The search reads a docket's shape, never another system's number or a note's."""
+    assert normalize_docket_references(reference) == dockets
+
+
+@pytest.mark.parametrize(
+    ("reference", "dockets"),
+    [
+        ("Docket No. FDA-2020-N-1253 (formerly FDA-1987-N-0054)", ("FDA-2020-N-1253",)),
+        ("Docket No. FDA-2016-N-0124 (formerly part of Docket No. FDA-1975-N-0012)", ("FDA-2016-N-0124",)),
+        ("Docket No. USCG-2012-0074, Formerly USCG-2011-0314", ("USCG-2012-0074",)),
+        ("formerly FMCSA-1997-2350", ()),
+        ("Formerly Docket FDA-2008-N-0041", ()),  # the walk read it until 2026-09-26
+        (
+            "Docket No. USCG-2009-0143 (Formerly Docket Nos. D01-05-094 and Docket No. USCG-01-06-052)",
+            ("USCG-2009-0143",),
+        ),
+        # "formerly" names the first identifier after it, not the next docket of the list.
+        (
+            "Docket Nos. FDA-1981-N-0077 (formerly 81N-0393), FDA-1981-N-0248 (formerly 81N-0396)",
+            ("FDA-1981-N-0077", "FDA-1981-N-0248"),
+        ),
+        (
+            "Docket Nos. FDA-2007-P-0347 formerly 2007P-0431/CP1 and FDA-2010-P-0505",
+            ("FDA-2007-P-0347", "FDA-2010-P-0505"),
+        ),
+    ],
+)
+def test_a_former_identifier_is_not_read(reference: str, dockets: tuple[str, ...]) -> None:
+    """What a proceeding was formerly called is not a docket it names."""
+    assert normalize_docket_references(reference) == dockets
+
+
+def test_a_counter_word_that_runs_into_letters_is_not_a_label() -> None:
+    """Constructed from the single reader's own known reading: behind "Docket", "NO" is the head of NOAA.
+
+    Only the search is held to it here; the single reader still reads
+    "Docket NOAA-NOS-2024-0104" as AA-NOS-2024-0104, a separate defect.
+    """
+    assert normalize_docket_references("RTID NOAA-NOS-2024-0104") == ("NOAA-NOS-2024-0104",)
+    assert normalize_docket_references("Public Notice: X, Docket NOAA-NOS-2024-0104") == ("NOAA-NOS-2024-0104",)
+
+
+def _best_of_three(read, text: str) -> float:
+    times = []
+    for _ in range(3):
+        started = time.perf_counter()
+        read(text)
+        times.append(time.perf_counter() - started)
+    return min(times)
+
+
+@pytest.mark.parametrize(
+    "make",
+    [
+        lambda n: "AB-1234-A-A-A-A-A-" * n,  # one long token: the docket shape was quadratic in it
+        lambda n: "doc-" * n,  # a label's start inside a token
+        lambda n: "Docket" + " " * n + "x",  # the label's whitespace was cubic: 14 s at n=2000
+        lambda n: "EPA-HQ-OAR-2010-0001" + " " * n + "x",  # the list joint's was quadratic
+        lambda n: "File No. SR-X-2010-001 " * n,
+        lambda n: "FAR Case 2017-014, Docket No. FAR-2017-0014, " * n,
+        lambda n: "(formerly X-2010-0001) " * n,
+        lambda n: "File Nos. " + ", ".join(f"SR-X-2010-{i:03d}" for i in range(n)),
+    ],
+)
+def test_the_reader_is_linear_in_its_value(make) -> None:
+    """Doubling a pathological value does not quadruple the time.
+
+    Best of three, so a scheduler hiccup does not fail it, and never held to
+    less than 3 ms, which timer noise can reach; every superlinear spelling
+    these replaced takes longer than that at this size.
+    """
+    small = _best_of_three(normalize_docket_references, make(1000))
+    large = _best_of_three(normalize_docket_references, make(2000))
+    assert large < 3 * max(small, 1e-3), (small, large)
+
+
+#: The docket shape as one regular expression, until 2026-09-26: the oracle
+#: the segment-by-segment reading replaces.
+_OLD_REGSGOV_DOCKET_SHAPE = re.compile(
+    r"[A-Z][A-Z0-9]*(?:[-_][A-Z0-9]+)*[-_]\d{2}(?:\d{2})?(?:[-_][A-Z0-9]+)*[-_]\d+"
+    r"(?:[-_](?:NONRULEMAKING|RULEMAKING|NONRULE|RULE|DRAFT))?"
+    r"|[A-Z][A-Z0-9]{1,9}_FRDOC_\d{4}"
+)
+
+
+def test_the_docket_shape_reads_what_its_regular_expression_read() -> None:
+    """Randomized against the expression it replaced, over the pieces a docket is made of."""
+    rng = random.Random(20260926)
+    pieces = ["EPA", "HQ", "A", "A1", "1", "12", "123", "1234", "12345", "RULE", "NONRULE", "DRAFT", "FRDOC", "0001"]
+    for _ in range(20000):
+        identifier = rng.choice(["-", "_"]).join(rng.choice(pieces) for _ in range(rng.randint(1, 6)))
+        expected = _OLD_REGSGOV_DOCKET_SHAPE.fullmatch(identifier) is not None
+        assert identifier_shapes._has_regsgov_docket_shape(identifier) == expected, identifier
+
+
+def test_the_possessive_label_and_joint_read_what_they_read() -> None:
+    """Randomized against the backtracking spellings they replaced, on short texts where those are fast."""
+    old_label = rf"(?:dockets?|docs?)\b\.?\s*{identifier_shapes._LABEL_COUNTER_WORD}?\s*[:#\-]*\s*"
+    body = identifier_shapes._docket_body(
+        identifier_shapes._DOCKET_YEAR_LICENSED, office=identifier_shapes._DOCKET_OFFICE
+    )
+    old_labeled = re.compile(rf"\b{old_label}(?P<value>{body}){identifier_shapes._RIGHT}", re.IGNORECASE)
+    old_joint = re.compile(r"\s*(?:,\s*(?:and\s+|or\s+)?|;\s*|&\s*|\s+and\s+|\s+or\s+)", re.IGNORECASE)
+    rng = random.Random(26)
+    pieces = [
+        "Docket",
+        "No.",
+        "Nos",
+        "ID",
+        "#",
+        ":",
+        "-",
+        " ",
+        "  ",
+        ",",
+        ";",
+        "&",
+        "and",
+        "or",
+        "FDA",
+        "2020",
+        "N",
+        "0001",
+        "20",
+    ]
+    for _ in range(20000):
+        text = "".join(rng.choice(pieces) for _ in range(rng.randint(1, 10)))
+        assert [m.span("value") for m in identifier_shapes._DOCKET_LABELED.finditer(text)] == [
+            m.span("value") for m in old_labeled.finditer(text)
+        ], text
+        for at in range(len(text)):
+            if text[at - 1 : at].isspace():
+                continue  # the joint is only ever tried right after a token
+            new, old = identifier_shapes._REFERENCE_LIST_JOINT.match(text, at), old_joint.match(text, at)
+            assert (new and new.span()) == (old and old.span()), (text, at)

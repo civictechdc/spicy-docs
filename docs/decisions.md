@@ -1225,18 +1225,23 @@ What a later change must preserve:
   `E-9-18682`): no held number's key moves, and a value only gains a key it
   lacked. The strict SEC comments join does not fold them; they were
   measured on the rulemaking inputs, not its mirror.
-- **A docket column is read whole, then walked, never searched.**
+- **A docket column is read whole, then walked, then read as prose.**
   `normalize_docket_reference` reads a value that IS one docket;
-  `normalize_docket_references` returns every docket a value names behind a
-  longer label, before a note, or in a list, and it must open on a docket once
-  its label is off. A list member after the first must share the first one's
-  organization or carry the prose reader's four-digit-year shape, which is
-  what ends a list at a note's own numbers (`FRL-8231-8`). Over the
-  rulemaking build's `fr_docket_links`, 5,825 link rows name a held docket
-  the single reader refuses; the walk reads 5,389 of them in full and 67 in
-  part, and the 369 it leaves open a value with something else (`Public
-  Notice:`, `FAR Case 2017-014, Docket No. X`) that a search would read and
-  this does not.
+  `normalize_docket_references` walks the dockets a value opens on, behind a
+  longer label, before a note, or in a list, and a list member after the
+  first must share the first one's organization or carry the prose reader's
+  four-digit-year shape, which is what ends a list at a note's own numbers
+  (`FRL-8231-8`). What follows is read with the prose reader's docket
+  grammar, except a number another system's label counts (`File No.`,
+  `CIS No.`) and a former identifier (`formerly X`). Until 2026-09-26 the
+  reader never searched: over the rulemaking build's `fr_docket_links` the
+  walk read 5,389 of the 5,825 link rows naming a held docket in full and
+  67 in part, and left 369 open on prose (`Public Notice:`, `FAR Case
+  2017-014, Docket No. X`). The owner reversed that after the rulemaking
+  drift audit found 442 (FR document, held docket) pairs missed, 175 from
+  action documents; the prose reading gains 465 such pairs, 421 of the 442,
+  and loses one former docket. The docstring carries the measurement and
+  what the fences cost.
 - **The RIN key stays `\d{4}-[A-Z]{2}\d{2}`, written once.**
   `identifier_shapes.PUBLISHED_RIN` and `published_rin` are the only published
   key shape; `document_citations.rin` and `communication_rin` key through them.

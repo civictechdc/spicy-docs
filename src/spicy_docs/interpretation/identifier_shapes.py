@@ -871,7 +871,13 @@ def _docket_body(year: str, sequence_group: str = "sequence", office: str = "") 
 #: The label noun is a whole word. "doc" unbounded ate the head of
 #: "Document", "Doctrine" and "Documentation" and minted the remainder as an
 #: agency code.
-_DOCKET_LABEL = rf"(?:dockets?|docs?)\b\.?\s*{_LABEL_COUNTER_WORD}?\s*[:#\-]*\s*"
+#:
+#: The whitespace and punctuation runs are possessive: nothing after them can
+#: begin with a space or with ``:#-``, so giving characters back never makes
+#: a match, and three adjacent runs that could each take the same spaces made
+#: a failed match cubic in them ("Docket" and 1,000 spaces took 1.8 s,
+#: measured 2026-09-26). What the label reads is unchanged.
+_DOCKET_LABEL = rf"(?:dockets?|docs?)\b\.?\s*+{_LABEL_COUNTER_WORD}?\s*+[:#\-]*+\s*+"
 
 _DOCKET_BARE = re.compile(rf"{_LEFT}(?P<value>{_docket_body(_DOCKET_YEAR, office=_DOCKET_OFFICE)}){_RIGHT}")
 #: The label is presentation, never part of the identifier: it sits outside
@@ -947,10 +953,33 @@ _FERC_DOCKET_PREFIXES = (  # noqa: SIM905 -- a list literal would flatten this i
 #: FERC appends to every filing in a proceeding.
 _FERC_DOCKET = re.compile(rf"(?:{'|'.join(_FERC_DOCKET_PREFIXES)})\d{{2}}-\d+(?:-\d{{3}})?")
 
-_REGSGOV_DOCKET_SHAPE = re.compile(
-    rf"[A-Z][A-Z0-9]*(?:[-_][A-Z0-9]+)*[-_]\d{{2}}(?:\d{{2}})?(?:[-_][A-Z0-9]+)*[-_]\d+(?:[-_](?:{_DOCKET_SEGMENT_TOKENS}))?"
-    r"|[A-Z][A-Z0-9]{1,9}_FRDOC_\d{4}"
-)
+_REGSGOV_FRDOC_DOCKET = re.compile(r"[A-Z][A-Z0-9]{1,9}_FRDOC_\d{4}")
+_DOCKET_SEGMENT_TOKEN_SET = frozenset(_DOCKET_SEGMENT_TOKENS.split("|"))
+
+
+def _has_regsgov_docket_shape(identifier: str) -> bool:
+    """Whether a :data:`_REGSGOV_VALID` identifier has the column reader's docket shape, described above.
+
+    The organization's first segment opens on a letter; the last segment is
+    the sequence, all digits, unless one of the closed trailing tokens follows
+    it; and some segment between the two is a two- or four-digit year. Read
+    segment by segment, once. As one regular expression --
+    ``[A-Z][A-Z0-9]*(?:[-_][A-Z0-9]+)*[-_]\\d{2}(?:\\d{2})?(?:[-_][A-Z0-9]+)*[-_]\\d+``
+    and the optional token -- the two free runs of segments around the year
+    were tried pair by pair, quadratic in a long hyphenated token (2.3 s for
+    one of 52,000 characters, measured 2026-09-26); the test that replays it
+    against this function keeps the answer the same.
+    """
+
+    if _REGSGOV_FRDOC_DOCKET.fullmatch(identifier):
+        return True
+    organization, *segments = re.split(r"[-_]", identifier)
+    if segments and segments[-1] in _DOCKET_SEGMENT_TOKEN_SET:
+        segments.pop()
+    if not organization[:1].isalpha() or len(segments) < 2 or not segments[-1].isdigit():
+        return False
+    return any(len(segment) in (2, 4) and segment.isdigit() for segment in segments[:-1])
+
 
 #: The spellings a stringified null leaves behind, shared by every reader of a
 #: docket column so all of them agree on what "no reference" looks like.
@@ -1353,7 +1382,7 @@ def normalize_docket_reference(reference: object) -> str | None:
         return None
     for candidate in (stated, _behind_the_docket_label(stated)):
         identifier = normalize_regsgov_identifier(candidate)
-        if identifier is None or not _REGSGOV_DOCKET_SHAPE.fullmatch(identifier):
+        if identifier is None or not _has_regsgov_docket_shape(identifier):
             continue
         # A FERC docket fits the organization-year-sequence shape and is not
         # one of these dockets; regulations.gov calls it malformed.
@@ -1382,17 +1411,166 @@ _REFERENCES_LEAD = re.compile(
 _REFERENCE_TOKEN = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9_-]*[A-Za-z0-9])?")
 #: Where a docket may end in a reference that says more: the end, the
 #: punctuation that opens a note ("X, Notice No. 2", "X (HM-224F)", "X:
-#: FRL..."), a stray hyphen before one ("EPA-R06-RCRA-2008-0756-"), or a space
-#: before a WORD ("X Directorate Identifier ..."). A space before a number is
-#: not an end: "WO-150-1820-00 1A" is one Bureau of Land Management serial,
-#: not a docket with a note.
-_REFERENCE_TOKEN_END = re.compile(r"$|[,;:()\[\]]|-(?:\s|$)|\s+(?=[A-Za-z(\[]|$)")
-#: The joint between two dockets of one list: "X and Y", "X, Y", "X, Y, and Z", "X; Y".
-_REFERENCE_LIST_JOINT = re.compile(r"\s*(?:,\s*(?:and\s+|or\s+)?|;\s*|&\s*|\s+and\s+|\s+or\s+)", re.IGNORECASE)
+#: FRL..."), an ampersand that continues a list ("X & Y"), a stray hyphen
+#: before one ("EPA-R06-RCRA-2008-0756-"), or a space before a WORD ("X
+#: Directorate Identifier ..."). A space before a number is not an end:
+#: "WO-150-1820-00 1A" is one Bureau of Land Management serial, not a docket
+#: with a note.
+_REFERENCE_TOKEN_END = re.compile(r"$|[,;:()\[\]&]|-(?:\s|$)|\s+(?=[A-Za-z(\[&]|$)")
+#: The joint between two dockets of one list: "X and Y", "X, Y", "X, Y, and Z", "X; Y", "X & Y".
+#: Matched right after a token, so the look-behind reads "a space before the
+#: conjunction" as ``\s+and`` did, without a second run of spaces to try
+#: against the first: that pair was quadratic in a long run of them.
+_REFERENCE_LIST_JOINT = re.compile(r"\s*(?:,\s*(?:and\s+|or\s+)?|;\s*|&\s*|(?<=\s)(?:and|or)\s+)", re.IGNORECASE)
+#: "formerly" and what it introduces: an identifier the proceeding no longer
+#: goes by ("FDA-2020-N-1253 (formerly FDA-1987-N-0054)", "(formerly part of
+#: Docket No. FDA-1975-N-0012)"). In running text that is the first token
+#: after the word that carries a digit, docket-shaped or not ("(formerly
+#: 81N-0393), FDA-1981-N-0248"): ``\D*`` ends at that digit.
+_FORMERLY = re.compile(r"\bformerly\b\D*", re.IGNORECASE)
+#: Inside parentheses the whole rest of the parenthetical is the old names
+#: ("(Formerly Docket Nos. D01-05-094 and Docket No. USCG-01-06-052)").
+_FORMERLY_IN_PARENTHESES = re.compile(r"\([^()]*?(?P<former>\bformerly\b[^()]*)", re.IGNORECASE)
+#: The rest of a token from any character inside it.
+_TOKEN_REST = re.compile(r"[A-Za-z0-9_-]*")
+#: A label that counts something: one to three words, then the counter word
+#: that numbers what follows ("File No.", "Summary Notice No.", "Document
+#: Identifier", "Funding Announcement Number:", "CIS No."). The words are
+#: bounded so the scan stays linear in the value.
+_COUNTED_LABEL = re.compile(
+    r"\b(?P<words>(?:[A-Za-z][A-Za-z.']*\s+){1,3}?)(?:nos?\b\.?|numbers?\b|ids?\b|identifiers?\b)[\s:#.\-]*",
+    re.IGNORECASE,
+)
+#: A docket noun among a counted label's words makes it a docket's label
+#: ("Docket FAA No.", "E-Docket ID No.", "eDocket Number", "Dkt. No.").
+_DOCKET_NOUN = re.compile(r"(?:\be-?|\b)(?:dockets?|docs?|dkt)\b", re.IGNORECASE)
+#: What a label numbers: its first token and the tokens one space joins to it
+#: ("File No. SR-LCH SA-2017-006"), up to punctuation, a conjunction or a
+#: docket noun.
+_LABELLED_NUMBER = re.compile(r"[^\s,;:()\[\]&]+(?:\s(?!(?:and|or|dockets?|docs?)\b)[^\s,;:()\[\]&]+)*", re.IGNORECASE)
 
 
 def _organization(docket: str) -> str:
     return re.split(r"[-_]", docket, maxsplit=1)[0]
+
+
+def _outside(spans: list[tuple[int, int]], readings: list[tuple[int, str]]) -> list[tuple[int, str]]:
+    """The readings that start inside none of the spans; both lists in ascending start order, one pass."""
+
+    kept: list[tuple[int, str]] = []
+    spans_left = iter(spans)
+    span = next(spans_left, None)
+    reach = -1
+    for start, docket in readings:
+        while span is not None and span[0] <= start:
+            reach = max(reach, span[1])
+            span = next(spans_left, None)
+        if start >= reach:
+            kept.append((start, docket))
+    return kept
+
+
+def _walked_list(stated: str) -> tuple[list[tuple[int, str]], int]:
+    """The dockets a value opens on, across list punctuation, and where the last one ended (0 for none).
+
+    Each is the single reader's answer for one whole token, so the FERC fence
+    and the column's looser shape hold here: after a label, a note ("X, Notice
+    No. 2", "X (HM-224F)") or a list ("Docket Nos. X and Y", "X & Y"). A
+    member after the first must share the first one's organization or carry
+    the prose reader's strict four-digit-year shape, so the numbers a note
+    carries ("FRL-8231-8", "SC-20-326", "NIOSH-314") end the list.
+    """
+
+    position = _REFERENCES_LEAD.match(stated).end()
+    found: list[tuple[int, str]] = []
+    walked_to = 0
+    while (token := _REFERENCE_TOKEN.match(stated, position)) is not None and _REFERENCE_TOKEN_END.match(
+        stated, token.end()
+    ):
+        docket = normalize_docket_reference(token.group(0))
+        if docket is None:
+            break
+        if found and _organization(docket) != _organization(found[0][1]) and not _DOCKET_BARE.fullmatch(docket):
+            break
+        found.append((token.start(), docket))
+        walked_to = token.end()
+        joint = _REFERENCE_LIST_JOINT.match(stated, token.end())
+        if joint is None:
+            break
+        position = joint.end()
+    return found, walked_to
+
+
+def _numbered_by_other_labels(text: str) -> list[tuple[int, int]]:
+    """What another system's label numbers, in order: its number, and the list of its organization's after it.
+
+    "File Nos. SR-ISE-2009-04, SR-CBOE-2009-001" is two exchange file numbers,
+    and "CIS No. 2295-03 and DHS-2004-0009" is one CIS number and a docket. A
+    label inside a span already found is passed over, so the scan is linear.
+    """
+
+    spans: list[tuple[int, int]] = []
+    position = 0
+    while (label := _COUNTED_LABEL.search(text, position)) is not None:
+        position = label.end()
+        if _DOCKET_NOUN.search(label.group("words")) or (number := _LABELLED_NUMBER.match(text, position)) is None:
+            continue
+        organization = _organization(number.group(0)).upper()
+        end = number.end()
+        while (
+            (joint := _REFERENCE_LIST_JOINT.match(text, end)) is not None
+            and (member := _LABELLED_NUMBER.match(text, joint.end())) is not None
+            and _organization(member.group(0)).upper() == organization
+        ):
+            end = member.end()
+        spans.append((number.start(), end))
+        position = end
+    return spans
+
+
+#: :data:`_DOCKET_LABELED` with its label opening a token. The prose
+#: pattern's ``\b`` also starts inside a hyphenated token, and a failed
+#: attempt from each such start rescans the rest of it, quadratic in a long
+#: one ("doc-doc-..."); from a token's start there is one attempt per token.
+_DOCKET_LABELED_TOKEN = re.compile(
+    rf"{_LEFT}{_DOCKET_LABEL}(?P<value>{_docket_body(_DOCKET_YEAR_LICENSED, office=_DOCKET_OFFICE)}){_RIGHT}",
+    re.IGNORECASE,
+)
+
+
+def _read_in_prose(text: str, start: int) -> list[tuple[int, str]]:
+    """The dockets the prose reader's grammar reads in ``text`` from ``start``, less other labels' numbers.
+
+    A bare reading behind another system's label is that system's number
+    ("File No. SR-Amex-2003-102"); a docket label's reading is a docket's.
+    """
+
+    # A label ends at a separator. Its optional counter word also matches the
+    # head of an identifier ("Docket NOAA-NOS-2024-0104" read behind "Docket
+    # NO" is AA-NOS-2024-0104), and a label that runs straight into letters
+    # is that: the head, not a label. A docket value ends where its token
+    # does, so a labelled and a bare reading of one token share an end, and
+    # the labelled one is kept: the label says where the identifier begins
+    # ("Docket ID-OSHA-2007-0066" is OSHA-2007-0066, not ID-OSHA-2007-0066).
+    bare = {match.end("value"): match for match in _DOCKET_BARE.finditer(text, start)}
+    labelled = {
+        match.end("value"): match
+        for match in _DOCKET_LABELED_TOKEN.finditer(text, start)
+        if not text[match.start("value") - 1].isalnum()
+    }
+    unlabelled = [(bare[end].start("value"), bare[end].group("value")) for end in sorted(bare) if end not in labelled]
+    if unlabelled:
+        unlabelled = _outside(_numbered_by_other_labels(text), unlabelled)
+    kept = sorted([*unlabelled, *((match.start("value"), match.group("value")) for match in labelled.values())])
+    return [(at, docket) for at, value in kept if (docket := normalize_docket_reference(value)) is not None]
+
+
+def _former_names(text: str) -> list[tuple[int, int]]:
+    """Where the identifiers a proceeding no longer goes by stand, in start order."""
+
+    spans = [match.span("former") for match in _FORMERLY_IN_PARENTHESES.finditer(text)]
+    spans.extend((match.start(), _TOKEN_REST.match(text, match.end()).end()) for match in _FORMERLY.finditer(text))
+    return sorted(spans)
 
 
 def normalize_docket_references(reference: object) -> tuple[str, ...]:
@@ -1406,24 +1584,51 @@ def normalize_docket_references(reference: object) -> tuple[str, ...]:
     :func:`normalize_docket_reference` reads a reference that IS one docket,
     whole. A docket column also writes a docket inside more: a longer label
     ("U.S. DOT Docket Number X", "Docket ID Number: X"), a note after it ("X,
-    Notice No. 2", "X (HM-224F)", "X, FRL-8231-8"), or a list ("Docket Nos. X
-    and Y"). Measured 2026-09-23 over the rulemaking build's
-    ``fr_docket_links`` (spicy-docs ``docs/research/parsing-survey-2026-09-23.md``
-    item A7): 5,825 link rows name a docket the dockets table holds, as a whole
-    token, and the single reader refuses every one. This reads 5,389 of them in
-    full and 67 in part; the 369 it leaves open on something else ("Public
-    Notice: X", "FAR Case 2017-014, Docket No. X"), and only a search would
-    read them.
+    Notice No. 2", "X (HM-224F)", "X, FRL-8231-8"), a list ("Docket Nos. X
+    and Y", "X & Y"), or prose in front of it ("FAR Case 2017-014, Docket No.
+    X", "CIS No. 2295-03 and X", "Public Notice: X", "HHS/X", "X/RIN
+    2060-AP50"). The dockets the value opens on are walked first
+    (:func:`_walked_list`); the rest of it is prose, and is read with the
+    prose reader's own docket grammar, so an unlabelled docket needs the
+    four-digit year and a note's numbers ("FRL-8231-8", "SC-20-326",
+    "NIOSH-314") are never read. Every reading passes through the single
+    reader, so the FERC fence and the shape it states are the same.
 
-    Deliberately not a search. The reference must OPEN on a docket once its
-    label is off, a list continues only across list punctuation, and a
-    member after the first must be a docket of the first one's organization
-    or the prose reader's strict four-digit-year shape -- so the numbers a
-    note carries ("FRL-8231-8", "SC-20-326", "NIOSH-314") end the list rather
-    than joining it, and a reference that only mentions a docket somewhere
-    ("FAR Case 2017-014, Docket No. FAR-2017-0014") names none here. Each
-    member is read by the single reader, so the FERC fence and the shape it
-    states are the same.
+    Reading the prose is the owner's ruling of 2026-09-26, and it reverses
+    this reader's first rule, "deliberately not a search": a reference that
+    only mentions a docket somewhere named none. That rule cost measured
+    dockets. Over the rulemaking build's ``fr_docket_links`` (2026-09-23,
+    spicy-docs ``docs/research/parsing-survey-2026-09-23.md`` item A7) the
+    walk read 5,389 of the 5,825 link rows naming a held docket in full and
+    67 in part, and left 369 open on something else; the rulemaking drift
+    audit of 2026-09-26 found 442 (FR document, held docket) pairs it missed,
+    175 from action documents, and two dockets retired as shells although an
+    action notice names them (FAR-2018-0003, DHS-2004-0009). Two fences keep
+    what the old rule kept out:
+
+    - **Another system's label numbers what follows it.** Behind a counted
+      label without a docket noun ("File No.", "Summary Notice No.",
+      "Document Identifier", "CIS No.") a bare docket shape, and a list of its
+      organization's, is that system's number. Without the fence the search
+      reads 11,572 more values that name no held docket, 11,184 of them
+      exchange rule filings ("File No. SR-Amex-2003-102"); it costs 11 pairs
+      whose agency writes the docket behind its own label ("DHS No.
+      ICEB-2008-0004", "FRA Waiver Petition No. FRA-2000-7054").
+    - **A former identifier is not named.** "formerly" fences the first
+      identifier after it, and inside parentheses the rest of the
+      parenthetical ("X (formerly Y)", "(Formerly Docket Nos. Y and Z)"): 20
+      pairs, each a docket the document once went by. One of them the walk
+      read, and no longer does: "Formerly Docket FDA-2008-N-0041".
+
+    Measured 2026-09-26 over the audit's 612,342 distinct ``fr_docket_links``
+    values against the dockets table (receipt
+    ``fork-execution-2026-09-21/drift-qualification-2026-09-26/regulatory/d1d2-fix``):
+    506 answers change, 433 values are read that were not (323 naming a held
+    docket, 110 naming none), and 465 (FR document, held docket) pairs are
+    gained, 421 of the audit's 442 among them. The 21 still missed are the
+    label fence's 11, nine dockets with a two-digit year in unlabelled prose
+    ("Document No. DA-11-03: AMS-DA-08-0050"), where it is a report number's
+    silhouette, and one behind a stray hyphen.
     """
 
     whole = normalize_docket_reference(reference)
@@ -1432,22 +1637,11 @@ def normalize_docket_references(reference: object) -> tuple[str, ...]:
     stated = docket_reference_as_stated(reference)
     if not stated:
         return ()
-    position = _REFERENCES_LEAD.match(stated).end()
-    found: list[str] = []
-    while (token := _REFERENCE_TOKEN.match(stated, position)) is not None and _REFERENCE_TOKEN_END.match(
-        stated, token.end()
-    ):
-        docket = normalize_docket_reference(token.group(0))
-        if docket is None:
-            break
-        if found and _organization(docket) != _organization(found[0]) and not _DOCKET_BARE.fullmatch(docket):
-            break
-        found.append(docket)
-        joint = _REFERENCE_LIST_JOINT.match(stated, token.end())
-        if joint is None:
-            break
-        position = joint.end()
-    return tuple(dict.fromkeys(found))
+    walked, walked_to = _walked_list(stated)
+    readings = [*walked, *_read_in_prose(stated, walked_to)]
+    if not readings:
+        return ()
+    return tuple(dict.fromkeys(docket for _, docket in _outside(_former_names(stated), readings)))
 
 
 # --------------------------------------------------------------------------- #
