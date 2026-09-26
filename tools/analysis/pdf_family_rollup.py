@@ -435,12 +435,16 @@ JOIN_KEY_RULES: tuple[CitationRule, ...] = _measured_rules()
 
 @cache
 def committee_vocabulary() -> tuple[tuple[str, str], ...]:
-    """``(canonical name, system_code)`` for every committee the pinned rosters state."""
+    """``(canonical name, system_code)`` for every committee the pinned rosters state, read for a House print.
+
+    Every activity report this measurement reads is a House committee's
+    (``hrpt``), so a name both chambers hold is the House's.
+    """
     from spicy_docs.sources.congress.committee_rosters import parse_house_member_data, parse_senate_cvc
 
     house = parse_house_member_data(HOUSE_ROSTER.read_bytes(), congress=119)
     senate = parse_senate_cvc(SENATE_ROSTER.read_bytes())
-    return build_committee_vocabulary(house=(house,), senate=(senate,))
+    return build_committee_vocabulary(house=(house,), senate=(senate,), chamber="house")
 
 
 #: Structured content a consumer would otherwise have to re-read the PDF for.

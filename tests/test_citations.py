@@ -106,16 +106,17 @@ def mods_for(package: str):
     )
 
 
-def rosters() -> tuple[tuple[str, str], ...]:
-    """The pinned chamber rosters, read through this repository's own readers.
+def rosters(chamber: str = "house") -> tuple[tuple[str, str], ...]:
+    """The pinned chamber rosters, read through this repository's own readers, for one chamber's print.
 
     The House file is the complete ``<committees>`` block; the Senate excerpt
     states only the committees its sampled senators sit on, so anything it
-    does not reach stays unresolved rather than being guessed at.
+    does not reach stays unresolved rather than being guessed at. Both
+    fixture reports are House committees' (``hrpt``).
     """
     house = parse_house_member_data((ROSTERS / "memberdata-119-excerpt.xml").read_bytes(), congress=119)
     senate = parse_senate_cvc((ROSTERS / "cvc-member-data-excerpt.xml").read_bytes())
-    return committee_vocabulary(house=(house,), senate=(senate,))
+    return committee_vocabulary(house=(house,), senate=(senate,), chamber=chamber)
 
 
 def covered_for(package: str):
@@ -823,6 +824,41 @@ def test_a_fragment_too_short_to_mean_anything_is_refused() -> None:
 def test_the_resolver_takes_its_vocabulary_and_reads_no_file() -> None:
     """Purity, asserted: with an empty vocabulary nothing settles."""
     assert resolve_committee_names(["COMMITTEEONRULES"], ())["COMMITTEEONRULES"].system_code is None
+
+
+def test_a_name_both_chambers_hold_is_the_committee_of_the_chamber_whose_print_it_is() -> None:
+    """CRPT-118srpt3, a Senate report, says ``from the Committee on Veterans' Affairs``: that is ``ssva00``.
+
+    Until 2026-09-26 the vocabulary gave every shared name to the House, and
+    this line published ``hsvr00``. The pinned excerpts share three names;
+    the two chambers' vocabularies differ on exactly those and nothing else.
+    """
+    audit = json.loads((CITATION_FIXTURES / "print-citations-2026-09-26.json").read_text(encoding="utf-8"))
+    (front,) = [case["pages"] for case in audit["covered"] if case["package"] == "CRPT-118srpt3"]
+    assert "from the Committee on Veterans' Affairs" in front[0]
+    read = {
+        chamber: {
+            f.target_key
+            for f in find_citations(front[0], kinds=("committee_name",), committees=rosters(chamber))
+            if f.target_resolved
+        }
+        for chamber in ("senate", "house")
+    }
+    assert read == {"senate": {"ssva00"}, "house": {"hsvr00"}}
+    senate, house = dict(rosters("senate")), dict(rosters("house"))
+    assert senate.keys() == house.keys()
+    assert {name: (house[name], senate[name]) for name in senate if senate[name] != house[name]} == {
+        "COMMITTEEONAPPROPRIATIONS": ("hsap00", "ssap00"),
+        "COMMITTEEONARMEDSERVICES": ("hsas00", "ssas00"),
+        "COMMITTEEONVETERANSAFFAIRS": ("hsvr00", "ssva00"),
+    }
+
+
+@pytest.mark.parametrize("chamber", ["joint", "", None])
+def test_a_vocabulary_is_read_for_a_stated_chamber_or_not_at_all(chamber) -> None:
+    """No default: a caller that cannot say whose print it is must not be handed the House's answer."""
+    with pytest.raises(CitationError, match="chamber must be one of"):
+        committee_vocabulary(chamber=chamber)  # type: ignore[arg-type]
 
 
 def test_an_unresolved_committee_is_kept_as_evidence_not_dropped() -> None:

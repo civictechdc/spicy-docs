@@ -108,8 +108,15 @@ BILL_NUMBER_END = r"\b(?!\()(?!(?<=\n(?:19|20)\d\d):)"
 # --- the committee vocabulary and the resolver ---------------------------------------
 
 
-def committee_vocabulary(*, house: Iterable[object] = (), senate: Iterable[object] = ()) -> tuple[tuple[str, str], ...]:
-    """``(canonical name, system_code)`` for every committee the given rosters state.
+#: The chambers a committee print can belong to, and so the chambers a
+#: vocabulary can be read for.
+COMMITTEE_CHAMBERS: tuple[str, ...] = ("house", "senate")
+
+
+def committee_vocabulary(
+    *, house: Iterable[object] = (), senate: Iterable[object] = (), chamber: str
+) -> tuple[tuple[str, str], ...]:
+    """``(canonical name, system_code)`` for every committee the given rosters state, read for one chamber's print.
 
     Takes what the readers in ``sources/congress/committee_rosters.py`` already
     produced -- ``HouseMemberData`` records for ``house``, ``SenateCvc``
@@ -117,16 +124,37 @@ def committee_vocabulary(*, house: Iterable[object] = (), senate: Iterable[objec
     pure. The Senate ``cvc`` file states only the committees its listed
     senators sit on, so that side is a floor and a name it does not reach stays
     unresolved rather than being guessed at.
+
+    ``chamber`` is the chamber whose committee wrote the print, and it decides
+    a name both chambers hold: *Committee on the Judiciary* in a Senate report
+    is the Senate's (``ssju00``), in a House report the House's. It is required
+    because until 2026-09-26 the House silently won every such name, and the
+    two Senate Judiciary reports published ``hsju00`` for their own committee
+    1,717 times (see ``docs/decisions.md``). A name only one chamber holds
+    resolves to it whichever chamber reads.
     """
+    if chamber not in COMMITTEE_CHAMBERS:
+        raise CitationError(f"chamber must be one of {', '.join(COMMITTEE_CHAMBERS)}, not {chamber!r}")
+    by_chamber: dict[str, list[tuple[str, str]]] = {
+        "house": [
+            (
+                canonical_alnum(committee.name),
+                getattr(committee, "system_code", None) or "hs" + str(committee.code).lower(),
+            )
+            for roster in house
+            for committee in getattr(roster, "committees", ())
+        ],
+        "senate": [
+            (canonical_alnum(assignment.name), assignment.system_code)
+            for roster in senate
+            for senator in getattr(roster, "senators", ())
+            for assignment in getattr(senator, "committees", ())
+        ],
+    }
     entries: dict[str, str] = {}
-    for roster in house:
-        for committee in getattr(roster, "committees", ()):
-            code = getattr(committee, "system_code", None) or "hs" + str(committee.code).lower()
-            entries.setdefault(canonical_alnum(committee.name), code)
-    for roster in senate:
-        for senator in getattr(roster, "senators", ()):
-            for assignment in getattr(senator, "committees", ()):
-                entries.setdefault(canonical_alnum(assignment.name), assignment.system_code)
+    for side in (chamber, *(other for other in COMMITTEE_CHAMBERS if other != chamber)):
+        for name, code in by_chamber[side]:
+            entries.setdefault(name, code)
     return tuple(sorted(entries.items()))
 
 
@@ -980,6 +1008,7 @@ __all__ = [
     "CITATION_RULES",
     "CITATION_RULES_BY_NAME",
     "CITATION_RULE_SET_VERSION",
+    "COMMITTEE_CHAMBERS",
     "COMMITTEE_ROUTES",
     "CONGRESS_CHAMBER",
     "DOCUMENT_CITATION_KINDS",

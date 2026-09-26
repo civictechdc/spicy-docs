@@ -1083,6 +1083,27 @@ attached parenthesized subdivision (`CLAUSE S 2(N)`) and a year opening a line
 and closing with a colon (`S. Con. Res.\n2022:`) are refused -- exactly those
 three matches of the 31,955 the 002 rule reads over the retained corpora.
 
+**Corrected 2026-09-26: a committee name both chambers hold is the committee
+of the chamber whose print it is.** `committee_vocabulary` collapsed the two
+roster files by name with the House first, so *Committee on the Judiciary*,
+*on the Budget*, *on Veterans' Affairs*, *on Armed Services* and *on
+Appropriations* always resolved to the House: the Senate activity reports in
+the print-citations window published 1,746 House codes for their own
+committees, 1,717 of them `hsju00` in the two Senate Judiciary reports. The
+function now takes a required `chamber` and gives a shared name to it; the two
+chambers' vocabularies differ on those names and nothing else. The host reads
+the chamber off the package id (`CHAMBER_BY_DOCUMENT_TYPE`) and refuses an id
+that states neither, and the same chamber reaches `find_bill_actions`, whose
+hearing and markup codes follow the committee that acted: 75 Senate action
+rows move from House codes (`H21000`, `H15000-B/H15001/H22000`) to `13100`
+and `13200`, with no row gained or lost. Replayed over all 40 reports with the
+retained rosters, which reproduce every published committee row
+(`fix-print-citations-2026-09-26/replay-chamber.json`). Not settled here: 11
+committee names in House reports that the print itself qualifies as the
+Senate's (`Senate Committee on Armed Services`) still read as the House's, as
+before, and 13 House-only names in Senate reports (`Committee on Homeland
+Security`) still reach the House's code by the roster routes.
+
 **A rule change moves that rule's version and re-pins its fixture counts.**
 Each `CitationRule` in `interpretation/citations.py` carries a `version`, and
 `document_citations.rule_version` is the table's version column, so a

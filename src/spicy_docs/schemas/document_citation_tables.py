@@ -118,7 +118,10 @@ DOCUMENT_CITATIONS = table_contract(
 
 HOUSE_ACTIVITY_REPORTS = table_contract(
     "house_activity_reports",
-    grain="One row per end-of-Congress House committee activity report package, with what its print adds.",
+    grain=(
+        "One row per end-of-Congress committee activity report package, House or Senate, with what its print adds; "
+        "the table's name predates its Senate rows."
+    ),
     identity=("package_id",),
     version_column="last_modified",
     key_spelling=VALUE_KEY,
