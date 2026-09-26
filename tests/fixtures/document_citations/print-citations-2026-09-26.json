@@ -161,5 +161,67 @@
     "117-hr-5376"
    ]
   }
+ ],
+ "committee_snippets": [
+  {
+   "package": "CRPT-118hrpt961",
+   "report_chamber": "house",
+   "text_sha256": "sha256:5f17fa9c79a5be0a3dadd07b06b7744e8c98f5a11f12419da93402d438920547",
+   "span_start": 65017,
+   "span_end": 65132,
+   "text": "the House Committee on Armed Services and the Chairman and\nRanking Member of the Senate Committee on Armed Services",
+   "keys": [
+    [
+     "hsas00",
+     true
+    ],
+    [
+     "ssas00",
+     true
+    ]
+   ]
+  },
+  {
+   "package": "CRPT-117hrpt702",
+   "report_chamber": "house",
+   "text_sha256": "sha256:b5acdf764d27d52cd2ee996318985cf42802c832f726542e5ae8f1c7eb3c3fff",
+   "span_start": 98304,
+   "span_end": 98367,
+   "text": "22, 2022, the Senate Committee on Appropriations discharged the",
+   "keys": [
+    [
+     "ssap00",
+     true
+    ]
+   ]
+  },
+  {
+   "package": "CRPT-117hrpt705",
+   "report_chamber": "house",
+   "text_sha256": "sha256:cbde87c071202865ff80964772d0c9a1938973097b5bf429820f31587542877f",
+   "span_start": 286677,
+   "span_end": 286733,
+   "text": "The Senate Committee on Homeland Security was discharged",
+   "keys": [
+    [
+     "COMMITTEEONHOMELANDSECURITY",
+     false
+    ]
+   ]
+  },
+  {
+   "package": "CRPT-119srpt29",
+   "report_chamber": "senate",
+   "text_sha256": "sha256:b74316d6213befc42ce4b5761f2d2bdf64909f51fae3d8ddcdf43b89321c31e6",
+   "span_start": 163851,
+   "span_end": 163911,
+   "text": "Graves (R–Mo.) of the U.S. House Committee on Transportation",
+   "keys": [
+    [
+     "hspw00",
+     true
+    ]
+   ]
+  }
  ]
 }

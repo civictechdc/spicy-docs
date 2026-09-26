@@ -112,9 +112,29 @@ BILL_NUMBER_END = r"\b(?!\()(?!(?<=\n(?:19|20)\d\d):)"
 #: vocabulary can be read for.
 COMMITTEE_CHAMBERS: tuple[str, ...] = ("house", "senate")
 
+#: A chamber the print names immediately before a committee name: ``Senate
+#: Committee on Armed Services``, ``the House Committee on the Budget``. Read
+#: since ``committee_name`` 002, and such a name resolves among that chamber's
+#: committees only: before it, Senate-named names published House codes --
+#: the 11 shared names, and 24 ``Senate Committee on Homeland Security`` (a
+#: wrapped ``... and Governmental Affairs``) as ``hshm00`` (``docs/decisions.md``,
+#: receipt ``fix-print-citations-2026-09-26/replay-qualified.json``). Case as
+#: printed: the candidate rule itself reads only ``Committee on``.
+NAMED_CHAMBER = re.compile(r"\b(House|Senate)\s+$")
+
+#: How far before a committee name :data:`NAMED_CHAMBER` looks: the longer
+#: word, and the whitespace or line break a wrapped cover sets after it.
+_NAMED_CHAMBER_REACH = len("Senate") + 4
+
+
+def named_chamber(text: str, start: int) -> str | None:
+    """``house`` or ``senate`` when the print names that chamber right before offset ``start``, else ``None``."""
+    named = NAMED_CHAMBER.search(text, max(0, start - _NAMED_CHAMBER_REACH), start)
+    return None if named is None else named.group(1).lower()
+
 
 def committee_vocabulary(
-    *, house: Iterable[object] = (), senate: Iterable[object] = (), chamber: str
+    *, house: Iterable[object] = (), senate: Iterable[object] = (), chamber: str, own_only: bool = False
 ) -> tuple[tuple[str, str], ...]:
     """``(canonical name, system_code)`` for every committee the given rosters state, read for one chamber's print.
 
@@ -131,7 +151,10 @@ def committee_vocabulary(
     because until 2026-09-26 the House silently won every such name, and the
     two Senate Judiciary reports published ``hsju00`` for their own committee
     1,717 times (see ``docs/decisions.md``). A name only one chamber holds
-    resolves to it whichever chamber reads.
+    resolves to it whichever chamber reads -- unless ``own_only``, which keeps
+    ``chamber``'s committees alone: the vocabulary for a name the print
+    qualifies with that chamber (:data:`NAMED_CHAMBER`), where the other
+    chamber's committee cannot be meant.
     """
     if chamber not in COMMITTEE_CHAMBERS:
         raise CitationError(f"chamber must be one of {', '.join(COMMITTEE_CHAMBERS)}, not {chamber!r}")
@@ -152,7 +175,8 @@ def committee_vocabulary(
         ],
     }
     entries: dict[str, str] = {}
-    for side in (chamber, *(other for other in COMMITTEE_CHAMBERS if other != chamber)):
+    others = () if own_only else tuple(other for other in COMMITTEE_CHAMBERS if other != chamber)
+    for side in (chamber, *others):
         for name, code in by_chamber[side]:
             entries.setdefault(name, code)
     return tuple(sorted(entries.items()))
@@ -775,7 +799,7 @@ CITATION_RULES: tuple[CitationRule, ...] = (
     ),
     CitationRule(
         name="committee_name",
-        version="001",
+        version="002",
         # A *candidate* finder, not a committee. A committee report wraps the
         # name across lines and runs it into the following prose, so this rule
         # alone yielded 90 distinct values over the eight activity reports --
@@ -919,6 +943,7 @@ def find_citations(
     kinds: Sequence[str] = DOCUMENT_CITATION_KINDS,
     congress: int | None = None,
     committees: Sequence[tuple[str, str]] = (),
+    chamber_committees: Mapping[str, Sequence[tuple[str, str]]] | None = None,
 ) -> tuple[CitationFinding, ...]:
     """Every cite the named rules find in one document's normalized text.
 
@@ -928,7 +953,14 @@ def find_citations(
     finding's page is NULL, the honest answer rather than page 1. ``congress``
     is what a bare bill designator belongs to (see :class:`CitationContext`)
     and ``committees`` is the roster vocabulary from
-    :func:`committee_vocabulary`. Findings come back in ``(kind, span)`` order,
+    :func:`committee_vocabulary`, read for the chamber whose print this is.
+    ``chamber_committees`` is each chamber's own vocabulary
+    (``committee_vocabulary(..., own_only=True)``), for a committee name the
+    print qualifies with its chamber (:data:`NAMED_CHAMBER`): ``Senate
+    Committee on Armed Services`` in a House report is the Senate's, and a
+    Senate-named name no Senate committee reaches stays unresolved rather than
+    taking the House's. A named chamber with no entry there resolves through
+    ``committees`` like any other name. Findings come back in ``(kind, span)`` order,
     which is stable and independent of the rules' own order. Raises
     ``CitationError`` for non-string text, a page split that does not rejoin,
     or an unknown rule name.
@@ -956,11 +988,27 @@ def find_citations(
     # the other candidates this document printed.
     candidates = sorted({canonical_alnum(value) for value, _, _ in matches.get("committee_name", ())})
     context = CitationContext(congress=congress, committees=resolve_committee_names(candidates, committees))
+    # A name the print qualifies with a chamber is settled among that chamber's
+    # committees, over the same candidates so its siblings still count; a name
+    # with no chamber word before it reads exactly as before.
+    named_contexts = {
+        chamber: CitationContext(congress=congress, committees=resolve_committee_names(candidates, vocabulary))
+        for chamber, vocabulary in (chamber_committees or {}).items()
+        if candidates
+    }
+
+    def context_at(rule: CitationRule, start: int) -> CitationContext:
+        if rule.name != "committee_name" or not named_contexts:
+            return context
+        return named_contexts.get(named_chamber(text, start) or "", context)
 
     findings: list[CitationFinding] = []
     for rule in rules:
         if rule.reader is None:
-            hits = [(start, end, *rule.target_key(matched, context)) for matched, start, end in matches[rule.name]]
+            hits = [
+                (start, end, *rule.target_key(matched, context_at(rule, start)))
+                for matched, start, end in matches[rule.name]
+            ]
         else:
             hits = [(start, end, key, resolved, rule.name) for start, end, key, resolved in rule.reader(text)]
         # The table's identity is (kind, key, span start): the grammar can
@@ -1013,6 +1061,7 @@ __all__ = [
     "CONGRESS_CHAMBER",
     "DOCUMENT_CITATION_KINDS",
     "MONTHS",
+    "NAMED_CHAMBER",
     "CitationContext",
     "CitationError",
     "CitationFinding",
@@ -1024,6 +1073,7 @@ __all__ = [
     "canonical_alnum",
     "committee_vocabulary",
     "find_citations",
+    "named_chamber",
     "page_starts",
     "rejected_lookalikes",
     "resolve_committee_names",

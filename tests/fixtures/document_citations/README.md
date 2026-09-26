@@ -147,6 +147,16 @@ re-fetched for them). Public-domain government text.
   an unwrapped number, and CRPT-118srpt99's `H.R. 5376`. Each is a whole-line
   slice `[span_start, span_end)` of the text its `text_sha256` names; `keys`
   lists every bill the slice names, stated by reading it.
+- **`committee_snippets`**: four lines naming a committee with its chamber
+  (`Senate Committee on Armed Services` in CRPT-118hrpt961, beside the House
+  one; `the Senate Committee on Appropriations` in -117hrpt702; `The Senate
+  Committee on Homeland Security` in -117hrpt705; `U.S. House Committee on
+  Transportation` in the Senate report -119srpt29), each a whole-line slice of
+  the text its `text_sha256` names, with the report's chamber. `keys` are the
+  `committee_name` findings in order, stated by reading them against the
+  pinned roster excerpts in `../congress_rosters/` -- which reach no Senate
+  Homeland Security and Governmental Affairs, so that line is unresolved here
+  and `ssga00` with the full roster.
 - **`mods-CRPT-118srpt99.xml`**: **reduced** exactly as the two MODS above --
   everything before the first `<relatedItem>`, then `</mods>`, 62 constituent
   records dropped -- from
@@ -157,5 +167,5 @@ re-fetched for them). Public-domain government text.
 
 | Fixture | Bytes | SHA-256 |
 | --- | --- | --- |
-| `print-citations-2026-09-26.json` | 33,109 | `66e1db446d210a641261727fed38fabda2ecf0f5b695834c9f5783938e439ad2` |
+| `print-citations-2026-09-26.json` | 34,622 | `6bb85994ce3e78e5406796ae9f1d61c99bc1742cda93bff5aaad7d356bca6748` |
 | `mods-CRPT-118srpt99.xml` | 11,679 | `824fe705c4ab450ca53f98ad4a53682daeb0a4d59c5b1a22835ae9493bfd481f` |

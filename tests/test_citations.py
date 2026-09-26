@@ -27,6 +27,7 @@ from spicy_docs.interpretation.citations import (
     canonical_alnum,
     committee_vocabulary,
     find_citations,
+    named_chamber,
     page_starts,
     rejected_lookalikes,
     resolve_committee_names,
@@ -106,7 +107,7 @@ def mods_for(package: str):
     )
 
 
-def rosters(chamber: str = "house") -> tuple[tuple[str, str], ...]:
+def rosters(chamber: str = "house", *, own_only: bool = False) -> tuple[tuple[str, str], ...]:
     """The pinned chamber rosters, read through this repository's own readers, for one chamber's print.
 
     The House file is the complete ``<committees>`` block; the Senate excerpt
@@ -116,7 +117,7 @@ def rosters(chamber: str = "house") -> tuple[tuple[str, str], ...]:
     """
     house = parse_house_member_data((ROSTERS / "memberdata-119-excerpt.xml").read_bytes(), congress=119)
     senate = parse_senate_cvc((ROSTERS / "cvc-member-data-excerpt.xml").read_bytes())
-    return committee_vocabulary(house=(house,), senate=(senate,), chamber=chamber)
+    return committee_vocabulary(house=(house,), senate=(senate,), chamber=chamber, own_only=own_only)
 
 
 def covered_for(package: str):
@@ -125,13 +126,14 @@ def covered_for(package: str):
 
 
 def citations_for(package: str):
-    """Every citation the shared rules find in a fixture's retained text, bills in its covered Congress."""
+    """Every citation the shared rules find in a fixture's retained text, read as a host reads a House report."""
     body = body_for(package)
     return find_citations(
         body.text,
         pages=body.pages,
         congress=covered_for(package).congress,
         committees=rosters(),
+        chamber_committees={chamber: rosters(chamber, own_only=True) for chamber in ("house", "senate")},
     )
 
 
@@ -177,7 +179,7 @@ def test_every_rule_states_a_version_a_merge_can_order(rule) -> None:
 
 
 def test_the_rules_whose_published_keys_changed_moved_their_version() -> None:
-    """Nine rules have changed which keys they publish, and each moved its version.
+    """Ten rules have changed which keys they publish, and each moved its version.
 
     ``us_reports_cite`` gained a target reader, publishing ``600-183`` rather
     than its measurement-comparison form. The seven grammar kinds read
@@ -186,7 +188,8 @@ def test_the_rules_whose_published_keys_changed_moved_their_version() -> None:
     for their own target readers. ``bill_number`` 002 refuses a designator
     after a letter and a period (``R.S. 2477``), and 003 a number carrying a
     subdivision (``CLAUSE S 2(N)``) or a year heading wrapped under a
-    designator (``S. Con. Res.\n2022:``). In every case the procedure
+    designator (``S. Con. Res.\n2022:``). ``committee_name`` 002 reads a
+    chamber the print names before a committee. In every case the procedure
     applied: move the version, re-pin the digests, re-pin the fixture counts.
     """
     moved = {rule.name: rule.version for rule in CITATION_RULES if rule.version != "001"}
@@ -200,6 +203,7 @@ def test_the_rules_whose_published_keys_changed_moved_their_version() -> None:
         "federal_register_cite": "002",
         "rin": "004",
         "docket_number": "003",
+        "committee_name": "002",
     }
     assert {rule.name for rule in CITATION_RULES if rule.reader is not None} == set(GRAMMAR_KINDS)
 
@@ -215,7 +219,7 @@ def test_the_rule_set_version_is_pinned_to_these_rules() -> None:
     passed the whole suite, since a reject that is no longer asserted cannot
     fail.
     """
-    assert CITATION_RULE_SET_VERSION == "1440da23543e"
+    assert CITATION_RULE_SET_VERSION == "07078cbac30b"
 
 
 def test_the_stored_kinds_are_every_rule_that_reaches_a_key() -> None:
@@ -852,6 +856,55 @@ def test_a_name_both_chambers_hold_is_the_committee_of_the_chamber_whose_print_i
         "COMMITTEEONARMEDSERVICES": ("hsas00", "ssas00"),
         "COMMITTEEONVETERANSAFFAIRS": ("hsvr00", "ssva00"),
     }
+
+
+COMMITTEE_SNIPPETS_2026_09_26 = json.loads(
+    (CITATION_FIXTURES / "print-citations-2026-09-26.json").read_text(encoding="utf-8")
+)["committee_snippets"]
+
+
+def _named(text: str, chamber: str, *, named: bool = True) -> list[list]:
+    """The committee findings a report of ``chamber`` publishes for ``text``, reading a named chamber or not."""
+    own = {side: rosters(side, own_only=True) for side in ("house", "senate")}
+    findings = find_citations(
+        text, kinds=("committee_name",), committees=rosters(chamber), chamber_committees=own if named else None
+    )
+    return [[f.target_key, f.target_resolved] for f in findings]
+
+
+@pytest.mark.parametrize(
+    "case", COMMITTEE_SNIPPETS_2026_09_26, ids=lambda case: f"{case['package']}-{case['span_start']}"
+)
+def test_a_chamber_the_print_names_before_a_committee_selects_that_chambers_committees(case: dict) -> None:
+    """``Senate Committee on Armed Services`` in a House report is ``ssas00``; the report's own chamber does not win.
+
+    The retained lines name the other chamber (and, in CRPT-118hrpt961, both
+    chambers' committees of one name, one line apart). A Senate-named name no
+    Senate committee reaches -- the pinned Senate excerpt holds no Homeland
+    Security and Governmental Affairs -- stays unresolved rather than taking
+    the House's ``hshm00``.
+    """
+    assert _named(case["text"], case["report_chamber"]) == case["keys"]
+
+
+def test_without_the_named_chamber_the_report_chamber_took_every_shared_name() -> None:
+    """What committee_name 001 published for CRPT-118hrpt961's two lines: the House code twice."""
+    (case,) = [c for c in COMMITTEE_SNIPPETS_2026_09_26 if c["package"] == "CRPT-118hrpt961"]
+    assert _named(case["text"], "house", named=False) == [["hsas00", True], ["hsas00", True]]
+
+
+@pytest.mark.parametrize(
+    ("text", "chamber"),
+    [
+        ("the House Committee on Armed Services", "house"),
+        ("the Senate\nCommittee on Armed Services", "senate"),
+        ("the Senate Select Committee on Armed Services", None),
+        ("the Housing Committee on Armed Services", None),
+        ("xSenate Committee on Armed Services", None),
+    ],
+)
+def test_the_named_chamber_is_the_word_right_before_the_committee(text: str, chamber: str | None) -> None:
+    assert named_chamber(text, text.index("Committee")) == chamber
 
 
 @pytest.mark.parametrize("chamber", ["joint", "", None])

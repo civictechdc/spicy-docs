@@ -1098,11 +1098,29 @@ hearing and markup codes follow the committee that acted: 75 Senate action
 rows move from House codes (`H21000`, `H15000-B/H15001/H22000`) to `13100`
 and `13200`, with no row gained or lost. Replayed over all 40 reports with the
 retained rosters, which reproduce every published committee row
-(`fix-print-citations-2026-09-26/replay-chamber.json`). Not settled here: 11
-committee names in House reports that the print itself qualifies as the
-Senate's (`Senate Committee on Armed Services`) still read as the House's, as
-before, and 13 House-only names in Senate reports (`Committee on Homeland
-Security`) still reach the House's code by the roster routes.
+(`fix-print-citations-2026-09-26/replay-chamber.json`).
+
+**A chamber the print names before a committee selects that chamber's
+committees (`committee_name` 002).** `Senate Committee on Armed Services` in a
+House report read as the report's chamber, and so did `Senate Committee on
+Homeland Security` -- a wrapped *and Governmental Affairs* -- which matched only
+the House's name. `find_citations` now reads `House` or `Senate` right before
+the candidate (`NAMED_CHAMBER`) and settles that occurrence with
+`chamber_committees`, each chamber's own committees
+(`committee_vocabulary(..., own_only=True)`); a bare name reads as before.
+Among its own committees alone, a named name that meant the other chamber's
+stays unresolved rather than taking a wrong code. Replayed over the 40
+reports: 76 committee rows move, every one a named occurrence -- 11 shared
+names (`hsas00`->`ssas00` and the like), 25 Senate-named rows off a
+differently named House committee (24 `hshm00`->`ssga00`, `hsru00`->`ssra00`),
+36 named prefixes one chamber alone now settles (`House Committee on Small
+Busi-` -> `hssm00`), 1 to unresolved and 3 only in route -- and no bare row,
+no other kind and no action (`replay-qualified.json`). The known wrong one
+is not a federal committee at all: an Arkansas resolution's `House Committee
+on Ag-riculture, Forestry, and Economic Development` now settles `hsag00`,
+where the same sentence's Senate one had. Not settled: 7 bare names in Senate
+reports reach a name only the House roster holds (5 `hshm00`, 2 `hsso00`)
+and keep the House's code, because the print names no chamber.
 
 **A rule change moves that rule's version and re-pins its fixture counts.**
 Each `CitationRule` in `interpretation/citations.py` carries a `version`, and
