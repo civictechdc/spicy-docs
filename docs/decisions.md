@@ -1220,6 +1220,11 @@ What a later change must preserve:
   so a join can meet Regulations.gov's padded spelling, and a join reduces
   both sides, tries the exact string first, and refuses a key that reaches two
   documents. spicy-docs holds no join helper; the consumer's index does that.
+  Since 2026-09-26 the key also folds the separators Regulations.gov types
+  where the hyphen stands (`99 20888`, `2011 - 7212`, `2020--19543`,
+  `E-9-18682`): no held number's key moves, and a value only gains a key it
+  lacked. The strict SEC comments join does not fold them; they were
+  measured on the rulemaking inputs, not its mirror.
 - **A docket column is read whole, then walked, never searched.**
   `normalize_docket_reference` reads a value that IS one docket;
   `normalize_docket_references` returns every docket a value names behind a

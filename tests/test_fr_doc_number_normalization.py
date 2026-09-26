@@ -8,9 +8,9 @@ shared core in ``identifier_shapes`` -- the measured en-dash fold, the
 zero-padding rule, the C/R year segment's last-dash-only handling, and the
 measured C7 -> Z7 mirror series. This file pins the documented output of both
 entry points over the same inputs, so the shared rules and the deliberate
-divergences (the join remaps the mirror's C7 series; the spicy-regs key is
-pinned byte-identical and never remaps) each live exactly once and drift apart
-loudly.
+divergences (the join remaps the mirror's C7 series and the spicy-regs key
+never does; the key folds the separators Regulations.gov types and the join
+refuses them) each live exactly once and drift apart loudly.
 """
 
 import pytest
@@ -68,6 +68,20 @@ def test_the_shared_release_spelling_holds_the_rules_once() -> None:
     assert fr_doc_num_release_spelling("C1-2013-00201") == "C1-2013-201"
     with pytest.raises(ValueError, match="dash-final"):
         fr_doc_num_release_spelling("no dash at all")
+
+
+def test_the_separator_fold_is_the_comparison_keys_alone() -> None:
+    """The second documented divergence: the key folds Regulations.gov's typed separators; the join refuses them.
+
+    Measured on the spicy-regs rulemaking inputs (drift audit 2026-09-26, D2),
+    not on the SEC comments mirror, so the strict join still refuses a
+    spelling it has not measured rather than guessing at it.
+    """
+    for stated, key in (("99 20888", "99-20888"), ("2011 - 7212", "2011-7212"), ("2020--19543", "2020-19543")):
+        assert unpadded_federal_register_document_number(stated) == key
+        with pytest.raises(SecCommentsJoinError):
+            normalize_fr_doc_num(stated)
+        assert normalize_fr_doc_num(key) == key  # the two agree again on the Register's own spelling
 
 
 def test_the_entry_points_keep_their_own_admission() -> None:

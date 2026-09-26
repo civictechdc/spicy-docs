@@ -1127,6 +1127,16 @@ def corrected_rin(value: object, roster: Container[str]) -> tuple[str, str] | No
 #: tails), so every zero-padded spelling of a key is within reach of it.
 _WIDEST_SEQUENCE = 6
 
+#: A run of dashes and spaces where a document number's one hyphen stands:
+#: Regulations.gov's ``fr_doc_num`` types a space for it ("99 20888", "E8
+#: 21218"), spaces around it ("2011 - 7212", "E7- 21472") and doubles it
+#: ("2020--19543"). No form here separates a letter prefix from its digit, so
+#: a separator there goes ("E-9-18682"). Only the comparison key folds these;
+#: see :func:`unpadded_federal_register_document_number`. (Not named ``_FR_*``:
+#: the tests' ``_FR_`` census partitions the document-number forms.)
+_DOCUMENT_NUMBER_SEPARATOR = re.compile(r"[\s-]+")
+_LETTER_PREFIX_SEPARATOR = re.compile(r"^([A-Z])-(?=\d)")
+
 
 def _unpadded_sequence(sequence: str) -> str:
     """A document-number sequence without its zero padding: ``00239`` -> ``239``, ``00000`` -> ``0``.
@@ -1177,14 +1187,32 @@ def unpadded_federal_register_document_number(value: object) -> str | None:
     are different documents, published 1994-04-26 and 1994-01-05), so a key
     that reaches more than one held number is refused, not chosen between.
 
+    **The separators Regulations.gov types fold too** (2026-09-26, drift
+    audit defect D2): a run of spaces and dashes where the hyphen stands
+    ("99 20888", "2011 - 7212", "2020--19543") is one hyphen, and a separator
+    between a letter prefix and its digit goes ("E-9-18682"). No form here
+    reads either spelling, so a value keyed before keys the same; the fold
+    only gives a key to a value that had none. Measured over the audit's
+    inputs (receipt ``fork-execution-2026-09-21/drift-qualification-2026-09-26/
+    regulatory/d1d2-fix``): no key of the 1,008,830 held numbers moves, the
+    same five bare-legacy pairs collide and no other; of 454,231 distinct
+    ``fr_doc_num`` values 52 gain a key and 38 resolve: exactly the values
+    behind the 39 references the audit found ``missing``, "99 20888" among
+    them, whose resolution makes FDA-1999-F-0118 an action docket. The other
+    14 are pre-1994 numbers and page ranges ("8307 - 8309") that reach no held
+    number.
+
     The zero-padding rule itself is the shared :func:`_unpadded_sequence`;
-    this function keeps its own admission forms and its historical wide dash
-    fold (:func:`_folded_text`) -- the strict join-side normalizers below fold
-    only the measured en dash -- so its behavior is pinned and byte-identical
-    for consumers such as spicy-regs' ``FederalRegisterIndex``.
+    this function keeps its own admission forms and its wide folds -- every
+    dash spelling (:func:`_folded_text`) and the typed separators above --
+    where the strict join-side normalizers below fold only the measured en
+    dash. Its keys are pinned for consumers such as spicy-regs'
+    ``FederalRegisterIndex``: a change may give a key to a value that had
+    none, never move one.
     """
 
-    head, dash, sequence = _folded_text(value).rpartition("-")
+    spelled = _LETTER_PREFIX_SEPARATOR.sub(r"\1", _DOCUMENT_NUMBER_SEPARATOR.sub("-", _folded_text(value)))
+    head, dash, sequence = spelled.rpartition("-")
     if not dash or not sequence.isdigit():
         return None
     tail = _unpadded_sequence(sequence)
@@ -1210,9 +1238,12 @@ def unpadded_federal_register_document_number(value: object) -> str | None:
 # handling (``rpartition``), and the measured C7 -> Z7 mirror series
 # (:func:`fr_doc_num_mirror_series`). Each entry point keeps its own grammar
 # admission, error contract and fold width: ``unpadded_...`` admits the
-# module's forms and folds every dash spelling (:func:`_folded_text`), while
-# the strict join admits its own ``_DOC_NUM`` grammar and folds only the
-# measured en dash, refusing spellings it has not measured.
+# module's forms and folds every dash spelling (:func:`_folded_text`) and the
+# separators Regulations.gov types around the hyphen, while the strict join
+# admits its own ``_DOC_NUM`` grammar and folds only the measured en dash,
+# refusing spellings it has not measured. The separator fold was measured on
+# the rulemaking inputs, not on the SEC comments mirror, so it stays the
+# key's alone.
 #
 # What cannot be normalized is documented, not guessed. The mirror's five
 # truncated spellings -- ``C1-2017-11``, ``C1-2018-03``, ``C1-2018-08``,

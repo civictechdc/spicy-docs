@@ -1543,6 +1543,17 @@ def test_a_prefix_shared_with_a_real_agency_is_left_alone() -> None:
         # Already unpadded, and folded like every other reader here.
         ("2010-2394", "2010-2394"),
         (" e9-09366 ", "E9-9366"),
+        # The separators Regulations.gov types where the Register's hyphen
+        # stands (drift audit 2026-09-26, defect D2): a space, spaces around
+        # it, a doubled hyphen, and a hyphen inside the letter prefix.
+        # "99 20888" is the citing document of FDA-1999-F-0118's action notice.
+        ("99 20888", "99-20888"),
+        ("E8 21218", "E8-21218"),
+        ("2011 - 7212", "2011-7212"),
+        ("E7- 21472", "E7-21472"),
+        ("2022 - 03748", "2022-3748"),
+        ("2020--19543", "2020-19543"),
+        ("E-9-18682", "E9-18682"),
     ],
 )
 def test_a_document_number_reduces_to_its_unpadded_key(stated: str, key: str) -> None:
@@ -1560,6 +1571,7 @@ def test_a_document_number_reduces_to_its_unpadded_key(stated: str, key: str) ->
         "89 FR 12345",  # a citation, not a number
         "2014-04654s",  # colophon damage the column itself carries
         "2010-1234567",  # no padding of it is a document number
+        "E-08423",  # a letter prefix with no digit: folding the separator reads no form
         "",
         None,
     ],
