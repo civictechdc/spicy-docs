@@ -298,7 +298,8 @@ class CitationContext:
     ``sources.govinfo.activity_reports.covered_congress``), and a bill key is
     built only from a stated Congress -- with none, the finding keeps the
     printed form and says it is unresolved. :func:`find_citations` narrows it
-    per occurrence where a Congress subheading governs the text
+    per occurrence where the print sets a Congress beside the bill
+    (:func:`inline_congresses`) or a Congress subheading governs the text
     (:func:`congress_subheading_scopes`). ``committees`` is the ``{canonical candidate:
     CommitteeResolution}`` map :func:`resolve_committee_names` produced for this
     one document.
@@ -338,13 +339,14 @@ def bill_type_and_number(value: str) -> tuple[str, str] | None:
 def _bill_target(value: str, context: CitationContext) -> tuple[str, bool, str]:
     """``H.R. 7806`` in a 118th-Congress document is ``118-hr-7806``.
 
-    **The Congress is the document's statement, and a bounded one**: every
-    bare designator is stamped with the Congress the context carries -- the
-    one the caller read from the document, or, since ``bill_number`` 004, the
-    one a subheading states for the bills printed under it
-    (:func:`congress_subheading_scopes`). A bill named with its Congress in
-    prose (``H.R. 6752, 115th Cong.``, ``In the 115th Congress, H.R. 1372``)
-    outside such a subheading still takes the document's, and publishes a
+    **The Congress is the print's nearest statement of it**: every bare
+    designator is stamped with the Congress the context carries -- since
+    ``bill_number`` 005 the one the print sets right after that bill
+    (:func:`inline_congresses`), else, since 004, the one a subheading states
+    for the bills printed under it (:func:`congress_subheading_scopes`), else
+    the one the caller read from the document. A bill whose Congress the
+    print states only some other way (``In the 115th Congress, H.R. 1372``
+    outside a subheading) still takes the document's, and publishes a
     ``bill_id`` for the wrong Congress with ``target_resolved`` true -- which is
     why ``house_activity_reports`` carries ``bills_congress_mismatch``. Without
     a stated Congress the canonical printed form stands and the finding says
@@ -355,6 +357,60 @@ def _bill_target(value: str, context: CitationContext) -> tuple[str, bool, str]:
     if parts is None or context.congress is None:
         return canonical_alnum(value), False, "bill_number"
     return natural_key(context.congress, *parts), True, "bill_number"
+
+
+# --- the Congress the print sets beside a bill ----------------------------------------
+
+#: A Congress the print sets right after a bill, as that bill's own: ``H.R.
+#: 6752, 115th Cong.``, ``S. Res. 116, 112th Congress``, ``S. Res. 400 of the
+#: 94th Congress``, ``H.R. 1848 in the 117th Congress``, ``S. 3907 (117th
+#: Cong.)``. Measured 2026-09-26 over the 40 activity reports (receipt
+#: ``fork-execution-2026-09-21/print-inline-congress-2026-09-26/``): 446
+#: qualified bills in these five shapes, 35 naming a Congress other than the
+#: one ``bill_number`` 004 keyed, each that Congress's bill by the catalog
+#: title or the public law the print states beside it (one number, ``S. 3907
+#: (117th Cong.)`` for S. 3905, is the print's own misprint); digits and title
+#: case only, because no other spelling follows a bill there or in the budget,
+#: bill and Federal Register texts. A comma or preposition qualifier may wrap
+#: onto the next line (3 of the 446: ``S. 97,`` / ``112th Cong.``); a
+#: parenthesized one never does (0 of 84), so it must open on the bill's own
+#: line, where a roster heading's ``(118th Congress)`` line cannot be read as
+#: one. A Congress on the next line with nothing joining it (``H.R. 5005`` /
+#: ``108th Congress``, a law-table cell and the next section's subheading) is
+#: not the bill's.
+INLINE_CONGRESS = re.compile(
+    r"(?:,\s*|\s+(?:of|in)\s+the\s+)(?P<congress>\d{1,3})(?:st|nd|rd|th|d)\s+Cong(?:ress\b|\.)"
+    r"|[ \t]*\(\s*(?P<parenthesized>\d{1,3})(?:st|nd|rd|th|d)\s+Cong(?:ress|\.)\s*\)"
+)
+
+#: What joins bills that one qualifier after the last of them closes: ``H.R.
+#: 1140 and S. 596, 114th Cong.`` (CRPT-117hrpt705, twice) and ``S. 559/S.
+#: 4882/S. 870 (118th Cong.)`` (CRPT-119srpt8). The only joiners measured
+#: before a qualifier; a semicolon separates one qualified group from the
+#: next (``H.R. 6752, 115th Cong.; H.R. 1140 and ...``) and joins nothing.
+_BILL_LIST_JOIN = re.compile(r"\s+and\s+|\s*/\s*")
+
+
+def inline_congresses(text: str, spans: Sequence[tuple[int, int]]) -> dict[int, int]:
+    """``{bill start: Congress}`` for each bill in ``spans`` the print qualifies with its own Congress.
+
+    ``spans`` are the ``bill_number`` matches over ``text``, in order. A bill
+    takes the :data:`INLINE_CONGRESS` right after it, or, with none, the one
+    the next bill carries when only :data:`_BILL_LIST_JOIN` stands between
+    them. One pass from the last bill back, so ``O(len(spans))``.
+    """
+    stated: dict[int, int] = {}
+    carried: int | None = None  # the Congress of the bill after this one
+    for index in range(len(spans) - 1, -1, -1):
+        start, end = spans[index]
+        qualifier = INLINE_CONGRESS.match(text, end)
+        if qualifier is not None:
+            carried = int(qualifier.group("congress") or qualifier.group("parenthesized"))
+        elif carried is None or not _BILL_LIST_JOIN.fullmatch(text, end, spans[index + 1][0]):
+            carried = None
+        if carried is not None:
+            stated[start] = carried
+    return stated
 
 
 # --- the Congress a subheading states for the bills under it -------------------------
@@ -382,12 +438,6 @@ CONGRESS_SUBHEADING = re.compile(r"(?P<congress>\d{1,3})(?:st|nd|rd|th|d) Congre
 #: Congress``, which read as a subheading would carry the 116th over 40,665
 #: characters and 76 citations of the 117th's bills.
 _CONTINUES = re.compile(r"(?:,|(?:^|\s)[a-z][a-z'’-]*)[ \t]*$")
-
-#: The one other Congress subheading the 40 reports print (CRPT-117hrpt705,
-#: under H.R. 1132's 116th-Congress history): it ends the scope before it and
-#: opens none, since it names no single Congress -- its bills state their own
-#: inline (``H.R. 6752, 115th Cong.``), which this rule does not read.
-PRIOR_CONGRESSES_SUBHEADING = re.compile(r"Prior Congresses[ \t]*")
 
 #: A bill in any case: an entry heading sets ``H. CON. RES. 119``, which the
 #: ``bill_number`` rule itself does not read.
@@ -462,9 +512,12 @@ def congress_subheading_scopes(text: str) -> tuple[tuple[int, int, int], ...]:
     """``(start, end, congress)`` for each stretch of ``text`` a Congress subheading governs.
 
     A scope opens after a :data:`CONGRESS_SUBHEADING` line the line before does
-    not continue into (:data:`_CONTINUES`) and ends at the next such line, at
-    :data:`PRIOR_CONGRESSES_SUBHEADING`, or at the next line that starts a bill
-    entry (:func:`_starts_an_entry`), whichever comes first. **Not at the next
+    not continue into (:data:`_CONTINUES`) and ends at the next such line or
+    at the next line that starts a bill entry (:func:`_starts_an_entry`),
+    whichever comes first. ``Prior Congresses`` (CRPT-117hrpt705, once) ended
+    a scope until ``bill_number`` 005: its list states each bill's Congress
+    inline, and the paragraph's subject, ``H.R. 1132``, is the entry's own
+    116th-Congress bill. **Not at the next
     Congress heading alone**: the 44 in-entry subheadings of CRPT-117hrpt705
     and -118hrpt974 are never closed by one of the report's own Congress, and
     over the 40 reports that rule moves 3,926 bill citations, 329 of them
@@ -482,7 +535,7 @@ def congress_subheading_scopes(text: str) -> tuple[tuple[int, int, int], ...]:
         if subheading is not None and not (index and _CONTINUES.search(lines[index - 1])):
             subheadings.append((offset, offset + len(line), int(subheading.group("congress"))))
             stops.append(offset)
-        elif PRIOR_CONGRESSES_SUBHEADING.fullmatch(line) or _starts_an_entry(line, following):
+        elif _starts_an_entry(line, following):
             stops.append(offset)
         offset += len(line) + 1
     scopes = []
@@ -785,10 +838,11 @@ class CitationRule:
 CITATION_RULES: tuple[CitationRule, ...] = (
     CitationRule(
         name="bill_number",
-        version="004",
+        version="005",
         pattern=BILL_NUMBER_PATTERN,
         target_table="congress_bills",
-        target_key_shape="bill_id: {congress}-{bill_type}-{number}, from a subheading's Congress, else the caller's",
+        target_key_shape="bill_id: {congress}-{bill_type}-{number}, from the Congress set beside it, else a "
+        "subheading's, else the caller's",
         rejects=(
             "HR department",
             "S. Smith",
@@ -1096,7 +1150,8 @@ def find_citations(
     attribute every span to the wrong page silently; ``None`` means every
     finding's page is NULL, the honest answer rather than page 1. ``congress``
     is what a bare bill designator belongs to (see :class:`CitationContext`)
-    wherever no Congress subheading states another
+    wherever the print states no other for it, beside the bill
+    (:func:`inline_congresses`) or in a subheading over it
     (:func:`congress_subheading_scopes`), and ``committees`` is the roster vocabulary from
     :func:`committee_vocabulary`, read for the chamber whose print this is.
     ``chamber_committees`` is each chamber's own vocabulary
@@ -1142,17 +1197,22 @@ def find_citations(
         if candidates
     }
 
-    # A bill printed under a Congress subheading belongs to that Congress, not
-    # the document's; everywhere else the caller's statement stands.
-    scopes = congress_subheading_scopes(text) if "bill_number" in matches else ()
+    # A bill's Congress is the print's nearest statement of it: the one set
+    # right after the bill, else a Congress subheading's over it, else the
+    # caller's for the whole document.
+    bill_spans = [(start, end) for _matched, start, end in matches.get("bill_number", ())]
+    stated = inline_congresses(text, bill_spans) if bill_spans else {}
+    scopes = congress_subheading_scopes(text) if bill_spans else ()
     scope_starts = [start for start, _end, _congress in scopes]
 
     def context_at(rule: CitationRule, start: int) -> CitationContext:
         if rule.name == "bill_number":
-            index = bisect.bisect_right(scope_starts, start) - 1
-            if index >= 0 and start < scopes[index][1] and scopes[index][2] != congress:
-                return replace(context, congress=scopes[index][2])
-            return context
+            own = stated.get(start)
+            if own is None:
+                index = bisect.bisect_right(scope_starts, start) - 1
+                if index >= 0 and start < scopes[index][1]:
+                    own = scopes[index][2]
+            return context if own is None or own == congress else replace(context, congress=own)
         if rule.name != "committee_name" or not named_contexts:
             return context
         return named_contexts.get(named_chamber(text, start) or "", context)
@@ -1217,9 +1277,9 @@ __all__ = [
     "CONGRESS_CHAMBER",
     "CONGRESS_SUBHEADING",
     "DOCUMENT_CITATION_KINDS",
+    "INLINE_CONGRESS",
     "MONTHS",
     "NAMED_CHAMBER",
-    "PRIOR_CONGRESSES_SUBHEADING",
     "CitationContext",
     "CitationError",
     "CitationFinding",
@@ -1232,6 +1292,7 @@ __all__ = [
     "committee_vocabulary",
     "congress_subheading_scopes",
     "find_citations",
+    "inline_congresses",
     "named_chamber",
     "page_starts",
     "rejected_lookalikes",

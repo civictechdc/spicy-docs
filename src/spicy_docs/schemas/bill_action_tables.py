@@ -36,9 +36,10 @@ BILL_COMMITTEE_ACTIONS = table_contract(
         "bill_id": (
             "`congress_bills.bill_id` for the measure this action is attached to, in the citation rule's own "
             "spelling.  The Congress is the one the document says it covers "
-            "(`house_activity_reports.covered_congress`), or the one a Congress subheading states for a bill "
-            "printed under it, because a print writes `H.R. 1093` and never a Congress beside it; a bill the "
-            "document states neither for has no `bill_id` and attaches no action.  "
+            "(`house_activity_reports.covered_congress`), unless the print states the bill's own -- set right "
+            "after it (`H.R. 6752, 115th Cong.`) or in a Congress subheading over it -- because a print mostly "
+            "writes `H.R. 1093` with no Congress beside it; a bill the document states no Congress for has no "
+            "`bill_id` and attaches no action.  "
             "`house_activity_reports.bills_congress_mismatch` counts the bills the MODS keys under another "
             "Congress."
         ),

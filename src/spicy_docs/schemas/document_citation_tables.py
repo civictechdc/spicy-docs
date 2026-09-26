@@ -181,9 +181,10 @@ HOUSE_ACTIVITY_REPORTS = table_contract(
         "distinct_bills": (
             "How many distinct bill keys the print names, by the shared citation rules.  A floor, not a total: "
             "it counts what pages_read reached, and the MODS is the authoritative list.  A key carries "
-            "`covered_congress`, because a print writes `H.R. 7806` and never a Congress beside it, unless the "
-            "bill is printed under a Congress subheading (`116th Congress`), which it takes instead; where the "
-            "report states none, these are the printed forms, unresolved."
+            "`covered_congress`, because a print mostly writes `H.R. 7806` with no Congress beside it, unless "
+            "the print states the bill's own: set right after it (`H.R. 6752, 115th Cong.`), else in a "
+            "Congress subheading over it (`116th Congress`), which it takes instead; where the report states "
+            "none, these are the printed forms, unresolved."
         ),
         "distinct_bills_beyond_index": (
             "How many of those the MODS does not already state, which is a measured floor and not a discovery "
@@ -197,10 +198,10 @@ HOUSE_ACTIVITY_REPORTS = table_contract(
             "same comparison run a second time on `(bill_type, number)` alone.  Nonzero on a Senate report is "
             "the publisher's index disagreeing with the report -- GovInfo stamps a Senate report's `<bill>` "
             "list with the filing Congress, so CRPT-118srpt99's H.R. 5376 is `118` in its MODS and `117` "
-            "in its print, which reports on the 117th.  Nonzero on a House report counts the bills its "
-            "Congress subheadings key in an earlier Congress, which the MODS stamps with the filing one, and "
-            "any measure of another Congress the print names without one, whose row's `bill_id` is then "
-            "wrong.  NULL where `covered_congress` is."
+            "in its print, which reports on the 117th.  Nonzero on a House report counts the bills the print "
+            "keys in an earlier Congress -- beside the bill or in a subheading over it -- which the MODS stamps "
+            "with the filing one, and any measure of another Congress the print names without saying so, "
+            "whose row's `bill_id` is then wrong.  NULL where `covered_congress` is."
         ),
         "distinct_laws": "How many distinct public laws the print names; a floor bounded by pages_read.",
         "distinct_laws_beyond_index": (
@@ -249,11 +250,11 @@ HOUSE_ACTIVITY_REPORTS = table_contract(
         "covered_congress": (
             "The Congress the report says it reports on, read from its own words -- the index title, else the "
             "print's cover, else its first five pages, and `covered_congress_source` says which -- and the "
-            "Congress a printed bill key is built in outside a Congress subheading.  Beside `congress` rather "
+            "Congress a printed bill key is built in where the print states no other for it.  Beside `congress` rather "
             "than replacing it: the two differ on every Senate report, which is filed early in the following "
             "Congress (CRPT-118srpt99 reports on the 117th).  NULL where the report states no Congress, or "
-            "where the first source stating one states several; its printed bills outside a subheading then "
-            "stay unresolved rather than being stamped with a guess."
+            "where the first source stating one states several; its printed bills the print states no Congress "
+            "for then stay unresolved rather than being stamped with a guess."
         ),
         "covered_congress_source": (
             "Which of the report's own statements `covered_congress` was read from: `title`, `cover` or "

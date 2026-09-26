@@ -1,0 +1,113 @@
+{
+ "about": "A Congress the print sets beside a bill, in committee activity reports; README.md beside this file.",
+ "receipt": "corpora/fork-execution-2026-09-21/print-inline-congress-2026-09-26/",
+ "texts": "corpora/supply-2026-09-02/receipts/fix-print-citations-2026-09-26/texts.pkl",
+ "inline_snippets": [
+  {
+   "id": "of-the",
+   "package": "CRPT-118srpt11",
+   "text_sha256": "sha256:e181205abe07aef77ba04e11907c46514404ac1a657d9104c37a3c0b427925fa",
+   "span_start": 283428,
+   "span_end": 283668,
+   "covered_congress": 117,
+   "why": "`of the 94th Congress` after the resolution a Senate referral cites, in a report on the 117th.",
+   "text": "Aug. 5, 2021—Referred sequentially to the Select Committee on Intelligence pursu-\nant to Section 17(b)(I) of S. Res. 400 of the 94th Congress (as amended by Section\n506(d) of the USA PATRIOT Improvement and Reauthorization Act of 2005, Pub.",
+   "keys": [
+    "94-sres-400"
+   ]
+  },
+  {
+   "id": "comma-congress-wrapped",
+   "package": "CRPT-119srpt6",
+   "text_sha256": "sha256:6acf997f8dae979c71ac2bd732f1b97cf4a8f74397101291586157aa40f2e040",
+   "span_start": 76206,
+   "span_end": 76343,
+   "covered_congress": 118,
+   "why": "`S. Res.` / `116, 112th Congress.` wrapped across a line, in a 118th-Congress report.",
+   "text": "Privileged Nominations section with nominee information re-\nquested by the Committee on Finance, pursuant to S. Res.\n116, 112th Congress.",
+   "keys": [
+    "112-sres-116"
+   ]
+  },
+  {
+   "id": "parenthesized-congress",
+   "package": "CRPT-118hrpt964",
+   "text_sha256": "sha256:3c38f4693b374192d84c7e04495bc0bb0692c6797f1e266f0f53174fe7a3f871",
+   "span_start": 111869,
+   "span_end": 111964,
+   "covered_congress": 118,
+   "why": "`(117th Congress)` in a footnote of a 118th-Congress report.",
+   "text": "12 See H.R. 8528 (117th Congress). § 172 (establishing panel of constitutional experts to exam-",
+   "keys": [
+    "117-hr-8528"
+   ]
+  },
+  {
+   "id": "comma-cong",
+   "package": "CRPT-118hrpt964",
+   "text_sha256": "sha256:3c38f4693b374192d84c7e04495bc0bb0692c6797f1e266f0f53174fe7a3f871",
+   "span_start": 344390,
+   "span_end": 344431,
+   "covered_congress": 118,
+   "why": "`, 117th Cong.`: the 117th's For the People Act, not the 118th's H.R. 1.",
+   "text": "250 H.R. 1, 117th Cong. (1st Sess. 2021).",
+   "keys": [
+    "117-hr-1"
+   ]
+  },
+  {
+   "id": "gpo-ordinal-wrapped",
+   "package": "CRPT-117hrpt707",
+   "text_sha256": "sha256:bfc64b808b773be490442c4d62f81856fa2fea8105beaee021b134fe36716934",
+   "span_start": 14865,
+   "span_end": 14989,
+   "covered_congress": 117,
+   "why": "GPO's `93d`, the bill wrapped across a line, and a qualifier the citation continues after.",
+   "text": "modities to the Committee on International Relations (H. Res.\n988, 93d Cong., Oct 8, 1974, p. 34470). Nevertheless, the Com-",
+   "keys": [
+    "93-hres-988"
+   ]
+  },
+  {
+   "id": "slash-list",
+   "package": "CRPT-119srpt8",
+   "text_sha256": "sha256:a2ea59021e9627af9d7549faadf85bb9919b0c0801cb7461a73c1e5e559a5cec",
+   "span_start": 20082,
+   "span_end": 20174,
+   "covered_congress": 118,
+   "why": "A slash-joined list one parenthesized qualifier closes, every member in the report's own Congress.",
+   "text": "16 S. 559/S. 4882/S. 870 (118th Cong.). Became Public Law No: 118–67; Press Release, Senator",
+   "keys": [
+    "118-s-559",
+    "118-s-4882",
+    "118-s-870"
+   ]
+  },
+  {
+   "id": "parenthesized-other-congress",
+   "package": "CRPT-119srpt8",
+   "text_sha256": "sha256:a2ea59021e9627af9d7549faadf85bb9919b0c0801cb7461a73c1e5e559a5cec",
+   "span_start": 99543,
+   "span_end": 99630,
+   "covered_congress": 118,
+   "why": "`(114th Cong.)`, which the public law the same footnote names confirms (114-210).",
+   "text": "144 H.R. 4904 (114th Cong.), Became Public Law No: 114–210; Press Release, Senator Gary",
+   "keys": [
+    "114-hr-4904"
+   ]
+  },
+  {
+   "id": "in-the",
+   "package": "CRPT-117hrpt702",
+   "text_sha256": "sha256:b5acdf764d27d52cd2ee996318985cf42802c832f726542e5ae8f1c7eb3c3fff",
+   "span_start": 75615,
+   "span_end": 75678,
+   "covered_congress": 117,
+   "why": "`in the 117th Congress`, the report's own Congress: read, and no key moves.",
+   "text": "No further action was taken on H.R. 1848 in the 117th Congress.",
+   "keys": [
+    "117-hr-1848"
+   ]
+  }
+ ]
+}

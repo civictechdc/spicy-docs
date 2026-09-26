@@ -501,10 +501,10 @@ rollup estimated.
   every bare designator is stamped with `covered_congress` -- the Congress the
   report states it covers, from its title, cover or front matter
   (`covered_congress_source`), kept beside the summary's filing `congress`
-  because a Senate report is filed in the next Congress -- except under a
-  Congress subheading (`116th Congress` over a predecessor bill's history),
-  whose Congress its bills take until the next entry. No statement, no bill
-  key. `bills_congress_mismatch` runs the index comparison a second time on
+  because a Senate report is filed in the next Congress -- except where the
+  print states a bill's own: set right after it (`H.R. 6752, 115th Cong.`),
+  else a Congress subheading over it (`116th Congress` over a predecessor
+  bill's history, until the next entry). No statement, no bill key. `bills_congress_mismatch` runs the index comparison a second time on
   `(bill_type, number)` alone, so a bill the MODS keys under another Congress
   shows as a discrepancy -- on a Senate report, the MODS's own filing-Congress
   stamp. Zero on both House fixture packages.

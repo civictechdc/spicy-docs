@@ -1105,8 +1105,8 @@ law the print states beside them. An entry starts at a line made only of
 bills and public-law labels (`H.R. 8416`, `PUBLIC LAW 117–146 S. 3580 (H.R.
 4996)`), except one the next line restates (`S. 4321` / `S. 4321 was
 introduced ...`, a paragraph of the same history) and a lone bill a law
-table's next cell follows (-118hrpt967's rows). `Prior Congresses` ends a
-scope and opens none. A subheading keys its bills even in a report whose
+table's next cell follows (-118hrpt967's rows). `Prior Congresses` ended a
+scope and opened none until `bill_number` 005 (below). A subheading keys its bills even in a report whose
 `covered_congress` is NULL, since it is a stated Congress (none of the 40 is
 such a report). Replayed over all 40 reports against 0.36.0: 501 bill
 citations and 462 action rows move, all in CRPT-117hrpt705, -118hrpt967 and
@@ -1119,6 +1119,34 @@ Congress`), 31 citations in 11 reports, which still take the document's
 Congress, as do the six bills listed under `Prior Congresses` (four of them
 among the 31) and that paragraph's `H.R. 1132`, the one wrong join of the 41
 left (receipt `fork-execution-2026-09-21/print-subheading-2026-09-26/`).
+
+**Corrected 2026-09-26: a bill the print sets its own Congress beside is that
+Congress's (`bill_number` 005).** `S. Res. 116, 112th Congress` in a Senate
+report on the 118th published `118-sres-116`; so did every bill a print
+qualifies inline. `find_citations` now reads the Congress set right after a
+bill (`inline_congresses`): `, 115th Cong.`, `, 112th Congress`, `of the 94th
+Congress`, `in the 117th Congress`, `(117th Cong.)` -- the five shapes that
+follow a bill in the 40 reports, 446 times, and in none of the budget, bill
+or Federal Register texts. It beats a subheading over the bill, which beats
+the report's covered Congress. A list one qualifier closes takes it whole
+when only `and` or `/` joins its members (`H.R. 1140 and S. 596, 114th
+Cong.`; `S. 559/S. 4882/S. 870 (118th Cong.)`); a semicolon ends a group, and
+a Congress on the next line with nothing joining it is a subheading, not a
+qualifier (-118hrpt967's `H.R. 5005` / `108th Congress`). `Prior Congresses`
+no longer ends a scope: its list now states each bill's Congress, and its
+subject, `H.R. 1132`, is the 116th-Congress entry's own bill, which the stop
+had left `117-hr-1132`. Replayed over the 40 reports against 0.39.2, whose
+keys equal the live print-citations generation's (8f2502b6) at all 25,614
+spans: 38 bill citations and 10 action rows move in 13 reports, nothing
+else in any report or kind -- 35 by a qualifier, 2 by the list it closes, 1
+by the scope -- and every new key is that Congress's bill by the catalog
+title or the public law the print names beside it, but one: `S. 3907 (117th
+Cong.). Became Public Law No: 117–324` is the print's misprint of S. 3905,
+kept faithfully, like `118-hr-14106`. A candidate replay that read only the
+comma and preposition shapes found 34; the four more are `(117th Congress)`
+and `(114th Cong.)`. Not read: `H. Res. 5, rules for the 106th Congress`
+(3 in -118hrpt961), an appositive rather than a qualifier (receipt
+`fork-execution-2026-09-21/print-inline-congress-2026-09-26/`).
 
 **Corrected 2026-09-26: a committee name both chambers hold is the committee
 of the chamber whose print it is.** `committee_vocabulary` collapsed the two

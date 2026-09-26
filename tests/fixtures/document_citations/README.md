@@ -190,10 +190,31 @@ subjects under one subheading (-118hrpt974), two committee-history sections
 with their law tables (-118hrpt967), `Prior Congresses` (-117hrpt705) and a
 wrapped heading's tail that is no subheading (-117hrpt709). `keys` lists every
 bill each slice names, in order, read from the slice rather than by running the
-rule -- except the `floor` entries, `[the key reading gives, its index]`: the
-bills under `Prior Congresses`, whose Congress the print states inline and the
-rule does not read, keep the document's.
+rule. `bill_number` 005 re-read the `Prior Congresses` snippet (which no longer
+ends the scope, and whose bills state their Congress inline) and dropped its
+`floor`: receipt `print-inline-congress-2026-09-26/build_fixtures.py`.
 
 | Fixture | Bytes | SHA-256 |
 | --- | --- | --- |
-| `print-subheadings-2026-09-26.json` | 19,582 | `294f4f57631d23e6b3f3831b677a32ec495d44587ada297dce79096ddcaffc79` |
+| `print-subheadings-2026-09-26.json` | 19,298 | `09585abcdb1f6877c4953250bb5ca900a9f647139a2ce94f98b310eaa8e76c3c` |
+
+## A Congress set beside a bill (`print-inline-congress-2026-09-26.json`)
+
+`bill_number` 005 keys a bill the print qualifies with its own Congress (`H.R.
+6752, 115th Cong.`, `S. Res. 400 of the 94th Congress`, `H.R. 8528 (117th
+Congress)`) in that Congress, ahead of any subheading over it. Receipt:
+`corpora/fork-execution-2026-09-21/print-inline-congress-2026-09-26/`
+(`build_fixtures.py`, from the same retained texts; nothing was fetched).
+Public-domain government text.
+
+`inline_snippets` are whole-line slices as above, one per measured shape:
+`of the` (CRPT-118srpt11), `, 112th Congress` wrapped across a line
+(-119srpt6), `(117th Congress)` and `, 117th Cong.` (-118hrpt964), GPO's `93d`
+wrapped (-117hrpt707), a slash-joined list one qualifier closes and `(114th
+Cong.)` beside the public law that confirms it (-119srpt8), and `in the 117th
+Congress` naming the report's own (-117hrpt702). `keys` were read from each
+slice.
+
+| Fixture | Bytes | SHA-256 |
+| --- | --- | --- |
+| `print-inline-congress-2026-09-26.json` | 4,308 | `454cb876f4dd5b99e64b675a9ab683c993affc5e8b9e4a2f51e7cb746610bfd7` |

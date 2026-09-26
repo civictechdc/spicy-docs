@@ -189,15 +189,17 @@ def test_the_rules_whose_published_keys_changed_moved_their_version() -> None:
     for their own target readers. ``bill_number`` 002 refuses a designator
     after a letter and a period (``R.S. 2477``), 003 a number carrying a
     subdivision (``CLAUSE S 2(N)``) or a year heading wrapped under a
-    designator (``S. Con. Res.\n2022:``), and 004 keys a bill printed under a
-    Congress subheading (``116th Congress``) in that Congress. ``committee_name`` 002 reads a
+    designator (``S. Con. Res.\n2022:``), 004 keys a bill printed under a
+    Congress subheading (``116th Congress``) in that Congress, and 005 a bill
+    the print sets its Congress beside (``H.R. 6752, 115th Cong.``) in that
+    one. ``committee_name`` 002 reads a
     chamber the print names before a committee. In every case the procedure
     applied: move the version, re-pin the digests, re-pin the fixture counts.
     """
     moved = {rule.name: rule.version for rule in CITATION_RULES if rule.version != "001"}
     assert moved == {
         "us_reports_cite": "002",
-        "bill_number": "004",
+        "bill_number": "005",
         "public_law": "003",
         "statutes_at_large": "002",
         "usc_section": "003",
@@ -221,7 +223,7 @@ def test_the_rule_set_version_is_pinned_to_these_rules() -> None:
     passed the whole suite, since a reject that is no longer asserted cannot
     fail.
     """
-    assert CITATION_RULE_SET_VERSION == "a357ba180082"
+    assert CITATION_RULE_SET_VERSION == "ef5f36c0a43b"
 
 
 def test_the_stored_kinds_are_every_rule_that_reaches_a_key() -> None:
@@ -277,6 +279,8 @@ PRINT_CITATIONS_2026_09_26 = json.loads(
 BILL_SNIPPETS_2026_09_26 = PRINT_CITATIONS_2026_09_26["bill_snippets"]
 PRINT_SUBHEADINGS = CITATION_FIXTURES / "print-subheadings-2026-09-26.json"
 SUBHEADING_SNIPPETS = json.loads(PRINT_SUBHEADINGS.read_text(encoding="utf-8"))["subheading_snippets"]
+PRINT_INLINE_CONGRESS = CITATION_FIXTURES / "print-inline-congress-2026-09-26.json"
+INLINE_SNIPPETS = json.loads(PRINT_INLINE_CONGRESS.read_text(encoding="utf-8"))["inline_snippets"]
 
 
 @pytest.mark.parametrize("case", BILL_SNIPPETS_2026_09_26, ids=lambda case: f"{case['package']}-{case['span_start']}")
@@ -301,17 +305,61 @@ def test_a_congress_subheading_keys_the_bills_under_it_until_the_next_entry(case
     by another and then by an entry heading naming a law, the join-gaps orphan
     ``117-hr-5119``, bills restated as a paragraph's subject that stay in scope,
     a committee-history section with its law table, a wrapped heading's tail
-    that is no subheading, and ``Prior Congresses``, which ends a scope. Each
-    snippet's ``keys`` were read from it, except the ``floor`` entries: bills
-    under ``Prior Congresses`` whose Congress the print states inline, which
-    this rule does not read, so they keep the document's.
+    that is no subheading, and ``Prior Congresses``, which does not end the
+    scope, under which each listed bill takes the Congress set beside it. Each
+    snippet's ``keys`` were read from it.
     """
     findings = find_citations(case["text"], kinds=("bill_number",), congress=case["covered_congress"])
     assert [finding.target_key for finding in findings] == case["keys"]
     assert all(finding.target_resolved for finding in findings)
     assert all(case["text"][finding.span_start : finding.span_end] == finding.matched_text for finding in findings)
-    for reading, index in case.get("floor", ()):
-        assert findings[index].target_key.split("-", 1) == [str(case["covered_congress"]), reading.split("-", 1)[1]]
+
+
+@pytest.mark.parametrize("case", INLINE_SNIPPETS, ids=lambda case: case["id"])
+def test_a_congress_set_beside_a_bill_is_that_bills(case: dict) -> None:
+    """``H.R. 6752, 115th Cong.``, ``S. Res. 400 of the 94th Congress``, ``H.R. 8528 (117th Congress)`` and kin.
+
+    Real report lines (``print-inline-congress-2026-09-26.json``): each of the
+    measured qualifier shapes, wrapped across a line where the print wraps it,
+    GPO's ``93d``, a slash-joined list one qualifier closes, and ``in the
+    117th Congress`` naming the report's own Congress. ``keys`` were read from
+    each snippet.
+    """
+    findings = find_citations(case["text"], kinds=("bill_number",), congress=case["covered_congress"])
+    assert [finding.target_key for finding in findings] == case["keys"]
+    assert all(finding.target_resolved for finding in findings)
+
+
+@pytest.mark.parametrize(
+    ("text", "congress", "keys"),
+    [
+        # A list the qualifier closes: every member is that Congress's.
+        ("H.R. 1140 and S. 596, 114th Cong.", 119, ["114-hr-1140", "114-s-596"]),
+        # A semicolon ends a qualified group; it joins nothing to the next one.
+        ("H.R. 1140; S. 596, 114th Cong.", 119, ["119-hr-1140", "114-s-596"]),
+        # A comma only qualifies when a Congress follows it.
+        ("H.R. 1140, S. 596, 114th Cong.", 119, ["119-hr-1140", "114-s-596"]),
+        # A Congress on the next line with nothing joining it is a subheading, not a qualifier.
+        ("H.R. 5005\n108th Congress", 119, ["119-hr-5005"]),
+        # Nor is a parenthesized Congress on a line of its own, as a roster heading sets it.
+        ("H.R. 5005\n(108th Congress)", 119, ["119-hr-5005"]),
+        # CRPT-117hrpt702's `in the` line names its own Congress 287 times; another one is read the same way.
+        ("No further action was taken on H.R. 1848 in the 116th Congress.", 117, ["116-hr-1848"]),
+        # A document that states no Congress: the bill beside its own still has one.
+        ("S. Res. 116, 112th Congress.", None, ["112-sres-116"]),
+    ],
+)
+def test_what_a_qualifier_reaches(text: str, congress: int | None, keys: list[str]) -> None:
+    assert [f.target_key for f in find_citations(text, kinds=("bill_number",), congress=congress)] == keys
+
+
+def test_the_bill_s_own_congress_wins_over_the_subheading_it_is_printed_under() -> None:
+    """Under ``116th Congress``, ``S. 596, 114th Cong.`` is the 114th's; the bare bill beside it is the 116th's."""
+    text = "Legislative History\n116th Congress\nH.R. 1132 was introduced as S. 596, 114th Cong., before."
+    assert [f.target_key for f in find_citations(text, kinds=("bill_number",), congress=117)] == [
+        "116-hr-1132",
+        "114-s-596",
+    ]
 
 
 @pytest.mark.parametrize(

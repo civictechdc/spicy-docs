@@ -120,7 +120,7 @@
    "span_start": 282975,
    "span_end": 284359,
    "covered_congress": 117,
-   "why": "`Prior Congresses` ends the 116th scope and opens none. Its bills state their own Congresses inline (115th, 114th, 113th, 112th), which bill_number 004 does not read: they keep the document's Congress, a known floor, and the paragraph's H.R. 1132 (the 116th's) with them.",
+   "why": "`Prior Congresses` inside H.R. 1132's 116th-Congress history: its subject, H.R. 1132, stays under the 116th subheading, and each bill it lists takes the Congress set beside it (`H.R. 1140 and S. 596, 114th Cong.` gives both the 114th); the next entry, H.R. 884, is outside the scope.",
    "text": "mittee, Public Laws, Public Law No. 117–263.\n116th Congress\nH.R. 1132, the San Francisco Bay Restoration Act, was intro-\nduced in the House on February 8, 2019, by Ms. Speier and 11\noriginal cosponsors and referred to the Committee on Transpor-\ntation and Infrastructure, in addition to the Committee on the\nBudget. Within the Committee, H.R. 1132 was referred to the Sub-\ncommittee on Water Resources and Environment.\nThe Chair discharged the Subcommittee on Water Resources and\nEnvironment from further consideration of H.R. 1132 on September\n19, 2019.\nThe Committee considered H.R. 1132 on September 19, 2019,\nand ordered the measure to be favorably reported to the House, as\namended, by voice vote.\nThe Committee reported H.R. 1132 to the House on November\n20, 2019, as H. Rpt. 116–304, Pt. I (Calendar No. 245). Subse-\nquently, the Committee on the Budget was discharged from further\nconsideration of H.R. 1132.\nThe House considered H.R. 1132 under suspension of the rules\non February 5, 2020, and passed the measure, as amended, by\nvoice vote.\nH.R. 1132 was received in the Senate on February 10, 2020.\nPrior Congresses\nH.R. 1132 was introduced, but not considered in the prior four\nCongresses as follows: H.R. 6752, 115th Cong.; H.R. 1140 and S.\n596, 114th Cong.; H.R. 843 and S. 224, 113th Cong.; and S. 97,\n112th Cong.\nNational Aviation Preparedness Plan Act of 2021\nH.R. 884",
    "keys": [
     "116-hr-1132",
@@ -131,44 +131,14 @@
     "116-hr-1132",
     "116-hr-1132",
     "116-hr-1132",
-    "117-hr-1132",
-    "117-hr-6752",
-    "117-hr-1140",
-    "117-s-596",
-    "117-hr-843",
-    "117-s-224",
-    "117-s-97",
+    "116-hr-1132",
+    "115-hr-6752",
+    "114-hr-1140",
+    "114-s-596",
+    "113-hr-843",
+    "113-s-224",
+    "112-s-97",
     "117-hr-884"
-   ],
-   "floor": [
-    [
-     "116-hr-1132",
-     8
-    ],
-    [
-     "115-hr-6752",
-     9
-    ],
-    [
-     "114-hr-1140",
-     10
-    ],
-    [
-     "114-s-596",
-     11
-    ],
-    [
-     "113-hr-843",
-     12
-    ],
-    [
-     "113-s-224",
-     13
-    ],
-    [
-     "112-s-97",
-     14
-    ]
    ]
   },
   {
