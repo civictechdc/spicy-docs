@@ -1083,6 +1083,42 @@ attached parenthesized subdivision (`CLAUSE S 2(N)`) and a year opening a line
 and closing with a colon (`S. Con. Res.\n2022:`) are refused -- exactly those
 three matches of the 31,955 the 002 rule reads over the retained corpora.
 
+**Corrected 2026-09-26: a bill printed under a Congress subheading is that
+Congress's (`bill_number` 004).** Two Transportation and Infrastructure
+reports set a predecessor bill's history inside the current bill's entry
+under a line such as `116th Congress`, and -118hrpt967 heads each Congress of
+its committee history, 107th to 118th, the same way; every bill under them
+took the report's covered Congress. The join-gaps receipt counted 41 action
+keys joining the wrong bill silently and 2 (`117-hr-5119`, `117-hr-5919`)
+joining none. `find_citations` now keys a bill inside a subheading's scope
+in that subheading's Congress (`congress_subheading_scopes`). The rule reads
+only a line that is an ordinal Congress in digits and title case, never the
+capitalized or spelled-out lines -- on every Senate report those are the
+filing header and roster headings, naming the Congress after the one its
+bills belong to -- and not a line the one before continues into (`...
+House Resolution 965 of the` / `116th Congress`). **The scope ends at the
+next bill entry, not at the next Congress heading**: the reports never close
+an in-entry subheading with one of their own Congress, and closing only there
+moves 3,926 citations over the 40 reports, 329 of them against the date or
+law the print states beside them. An entry starts at a line made only of
+bills and public-law labels (`H.R. 8416`, `PUBLIC LAW 117–146 S. 3580 (H.R.
+4996)`), except one the next line restates (`S. 4321` / `S. 4321 was
+introduced ...`, a paragraph of the same history) and a lone bill a law
+table's next cell follows (-118hrpt967's rows). `Prior Congresses` ends a
+scope and opens none. A subheading keys its bills even in a report whose
+`covered_congress` is NULL, since it is a stated Congress (none of the 40 is
+such a report). Replayed over all 40 reports against 0.36.0: 501 bill
+citations and 462 action rows move, all in CRPT-117hrpt705, -118hrpt967 and
+-118hrpt974; nothing else moves in any report or kind; 40 of the 41 wrong
+joins and both orphans are fixed, and every one of the 282 moved keys is
+confirmed by the stated introduction date, the law-table row's `Pub. L.`,
+the bill catalog's title or, for 16, by reading. Not read: a bill that states
+its own Congress inline (`H.R. 6752, 115th Cong.`, `S. Res. 116 of the 112th
+Congress`), 31 citations in 11 reports, which still take the document's
+Congress, as do the six bills listed under `Prior Congresses` (four of them
+among the 31) and that paragraph's `H.R. 1132`, the one wrong join of the 41
+left (receipt `fork-execution-2026-09-21/print-subheading-2026-09-26/`).
+
 **Corrected 2026-09-26: a committee name both chambers hold is the committee
 of the chamber whose print it is.** `committee_vocabulary` collapsed the two
 roster files by name with the House first, so *Committee on the Judiciary*,

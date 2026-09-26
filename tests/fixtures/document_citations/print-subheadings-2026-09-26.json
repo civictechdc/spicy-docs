@@ -1,0 +1,186 @@
+{
+ "about": "Congress subheadings in committee activity reports; README.md beside this file.",
+ "receipt": "corpora/fork-execution-2026-09-21/print-subheading-2026-09-26/",
+ "texts": "corpora/supply-2026-09-02/receipts/fix-print-citations-2026-09-26/texts.pkl",
+ "subheading_snippets": [
+  {
+   "id": "116th-then-115th-then-entry",
+   "package": "CRPT-117hrpt705",
+   "text_sha256": "sha256:cbde87c071202865ff80964772d0c9a1938973097b5bf429820f31587542877f",
+   "span_start": 171935,
+   "span_end": 175264,
+   "covered_congress": 117,
+   "why": "A subheading ended by another (116th, then 115th, under H.R. 4426's history), the last ended by the next entry's heading line, which also names a public law and a related bill.",
+   "text": "was signed into law on June 6, 2022, as Public Law 117–130.\n116th Congress\nIn the 116th Congress, H.R. 2932, the Homeland Security for\nChildren Act, was introduced in the House on May 22, 2019, by Mr.\nPayne and Mr. Thompson of Mississippi and referred to the Com-\nmittee on Homeland Security and in addition to the Committee on\nTransportation and Infrastructure. Within the Committee, H.R.\n2932 was referred to the Subcommittee on Economic Development,\nPublic Buildings, and Emergency Management.\nThe Committee on Homeland Security considered H.R. 2932 on\nOctober 23, 2019, and ordered the measure to be favorably reported\nto the House.\nThe Chair of the Committee on Transportation and Infrastruc-\nture sent a letter to the Chair of the Committee on Homeland Se-\ncurity on January 7, 2020, agreeing that, in order to expedite con-\nsideration on the House Floor, the Committee on Transportation\nand Infrastructure would waive further consideration of H.R. 2932.\nOn that same date, the Chair of the Committee on Homeland Secu-\nrity responded acknowledging the jurisdictional interests of the\nCommittee on Transportation and Infrastructure and the agree-\nment to waive further consideration.\nThe Committee on Homeland Security reported H.R. 2932 to the\nHouse on January 8, 2020, as H. Rpt. 116–370, Pt. I (Calendar No.\n294). Subsequently, the Committee on Transportation and Infra-\nstructure was discharged from further consideration of H.R. 2932.\n115th Congress\nIn the 115th Congress, H.R. 1372, the Homeland Security for\nChildren Act, was introduced in the House on March 6, 2017, by\nMr. Payne and Mr. Thompson of Mississippi and referred to the\nCommittee on Homeland Security and in addition to the Committee\non Transportation and Infrastructure. Within the Committee, H.R.\n1372 was referred to the Subcommittee on Economic Development,\nPublic Buildings, and Emergency Management.\nThe Committee on Homeland Security considered H.R. 1372 on\nMarch 8, 2017, and ordered the measure to be reported to the\nHouse, amended by voice vote.\nThe Chair of the Committee on Transportation and Infrastruc-\nture sent a letter to the Chair of the Committee on Homeland Se-\ncurity on March 10, 2017, agreeing that, in order to expedite con-\nsideration on the House Floor, the Committee on Transportation\nand Infrastructure would waive further consideration of H.R. 1372.\nOn March 16, 2017, the Chair of the Committee on Homeland Se-\ncurity responded acknowledging the jurisdictional interests of the\nCommittee on Transportation and Infrastructure and the agree-\nment to waive further consideration.\nThe Committee on Homeland Security reported H.R. 1372 to the\nHouse on April 24, 2017, as H. Rpt. 115–92, Pt. I (Calendar No.\n52). Subsequently, the Committee on Transportation and Infra-\nstructure was discharged from further consideration.\nThe House considered H.R. 1372 under suspension of the rules\non April 25, 2017, and passed the measure, as amended, by voice\nvote.\nH.R. 1372 was received in the Senate on April 26, 2017, read\ntwice, and referred to the Senate Committee on Homeland Security\nand Governmental Affairs.\nOcean Shipping Reform Act of 2022\nPUBLIC LAW 117–146 S. 3580 (H.R. 4996)\nTo amend title 46, United States Code, with respect to prohibited acts by ocean com-\nmon carriers or marine terminal operators, and for other purposes.",
+   "keys": [
+    "116-hr-2932",
+    "116-hr-2932",
+    "116-hr-2932",
+    "116-hr-2932",
+    "116-hr-2932",
+    "116-hr-2932",
+    "115-hr-1372",
+    "115-hr-1372",
+    "115-hr-1372",
+    "115-hr-1372",
+    "115-hr-1372",
+    "115-hr-1372",
+    "115-hr-1372",
+    "117-s-3580",
+    "117-hr-4996"
+   ]
+  },
+  {
+   "id": "orphan-hr-5119",
+   "package": "CRPT-117hrpt705",
+   "text_sha256": "sha256:cbde87c071202865ff80964772d0c9a1938973097b5bf429820f31587542877f",
+   "span_start": 359946,
+   "span_end": 362227,
+   "covered_congress": 117,
+   "why": "The join-gaps orphan 117-hr-5119: the entry's own bill before the subheading, the 116th's H.R. 5119 under it, and the next entry, H.R. 8416, outside it.",
+   "text": "Global Aircraft Maintenance Safety Improvement Act\nH.R. 7321\nTo amend title 49, United States Code, to require certain air carriers to provide re-\nports with respect to maintenance, preventive maintenance, or alterations, and for\nother purposes.\nSummary\nThis bill addresses safety standards related to foreign aircraft re-\npair stations by improving the Federal Aviation Administration's\nsafety oversight of aircraft maintenance that is performed on U.S.\nairlines' fleets in foreign countries.\nLegislative History\nH.R. 7321 was introduced in the House on March 31, 2022, by\nMr. DeFazio and 13 original cosponsors and referred to the Com-\nmittee on Transportation. Within the Committee on Transportation\nand Infrastructure, H.R. 7321 was referred to the Subcommittee on\nAviation.\nThe Subcommittee on Aviation was discharged from further con-\nsideration of H.R. 7321 on June 15, 2022.\nThe Committee on Transportation and Infrastructure considered\nH.R. 7321 on June 15, 2022, and ordered the measure to be favor-\nably reported to the House, as amended, by a recorded vote of 49\nyeas and 5 nays (Roll No. 97).\nThe Committee on Transportation and Infrastructure reported\nH.R. 7321 to the House on September 28, 2022, as H. Rpt. 117–\n506 (Calendar No. 381).\nH.R. 7321 was considered in the House under suspension of the\nrules, as amended, on September 29, 2022, and was passed by a\n2⁄3 recorded vote of 374 yeas and 52 nays (Roll No. 467).\n116th Congress\nH.R. 5119, the Safe Aircraft Maintenance Standards Act, was in-\ntroduced in the House on November 15, 2019, by Mr. DeFazio, Ms.\nBrownley, Mr. Garamendi, Mr. Garcia, Ms. Norton, Mr. Sires, Mr.\nPappas, and Mr. Katko and referred to the Committee on Trans-\nportation and Infrastructure. Within the Committee, H.R. 5119\nwas referred to the Subcommittee on Aviation.\nThe Subcommittee on Aviation was discharged from further con-\nsideration of H.R. 5119 on November 20, 2019.\nThe Committee on Transportation and Infrastructure considered\nH.R. 5119 on November 20, 2019, and ordered the measure to be\nreported, as amended, by a recorded vote of 39 yeas and 19 nays\n(Roll No. 12).\nDisaster Survivors Fairness Act of 2022\nH.R. 8416\nTo improve individual assistance provided by the Federal Emergency Management\nAgency, and for other purposes.",
+   "keys": [
+    "117-hr-7321",
+    "117-hr-7321",
+    "117-hr-7321",
+    "117-hr-7321",
+    "117-hr-7321",
+    "117-hr-7321",
+    "117-hr-7321",
+    "116-hr-5119",
+    "116-hr-5119",
+    "116-hr-5119",
+    "116-hr-5119",
+    "117-hr-8416"
+   ]
+  },
+  {
+   "id": "restated-sub-entries",
+   "package": "CRPT-118hrpt974",
+   "text_sha256": "sha256:b68ec22ca635d83418938b62ce9d671ce61969fb390411f9b3e53714c5fc8f59",
+   "span_start": 287398,
+   "span_end": 288650,
+   "covered_congress": 118,
+   "why": "Two earlier bills under one 117th Congress subheading, each on a line of its own that the next line restates (a paragraph of the same history, not a new entry), then the next entry.",
+   "text": "On March 12, 2023, H.R. 886 was received, read twice, and\nplaced on Senate Legislative Calendar under General Orders No.\n346.\n117th Congress\nH.R. 9255\nH.R. 9255 was introduced in the House on October 31, 2022, by\nMs. Bonamici and referred to the Committee on Transportation\nand Infrastructure, and in addition to the Committee on Natural\nResources.\nOn October 31, 2022, the Chairman of the Committee on Trans-\nportation and Infrastructure referred H.R. 9255 to the Sub-\ncommittee on Coast Guard and Maritime Transportation.\nS. 4321\nS. 4321 was introduced in the Senate by Mr. Sullivan on May 26,\n2022, and referred to the Senate Committee on Commerce, Science,\nand Transportation.\nOn June 22, 2022, the Senate Committee on Commerce, Science,\nand Transportation considered S. 4321 and ordered the measure re-\nported favorably, as amended.\nOn December 15, 2022, the Senate Committee on Commerce,\nScience, and Transportation reported S. 4321, without written re-\nport.\nOn December 22, 2022, the Senate considered S. 4321 and\npassed the measure by unanimous consent.\nOn December 23, 2022, S. 4321 was received in the House and\nheld at the desk.\nOne Seat Ride Act\nH.R. 1547\nTo direct the Secretary of Transportation to conduct a study on the costs and bene-",
+   "keys": [
+    "118-hr-886",
+    "117-hr-9255",
+    "117-hr-9255",
+    "117-hr-9255",
+    "117-s-4321",
+    "117-s-4321",
+    "117-s-4321",
+    "117-s-4321",
+    "117-s-4321",
+    "117-s-4321",
+    "118-hr-1547"
+   ]
+  },
+  {
+   "id": "history-section-and-law-table",
+   "package": "CRPT-118hrpt967",
+   "text_sha256": "sha256:6ebc3ef4de2e8d8f340b4eef72f60be9c1e50e1a808192ee918b41fd31a4e8d5",
+   "span_start": 16276,
+   "span_end": 18070,
+   "covered_congress": 118,
+   "why": "A committee-history section: its prose, its law table's row (a lone bill the next section's heading follows), then the next section.",
+   "text": "HISTORY OF THE COMMITTEE ON\nHOMELAND SECURITY\nSELECT COMMITTEES ON HOMELAND SECURITY\n107th Congress\nIn the 107th Congress, the House Select Committee on Home-\nland Security was established on June 19, 2002, pursuant to H.\nRes. 449 (adopted by voice vote).\nThe Committee was composed of nine Members of the House: Mr.\nRichard \"Dick\" Armey of Texas, Chairman; Mr. Thomas DeLay of\nTexas; Mr. Julius Caesar \"C.\" Watts of Oklahoma; Ms. Deborah\nPryce of Ohio; Mr. Robert Portman of Ohio; Ms. Nancy Pelosi of\nCalifornia; Mr. Jonas Martin Frost of Texas; Mr. Robert Menendez\nof New Jersey; and Ms. Rosa L. DeLauro of Connecticut.\nThe mandate of the Select Committee in the 107th Congress was\nto \"develop recommendations and report to the House on such mat-\nters that relate to the establishment of a department of homeland\nsecurity.\" The Select Committee accomplished its mandate on No-\nvember 22, 2002, when the House concurred in the Senate amend-\nment to H.R. 5005, a bill establishing the Department of Homeland\nSecurity, by unanimous consent, and cleared H.R. 5005 for the\nPresident. The bill was presented to the President on November 22,\n2002, and was signed on November 25, 2002, becoming Public Law\n107–296.\nThe termination date of the House Select Committee on Home-\nland Security was \"after final disposition of a bill [ . . . ] including\nfinal disposition of any veto message on such bill,\" which occurred\non November 25, 2002.\nLaw\nTitle\nBill\nPub. L. 107–296 .............................\nThe Homeland Security Act of 2002 ......................................\nH.R. 5005\n108th Congress\nThe second House Select Committee on Homeland Security was\nestablished in the 108th Congress on January 7, 2003, pursuant to\nprovisions of H. Res. 5 (adopted by a recorded vote of 221 Yeas and\n203 Nays).",
+   "keys": [
+    "107-hres-449",
+    "107-hr-5005",
+    "107-hr-5005",
+    "107-hr-5005",
+    "108-hres-5"
+   ]
+  },
+  {
+   "id": "law-table-rows",
+   "package": "CRPT-118hrpt967",
+   "text_sha256": "sha256:6ebc3ef4de2e8d8f340b4eef72f60be9c1e50e1a808192ee918b41fd31a4e8d5",
+   "span_start": 26137,
+   "span_end": 29633,
+   "covered_congress": 118,
+   "why": "A section whose law table's rows are lone bills followed by the next row's law, a starred bill, a parenthesized starred bill and the table's star note: rows of the section, not entries.",
+   "text": "★Indicates measures which were not referred directly to the Committee on Homeland Security.\n110th Congress\nThe Committee on Homeland Security continued as a standing\nCommittee pursuant to the provisions of H. Res. 5, agreed to in the\nHouse on January 4, 2007, by a record vote of 235 Yeas and 195\nNays.\nThe Committee on Homeland Security met on January 23, 2007,\nfor an organizational meeting for the 110th Congress under the di-\nrection of Chairman Bennie G. Thompson of Mississippi. The Com-\nmittee Membership was set at 34 Members with 19 Democrats and\n15 Republicans. The following Members were appointed to the\nCommittee on Homeland Security for all or part of the Congress:\nMr. Bennie G. Thompson of Mississippi; Ms. Loretta Sanchez of\nCalifornia; Mr. Edward J. Markey of Massachusetts; Mr. Norman\nD. Dicks of Washington; Ms. Jane Harman of California; Mr. Peter\nA. DeFazio of Oregon; Mrs. Nita M. Lowey of New York; Ms. Elea-\nnor Holmes Norton a Delegate from the District of Columbia; Ms.\nZoe Lofgren of California; Ms. Sheila Jackson Lee of Texas; Mrs.\nDonna M. Christensen a Delegate from the U.S. Virgin Islands; Mr.\nBob Etheridge of North Carolina; Mr. James R. Langevin of Rhode\nIsland; Mr. Henry Cuellar of Texas; Mr. Christopher P. Carney of\nPennsylvania; Ms. Yvette D. Clarke of New York; Mr. Al Green of\nTexas; Mr. Ed Perlmutter of Colorado; Mr. Bill Pascrell, Jr. of New\nJersey; Mr. Peter T. King of New York; Mr. Lamar Smith of Texas;\nMr. Christopher Shays of Connecticut; Mr. Mark E. Souder of Indi-\nana; Mr. Tom Davis of Virginia; Mr. Daniel E. Lungren of Cali-\nfornia; Mr. Mike Rogers of Alabama; Mr. David G. Reichert of\nWashington; Mr. Michael T. McCaul of Texas; Mr. Charles W. Dent\nof Pennsylvania; Ms. Ginny Brown-Waite of Florida; Mr. Gus M.\nBilirakis of Florida; Mr. David Davis of Tennessee; Mr. Paul C.\nBroun of Georgia; Mrs. Candice S. Miller of Michigan; Ms. Marsha\nBlackburn of Tennessee; Mr. Kevin McCarthy of California; and\nMr. Bobby Jindal of Louisiana.\nThe Committee established six Subcommittees: the Sub-\ncommittee on Border, Maritime, and Global Counterterrorism; the\nSubcommittee on Intelligence, Information Sharing, and Terrorism\nRisk Assessment; the Subcommittee on Transportation Security\nand Infrastructure Protection; the Subcommittee on Emerging\nThreats, Cybersecurity, and Science and Technology; the Sub-\ncommittee on Emergency Communications, Preparedness, and Re-\nsponse; and the Subcommittee on Management, Investigations, and\nOversight.\nThe Committee had four measures signed into law during the\n110th Congress:\nLaw\nTitle\nBill\nPub. L. 110–53 ...............................\nImplementing Recommendations of the 9/11 Commission\nAct of 2007.\nH.R. 1\nPub. L. 110–181 .............................\nNational Defense Authorization Act for Fiscal Year 2008 .....\nH.R. 4986 ★\n(H.R. 1585) ★\nPub. L. 110–388 .............................\nA bill to provide for the appointment of the Chief Human\nCapital Officer of the Department of Homeland Security\nby the Secretary of Homeland Security.\nS. 2816\nPub. L. 110–412 .............................\nPersonnel Reimbursement for Intelligence Cooperation and\nEnhancement of Homeland Security Act of 2008.\nH.R. 6098\n★Indicates measures which were not referred directly to the Committee on Homeland Security.\n111th Congress\nThe Committee on Homeland Security continued as a standing\nCommittee pursuant to the provisions of H. Res. 5, agreed to in the\nHouse on January 6, 2009, by a record vote of 235 Yeas and 195",
+   "keys": [
+    "110-hres-5",
+    "110-hr-1",
+    "110-hr-4986",
+    "110-hr-1585",
+    "110-s-2816",
+    "110-hr-6098",
+    "111-hres-5"
+   ]
+  },
+  {
+   "id": "prior-congresses",
+   "package": "CRPT-117hrpt705",
+   "text_sha256": "sha256:cbde87c071202865ff80964772d0c9a1938973097b5bf429820f31587542877f",
+   "span_start": 282975,
+   "span_end": 284359,
+   "covered_congress": 117,
+   "why": "`Prior Congresses` ends the 116th scope and opens none. Its bills state their own Congresses inline (115th, 114th, 113th, 112th), which bill_number 004 does not read: they keep the document's Congress, a known floor, and the paragraph's H.R. 1132 (the 116th's) with them.",
+   "text": "mittee, Public Laws, Public Law No. 117–263.\n116th Congress\nH.R. 1132, the San Francisco Bay Restoration Act, was intro-\nduced in the House on February 8, 2019, by Ms. Speier and 11\noriginal cosponsors and referred to the Committee on Transpor-\ntation and Infrastructure, in addition to the Committee on the\nBudget. Within the Committee, H.R. 1132 was referred to the Sub-\ncommittee on Water Resources and Environment.\nThe Chair discharged the Subcommittee on Water Resources and\nEnvironment from further consideration of H.R. 1132 on September\n19, 2019.\nThe Committee considered H.R. 1132 on September 19, 2019,\nand ordered the measure to be favorably reported to the House, as\namended, by voice vote.\nThe Committee reported H.R. 1132 to the House on November\n20, 2019, as H. Rpt. 116–304, Pt. I (Calendar No. 245). Subse-\nquently, the Committee on the Budget was discharged from further\nconsideration of H.R. 1132.\nThe House considered H.R. 1132 under suspension of the rules\non February 5, 2020, and passed the measure, as amended, by\nvoice vote.\nH.R. 1132 was received in the Senate on February 10, 2020.\nPrior Congresses\nH.R. 1132 was introduced, but not considered in the prior four\nCongresses as follows: H.R. 6752, 115th Cong.; H.R. 1140 and S.\n596, 114th Cong.; H.R. 843 and S. 224, 113th Cong.; and S. 97,\n112th Cong.\nNational Aviation Preparedness Plan Act of 2021\nH.R. 884",
+   "keys": [
+    "116-hr-1132",
+    "116-hr-1132",
+    "116-hr-1132",
+    "116-hr-1132",
+    "116-hr-1132",
+    "116-hr-1132",
+    "116-hr-1132",
+    "116-hr-1132",
+    "117-hr-1132",
+    "117-hr-6752",
+    "117-hr-1140",
+    "117-s-596",
+    "117-hr-843",
+    "117-s-224",
+    "117-s-97",
+    "117-hr-884"
+   ],
+   "floor": [
+    [
+     "116-hr-1132",
+     8
+    ],
+    [
+     "115-hr-6752",
+     9
+    ],
+    [
+     "114-hr-1140",
+     10
+    ],
+    [
+     "114-s-596",
+     11
+    ],
+    [
+     "113-hr-843",
+     12
+    ],
+    [
+     "113-s-224",
+     13
+    ],
+    [
+     "112-s-97",
+     14
+    ]
+   ]
+  },
+  {
+   "id": "wrapped-heading-tail",
+   "package": "CRPT-117hrpt709",
+   "text_sha256": "sha256:38334478e436ae4a843145af80adb122c71c2a47e0844f07436f61ac7a0a80be",
+   "span_start": 160924,
+   "span_end": 161562,
+   "covered_congress": 117,
+   "why": "`116th Congress` alone on a line that ends the heading above it (`... House Resolution 965 of the`): no subheading, so nothing after it is re-keyed.",
+   "text": "c. Members' Day Hearing on Proxy Voting and Remote Committee\nProceedings as Established by House Resolution 965 of the\n116th Congress\nTo ensure Congress could continue legislating during the\nCOVID–19 pandemic, the House of Representatives adopted House\nResolution 965 on May 15, 2020. The resolution provided for the\ntemporary implementation of proxy voting on the House Floor and\nremote committee proceedings during a \"covered period\" designated\nby the Speaker after receiving a notification from the Sergeant-at-\nArms, in consultation with the Attending Physician, that a public\nhealth emergency due to a novel coronavirus is in effect.",
+   "keys": []
+  }
+ ]
+}

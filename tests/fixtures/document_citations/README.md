@@ -169,3 +169,31 @@ re-fetched for them). Public-domain government text.
 | --- | --- | --- |
 | `print-citations-2026-09-26.json` | 34,622 | `6bb85994ce3e78e5406796ae9f1d61c99bc1742cda93bff5aaad7d356bca6748` |
 | `mods-CRPT-118srpt99.xml` | 11,679 | `824fe705c4ab450ca53f98ad4a53682daeb0a4d59c5b1a22835ae9493bfd481f` |
+
+## Congress subheadings (`print-subheadings-2026-09-26.json`)
+
+`bill_number` 004 keys a bill printed under a Congress subheading (`116th
+Congress` over a predecessor bill's history) in that Congress, until the next
+bill entry. Receipt:
+`corpora/fork-execution-2026-09-21/print-subheading-2026-09-26/`
+(`build_fixtures.py` writes this file from the retained texts of
+`supply-2026-09-02/receipts/fix-print-citations-2026-09-26/texts.pkl`, whose
+digests equal the published `text_sha256`; nothing was fetched). Public-domain
+government text.
+
+`subheading_snippets` are whole-line slices `[span_start, span_end)` of the
+text their `text_sha256` names, each with the report's covered Congress and a
+`why`: a subheading ended by another and then by an entry heading naming a
+law (CRPT-117hrpt705), the join-gaps orphan `117-hr-5119` between its entry and
+the next (-117hrpt705), two earlier bills restated as their paragraphs'
+subjects under one subheading (-118hrpt974), two committee-history sections
+with their law tables (-118hrpt967), `Prior Congresses` (-117hrpt705) and a
+wrapped heading's tail that is no subheading (-117hrpt709). `keys` lists every
+bill each slice names, in order, read from the slice rather than by running the
+rule -- except the `floor` entries, `[the key reading gives, its index]`: the
+bills under `Prior Congresses`, whose Congress the print states inline and the
+rule does not read, keep the document's.
+
+| Fixture | Bytes | SHA-256 |
+| --- | --- | --- |
+| `print-subheadings-2026-09-26.json` | 19,582 | `294f4f57631d23e6b3f3831b677a32ec495d44587ada297dce79096ddcaffc79` |

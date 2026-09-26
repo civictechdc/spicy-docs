@@ -26,6 +26,7 @@ from spicy_docs.interpretation.citations import (
     CitationError,
     canonical_alnum,
     committee_vocabulary,
+    congress_subheading_scopes,
     find_citations,
     named_chamber,
     page_starts,
@@ -186,16 +187,17 @@ def test_the_rules_whose_published_keys_changed_moved_their_version() -> None:
     through the shared grammar since 2026-09-23, which respells, splits and
     newly reads keys; ``rin`` and ``docket_number`` had already moved once
     for their own target readers. ``bill_number`` 002 refuses a designator
-    after a letter and a period (``R.S. 2477``), and 003 a number carrying a
+    after a letter and a period (``R.S. 2477``), 003 a number carrying a
     subdivision (``CLAUSE S 2(N)``) or a year heading wrapped under a
-    designator (``S. Con. Res.\n2022:``). ``committee_name`` 002 reads a
+    designator (``S. Con. Res.\n2022:``), and 004 keys a bill printed under a
+    Congress subheading (``116th Congress``) in that Congress. ``committee_name`` 002 reads a
     chamber the print names before a committee. In every case the procedure
     applied: move the version, re-pin the digests, re-pin the fixture counts.
     """
     moved = {rule.name: rule.version for rule in CITATION_RULES if rule.version != "001"}
     assert moved == {
         "us_reports_cite": "002",
-        "bill_number": "003",
+        "bill_number": "004",
         "public_law": "003",
         "statutes_at_large": "002",
         "usc_section": "003",
@@ -219,7 +221,7 @@ def test_the_rule_set_version_is_pinned_to_these_rules() -> None:
     passed the whole suite, since a reject that is no longer asserted cannot
     fail.
     """
-    assert CITATION_RULE_SET_VERSION == "07078cbac30b"
+    assert CITATION_RULE_SET_VERSION == "a357ba180082"
 
 
 def test_the_stored_kinds_are_every_rule_that_reaches_a_key() -> None:
@@ -269,9 +271,12 @@ def test_production_citation_regressions(case: dict) -> None:
     assert all(case["text"][finding.span_start : finding.span_end] == finding.matched_text for finding in findings)
 
 
-BILL_SNIPPETS_2026_09_26 = json.loads(
+PRINT_CITATIONS_2026_09_26 = json.loads(
     (CITATION_FIXTURES / "print-citations-2026-09-26.json").read_text(encoding="utf-8")
-)["bill_snippets"]
+)
+BILL_SNIPPETS_2026_09_26 = PRINT_CITATIONS_2026_09_26["bill_snippets"]
+PRINT_SUBHEADINGS = CITATION_FIXTURES / "print-subheadings-2026-09-26.json"
+SUBHEADING_SNIPPETS = json.loads(PRINT_SUBHEADINGS.read_text(encoding="utf-8"))["subheading_snippets"]
 
 
 @pytest.mark.parametrize("case", BILL_SNIPPETS_2026_09_26, ids=lambda case: f"{case['package']}-{case['span_start']}")
@@ -286,6 +291,51 @@ def test_the_2026_09_26_misreads_are_refused_and_their_nearest_true_readings_kep
     assert [finding.target_key for finding in findings] == case["keys"]
     assert all(finding.target_resolved for finding in findings)
     assert all(case["text"][finding.span_start : finding.span_end] == finding.matched_text for finding in findings)
+
+
+@pytest.mark.parametrize("case", SUBHEADING_SNIPPETS, ids=lambda case: case["id"])
+def test_a_congress_subheading_keys_the_bills_under_it_until_the_next_entry(case: dict) -> None:
+    """``116th Congress`` over a bill's history keys the bills under it in the 116th, and the next entry is not under it.
+
+    Real report lines (``print-subheadings-2026-09-26.json``): a subheading ended
+    by another and then by an entry heading naming a law, the join-gaps orphan
+    ``117-hr-5119``, bills restated as a paragraph's subject that stay in scope,
+    a committee-history section with its law table, a wrapped heading's tail
+    that is no subheading, and ``Prior Congresses``, which ends a scope. Each
+    snippet's ``keys`` were read from it, except the ``floor`` entries: bills
+    under ``Prior Congresses`` whose Congress the print states inline, which
+    this rule does not read, so they keep the document's.
+    """
+    findings = find_citations(case["text"], kinds=("bill_number",), congress=case["covered_congress"])
+    assert [finding.target_key for finding in findings] == case["keys"]
+    assert all(finding.target_resolved for finding in findings)
+    assert all(case["text"][finding.span_start : finding.span_end] == finding.matched_text for finding in findings)
+    for reading, index in case.get("floor", ()):
+        assert findings[index].target_key.split("-", 1) == [str(case["covered_congress"]), reading.split("-", 1)[1]]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        *("\n".join(case["pages"]) for case in PRINT_CITATIONS_2026_09_26["covered"]),
+        *(case["text"] for case in SUBHEADING_SNIPPETS if case["id"] == "wrapped-heading-tail"),
+    ],
+    ids=[*(case["package"] for case in PRINT_CITATIONS_2026_09_26["covered"]), "wrapped-heading-tail"],
+)
+def test_filing_headers_roster_headings_and_wrapped_phrases_open_no_scope(text: str) -> None:
+    """``118TH CONGRESS``, ``ONE HUNDRED EIGHTEENTH CONGRESS``, ``(118th Congress)`` and a heading's wrapped tail.
+
+    The first three are a Senate report's filing header and roster headings,
+    naming the Congress after the one its bills belong to; read as subheadings
+    they would undo ``covered_congress`` for every bill after page one.
+    """
+    assert congress_subheading_scopes(text) == ()
+
+
+def test_the_committed_activity_reports_state_no_subheading() -> None:
+    """Neither full-text fixture prints one, so the counts pinned on them below cannot move with this rule."""
+    assert congress_subheading_scopes(body_for(DENSE).text) == ()
+    assert congress_subheading_scopes(body_for(TRUNCATED).text) == ()
 
 
 @pytest.mark.parametrize(
