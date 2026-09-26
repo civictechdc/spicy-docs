@@ -86,9 +86,9 @@ def test_root_body_and_stage(name: str, root_tag: str, body_tag: str, stage: str
 
 
 def test_every_captured_text_fixture_yields_sections() -> None:
-    """Resolution-body coverage on the captured sample: four of four parse, one of them a resolution."""
+    """Resolution-body coverage on the captured sample: every text fixture parses, one of them a resolution."""
     documents = [parse_bill_tree(path.read_bytes()) for path in sorted(CAPTURED.glob("text-*.xml"))]
-    assert len(documents) == 4
+    assert documents
     assert all(document.sections for document in documents)
     assert sum(document.body_tags == ("resolution-body",) for document in documents) == 1
 

@@ -41,8 +41,10 @@ from spicy_docs.interpretation.section_classification import (
     SectionClassification,
 )
 from spicy_docs.schemas import BILL_SECTIONS, BILL_VERSIONS, TABLE_CONTRACTS
+from spicy_docs.schemas.bill_diff_tables import CONSECUTIVE_PAIR_RULE
 from spicy_docs.sources.congress.bill_status import BillIdentity, BillTextVersion, parse_bill_status
 from spicy_docs.sources.congress.bill_tree import engine_available, parse_bill_tree
+from spicy_docs.sources.congress.bill_versions import version_slug
 from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.credentials import CredentialRefusedError
 
@@ -56,6 +58,7 @@ OBSERVED_AT = "2026-09-19T00:00:00Z"
 TEST_ENGINE = EngineStamp(name="deltatrack", version="0.1.0", revision="0" * 40)
 
 HR6028 = BillIdentity(119, "hr", 6028)
+HR983 = BillIdentity(119, "hr", 983)
 
 
 def test_bill_row_counts_the_native_cosponsor_list() -> None:
@@ -146,6 +149,29 @@ def captured_pair_capture() -> BillFamilyCapture:
         ),
         observed_at=OBSERVED_AT,
     )
+
+
+def native_capture(identity: BillIdentity, bodies: dict[str, str]) -> BillFamilyCapture:
+    """A native BILLSTATUS with the named printings' native XML, keyed by version slug; other printings are absent."""
+    status = status_for(f"status-{identity.congress}{identity.bill_type}{identity.number}.xml", identity)
+    return BillFamilyCapture(
+        status=status,
+        versions=tuple(
+            printing(CAPTURED / bodies[slug], version=version, version_code=slug)
+            for version in status.text_versions
+            if (slug := version_slug(version.type)) in bodies
+        ),
+        observed_at=OBSERVED_AT,
+    )
+
+
+HR983_BODIES = {
+    "introduced-in-house": "text-119hr983ih.xml",
+    "engrossed-in-house": "text-119hr983eh.xml",
+    "rfs": "text-119hr983rfs.xml",
+    "enrolled-bill": "text-119hr983enr.xml",
+    "public-law": "text-119hr983enr.xml",
+}
 
 
 def three_printing_capture() -> BillFamilyCapture:
@@ -379,15 +405,45 @@ def test_every_section_names_a_version_row_that_exists() -> None:
 
 @needs_engine
 def test_only_consecutive_pairs_are_diffed() -> None:
-    """Three printings diff only their date-consecutive pairs, all marked consecutive_by_date and xml-xml."""
+    """Three printings diff only their date-consecutive pairs, all marked with the pairing rule and xml-xml."""
     tables = family(three_printing_capture())
     pairs = [(row["from_version_code"], row["to_version_code"]) for row in tables.section_diffs]
     assert pairs == [
         ("introduced-in-house", "engrossed-in-house"),
         ("engrossed-in-house", "reported-in-house"),
     ]
-    assert all(row["pair_rule"] == "consecutive_by_date" for row in tables.section_diffs)
+    assert all(row["pair_rule"] == CONSECUTIVE_PAIR_RULE for row in tables.section_diffs)
     assert all(row["pair_type"] == "xml-xml" for row in tables.section_diffs)
+
+
+@needs_engine
+def test_a_dateless_enrolled_printing_is_compared_from_the_printing_before_it() -> None:
+    """119 HR 983: BILLSTATUS dates every printing but the enrolled one, which once sorted first."""
+    tables = family(native_capture(HR983, HR983_BODIES))
+    assert [(row["from_version_code"], row["to_version_code"]) for row in tables.section_diffs] == [
+        ("introduced-in-house", "engrossed-in-house"),
+        ("engrossed-in-house", "rfs"),
+        ("rfs", "enrolled-bill"),
+        ("enrolled-bill", "public-law"),
+    ]
+    assert {row["pair_rule"] for row in tables.section_diffs} == {CONSECUTIVE_PAIR_RULE}
+    assert [row for row in tables.refusals if row.table == "section_diffs"] == []
+
+
+@needs_engine
+def test_a_pair_no_date_or_stage_orders_is_refused_by_name() -> None:
+    capture = native_capture(HR983, HR983_BODIES)
+    undated = tuple(
+        replace(entry, version=replace(entry.version, date="")) if entry.version_code == "rfs" else entry
+        for entry in capture.versions
+    )
+    tables = family(replace(capture, versions=undated))
+    assert ("rfs", "introduced-in-house") not in {
+        (row["from_version_code"], row["to_version_code"]) for row in tables.section_diffs
+    }
+    (refusal,) = [row for row in tables.refusals if row.table == "section_diffs"]
+    assert refusal.identity == ("119-hr-983", "rfs", "govinfo", "introduced-in-house", "govinfo")
+    assert "not established" in refusal.reason
 
 
 @needs_engine

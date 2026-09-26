@@ -24,8 +24,11 @@ from spicy_docs.schemas.tables import (
 #: rewritten appropriations title is unbounded; the published column is not.
 TEXT_DIFF_CAP_BYTES = 64 * 1024
 
-#: The one pairing rule the family builder applies when choosing version pairs.
-CONSECUTIVE_PAIR_RULE = "consecutive_by_date"
+#: The one pairing rule the family builder applies when choosing version pairs:
+#: neighbours in ``sources.congress.bill_versions.printing_order``, which places a
+#: dateless enrolled printing by its stage.  Its predecessor, ``consecutive_by_date``,
+#: sorted the empty date first and diffed an enrolled bill into its introduced text.
+CONSECUTIVE_PAIR_RULE = "consecutive_by_date_then_stage"
 
 #: What a ``financial_changes`` row claims, and what it does not.
 WORD_ALIGNMENT_CLAIM = "word_alignment"
@@ -48,7 +51,7 @@ SECTION_DIFFS = table_contract(
         "from_version_date": "The earlier printing's publisher date.",
         "to_version_date": "The later printing's publisher date; the merge prefers the larger value.",
         "pair_type": "Which comparison strategy this pair called for: xml-xml, pdf-pdf or pdf-xml.",
-        "pair_rule": "Why these two printings were compared; consecutive by date, never every pair.",
+        "pair_rule": "Why these two printings were compared: neighbours by date, then by stage, never every pair.",
         "added_count": "Sections present only in the later printing.",
         "removed_count": "Sections present only in the earlier printing.",
         "modified_count": "Sections present in both whose body text differs.",

@@ -217,6 +217,33 @@ laws and statute compilations), not a BILLS package's own USLM rendition. A
 caller that asks `acquire_bill_pdf`'s underlying acquirer to prefer `"uslm"`
 gets a `ValueError` naming it unsupported, not a silent wrong fetch.
 
+## Printing order
+
+`printing_order(printings)` orders a bill's `(version_code, date)` printings,
+earliest first, and `consecutive_pairs(printings)` names the neighbouring
+pairs a diff compares. `interpretation.bill_family` pairs its printings with
+them, and a host deciding which comparisons are missing imports the same two
+functions instead of restating the rule.
+
+- **Dated printings keep the publisher's date order.** Ties fall to the
+  vocabulary's declaration order, then to input order.
+- **A dateless enrolled printing is placed by its stage.** GPO defines the
+  enrolled bill as the "final official copy of the bill or joint resolution
+  which both the House and the Senate have passed in identical form"
+  (govinfo.gov/help/bills). BILLSTATUS states no date for it: `<date/>` is
+  empty on every enrolled printing measured, and the printing's own
+  `<dc:date>` is empty too. It goes after every dated printing that precedes
+  enrollment and before the first dated re-enrolment or law
+  (`AFTER_ENROLLMENT_SLUGS`). No date is invented.
+- **A dateless printing whose slug states no stage pairs with nothing.** None
+  was measured; it keeps the first place an empty date always had, and the
+  family refuses its pairs by name.
+
+Sorting the empty date first, as the family did before, diffed 13 enrolled
+bills *into* their introduced text and never compared their last printing with
+the enrolled one (receipt
+`fork-execution-2026-09-21/drift-qualification-2026-09-26/bills-citations/`).
+
 ## The PDF path
 
 `bill_pdf.acquire_bill_pdf(identity, *, acquirer, slug=None, package_id=None)`

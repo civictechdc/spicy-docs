@@ -1,4 +1,4 @@
-"""The sealed bill-version-code vocabulary, format choice and PDF package ids.
+"""The sealed bill-version-code vocabulary, printing order, format choice and PDF package ids.
 
 Ported from BillTrax's `VERSION_CODE_TO_GOVINFO_SLUG` and its duplicated
 format-choice helpers; `VERSION_CODES` slugs are never renamed or removed (its
@@ -10,6 +10,8 @@ from `bill_status.bill_package_id_from_url`, and treat `version_slug` /
 `bill_version_package_id` as the fallback, with `version_slug_reprints`
 exposing the ambiguity. `choose_format`/`format_name` pick an offered
 rendition, including a type-less format item named from its GovInfo URL folder.
+`printing_order`/`consecutive_pairs` order a bill's printings by publisher date,
+placing a dateless enrolled printing by its stage.
 """
 
 from __future__ import annotations
@@ -17,6 +19,7 @@ from __future__ import annotations
 import re
 from collections.abc import Sequence
 from dataclasses import dataclass
+from itertools import pairwise
 
 from spicy_docs.sources.congress.bill_status import BillIdentity, BillTextFormat
 
@@ -434,8 +437,77 @@ def choose_format(
     return None
 
 
+# ---------------------------------------------------------------------------
+# Printing order: which printing of a bill precedes which, for pairing diffs.
+# ---------------------------------------------------------------------------
+
+#: The printing GPO defines as the last one a bill has: "Enrolled Bill — final
+#: official copy of the bill or joint resolution which both the House and the
+#: Senate have passed in identical form" (govinfo.gov/help/bills). BILLSTATUS
+#: states no date for it: ``<date/>`` is empty, and so is the printing's own
+#: ``<dc:date>``, on every enrolled printing measured -- all 469 enrolled-bill
+#: rows spicy-regs published at 2026-09-25, and all 9 enrolled items among 213
+#: BILLSTATUS files, each listed first in the publisher's newest-first item
+#: order (receipt ``fork-execution-2026-09-21/drift-qualification-2026-09-26/
+#: bills-citations/`` under ``~/Work/corpora``).
+ENROLLED_SLUGS = frozenset({"enrolled-bill", "enr"})
+
+#: The printings that by definition follow enrollment: a re-enrolment, and the
+#: law the enrolled bill became. BILLSTATUS dates the law item with the
+#: enactment date and lists it after every printing.
+AFTER_ENROLLMENT_SLUGS = frozenset({"renr", "public-law", "private-law"})
+
+
+def _placed(printing: tuple[str, str | None]) -> bool:
+    """Whether a publisher date or the slug's stage establishes where the printing falls."""
+    slug, date = printing
+    return bool(date) or slug in ENROLLED_SLUGS
+
+
+def printing_order(printings: Sequence[tuple[str, str | None]]) -> list[int]:
+    """Indices of ``(version_code, date)`` printings, earliest first.
+
+    Dated printings sort by the publisher's date, ties broken by
+    `VERSION_CODES`' declaration order (earliest printing first for a shared
+    name) and then by input order. A dateless printing is placed by the stage
+    its slug states, never by an invented date: an enrolled printing
+    (`ENROLLED_SLUGS`) after every dated printing that precedes enrollment and
+    before the first dated one that follows it (`AFTER_ENROLLMENT_SLUGS`). A
+    dateless printing whose slug states no stage (none measured) sorts first,
+    where an empty date always sorted, and `consecutive_pairs` pairs it with
+    nothing. Idempotent: ordering an ordered list returns ``range(len(...))``.
+    """
+    rank = {entry.slug: index for index, entry in enumerate(VERSION_CODES)}
+
+    def declared(index: int) -> int:
+        return rank.get(printings[index][0], len(rank))
+
+    dated = sorted((i for i, (_, date) in enumerate(printings) if date), key=lambda i: (printings[i][1], declared(i)))
+    dateless = sorted((i for i, (_, date) in enumerate(printings) if not date), key=declared)
+    ordered = [i for i in dateless if printings[i][0] not in ENROLLED_SLUGS] + dated
+    for index in (i for i in dateless if printings[i][0] in ENROLLED_SLUGS):
+        later = [at for at, i in enumerate(ordered) if printings[i][1] and printings[i][0] in AFTER_ENROLLMENT_SLUGS]
+        ordered.insert(later[0] if later else len(ordered), index)
+    return ordered
+
+
+def consecutive_pairs(printings: Sequence[tuple[str, str | None]]) -> list[tuple[int, int]]:
+    """``(earlier, later)`` index pairs of printings that neighbour in `printing_order` and whose order is established.
+
+    These are the only pairs a bill's diff compares: consecutive, never every
+    pair, and never a pair one of whose printings neither a date nor a stage
+    places. Indices are into ``printings`` as given.
+    """
+    ordered = printing_order(printings)
+    return [
+        (older, newer) for older, newer in pairwise(ordered) if _placed(printings[older]) and _placed(printings[newer])
+    ]
+
+
 __all__ = [
+    "AFTER_ENROLLMENT_SLUGS",
     "DEFAULT_FORMAT_PREFERENCE",
+    "ENROLLED_SLUGS",
     "FORMAT_TYPE_NAMES",
     "VERSION_CODES",
     "VERSION_CODES_BY_SLUG",
@@ -443,8 +515,10 @@ __all__ = [
     "VersionCodeError",
     "bill_version_package_id",
     "choose_format",
+    "consecutive_pairs",
     "format_name",
     "govinfo_suffix",
+    "printing_order",
     "slugify",
     "version_slug",
     "version_slug_reprints",

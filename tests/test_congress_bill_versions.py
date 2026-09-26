@@ -1,4 +1,4 @@
-"""The sealed version-code vocabulary, format choice, package ids and version kind.
+"""The sealed version-code vocabulary, printing order, format choice, package ids and version kind.
 
 Pins the union of both BillTrax slug copies and the DeltaTrack-upstream codes
 (including the one deliberate correction, rhuc over BillTrax's rfh), slugify and
@@ -9,6 +9,7 @@ preference order, and version_kind's ported cases.
 from __future__ import annotations
 
 import os
+import random
 from pathlib import Path
 
 import pytest
@@ -22,7 +23,9 @@ from spicy_docs.sources.congress.bill_versions import (
     VersionCodeError,
     bill_version_package_id,
     choose_format,
+    consecutive_pairs,
     govinfo_suffix,
+    printing_order,
     slugify,
     version_slug,
     version_slug_reprints,
@@ -602,3 +605,70 @@ def test_live_bill_pdf_is_acquired_and_proved() -> None:
     assert result.body_capture.body.startswith(b"%PDF-")
     assert result.body_capture.byte_size > 10_000
     assert key.encode() not in result.body_capture.body
+
+
+# ---------------------------------------------------------------------------
+# Printing order: publisher dates, and a dateless enrolled printing by its stage.
+# ---------------------------------------------------------------------------
+
+
+def _date_first_order(printings: list[tuple[str, str | None]]) -> list[int]:
+    """The order before ``consecutive_by_date_then_stage``: an empty date sorted first."""
+    rank = {entry.slug: index for index, entry in enumerate(VERSION_CODES)}
+    return sorted(range(len(printings)), key=lambda i: (printings[i][1] or "", rank.get(printings[i][0], len(rank))))
+
+
+def test_a_dateless_enrolled_printing_follows_the_last_dated_printing_and_precedes_the_law() -> None:
+    status = parse_bill_status((FIXTURES / "status-119hr983.xml").read_bytes(), identity=BillIdentity(119, "hr", 983))
+    printings = [(version_slug(version.type), version.date) for version in status.text_versions]
+    assert dict(printings)["enrolled-bill"] == "", "the publisher's <date/>, read literally"
+    assert [printings[i][0] for i in printing_order(printings)] == [
+        "introduced-in-house",
+        "engrossed-in-house",
+        "rfs",
+        "enrolled-bill",
+        "public-law",
+    ]
+    assert [(printings[a][0], printings[b][0]) for a, b in consecutive_pairs(printings)] == [
+        ("introduced-in-house", "engrossed-in-house"),
+        ("engrossed-in-house", "rfs"),
+        ("rfs", "enrolled-bill"),
+        ("enrolled-bill", "public-law"),
+    ]
+
+
+def test_without_a_later_stage_an_enrolled_printing_is_last() -> None:
+    printings = [("enrolled-bill", None), ("engrossed-amendment-senate", "2026-08-07"), ("introduced-in-house", "2025")]
+    assert [printings[i][0] for i in printing_order(printings)] == [
+        "introduced-in-house",
+        "engrossed-amendment-senate",
+        "enrolled-bill",
+    ]
+
+
+def test_every_all_dated_bill_keeps_the_date_first_order() -> None:
+    """With a date on every printing nothing moves: the stage rule only places what has no date."""
+    rng = random.Random(20260926)
+    slugs = [entry.slug for entry in VERSION_CODES] + ["private-law", "not-in-the-vocabulary"]
+    for _ in range(2_000):
+        printings = [
+            (slug, f"2026-0{rng.randint(1, 3)}-1{rng.randint(0, 2)}") for slug in rng.sample(slugs, rng.randint(1, 8))
+        ]
+        assert printing_order(printings) == _date_first_order(printings), printings
+
+
+def test_ordering_an_ordered_bill_changes_nothing() -> None:
+    rng = random.Random(983)
+    slugs = [entry.slug for entry in VERSION_CODES]
+    for _ in range(2_000):
+        printings = [
+            (slug, rng.choice(["", "2025-02-05", "2025-04-07", "2026-09-19"])) for slug in rng.sample(slugs, 6)
+        ]
+        ordered = [printings[i] for i in printing_order(printings)]
+        assert printing_order(ordered) == list(range(len(ordered))), printings
+
+
+def test_a_dateless_printing_whose_slug_states_no_stage_pairs_with_nothing() -> None:
+    printings = [("introduced-in-house", "2025-02-05"), ("rfs", ""), ("engrossed-in-house", "2025-04-07")]
+    assert printing_order(printings)[0] == 1, "it keeps the first place an empty date had"
+    assert consecutive_pairs(printings) == [(0, 2)]

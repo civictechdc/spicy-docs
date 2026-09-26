@@ -238,7 +238,8 @@ published:
 4. `bill_versions`, with the version-kind finding;
 5. `bill_sections`, one row per flattened node;
 6. `section_diffs`, `section_diff_items`, `financial_changes`, over consecutive
-   pairs only;
+   pairs only, in `sources.congress.bill_versions.printing_order`: publisher
+   date, with a dateless enrolled printing placed by its stage;
 7. `section_classifications` and `bill_summaries`, where a printing carries bill
    text;
 8. `diff_summaries`, from the comparisons step 6 already has in hand.
@@ -253,9 +254,10 @@ The three model calls are injected at this boundary rather than as a
 model=…)`, and passing `None` skips the model tables entirely, which is what a
 keyless CI run and every hermetic test do.
 
-Nothing is dropped silently. A pair that cannot be compared, a row whose
-identity has a null part, a version the summarizer declined — each becomes a
-`FamilyRefusal` naming the table, the identity and the reason.
+Nothing is dropped silently. A pair that cannot be compared or whose order no
+date or stage establishes, a row whose identity has a null part, a version the
+summarizer declined — each becomes a `FamilyRefusal` naming the table, the
+identity and the reason.
 
 ## The Congress.gov index tables are read from a list row and its detail
 

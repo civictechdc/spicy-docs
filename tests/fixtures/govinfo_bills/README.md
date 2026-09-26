@@ -163,3 +163,21 @@ the same behavior for H.R.: 31,656,886 bytes one morning, 31,658,670 that
 afternoon). The sidecar is evidence that the listing states the same two facts
 the zip's own HTTP `Last-Modified`/`Content-Length` state, not a source of
 this fixture's rows.
+
+## Printing order (2026-09-26)
+
+Native bytes for a defect spicy-regs' 2026-09-26 qualification found in its
+published bill family (receipt
+`fork-execution-2026-09-21/drift-qualification-2026-09-26/bills-citations/`
+under `~/Work/corpora`): 119 HR 983's dateless enrolled printing was diffed
+into its introduced text. Each file's digest equals the `bill_versions.sha256`
+spicy-regs published for that printing (generation `5990abbb…`). All were read
+keyless from GovInfo on 2026-09-26 (UTC) and are complete and unchanged.
+
+| Fixture | Bytes | SHA-256 | Publisher response and changes |
+| --- | --- | --- | --- |
+| `status-119hr983.xml` | 21,021 | `434f32c57fad34538e1409ba9dcbf21fae62b1189303df230602ecae56913008` | [119 HR 983 BILLSTATUS](https://www.govinfo.gov/bulkdata/BILLSTATUS/119/hr/BILLSTATUS-119hr983.xml), complete and unchanged. Its `Enrolled Bill` item has `<date/>` and is listed first; the `Public Law` item comes last. |
+| `text-119hr983ih.xml` | 5,685 | `efb81403638be325bb68a53f1fc024331a7ab83b7d95a9d7b5e7a5efaeb5b3d9` | [BILLS-119hr983ih XML](https://www.govinfo.gov/content/pkg/BILLS-119hr983ih/xml/BILLS-119hr983ih.xml), complete and unchanged. |
+| `text-119hr983eh.xml` | 5,433 | `e7677f36f1fc09d8fe182f7f972887e3244567b2286821753c5e436e77902060` | [BILLS-119hr983eh XML](https://www.govinfo.gov/content/pkg/BILLS-119hr983eh/xml/BILLS-119hr983eh.xml), complete and unchanged. |
+| `text-119hr983rfs.xml` | 5,609 | `a0e5c4a6c0b989ca30ef583daef74dedd83ae5a37de6bbcc2968998b007e0e26` | [BILLS-119hr983rfs XML](https://www.govinfo.gov/content/pkg/BILLS-119hr983rfs/xml/BILLS-119hr983rfs.xml), complete and unchanged. |
+| `text-119hr983enr.xml` | 5,544 | `b95447fdcbe46553d563f2a656e32f4b3a9861b92e4d75e57ba0812c5eb3a12a` | [BILLS-119hr983enr XML](https://www.govinfo.gov/content/pkg/BILLS-119hr983enr/xml/BILLS-119hr983enr.xml), complete and unchanged; the enrolled printing and the law's body. |

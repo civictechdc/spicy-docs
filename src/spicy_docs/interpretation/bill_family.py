@@ -74,17 +74,13 @@ from spicy_docs.schemas.cost_estimate_tables import (
 )
 from spicy_docs.schemas.tables import Row, TableContract, TableContractError, bill_id, joined
 from spicy_docs.sources.congress.bill_versions import (
-    VERSION_CODES,
     VersionCodeError,
+    consecutive_pairs,
+    printing_order,
     version_slug_reprints,
 )
 from spicy_docs.sources.congress.bill_versions import format_name as format_name_of
 from spicy_docs.transport.credentials import scrub_credential
-
-#: Version codes in the sealed vocabulary's own declaration order, which is
-#: earliest printing first for a shared publisher name.  A slug outside the
-#: vocabulary sorts after every slug in it rather than refusing the bill.
-_VERSION_ORDER: dict[str, int] = {entry.slug: index for index, entry in enumerate(VERSION_CODES)}
 
 #: Which version kinds are worth a model call.
 #:
@@ -449,15 +445,9 @@ def _model_answer(
 
 
 def _sorted_versions(versions: Iterable[BillVersionCapture]) -> list[BillVersionCapture]:
-    """Order by publisher date, then by the sealed vocabulary's own declaration order."""
-    return sorted(
-        versions,
-        key=lambda capture: (
-            capture.version.date or "",
-            _VERSION_ORDER.get(capture.version_code, len(_VERSION_ORDER)),
-            capture.source,
-        ),
-    )
+    """Order printings by ``bill_versions.printing_order``; the source breaks a remaining tie."""
+    captures = sorted(versions, key=lambda capture: capture.source)
+    return [captures[i] for i in printing_order([(c.version_code, c.version.date) for c in captures])]
 
 
 def build_bill_family(
@@ -754,9 +744,17 @@ def _diff_pairs(
         )
         for entry in ordered
     ]
+    established = set(consecutive_pairs([(entry.version_code, entry.version.date) for entry in ordered]))
     for position in range(len(ordered) - 1):
         older, newer = ordered[position], ordered[position + 1]
         pair = (key, older.version_code, older.source, newer.version_code, newer.source)
+        if (position, position + 1) not in established:
+            admit.refuse(
+                SECTION_DIFFS.name,
+                pair,
+                "neither a date nor a stage places a side of the pair, so which printing is earlier is not established",
+            )
+            continue
         if older.document is None or newer.document is None:
             admit.refuse(
                 SECTION_DIFFS.name,

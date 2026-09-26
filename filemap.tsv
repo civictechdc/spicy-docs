@@ -255,7 +255,7 @@ src/spicy_docs/sources/congress/bill_pdf.py	Fetch one bill version's PDF as a Go
 src/spicy_docs/sources/congress/bill_status.py	Read source fields and offered text versions from one GovInfo BILLSTATUS XML.	src
 src/spicy_docs/sources/congress/bill_text.py	Check current Congressional bill/resolution XML without rewriting its bytes.	src
 src/spicy_docs/sources/congress/bill_tree.py	Read one GPO bill, resolution or amendment XML with DeltaTrack, accounting for every element.	src
-src/spicy_docs/sources/congress/bill_versions.py	The sealed bill-version-code vocabulary, format choice and PDF package ids.	src
+src/spicy_docs/sources/congress/bill_versions.py	The sealed bill-version-code vocabulary, printing order, format choice and PDF package ids.	src
 src/spicy_docs/sources/congress/billstatus_codes.py	Literal code sentences and tables from the retained BILLSTATUS Markdown guide.	src
 src/spicy_docs/sources/congress/bulk_status.py	Back-fill BILLSTATUS one Congress and one bill type at a time from the GovInfo bulk zip.	src
 src/spicy_docs/sources/congress/committee_rosters.py	House Clerk ``MemberData.xml`` and Senate ``cvc_member_data.xml``: the current committee assignments.	src
@@ -463,7 +463,7 @@ tests/test_compare_source_native_releases.py	Check record additions and changes 
 tests/test_congress_bill_status.py	Literal BILLSTATUS fields, offered versions and refusal boundaries.	test
 tests/test_congress_bill_text.py	Current printed bill XML identity, body shape and inert external DTDs.	test
 tests/test_congress_bill_tree.py	The DeltaTrack adapter: the gate, the bodies it reads, and the element inventory.	test
-tests/test_congress_bill_versions.py	The sealed version-code vocabulary, format choice, package ids and version kind.	test
+tests/test_congress_bill_versions.py	The sealed version-code vocabulary, printing order, format choice, package ids and version kind.	test
 tests/test_congress_bulk_status.py	One BILLSTATUS folder zip: every member proved or refused, and the bounds that refuse the zip.	test
 tests/test_congress_candidate_votes.py	Candidate-choice election totals stay distinct from ordinary position totals.	test
 tests/test_congress_index_tables.py	The Congress.gov index tables' own rules, and the data-map edges re-run on the captured records.	test
