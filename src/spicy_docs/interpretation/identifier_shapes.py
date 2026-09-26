@@ -1459,6 +1459,14 @@ def _organization(docket: str) -> str:
     return re.split(r"[-_]", docket, maxsplit=1)[0]
 
 
+def _end_of(pattern: re.Pattern[str], text: str, position: int = 0) -> int:
+    """Where ``pattern``, which matches the empty string, ends from ``position``: it always matches."""
+
+    found = pattern.match(text, position)
+    assert found is not None, pattern.pattern
+    return found.end()
+
+
 def _outside(spans: list[tuple[int, int]], readings: list[tuple[int, str]]) -> list[tuple[int, str]]:
     """The readings that start inside none of the spans; both lists in ascending start order, one pass."""
 
@@ -1486,7 +1494,7 @@ def _walked_list(stated: str) -> tuple[list[tuple[int, str]], int]:
     carries ("FRL-8231-8", "SC-20-326", "NIOSH-314") end the list.
     """
 
-    position = _REFERENCES_LEAD.match(stated).end()
+    position = _end_of(_REFERENCES_LEAD, stated)
     found: list[tuple[int, str]] = []
     walked_to = 0
     while (token := _REFERENCE_TOKEN.match(stated, position)) is not None and _REFERENCE_TOKEN_END.match(
@@ -1568,7 +1576,7 @@ def _former_names(text: str) -> list[tuple[int, int]]:
     """Where the identifiers a proceeding no longer goes by stand, in start order."""
 
     spans = [match.span("former") for match in _FORMERLY_IN_PARENTHESES.finditer(text)]
-    spans.extend((match.start(), _TOKEN_REST.match(text, match.end()).end()) for match in _FORMERLY.finditer(text))
+    spans.extend((match.start(), _end_of(_TOKEN_REST, text, match.end())) for match in _FORMERLY.finditer(text))
     return sorted(spans)
 
 
