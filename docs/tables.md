@@ -39,11 +39,11 @@ table's columns.
 | `bill_publisher_summaries` | One row per CRS summary the publisher states on a bill, at the version and action it describes. | `bill_id`, `summary_version_code`, `action_date` | `update_date` | `interpretation.bill_family` |
 | `cbo_cost_estimates` | One row per bill and CBO publication the bill's BILLSTATUS document names as a cost estimate of it. | `bill_id`, `publication_id` | `pub_date` | `interpretation.bill_family` |
 | `bill_versions` | One row per printing of a bill, per source that supplied it. | `bill_id`, `version_code`, `source` | `version_date` | `interpretation.bill_family` |
-| `bill_sections` | One row per content-bearing node of one bill version, in document order. | `bill_id`, `version_code`, `source`, `match_path`, `body_index` | `version_date` | `interpretation.bill_family` |
+| `bill_sections` | One row per content-bearing node of one bill version, in document order. | `bill_id`, `version_code`, `source`, `seq` | `version_date` | `interpretation.bill_family` |
 | `section_diffs` | One row per compared pair of consecutive printings of one bill. | `bill_id`, `from_version_code`, `from_source`, `to_version_code`, `to_source` | `to_version_date` | `interpretation.bill_family` |
 | `section_diff_items` | One row per settled correspondence in one version-pair comparison. | `bill_id`, `from_version_code`, `from_source`, `to_version_code`, `to_source`, `seq` | none | `interpretation.bill_family` |
 | `financial_changes` | One row per aligned pair of dollar figures in a section whose amounts changed. | `bill_id`, `from_version_code`, `from_source`, `to_version_code`, `to_source`, `seq`, `amount_index` | none | `interpretation.bill_family` |
-| `section_classifications` | One row per label a model assigned to one section of one printing. | `bill_id`, `version_code`, `source`, `match_path`, `body_index`, `label` | `completed_at` | `interpretation.bill_family` |
+| `section_classifications` | One row per label a model assigned to one section of one printing. | `bill_id`, `version_code`, `source`, `seq`, `label` | `completed_at` | `interpretation.bill_family` |
 | `bill_summaries` | One row per plain-language summary of one printing of a bill. | `bill_id`, `version_code`, `source` | `completed_at` | `interpretation.bill_family` |
 | `diff_summaries` | One row per model-written summary of the change between two printings of a bill. | `bill_id`, `from_version_code`, `from_source`, `to_version_code`, `to_source` | `completed_at` | `interpretation.bill_family` |
 | `public_activity_events` | One row per change detected between two runs of the bill family. | `bill_id`, `event_type`, `subject_id`, `occurred_at` | `detected_at` | `schemas.activity_events` |
@@ -255,9 +255,12 @@ model=…)`, and passing `None` skips the model tables entirely, which is what a
 keyless CI run and every hermetic test do.
 
 Nothing is dropped silently. A pair that cannot be compared or whose order no
-date or stage establishes, a row whose identity has a null part, a version the
-summarizer declined — each becomes a `FamilyRefusal` naming the table, the
-identity and the reason.
+date or stage establishes, a row whose identity has a null part or repeats one
+already admitted, a version the summarizer declined — each becomes a
+`FamilyRefusal` naming the table, the identity and the reason. A section is
+keyed on its `seq` within its printing, because `match_path` is a
+cross-version key that repeats inside one printing
+([decision](decisions.md#a-bill-section-is-keyed-on-its-position-and-a-dateless-enrolled-printing-is-paired-by-its-stage)).
 
 ## The Congress.gov index tables are read from a list row and its detail
 

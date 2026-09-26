@@ -2,9 +2,11 @@
 content-bearing node of one version, in document order).
 
 No full-text or XML column is published: ``sha256``, ``byte_size``, ``package_id`` and ``resolved_url`` say exactly
-which bytes were read, and the body recomposes from ``bill_sections.body``.  ``bill_sections`` is keyed with ``source``
-and ``body_index`` because a reported bill carries two ``legis-body`` elements and a version code is not unique across
-acquisition paths; ``bill_versions`` carries the GPO PDF cleanup counts as processing provenance.
+which bytes were read, and the body recomposes from ``bill_sections.body``.  ``bill_sections`` carries ``source``
+because a version code is not unique across acquisition paths and ``body_index`` because a reported bill carries two
+``legis-body`` elements, but is keyed on ``seq`` within its printing: ``match_path`` is the cross-version key and
+repeats inside one printing (119-hr-5334 enrolled, two divisions' ``Sec. 1``; 119-hr-9022 reported, two paragraphs
+under one heading).  ``bill_versions`` carries the GPO PDF cleanup counts as processing provenance.
 """
 
 from __future__ import annotations
@@ -87,13 +89,13 @@ BILL_VERSIONS = table_contract(
 BILL_SECTIONS = table_contract(
     "bill_sections",
     grain="One row per content-bearing node of one bill version, in document order.",
-    identity=("bill_id", "version_code", "source", "match_path", "body_index"),
+    identity=("bill_id", "version_code", "source", "seq"),
     version_column="version_date",
     columns={
         "bill_id": "The bill this section belongs to.",
         "version_code": "The printing this section was read from.",
         "source": "Which acquisition path supplied the printing; part of the parent version's key.",
-        "match_path": "The normalized, division-free cross-version key, unit-separator joined.",
+        "match_path": "The normalized, division-free cross-version key, unit-separator joined; it can repeat.",
         "match_path_json": "The same path as a JSON array, so a consumer need not split on a separator.",
         "display_path_json": "The human-facing path the engine composes, as a JSON array.",
         "element_id": "The publisher's own id attribute on the element this node came from.",
@@ -104,7 +106,7 @@ BILL_SECTIONS = table_contract(
         "division_label": "The division this section sits under, as the engine composes the label.",
         "division_key": "The normalized division key, which is what a cross-version match ignores.",
         "body_index": "Which body element this node came from; a reported bill carries two.",
-        "seq": "Position in document order, which the match path deliberately does not encode.",
+        "seq": "Position in document order; the section's key within its printing, which the match path cannot be.",
         "body_chars": "Character length of body.",
         "body_sha256": "Digest of body's UTF-8 bytes, so an unchanged section is recognisable without a join.",
         "version_date": "The parent printing's date, carried so this table versions with its parent.",

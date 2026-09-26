@@ -225,29 +225,22 @@ def _family_cases() -> list[ShapedCase]:
         for printing in captured_pair_capture().versions
         for seq, node in enumerate(printing.document.sections)
     ]
-    for row, (printing, _, node) in zip(tables.bill_sections, sections, strict=True):
+    for row, (printing, seq, node) in zip(tables.bill_sections, sections, strict=True):
         cases.append(
             _case(
                 "bill_sections",
                 row,
-                (key, printing.version_code, printing.source, joined(node.match_path), str(node.body_index)),
+                (key, printing.version_code, printing.source, str(seq)),
                 match_path_json=list(node.match_path),
                 display_path_json=list(node.display_path),
             )
         )
-    for row, (printing, _, node) in zip(tables.section_classifications, sections, strict=True):
+    for row, (printing, seq, _) in zip(tables.section_classifications, sections, strict=True):
         cases.append(
             _case(
                 "section_classifications",
                 row,
-                (
-                    key,
-                    printing.version_code,
-                    printing.source,
-                    joined(node.match_path),
-                    str(node.body_index),
-                    StubClassifier().label,
-                ),
+                (key, printing.version_code, printing.source, str(seq), StubClassifier().label),
             )
         )
     for row, printing in zip(tables.bill_summaries, captured_pair_capture().versions, strict=True):

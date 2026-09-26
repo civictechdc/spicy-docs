@@ -1,0 +1,555 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<billStatus>
+  <version>3.0.0</version>
+  <bill>
+    <number>9022</number>
+    <updateDate>2026-07-23T23:06:26Z</updateDate>
+    <updateDateIncludingText>2026-07-23T23:06:26Z</updateDateIncludingText>
+    <originChamber>House</originChamber>
+    <originChamberCode>H</originChamberCode>
+    <type>HR</type>
+    <introducedDate>2026-05-22</introducedDate>
+    <congress>119</congress>
+    <legislationUrl>https://www.congress.gov/bill/119th-congress/house-bill/9022</legislationUrl>
+    <cdata/>
+    <committees>
+      <item>
+        <systemCode>hsap00</systemCode>
+        <name>Appropriations Committee</name>
+        <chamber>House</chamber>
+        <type>Standing</type>
+        <activities>
+          <item>
+            <name>Reported Original Measure</name>
+            <date>2026-05-22T18:21:35Z</date>
+          </item>
+        </activities>
+      </item>
+    </committees>
+    <committeeReports>
+      <committeeReport>
+        <citation>H. Rept. 119-667</citation>
+      </committeeReport>
+    </committeeReports>
+    <relatedBills>
+      <item>
+        <title>Fort Peck Water System Reauthorization Act</title>
+        <congress>119</congress>
+        <number>3635</number>
+        <type>S</type>
+        <latestAction>
+          <actionDate>2026-03-17</actionDate>
+          <text>Committee on Energy and Natural Resources Subcommittee on Water and Power. Hearings held.</text>
+        </latestAction>
+        <relationshipDetails>
+          <item>
+            <type>Related bill</type>
+            <identifiedBy>CRS</identifiedBy>
+          </item>
+        </relationshipDetails>
+      </item>
+      <item>
+        <title>To reauthorize the Fort Peck Reservation Rural Water System Act of 2000.</title>
+        <congress>119</congress>
+        <number>7250</number>
+        <type>HR</type>
+        <latestAction>
+          <actionDate>2026-06-03</actionDate>
+          <text>Received in the Senate and Read twice and referred to the Committee on Energy and Natural Resources.</text>
+        </latestAction>
+        <relationshipDetails>
+          <item>
+            <type>Related bill</type>
+            <identifiedBy>CRS</identifiedBy>
+          </item>
+        </relationshipDetails>
+      </item>
+      <item>
+        <title>Providing for consideration of the bill (H.R. 1181) to prohibit payment card networks and covered entities from requiring the use of or assigning merchant category codes that distinguish a firearms retailer from general-merchandise retailer or sporting-goods retailer, and for other purposes; providing for consideration of the bill (H.R. 9022) making appropriations for energy and water development and related agencies for the fiscal year ending September 30, 2027, and for other purposes; providing for consideration of the bill (H.R. 8595) making appropriations for national security, Department of State, and related programs for the fiscal year ending September 30, 2027, and for other purposes; and providing for consideration of the bill (H.R. 9237) to amend titles 10 and 38, United States Code, and other Federal laws, to improve benefits for veterans and the administration of the Department of Veterans Affairs.</title>
+        <congress>119</congress>
+        <number>1377</number>
+        <type>HRES</type>
+        <latestAction>
+          <actionDate>2026-07-13</actionDate>
+          <text>UNANIMOUS CONSENT REQUEST - Mr. Steil asked unanimous consent that H. Res. 1377 be laid on the table. Agreed to without objection.</text>
+          <actionTime>17:23:20</actionTime>
+        </latestAction>
+        <relationshipDetails>
+          <item>
+            <type>Related bill</type>
+            <identifiedBy>House</identifiedBy>
+          </item>
+          <item>
+            <type>Procedurally related</type>
+            <identifiedBy>House</identifiedBy>
+          </item>
+        </relationshipDetails>
+      </item>
+    </relatedBills>
+    <actions>
+      <item>
+        <actionDate>2026-06-23</actionDate>
+        <actionTime>19:18:06</actionTime>
+        <text>Rules Committee Resolution H. Res. 1377 Reported to House. Rule provides for consideration of H.R. 1181, H.R. 9022, H.R. 8595 and H.R. 9237. The resolution provides for consideration of H.R. 1181 and H.R. 9237 under a closed rule and H.R. 9022 and H.R. 8595 under a structured rule. The resolution provides for one hour of general debate and one motion to recommit on each bill.</text>
+        <type>Floor</type>
+        <actionCode>H1L210</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2026-05-22</actionDate>
+        <text>Placed on the Union Calendar, Calendar No. 581.</text>
+        <type>Calendars</type>
+        <actionCode>H12410</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+        <calendarNumber>
+          <calendar>U00581</calendar>
+        </calendarNumber>
+      </item>
+      <item>
+        <actionDate>2026-05-22</actionDate>
+        <text>The House Committee on Appropriations reported an original measure, H. Rept. 119-667, by Mr. Fleischmann.</text>
+        <type>Committee</type>
+        <actionCode>H12100</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+        <committees>
+          <item>
+            <systemCode>hsap00</systemCode>
+            <name>Appropriations Committee</name>
+          </item>
+        </committees>
+      </item>
+      <item>
+        <actionDate>2026-05-22</actionDate>
+        <text>The House Committee on Appropriations reported an original measure, H. Rept. 119-667, by Mr. Fleischmann.</text>
+        <type>Committee</type>
+        <actionCode>1010</actionCode>
+        <sourceSystem>
+          <code>9</code>
+          <name>Library of Congress</name>
+        </sourceSystem>
+        <committees>
+          <item>
+            <systemCode>hsap00</systemCode>
+            <name>Appropriations Committee</name>
+          </item>
+        </committees>
+      </item>
+    </actions>
+    <sponsors>
+      <item>
+        <bioguideId>F000459</bioguideId>
+        <fullName>Rep. Fleischmann, Charles J. "Chuck" [R-TN-3]</fullName>
+        <firstName>Charles</firstName>
+        <lastName>Fleischmann</lastName>
+        <party>R</party>
+        <state>TN</state>
+        <middleName>J. "Chuck"</middleName>
+        <district>3</district>
+        <isByRequest>N</isByRequest>
+      </item>
+    </sponsors>
+    <policyArea>
+      <name>Economics and Public Finance</name>
+    </policyArea>
+    <subjects>
+      <legislativeSubjects>
+        <item>
+          <name>Administrative law and regulatory procedures</name>
+          <updateDate>2026-07-07T15:00:40Z</updateDate>
+        </item>
+        <item>
+          <name>Advanced technology and technological innovations</name>
+          <updateDate>2026-07-07T14:59:37Z</updateDate>
+        </item>
+        <item>
+          <name>Alabama</name>
+          <updateDate>2026-07-07T15:48:17Z</updateDate>
+        </item>
+        <item>
+          <name>Alaska</name>
+          <updateDate>2026-07-07T15:48:52Z</updateDate>
+        </item>
+        <item>
+          <name>Alternative and renewable resources</name>
+          <updateDate>2026-07-07T14:58:50Z</updateDate>
+        </item>
+        <item>
+          <name>Appalachian Regional Commission</name>
+          <updateDate>2026-07-07T15:47:27Z</updateDate>
+        </item>
+        <item>
+          <name>Appropriations</name>
+          <updateDate>2026-07-07T14:56:53Z</updateDate>
+        </item>
+        <item>
+          <name>Aquatic ecology</name>
+          <updateDate>2026-07-07T15:00:05Z</updateDate>
+        </item>
+        <item>
+          <name>Arizona</name>
+          <updateDate>2026-07-07T15:49:21Z</updateDate>
+        </item>
+        <item>
+          <name>Arms control and nonproliferation</name>
+          <updateDate>2026-07-07T15:45:56Z</updateDate>
+        </item>
+        <item>
+          <name>Army Corps of Engineers</name>
+          <updateDate>2026-07-07T14:57:02Z</updateDate>
+        </item>
+        <item>
+          <name>California</name>
+          <updateDate>2026-07-07T15:16:22Z</updateDate>
+        </item>
+        <item>
+          <name>Colorado</name>
+          <updateDate>2026-07-07T15:16:16Z</updateDate>
+        </item>
+        <item>
+          <name>Computer security and identity theft</name>
+          <updateDate>2026-07-07T14:58:34Z</updateDate>
+        </item>
+        <item>
+          <name>Congressional oversight</name>
+          <updateDate>2026-07-07T15:49:48Z</updateDate>
+        </item>
+        <item>
+          <name>Defense Nuclear Facilities Safety Board</name>
+          <updateDate>2026-07-07T15:48:41Z</updateDate>
+        </item>
+        <item>
+          <name>Denali Commission</name>
+          <updateDate>2026-07-07T15:48:47Z</updateDate>
+        </item>
+        <item>
+          <name>Department of Energy</name>
+          <updateDate>2026-07-07T14:57:14Z</updateDate>
+        </item>
+        <item>
+          <name>Department of the Interior</name>
+          <updateDate>2026-07-07T14:57:09Z</updateDate>
+        </item>
+        <item>
+          <name>Economic development</name>
+          <updateDate>2026-07-07T15:48:58Z</updateDate>
+        </item>
+        <item>
+          <name>Electric power generation and transmission</name>
+          <updateDate>2026-07-07T14:59:45Z</updateDate>
+        </item>
+        <item>
+          <name>Emergency planning and evacuation</name>
+          <updateDate>2026-07-07T14:58:38Z</updateDate>
+        </item>
+        <item>
+          <name>Energy research</name>
+          <updateDate>2026-07-07T15:45:18Z</updateDate>
+        </item>
+        <item>
+          <name>Energy storage, supplies, demand</name>
+          <updateDate>2026-07-07T15:45:01Z</updateDate>
+        </item>
+        <item>
+          <name>Executive agency funding and structure</name>
+          <updateDate>2026-07-07T14:56:58Z</updateDate>
+        </item>
+        <item>
+          <name>Federal Energy Regulatory Commission (FERC)</name>
+          <updateDate>2026-07-07T14:59:54Z</updateDate>
+        </item>
+        <item>
+          <name>Floods and storm protection</name>
+          <updateDate>2026-07-07T14:57:33Z</updateDate>
+        </item>
+        <item>
+          <name>Georgia</name>
+          <updateDate>2026-07-07T15:48:22Z</updateDate>
+        </item>
+        <item>
+          <name>Government employee pay, benefits, personnel management</name>
+          <updateDate>2026-07-07T15:46:01Z</updateDate>
+        </item>
+        <item>
+          <name>Government information and archives</name>
+          <updateDate>2026-07-07T15:49:42Z</updateDate>
+        </item>
+        <item>
+          <name>Government lending and loan guarantees</name>
+          <updateDate>2026-07-07T15:45:31Z</updateDate>
+        </item>
+        <item>
+          <name>Government studies and investigations</name>
+          <updateDate>2026-07-07T14:57:41Z</updateDate>
+        </item>
+        <item>
+          <name>Government trust funds</name>
+          <updateDate>2026-07-07T15:00:10Z</updateDate>
+        </item>
+        <item>
+          <name>Great Lakes</name>
+          <updateDate>2026-07-07T15:49:31Z</updateDate>
+        </item>
+        <item>
+          <name>Hazardous wastes and toxic substances</name>
+          <updateDate>2026-07-07T15:45:13Z</updateDate>
+        </item>
+        <item>
+          <name>Hybrid, electric, and advanced technology vehicles</name>
+          <updateDate>2026-07-07T14:59:41Z</updateDate>
+        </item>
+        <item>
+          <name>Indian social and development programs</name>
+          <updateDate>2026-07-07T14:59:21Z</updateDate>
+        </item>
+        <item>
+          <name>Infrastructure development</name>
+          <updateDate>2026-07-07T14:57:21Z</updateDate>
+        </item>
+        <item>
+          <name>Kentucky</name>
+          <updateDate>2026-07-07T15:47:56Z</updateDate>
+        </item>
+        <item>
+          <name>Lakes and rivers</name>
+          <updateDate>2026-07-07T15:00:01Z</updateDate>
+        </item>
+        <item>
+          <name>Lighting, heating, cooling</name>
+          <updateDate>2026-07-07T14:59:08Z</updateDate>
+        </item>
+        <item>
+          <name>Maine</name>
+          <updateDate>2026-07-07T15:49:12Z</updateDate>
+        </item>
+        <item>
+          <name>Manufacturing</name>
+          <updateDate>2026-07-07T15:45:38Z</updateDate>
+        </item>
+        <item>
+          <name>Marine and coastal resources, fisheries</name>
+          <updateDate>2026-07-07T15:47:23Z</updateDate>
+        </item>
+        <item>
+          <name>Maryland</name>
+          <updateDate>2026-07-07T15:48:06Z</updateDate>
+        </item>
+        <item>
+          <name>Mining</name>
+          <updateDate>2026-07-07T14:58:58Z</updateDate>
+        </item>
+        <item>
+          <name>Mississippi</name>
+          <updateDate>2026-07-07T15:48:29Z</updateDate>
+        </item>
+        <item>
+          <name>Mississippi River</name>
+          <updateDate>2026-07-07T14:57:30Z</updateDate>
+        </item>
+        <item>
+          <name>Missouri</name>
+          <updateDate>2026-07-07T15:00:21Z</updateDate>
+        </item>
+        <item>
+          <name>Missouri River</name>
+          <updateDate>2026-07-07T15:00:31Z</updateDate>
+        </item>
+        <item>
+          <name>Motor vehicles</name>
+          <updateDate>2026-07-07T14:59:31Z</updateDate>
+        </item>
+        <item>
+          <name>Natural disasters</name>
+          <updateDate>2026-07-07T15:00:47Z</updateDate>
+        </item>
+        <item>
+          <name>Navigation, waterways, harbors</name>
+          <updateDate>2026-07-07T15:00:35Z</updateDate>
+        </item>
+        <item>
+          <name>New Hampshire</name>
+          <updateDate>2026-07-07T15:49:03Z</updateDate>
+        </item>
+        <item>
+          <name>New Mexico</name>
+          <updateDate>2026-07-07T15:49:26Z</updateDate>
+        </item>
+        <item>
+          <name>New York State</name>
+          <updateDate>2026-07-07T15:48:36Z</updateDate>
+        </item>
+        <item>
+          <name>North Carolina</name>
+          <updateDate>2026-07-07T15:47:47Z</updateDate>
+        </item>
+        <item>
+          <name>Nuclear Regulatory Commission (NRC)</name>
+          <updateDate>2026-07-07T14:59:49Z</updateDate>
+        </item>
+        <item>
+          <name>Nuclear Waste Technical Review Board</name>
+          <updateDate>2026-07-07T15:49:36Z</updateDate>
+        </item>
+        <item>
+          <name>Nuclear power</name>
+          <updateDate>2026-07-07T14:58:45Z</updateDate>
+        </item>
+        <item>
+          <name>Nuclear weapons</name>
+          <updateDate>2026-07-07T15:45:44Z</updateDate>
+        </item>
+        <item>
+          <name>Ohio</name>
+          <updateDate>2026-07-07T15:48:12Z</updateDate>
+        </item>
+        <item>
+          <name>Oil and gas</name>
+          <updateDate>2026-07-07T14:58:54Z</updateDate>
+        </item>
+        <item>
+          <name>Pennsylvania</name>
+          <updateDate>2026-07-07T15:48:01Z</updateDate>
+        </item>
+        <item>
+          <name>Public contracts and procurement</name>
+          <updateDate>2026-07-07T15:16:34Z</updateDate>
+        </item>
+        <item>
+          <name>Radioactive wastes and releases</name>
+          <updateDate>2026-07-07T14:59:12Z</updateDate>
+        </item>
+        <item>
+          <name>Research administration and funding</name>
+          <updateDate>2026-07-07T14:59:17Z</updateDate>
+        </item>
+        <item>
+          <name>South Carolina</name>
+          <updateDate>2026-07-07T15:47:52Z</updateDate>
+        </item>
+        <item>
+          <name>Strategic materials and reserves</name>
+          <updateDate>2026-07-07T14:59:03Z</updateDate>
+        </item>
+        <item>
+          <name>Supply chain</name>
+          <updateDate>2026-07-07T15:44:56Z</updateDate>
+        </item>
+        <item>
+          <name>Tennessee</name>
+          <updateDate>2026-07-07T15:47:42Z</updateDate>
+        </item>
+        <item>
+          <name>Texas</name>
+          <updateDate>2026-07-07T15:49:17Z</updateDate>
+        </item>
+        <item>
+          <name>Utah</name>
+          <updateDate>2026-07-07T14:58:29Z</updateDate>
+        </item>
+        <item>
+          <name>Vermont</name>
+          <updateDate>2026-07-07T15:49:07Z</updateDate>
+        </item>
+        <item>
+          <name>Virginia</name>
+          <updateDate>2026-07-07T15:47:36Z</updateDate>
+        </item>
+        <item>
+          <name>Washington State</name>
+          <updateDate>2026-07-07T15:47:18Z</updateDate>
+        </item>
+        <item>
+          <name>Water resources funding</name>
+          <updateDate>2026-07-07T15:16:12Z</updateDate>
+        </item>
+        <item>
+          <name>West Virginia</name>
+          <updateDate>2026-07-07T15:47:32Z</updateDate>
+        </item>
+        <item>
+          <name>Wetlands</name>
+          <updateDate>2026-07-07T15:00:26Z</updateDate>
+        </item>
+      </legislativeSubjects>
+      <policyArea>
+        <name>Economics and Public Finance</name>
+        <updateDate>2026-05-28T20:02:41Z</updateDate>
+      </policyArea>
+    </subjects>
+    <summaries>
+      <summary>
+        <versionCode>07</versionCode>
+        <actionDate>2026-05-22</actionDate>
+        <actionDesc>Reported to House</actionDesc>
+        <updateDate>2026-05-29T15:07:41Z</updateDate>
+        <text><![CDATA[<p><strong>Energy and Water Development and Related Agencies Appropriations Act, 2027</strong></p><p>This bill provides FY2027 appropriations for U.S. Army Corps of Engineers civil works projects, the Department of the Interior's Bureau of Reclamation, the Department of Energy (DOE), and several independent agencies.</p><p>The bill provides appropriations for U.S. Army Corps of Engineers civil works projects, including for</p><ul><li>Investigations,</li><li>Construction,</li><li>Mississippi River and Tributaries,</li><li>Operation and Maintenance,</li><li>the Regulatory Program,</li><li>Flood Control and Coastal Emergencies,</li><li>Expenses,</li><li>the Office of the Assistant Secretary of the Army for Civil Works, and</li><li>the Water Infrastructure Finance and Innovation Program.</li></ul><p>The bill provides appropriations to the Department of the Interior for the Central Utah Project and the Bureau of Reclamation.</p><p>The bill provides appropriations to DOE for energy programs, including</p><ul><li>Critical Minerals and Energy Innovation;</li><li>Cybersecurity, Energy Security, and Emergency Response;</li><li>Electricity;</li><li>Nuclear Energy;</li><li>Hydrocarbons and Geothermal Energy;</li><li>Naval Petroleum and Oil Shale Reserves;</li><li>the Strategic Petroleum Reserve;</li><li>the Northeast Home Heating Oil Reserve;</li><li>the Energy Information Administration;</li><li>Non-Defense Environmental Cleanup;</li><li>the Uranium Enrichment Decontamination and Decommissioning Fund;</li><li>Science;</li><li>Nuclear Waste Disposal;</li><li>the Advanced Research Projects Agency—Energy;</li><li>the Title 17 Innovative Technology Loan Guarantee Program;</li><li>the Advanced Technology Vehicles Manufacturing Loan Program;</li><li>the Tribal Energy Loan Guarantee Program;</li><li>Indian Energy Policy and Programs;</li><li>Departmental Administration; and</li><li>the Office of the Inspector General.</li></ul><p>The bill also provides appropriations to DOE for</p><ul><li>Atomic Energy Defense Activities of the National Nuclear Security Administration,</li><li>Environmental and Other Defense Activities, and</li><li>the Power Marketing Administrations.</li></ul><p>The bill provides appropriations to several independent agencies, including the Federal Energy Regulatory Commission and the Nuclear Regulatory Commission.</p><p>The bill also sets forth requirements and restrictions for using funds provided by this and other appropriations acts.</p>]]></text>
+      </summary>
+    </summaries>
+    <title>Energy and Water Development and Related Agencies Appropriations Act, 2027</title>
+    <titles>
+      <item>
+        <titleType>Short Title(s) as Reported to House for portions of this bill</titleType>
+        <titleTypeCode>107</titleTypeCode>
+        <title>Energy and Water Development and Related Agencies Appropriations Act, 2027</title>
+        <updateDate>2026-07-11T23:08:21Z</updateDate>
+        <chamberCode>H</chamberCode>
+        <chamberName>House</chamberName>
+        <billTextVersionName>Reported in House</billTextVersionName>
+        <billTextVersionCode>RH</billTextVersionCode>
+      </item>
+      <item>
+        <titleType>Display Title</titleType>
+        <titleTypeCode>45</titleTypeCode>
+        <title>Energy and Water Development and Related Agencies Appropriations Act, 2027</title>
+        <updateDate>2026-05-23T08:23:43Z</updateDate>
+      </item>
+      <item>
+        <titleType>Short Title(s) as Reported to House</titleType>
+        <titleTypeCode>102</titleTypeCode>
+        <title>Energy and Water Development and Related Agencies Appropriations Act, 2027</title>
+        <updateDate>2026-05-23T08:23:42Z</updateDate>
+        <chamberCode>H</chamberCode>
+        <chamberName>House</chamberName>
+        <billTextVersionName>Reported in House</billTextVersionName>
+        <billTextVersionCode>RH</billTextVersionCode>
+      </item>
+      <item>
+        <titleType>Official Title as Introduced</titleType>
+        <titleTypeCode>6</titleTypeCode>
+        <title>Making appropriations for energy and water development and related agencies for the fiscal year ending September 30, 2027, and for other purposes.</title>
+        <updateDate>2026-05-23T08:07:31Z</updateDate>
+      </item>
+    </titles>
+    <textVersions>
+      <item>
+        <type>Reported in House</type>
+        <date>2026-05-22T04:00:00Z</date>
+        <formats>
+          <item>
+            <url>https://www.govinfo.gov/content/pkg/BILLS-119hr9022rh/xml/BILLS-119hr9022rh.xml</url>
+          </item>
+        </formats>
+      </item>
+    </textVersions>
+    <latestAction>
+      <actionDate>2026-06-23</actionDate>
+      <text>Rules Committee Resolution H. Res. 1377 Reported to House. Rule provides for consideration of H.R. 1181, H.R. 9022, H.R. 8595 and H.R. 9237. The resolution provides for consideration of H.R. 1181 and H.R. 9237 under a closed rule and H.R. 9022 and H.R. 8595 under a structured rule. The resolution provides for one hour of general debate and one motion to recommit on each bill.</text>
+      <actionTime>19:18:06</actionTime>
+    </latestAction>
+  </bill>
+  <dublinCore xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:format>text/xml</dc:format>
+    <dc:language>EN</dc:language>
+    <dc:rights>Pursuant to Title 17 Section 105 of the United States Code, this file is not subject to copyright protection and is in the public domain.</dc:rights>
+    <dc:contributor>Congressional Research Service, Library of Congress</dc:contributor>
+    <dc:description>This file contains bill summaries and statuses for federal legislation. A bill summary describes the most significant provisions of a piece of legislation and details the effects the legislative text may have on current law and federal programs. Bill summaries are authored by the Congressional Research Service (CRS) of the Library of Congress. As stated in Public Law 91-510 (2 USC 166 (d)(6)), one of the duties of CRS is "to prepare summaries and digests of bills and resolutions of a public general nature introduced in the Senate or House of Representatives". For more information, refer to the User Guide that accompanies this file.</dc:description>
+  </dublinCore>
+</billStatus>

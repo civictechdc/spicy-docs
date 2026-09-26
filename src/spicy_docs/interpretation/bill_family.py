@@ -370,11 +370,13 @@ class _Admitter:
     The shaping happens inside the guard, because one unrecognised printing
     used to raise out of ``shape_bill_version`` and abort the whole bill;
     ``identity`` is what the refusal is filed under when there is no row to
-    read one from.
+    read one from. A row repeating the identity of one already admitted in
+    this pass is refused rather than emitted twice.
     """
 
     def __init__(self) -> None:
         self.refusals: list[FamilyRefusal] = []
+        self._admitted: dict[str, set[tuple[str, ...]]] = {}
 
     def __call__(
         self,
@@ -389,11 +391,19 @@ class _Admitter:
             self.refuse(contract.name, identity, f"the shaper refused this row: {error}")
             return None
         try:
-            contract.key(row)
-            rows.append(contract.checked(row))
+            keyed = contract.key(row)
+            checked = contract.checked(row)
         except TableContractError as error:
             self.refuse(contract.name, tuple(row.get(column) or "" for column in contract.identity), str(error))
             return None
+        admitted = self._admitted.setdefault(contract.name, set())
+        if keyed in admitted:
+            # A host merge keeps one row per identity, so emitting both would
+            # publish one and drop the other without a word.
+            self.refuse(contract.name, keyed, "repeats the identity of a row this pass already admitted")
+            return None
+        admitted.add(keyed)
+        rows.append(checked)
         return row
 
     def refuse(self, table: str, identity: tuple[str, ...], reason: str) -> None:

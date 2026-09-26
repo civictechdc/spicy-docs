@@ -164,15 +164,19 @@ afternoon). The sidecar is evidence that the listing states the same two facts
 the zip's own HTTP `Last-Modified`/`Content-Length` state, not a source of
 this fixture's rows.
 
-## Printing order (2026-09-26)
+## Printing order and section identity (2026-09-26)
 
-Native bytes for a defect spicy-regs' 2026-09-26 qualification found in its
+Native bytes for two defects spicy-regs' 2026-09-26 qualification found in its
 published bill family (receipt
 `fork-execution-2026-09-21/drift-qualification-2026-09-26/bills-citations/`
 under `~/Work/corpora`): 119 HR 983's dateless enrolled printing was diffed
-into its introduced text. Each file's digest equals the `bill_versions.sha256`
-spicy-regs published for that printing (generation `5990abbb…`). All were read
-keyless from GovInfo on 2026-09-26 (UTC) and are complete and unchanged.
+into its introduced text, and 119 HR 5334's enrolled and 119 HR 9022's
+reported printings each carry two sections the old `bill_sections` identity
+could not tell apart. Each whole printing's digest equals the
+`bill_versions.sha256` spicy-regs published for it (generation `5990abbb…`),
+and each reduced printing's source digest does too. A reduction cuts whole elements and
+leaves every other byte as served. All were read keyless from GovInfo on
+2026-09-26 (UTC).
 
 | Fixture | Bytes | SHA-256 | Publisher response and changes |
 | --- | --- | --- | --- |
@@ -181,3 +185,8 @@ keyless from GovInfo on 2026-09-26 (UTC) and are complete and unchanged.
 | `text-119hr983eh.xml` | 5,433 | `e7677f36f1fc09d8fe182f7f972887e3244567b2286821753c5e436e77902060` | [BILLS-119hr983eh XML](https://www.govinfo.gov/content/pkg/BILLS-119hr983eh/xml/BILLS-119hr983eh.xml), complete and unchanged. |
 | `text-119hr983rfs.xml` | 5,609 | `a0e5c4a6c0b989ca30ef583daef74dedd83ae5a37de6bbcc2968998b007e0e26` | [BILLS-119hr983rfs XML](https://www.govinfo.gov/content/pkg/BILLS-119hr983rfs/xml/BILLS-119hr983rfs.xml), complete and unchanged. |
 | `text-119hr983enr.xml` | 5,544 | `b95447fdcbe46553d563f2a656e32f4b3a9861b92e4d75e57ba0812c5eb3a12a` | [BILLS-119hr983enr XML](https://www.govinfo.gov/content/pkg/BILLS-119hr983enr/xml/BILLS-119hr983enr.xml), complete and unchanged; the enrolled printing and the law's body. |
+| `status-119hr5334.xml` | 4,440 | `064612eb7f2a7d2c0e13445627f70d4ad20b80ff665aed715574ddd0d71b41aa` | [119 HR 5334 BILLSTATUS](https://www.govinfo.gov/bulkdata/BILLSTATUS/119/hr/BILLSTATUS-119hr5334.xml) (108,169 bytes, `6c942ee61f174e587f964acebc70e8b611095c4be4edeab235654f90d4e21f29`). Reduced: the top-level `constitutionalAuthorityStatementText`, `committees`, `committeeReports`, `relatedBills`, `actions`, `cosponsors`, `cboCostEstimates`, `subjects`, `summaries`, `titles` and `amendments` elements are cut; `textVersions` is byte-identical. |
+| `text-119hr5334ih.xml` | 4,346 | `c456aa223105d0b36d54c9817d09d516bf55556679043abda30559201f1b85ea` | [BILLS-119hr5334ih XML](https://www.govinfo.gov/content/pkg/BILLS-119hr5334ih/xml/BILLS-119hr5334ih.xml), complete and unchanged. |
+| `text-119hr5334enr.xml` | 9,478 | `e71e46d361aab11f9d7ad6863dd90c558f007eb38a09e540f08c06179c7e2dbd` | [BILLS-119hr5334enr XML](https://www.govinfo.gov/content/pkg/BILLS-119hr5334enr/xml/BILLS-119hr5334enr.xml) (113,233 bytes, `50bf7a3c48fc607dee1cc800389c0e5afd682474aa3c399e2aa1e363d6096ca2`). Reduced: Division A's two `title` elements (`H42DEB9C…`, `H751A661…`) are cut, keeping Division A's and Division B's `Sec. 1` (`H7962367…`, `H99FFDB5…`), which share the match path `sec. 1`: seqs 3 and 6 here, 3 and 80 in the whole printing. |
+| `status-119hr9022.xml` | 23,866 | `9bbca5ad13200b0c3ac548b4f1fddce0cb9ce1299639f7e20a3b8b0620515583` | [119 HR 9022 BILLSTATUS](https://www.govinfo.gov/bulkdata/BILLSTATUS/119/hr/BILLSTATUS-119hr9022.xml), complete and unchanged (publisher Last-Modified 2026-07-24 10:24:25 GMT). |
+| `text-119hr9022rh.xml` | 9,288 | `b0952d9eb609fb31393117d27ba72c966ec03ca558fd1b5ff20e4d3b77b7667b` | [BILLS-119hr9022rh XML](https://www.govinfo.gov/content/pkg/BILLS-119hr9022rh/xml/BILLS-119hr9022rh.xml) (124,422 bytes, `fc82dbe573754a737e74e6489262dd423bdb9d1e17d8b6203456c77e6c1f135b`). Reduced: every `title` but Title III is cut, and within Title III every child but its `enum`, `header`, the `ENERGY PROGRAMS` major heading, the `Title 17 Innovative Technology Loan Guarantee Program` intermediate heading and the two `appropriations-small` paragraphs under it (`HA2B9AE2…`, `HF8CCDC6…`), which share that heading's match path: seqs 4 and 5 here, 68 and 69 in the whole printing. |

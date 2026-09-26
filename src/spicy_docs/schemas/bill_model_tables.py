@@ -16,17 +16,19 @@ from spicy_docs.schemas.tables import (
 )
 from spicy_docs.schemas.tables import bill_id as bill_key
 
-_SECTION_KEY_COLUMNS = ("bill_id", "version_code", "source", "match_path", "body_index")
+#: What a label copies from its ``bill_sections`` row: the section's key and its cross-version path.
+_SECTION_COLUMNS = ("bill_id", "version_code", "source", "seq", "match_path", "body_index")
 
 SECTION_CLASSIFICATIONS = table_contract(
     "section_classifications",
     grain="One row per label a model assigned to one section of one printing.",
-    identity=("bill_id", "version_code", "source", "match_path", "body_index", "label"),
+    identity=("bill_id", "version_code", "source", "seq", "label"),
     version_column="completed_at",
     columns={
         "bill_id": "The bill whose section was classified.",
         "version_code": "The printing whose section was classified.",
         "source": "Which acquisition path supplied that printing; without it an XML row and its PDF twin collide.",
+        "seq": "The classified section's bill_sections seq, its key within the printing.",
         "match_path": "The section's normalized cross-version key, unit-separator joined.",
         "body_index": "Which body element the section came from.",
         "label": "One of the five sealed classification labels.",
@@ -115,7 +117,7 @@ def shape_section_classification(result: object, *, section_key: Row, vocabulary
     label table lives in ``interpretation.section_classification``.
     """
     return {
-        **{column: section_key[column] for column in _SECTION_KEY_COLUMNS},
+        **{column: section_key[column] for column in _SECTION_COLUMNS},
         "label": text(result.label),
         "confidence": text(result.confidence),
         "model": text(result.model),

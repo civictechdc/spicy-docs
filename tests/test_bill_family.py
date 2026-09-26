@@ -59,6 +59,8 @@ TEST_ENGINE = EngineStamp(name="deltatrack", version="0.1.0", revision="0" * 40)
 
 HR6028 = BillIdentity(119, "hr", 6028)
 HR983 = BillIdentity(119, "hr", 983)
+HR5334 = BillIdentity(119, "hr", 5334)
+HR9022 = BillIdentity(119, "hr", 9022)
 
 
 def test_bill_row_counts_the_native_cosponsor_list() -> None:
@@ -447,6 +449,75 @@ def test_a_pair_no_date_or_stage_orders_is_refused_by_name() -> None:
 
 
 @needs_engine
+@pytest.mark.parametrize(
+    ("identity", "bodies", "slug", "colliding"),
+    [
+        (
+            HR5334,
+            {"introduced-in-house": "text-119hr5334ih.xml", "enrolled-bill": "text-119hr5334enr.xml"},
+            "enrolled-bill",
+            ("3", "6"),
+        ),
+        (HR9022, {"reported-in-house": "text-119hr9022rh.xml"}, "reported-in-house", ("4", "5")),
+    ],
+)
+def test_sections_sharing_a_match_path_are_each_published_under_their_seq(identity, bodies, slug, colliding) -> None:
+    """Two divisions' Sec. 1 (119 HR 5334 enr) and two paragraphs under one heading (119 HR 9022 rh)."""
+    tables = family(native_capture(identity, bodies))
+    rows = [row for row in tables.bill_sections if row["version_code"] == slug]
+    shared = [row for row in rows if row["seq"] in colliding]
+    assert len({(row["match_path"], row["body_index"]) for row in shared}) == 1, "the old identity repeats"
+    assert len({BILL_SECTIONS.key(row) for row in rows}) == len(rows)
+    assert [row["seq"] for row in rows] == [str(seq) for seq in range(len(rows))]
+    (version,) = [row for row in tables.bill_versions if row["version_code"] == slug]
+    assert version["section_count"] == str(len(rows))
+    assert [row for row in tables.refusals if row.table == "bill_sections"] == []
+
+
+@needs_engine
+def test_every_diff_item_resolves_to_the_section_it_names() -> None:
+    """Each side's element id finds exactly one published section, carrying the item's own text digest."""
+    tables = family(
+        native_capture(
+            HR5334, {"introduced-in-house": "text-119hr5334ih.xml", "enrolled-bill": "text-119hr5334enr.xml"}
+        )
+    )
+    sections: dict[tuple[str | None, ...], list[str | None]] = {}
+    for row in tables.bill_sections:
+        key = (row["bill_id"], row["version_code"], row["source"], row["element_id"])
+        sections.setdefault(key, []).append(row["body_sha256"])
+    assert [(row["from_version_code"], row["to_version_code"]) for row in tables.section_diffs] == [
+        ("introduced-in-house", "enrolled-bill")
+    ]
+    sides = 0
+    for item in tables.section_diff_items:
+        for side in ("from", "to"):
+            if item[f"{side}_element_id"] is None:
+                continue
+            key = (item["bill_id"], item[f"{side}_version_code"], item[f"{side}_source"], item[f"{side}_element_id"])
+            assert sections.get(key) == [item[f"{side}_text_sha256"]], key
+            sides += 1
+    assert sides > 0 and "H99FFDB592AC24CB1B2B3F75409BD3309" in {
+        item["to_element_id"] for item in tables.section_diff_items
+    }
+
+
+@needs_engine
+def test_a_row_repeating_an_admitted_identity_is_refused_not_emitted() -> None:
+    """The same printing twice: one version row and one set of sections, the repeats refused by name."""
+    pair = captured_pair_capture()
+    once = pair.versions[0]
+    tables = family(replace(pair, versions=(once, once)))
+    assert [BILL_VERSIONS.key(row) for row in tables.bill_versions] == [BILL_VERSIONS.key(tables.bill_versions[0])]
+    assert len(tables.bill_sections) == len(once.document.sections)
+    repeated = [
+        row for row in tables.refusals if row.reason == "repeats the identity of a row this pass already admitted"
+    ]
+    assert [row.table for row in repeated].count("bill_versions") == 1
+    assert [row.table for row in repeated].count("bill_sections") == len(once.document.sections)
+
+
+@needs_engine
 def test_a_pdf_twin_resolves_through_both_halves_of_its_reference() -> None:
     """A twin reference needs both the code and the source, or the pair reads as pdf-xml instead of pdf-pdf; the XML
     side here is sourced ``congress``, which a hardcoded ``govinfo`` would miss.
@@ -656,8 +727,7 @@ def test_classifications_resolve_through_the_section_row_not_the_model_answer() 
     tables = modelled_family()
     sections = {BILL_SECTIONS.key(row) for row in tables.bill_sections}
     for row in tables.section_classifications:
-        key = (row["bill_id"], row["version_code"], row["source"], row["match_path"], row["body_index"])
-        assert key in sections
+        assert tuple(row[column] for column in BILL_SECTIONS.identity) in sections
         assert row["vocabulary_hash"] == classification_vocabulary_hash()
 
 

@@ -2193,3 +2193,61 @@ contract count; and a test that each of its record types' schemas and dedup
 keys equal the contract's columns and identity, so the two declarations
 cannot drift. Both hold today. Its `TABLES`, `CONTRACT_TABLES` and prose stay
 as they are.
+
+## A bill section is keyed on its position, and a dateless enrolled printing is paired by its stage
+
+2026-09-26, from spicy-regs' qualification of its published bill family
+(receipt `fork-execution-2026-09-21/drift-qualification-2026-09-26/bills-citations/`
+under `~/Work/corpora`). Both faults were this package's, not the host's.
+
+**`bill_sections` was keyed on a path that repeats inside a printing.** Its
+identity was `(bill_id, version_code, source, match_path, body_index)`, and
+`match_path` is the division-free cross-version key. Real printings break it:
+
+- 119 HR 5334 enrolled: Division A's and Division B's `Sec. 1` both path
+  `sec. 1` (seqs 3 and 80).
+- 119 HR 9022 reported: two paragraphs under one appropriations heading share
+  its path and the same empty division (seqs 68 and 69), so `division_key`
+  would not separate them either.
+
+The builder emitted every row, and the host's merge kept one per identity: it
+published 83 of 84 and 150 of 151 sections without a word, and one diff item
+named the dropped section. The identity is now `(bill_id, version_code,
+source, seq)`, and `section_classifications` gains `seq` and keys on
+`(bill_id, version_code, source, seq, label)`. `match_path` stays the
+cross-version join key.
+
+Measured on the published generation `5990abbb…` (receipt
+`receipts/bill-section-identity-2026-09-26/`):
+
+- The new key is unique over all 20,912 published rows in 1,802 printings, and
+  no `seq` is NULL. A merge under it keeps all 20,912 rows and changes none.
+- `seq` runs from 0 without a gap in every printing but the two above.
+- `seq` is a function of the bytes: 69 printings whose native bodies are
+  retained re-parse identically, and every one of their 916 published rows
+  names the same element, path, body index and body digest at its `seq`. A
+  different engine could renumber; the host replaces a re-parsed printing's
+  sections whole, so a renumbering replaces rather than duplicates.
+- `element_id` is unique within every printing and never NULL, so
+  `section_diff_items` resolves its sides by element id unchanged.
+
+**The pairing sorted an empty date first.** BILLSTATUS states no date for an
+enrolled printing, so `_sorted_versions` put it before the introduced text:
+13 of 401 published comparisons ran enrolled -> introduced, and the last
+printing -> enrolled comparison was never made. The order now lives in
+`sources.congress.bill_versions.printing_order` and `consecutive_pairs`
+([Printing order](sources/congress-bill-versions.md#printing-order)), and
+`CONSECUTIVE_PAIR_RULE` moves from `consecutive_by_date` to
+`consecutive_by_date_then_stage` so each row names the rule that paired it.
+
+**A repeated identity is refused.** The family's admission step files a
+`FamilyRefusal` for a row whose identity it already admitted in the pass,
+rather than emitting both for a merge to collapse.
+
+**What adopting it costs spicy-regs.** Re-keying the published `bill_sections`
+is a no-op, as measured. `section_classifications` rows published before `seq`
+would NULL-fill that key column and be dropped by the merge; the published
+table is empty (0 rows at `5990abbb…`). Comparisons published under the old
+rule stay until a rebuild retires them: the host should import
+`printing_order`/`consecutive_pairs` in place of its own order and retire any
+published pair they do not establish.

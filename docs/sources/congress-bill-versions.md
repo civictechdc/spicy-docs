@@ -241,8 +241,7 @@ functions instead of restating the rule.
 
 Sorting the empty date first, as the family did before, diffed 13 enrolled
 bills *into* their introduced text and never compared their last printing with
-the enrolled one (receipt
-`fork-execution-2026-09-21/drift-qualification-2026-09-26/bills-citations/`).
+the enrolled one ([decision](../decisions.md#a-bill-section-is-keyed-on-its-position-and-a-dateless-enrolled-printing-is-paired-by-its-stage)).
 
 ## The PDF path
 
