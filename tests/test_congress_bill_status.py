@@ -2,7 +2,7 @@
 
 Pins sponsors vs cosponsors, current status fields and offered versions,
 literal strings/duplicates/unknown format links, summary CDATA placement,
-absent vs blank action text, superseded-schema naming, policy-area
+absent vs blank action text, the 1.0.0 schema's names, policy-area
 reconciliation, identity/selection/DOCTYPE/nesting refusals, and enacted laws,
 recorded votes, committees, titles and related bills.
 """
@@ -165,15 +165,59 @@ def test_an_action_text_that_is_present_but_blank_reads_as_absent() -> None:
     assert parse_bill_status(kept, identity=IDENTITY).actions[0].text == " . "
 
 
-def test_the_superseded_schema_is_named_instead_of_refused_for_a_missing_type() -> None:
-    """One file in 40,260 measured is still 1.0.0; a backfill needs to read why, not guess."""
-    body = (
-        b"<billStatus><bill><billNumber>4200</billNumber><billType>HR</billType>"
-        b"<congress>113</congress><title>SBIC Advisers Relief Act of 2014</title>"
-        b"<version>1.0.0</version></bill></billStatus>"
+def test_the_1_0_0_schema_reads_the_same_fields_under_the_guides_names() -> None:
+    """113 HR 4200 is still served as 1.0.0: wrapped committees, subjects and summaries, identity as billType."""
+    status = parse_bill_status((FIXTURES / "status-113hr4200.xml").read_bytes(), identity=BillIdentity(113, "hr", 4200))
+    assert (status.schema_version, status.title, status.introduced_date, status.origin_chamber) == (
+        "1.0.0",
+        "SBIC Advisers Relief Act of 2014",
+        "2014-03-11",
+        "House",
     )
-    with pytest.raises(BillSourceError, match="superseded 1.0.0 element names"):
-        parse_bill_status(body, identity=BillIdentity(113, "hr", 4200))
+    assert status.policy_area == "Finance and Financial Sector" and len(status.subjects) == 6
+    assert [committee.system_code for committee in status.committees] == ["ssbk00", "hsba00"]
+    assert [summary.version_code for summary in status.summaries] == ["00", "81"]
+    assert [summary.action_desc for summary in status.summaries] == [
+        "Introduced in House",
+        "Passed House without amendment",
+    ]
+    assert len(status.actions) == 16 and all(action.recorded_votes == () for action in status.actions)
+    assert [version.package_id for version in status.text_versions] == [
+        "BILLS-113hr4200rfs",
+        "BILLS-113hr4200eh",
+        "BILLS-113hr4200rh",
+        "BILLS-113hr4200ih",
+    ]
+    assert [sponsor.bioguide_id for sponsor in status.sponsors] == ["L000569"]
+    assert status.cosponsors is not None and len(status.cosponsors) == 9
+    assert (len(status.titles), len(status.related_bills)) == (5, 2)
+    assert status.report_citations == ("H. Rept. 113-641",)
+    assert status.update_date_including_text is None and status.legislation_url is None, "1.0.0 states neither"
+
+
+def test_a_reserved_1_0_0_number_reads_as_a_titled_bill_with_nothing_listed() -> None:
+    """117 HR 11, reserved for the Minority Leader: two introduction actions and empty lists."""
+    status = parse_bill_status((FIXTURES / "status-117hr11.xml").read_bytes(), identity=BillIdentity(117, "hr", 11))
+    assert (status.schema_version, status.title) == ("1.0.0", "Reserved for the Minority Leader.")
+    assert [action.action_code for action in status.actions] == ["Intro-H", "1000"]
+    assert (status.text_versions, status.committees, status.summaries, status.subjects) == ((), (), (), ())
+    assert status.policy_area is None
+
+
+@pytest.mark.parametrize(
+    ("edit", "message"),
+    [
+        ((b"<version>1.0.0</version>", b"<version>3.0.0</version>"), "1.0.0 element names under another version"),
+        ((b"<actionTypeCounts>", b"<unknownTally/><actionTypeCounts>"), "actions has an unsupported 1.0.0 shape"),
+        ((b"<billSubjects>", b"<otherSubjects/><billSubjects>"), "subjects has an unsupported 1.0.0 shape"),
+        ((b"<billNumber>4200</billNumber>", b"<billNumber>4201</billNumber>"), "identity differs"),
+    ],
+)
+def test_a_1_0_0_file_outside_the_documented_shape_refuses(edit, message) -> None:
+    body = (FIXTURES / "status-113hr4200.xml").read_bytes()
+    assert body.count(edit[0]) == 1
+    with pytest.raises(BillSourceError, match=message):
+        parse_bill_status(body.replace(*edit), identity=BillIdentity(113, "hr", 4200))
 
 
 def test_policy_area_reconciles_both_current_source_locations() -> None:

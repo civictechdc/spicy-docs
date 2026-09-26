@@ -538,32 +538,74 @@ def _text_version(element: Element, identity: BillIdentity) -> BillTextVersion:
     return BillTextVersion(_text(element, "type"), _text(element, "date"), formats, next(iter(packages), None))
 
 
+#: The counts a 1.0.0 ``<actions>`` states beside its items. They are tallies
+#: the publisher derives from the items, not actions, and 3.0.0 dropped them.
+_LEGACY_ACTION_TALLIES = frozenset({"actionTypeCounts", "actionByCounts"})
+
+
+def _wrapped(parent: Element | None, name: str, wrapper: str) -> Element | None:
+    """The one ``<wrapper>`` a 1.0.0 container holds (``<subjects><billSubjects>``), or ``None``."""
+    container = _one(parent, name)
+    if container is None:
+        return None
+    if (container.text or "").strip() or any(child.tag != wrapper for child in container):
+        raise BillSourceError(f"bill XML {name} has an unsupported 1.0.0 shape")
+    return _one(container, wrapper)
+
+
+def _wrapped_items(parent: Element | None, name: str, wrapper: str) -> tuple[Element, ...]:
+    """The items of a 1.0.0 list under its wrapper (``<committees><billCommittees><item>``)."""
+    return _items(_one(parent, name), wrapper) if _wrapped(parent, name, wrapper) is not None else ()
+
+
+def _action_items(bill: Element, *, legacy: bool) -> tuple[Element, ...]:
+    """The action items, less the tallies a 1.0.0 ``<actions>`` states beside them."""
+    if not legacy:
+        return _items(bill, "actions")
+    container = _one(bill, "actions")
+    if container is None:
+        return ()
+    if (container.text or "").strip() or any(child.tag not in {"item", *_LEGACY_ACTION_TALLIES} for child in container):
+        raise BillSourceError("bill XML actions has an unsupported 1.0.0 shape")
+    return tuple(child for child in container if child.tag == "item")
+
+
 def parse_bill_status(body: bytes, *, identity: BillIdentity, max_bytes: int = DEFAULT_MAX_BYTES) -> BillStatus:
     """Validate one BILLSTATUS identity and retain literal fields in publisher order.
 
-    The superseded 1.0.0 element names, an identity mismatch, a summary
-    stating its text twice, and disagreeing policy-area fields all refuse.
+    Both schemas the publisher serves are read. 3.0.0 is the current one; 1.0.0
+    is the one its user guide still documents, and the bulk zips still carry it
+    for 13 bills of the 108th-119th Congresses. 1.0.0 states the same fields
+    under the guide's names: ``<billType>``/``<billNumber>`` for the identity,
+    ``<version>`` inside ``<bill>``, and ``<billCommittees>``,
+    ``<billSubjects>`` and ``<billSummaries>`` wrapping committees, subjects
+    and summaries. One field has no faithful 1.0.0 counterpart: 1.0.0 lists
+    recorded votes once for the bill rather than on the action that took them,
+    so its actions carry none, and ``updateDateIncludingText`` and
+    ``legislationUrl`` are absent there, so they read ``None``.
+
+    An identity mismatch, a summary stating its text twice, disagreeing
+    policy-area fields, and a 1.0.0 name under any other version all refuse.
     """
     _validated_identity(identity)
     root = _xml_root(body, max_bytes)
     if root.tag != "billStatus":
         raise BillSourceError("BILLSTATUS XML root is unsupported")
     bill = _one(root, "bill", required=True)
-    # One file in the 40,260 measured across the 108th, 113th and 119th
-    # Congresses (BILLSTATUS-113hr4200.xml) is still the 1.0.0 schema the
-    # publisher's user guide documents: <billType>/<billNumber> for the
-    # identity and <version> inside <bill>. Only 3.0.0 is read here, so say
-    # which schema arrived rather than refuse it for a missing <type>.
-    if _one(bill, "billType") is not None or _one(bill, "billNumber") is not None:
-        raise BillSourceError("BILLSTATUS XML uses the superseded 1.0.0 element names")
+    legacy = _one(bill, "billType") is not None or _one(bill, "billNumber") is not None
+    schema_version = _required_text(bill if legacy else root, "version")
+    if legacy and schema_version != "1.0.0":
+        raise BillSourceError("BILLSTATUS XML uses 1.0.0 element names under another version")
     if (
         _required_text(bill, "congress") != str(identity.congress)
-        or _required_text(bill, "type") != identity.bill_type.upper()
-        or _required_text(bill, "number") != str(identity.number)
+        or _required_text(bill, "billType" if legacy else "type") != identity.bill_type.upper()
+        or _required_text(bill, "billNumber" if legacy else "number") != str(identity.number)
     ):
         raise BillSourceError("BILLSTATUS XML identity differs from the requested bill")
     latest = _one(bill, "latestAction")
-    subjects = _one(bill, "subjects")
+    subjects = _wrapped(bill, "subjects", "billSubjects") if legacy else _one(bill, "subjects")
+    committees = _wrapped_items(bill, "committees", "billCommittees") if legacy else _items(bill, "committees")
+    summaries = _wrapped_items(bill, "summaries", "billSummaries") if legacy else _items(bill, "summaries", "summary")
     policy_area = _text(_one(bill, "policyArea"), "name")
     subject_policy_area = _text(_one(subjects, "policyArea"), "name")
     # Current BILLSTATUS repeats this source term in both documented locations.
@@ -572,7 +614,7 @@ def parse_bill_status(body: bytes, *, identity: BillIdentity, max_bytes: int = D
     estimates, estimates_outcome = _cbo_cost_estimates(bill)
     return BillStatus(
         identity=identity,
-        schema_version=_required_text(root, "version"),
+        schema_version=schema_version,
         title=_required_text(bill, "title"),
         origin_chamber=_text(bill, "originChamber"),
         introduced_date=_text(bill, "introducedDate"),
@@ -582,8 +624,8 @@ def parse_bill_status(body: bytes, *, identity: BillIdentity, max_bytes: int = D
         latest_action=None if latest is None else _action(latest),
         policy_area=policy_area if policy_area is not None else subject_policy_area,
         subjects=tuple(_required_text(item, "name") for item in _items(subjects, "legislativeSubjects")),
-        summaries=tuple(_summary(item) for item in _items(bill, "summaries", "summary")),
-        actions=tuple(_action(item) for item in _items(bill, "actions")),
+        summaries=tuple(_summary(item) for item in summaries),
+        actions=tuple(_action(item) for item in _action_items(bill, legacy=legacy)),
         sponsors=tuple(
             BillSponsor(_text(item, "bioguideId"), _text(item, "fullName")) for item in _items(bill, "sponsors")
         ),
@@ -592,7 +634,7 @@ def parse_bill_status(body: bytes, *, identity: BillIdentity, max_bytes: int = D
         ),
         text_versions=tuple(_text_version(item, identity) for item in _items(bill, "textVersions")),
         laws=tuple(BillLaw(_text(item, "number"), _text(item, "type")) for item in _items(bill, "laws")),
-        committees=tuple(_committee(item) for item in _items(bill, "committees")),
+        committees=tuple(_committee(item) for item in committees),
         titles=tuple(_title(item) for item in _items(bill, "titles")),
         related_bills=tuple(_related_bill(item) for item in _items(bill, "relatedBills")),
         cbo_cost_estimates=estimates,

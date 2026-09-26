@@ -69,6 +69,9 @@ Congress.gov API serves. Both spellings are read, the live one first.
 ## Supported input and visible failures
 
 - Status parsing checks the requested bill identity and supported XML shape.
+  It reads BILLSTATUS 3.0.0 and the 1.0.0 schema the publisher's user guide
+  documents; 1.0.0 lists recorded votes once for the bill rather than on their
+  actions, so its actions carry none.
 - Text acquisition requires that exact package's source-stated XML link. It
   rechecks the retained status bytes before fetching; edited status fields refuse.
 - Current classic Congressional `bill` and `resolution` XML are supported. The

@@ -70,9 +70,14 @@ name, byte size and SHA-256, and exactly one of `status` or `refusal`.
   exactly; a padded number or a foreign folder is refused, never reinterpreted.
 - **Refused, XML disagrees.** The name and the XML name different bills. This is
   the check that makes the archive evidence rather than a directory listing.
-- **Refused, superseded schema.** The file is BILLSTATUS 1.0.0, which spells the
-  identity `<billType>`/`<billNumber>` and puts `<version>` inside `<bill>`.
-  Only 3.0.0 is read, and the refusal says so by name.
+
+Both schemas the publisher serves parse. BILLSTATUS 1.0.0 -- 13 files across the
+108th-119th Congresses, 11 of them reserved 117th House numbers -- spells the
+identity `<billType>`/`<billNumber>`, puts `<version>` inside `<bill>`, and wraps
+committees, subjects and summaries in `<billCommittees>`, `<billSubjects>` and
+`<billSummaries>`: the names the publisher's user guide still documents. Under
+those names it states the same fields as 3.0.0, and the reader maps them one to
+one ([decision](../decisions.md#billstatus-100-is-read-under-the-guides-names)).
 
 A refused member never ends the read. One unreadable file out of ten thousand is
 one refused row, and `parsed_count` plus `refused_count` always equals

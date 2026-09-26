@@ -210,3 +210,15 @@ reduction cuts whole top-level elements and leaves every other byte as served.
 | `text-119hr3426rfs.xml` | 5,960 | `5d6f1a187c2cdcdcfc3bbe85a97c43d7ddc0ff3e31aed1de0ee6ffab5ef290d3` | [BILLS-119hr3426rfs XML](https://www.govinfo.gov/content/pkg/BILLS-119hr3426rfs/xml/BILLS-119hr3426rfs.xml), complete and unchanged. |
 | `text-119hr3426rhuc.xml` | 6,186 | `47bd0dfabc9b307677edf2d2e083e1c47d69f9e0c95c17b06d163773af410073` | [BILLS-119hr3426rhuc XML](https://www.govinfo.gov/content/pkg/BILLS-119hr3426rhuc/xml/BILLS-119hr3426rhuc.xml), complete and unchanged. |
 | `text-119hr3426rfs2.xml` | 7,367 | `3fc874bcfc32edf4014d8b4a2f6d03c80b1d3bfb55ab2a9d491a44fda69922e8` | [BILLS-119hr3426rfs2 XML](https://www.govinfo.gov/content/pkg/BILLS-119hr3426rfs2/xml/BILLS-119hr3426rfs2.xml), complete and unchanged. |
+
+## BILLSTATUS 1.0.0 (2026-09-26)
+
+Two members of the bulk zips still served in schema 1.0.0, for the reader's
+1.0.0 support (receipt `fork-execution-2026-09-21/bill-family-bulk-2026-09-26/partA/`
+under `~/Work/corpora`). Both are complete and unchanged, extracted from the zips
+read keyless from GovInfo on 2026-09-26.
+
+| Fixture | Bytes | SHA-256 | Source |
+| --- | --- | --- | --- |
+| `status-113hr4200.xml` | 25,948 | `5ded9108df5a08e1a0653f5cdb5cfeb5121c838700100d385ca609098abb78c2` | member `BILLSTATUS-113hr4200.xml` (dated 2024-01-08) of [`BILLSTATUS-113-hr.zip`](https://www.govinfo.gov/bulkdata/BILLSTATUS/113/hr/BILLSTATUS-113-hr.zip) (24,696,449 bytes, `0182b94de536510f06828eb33cdfda80d2cf4efb5d8345bc2799c1d63592bbc5`) |
+| `status-117hr11.xml` | 3,592 | `74bc9641bc42a92238bdd73477c6978e21c45ff7e0c667b35ed67d59a2b2d495` | member `BILLSTATUS-117hr11.xml` (dated 2024-06-11) of [`BILLSTATUS-117-hr.zip`](https://www.govinfo.gov/bulkdata/BILLSTATUS/117/hr/BILLSTATUS-117-hr.zip) (33,733,417 bytes, `658b2d280e4e7972c86bfd810ebff0c9bb61c115b242de8c8774034dea08de03`) |

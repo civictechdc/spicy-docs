@@ -2479,3 +2479,37 @@ the published tables: 119 HR 6644's mixed printing publishes 276 rows against
 the 198 its version row states, so the bill is re-read, and the two
 comparisons published under the first printing's code are no neighbour pair
 any more and retire.
+
+## BILLSTATUS 1.0.0 is read under the guide's names
+
+2026-09-26. The BILLSTATUS bulk zips still serve 13 files in schema 1.0.0 across
+the 108th-119th Congresses: 113 HR 4200, 115 HR 3354 and eleven reserved 117th
+House numbers (2, 9-17, 20). The reader refused them, so spicy-regs' bill family
+held 115 HR 3354 -- an omnibus appropriations bill with 359 actions and three
+printings -- and 113 HR 4200 as list-era rows only, and lacked 117 HR 11
+(receipt `fork-execution-2026-09-21/bill-family-bulk-2026-09-26/partA/` under
+`~/Work/corpora`).
+
+**What 1.0.0 is.** The schema the publisher's user guide still documents. Every
+field the reader returns is there under the guide's name: `<billType>` and
+`<billNumber>` for the identity, `<version>` inside `<bill>`, committees under
+`<committees><billCommittees>`, subjects and their policy area under
+`<subjects><billSubjects>`, summaries under `<summaries><billSummaries><item>`
+with the same children. Actions, sponsors, cosponsors, text versions, laws,
+titles, related bills, CBO estimates and committee reports keep their 3.0.0
+names. `<actions>` also states `<actionTypeCounts>` and `<actionByCounts>`,
+tallies the publisher derives from the items. The element-path inventory of the
+13 against 900 3.0.0 files from the same zips is in the receipt.
+
+**What does not map.** 1.0.0 lists `<recordedVotes>` once for the bill, not on
+the action that took the vote, so its actions carry no recorded votes: 2 votes,
+both on 115 HR 3354. `updateDateIncludingText` and `legislationUrl` are absent
+and read `None`. Nothing else the reader returns differs.
+
+**Checked against Congress.gov.** For each of the 13, the detail record agrees
+on title, introduced date, chamber, policy area, sponsor, latest action and the
+counts of text versions, committees, summaries and committee reports. Where
+counts differ, the API is newer than the file (115 HR 3354's file is from
+2020-05-28; its related bills, titles and display title have since changed; 113
+HR 4200 has since gained a CBO link), counts the policy area among subjects, or
+lists one of the two identical introduction actions (117 HR 2).
