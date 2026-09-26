@@ -20,7 +20,7 @@ rather than buried in control flow.
 | `bill_stage` | `BillStatus.actions` (or action-text strings) and `BillStatus.laws` | `StageFinding` (stage, rule, matcher, action index and date) and `SignedDateFinding` (date, public law number, rule, action code) |
 | `money_bills` | a bill title, its identity, and referral signals from `BillStatus.committees` system codes | `MoneyBillFinding` (kind, subcommittee, fiscal year, rule, reason codes) |
 | `bill_signals` | normalized document text and candidate catalog rows | `ExtractedSignals` (with `title_source`) and ranked `BillMatch` records, each signal reported with its weight and score |
-| `vote_matching` | `BillAction.recorded_votes`, and House vote `legislationType`/`legislationNumber` | `RecordedVoteReferences` (references plus per-entry refusals), a `VoteIndex` with conflicts, and one `VoteMatch` per vote |
+| `vote_matching` | `BillAction.recorded_votes`, House vote `legislationType`/`legislationNumber`, and a `roll_call_votes` row's own `legis_num`/`documents_json`/`amendments_json` | `RecordedVoteReferences` (references plus per-entry refusals), a `VoteFileStatement` per roll call, a `VoteIndex` with conflicts, and one `VoteMatch` per vote |
 | `release_matching` | committee RSS items (title, and description where a feed sends one) and bill identities | one `BillPattern` entry per bill, and `ReleaseMatch` naming the field the mention was found in; mentions are read by `citations`' `bill_number` rule |
 | `member_matching` | a bioguide id, a Senate LIS id or a sponsor display string, the legislators crosswalk, and a `MemberIndex` built once from published member rows | `MemberMatch` (bioguide, rule, score) |
 | `interest_areas` | a reader's keyword list and parsed bill sections | `SectionMatch` (excerpt, area, matched keywords, rule, relevance) |
@@ -76,6 +76,9 @@ old outcome beside the new one.
 - **Vote matching reads structured references.** The regex over vote question
   text could not match any Senate bill. `recordedVotes` on the bill's own action
   is the join, and the House vote route states the legislation in two fields.
+  A vote file also states its own measure; `read_vote_file_statement` links it
+  under `vote_file_legislation` (see the source guide's "Bill link from the vote
+  file").
 - **Release matching reads a mention once per field**, with the shared
   `bill_number` citation rule, and looks the number up exactly as written. The
   source rebuilt a pattern per (release, bill) pair and offered the bare number

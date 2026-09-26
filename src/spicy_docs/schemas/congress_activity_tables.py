@@ -144,8 +144,15 @@ ROLL_CALL_VOTES = table_contract(
             "Candidate elections keep literal choice labels here and leave the four ordinary tally columns NULL."
         ),
         "member_vote_count": "How many member positions the file carried; the member_votes row count for this roll call.",
-        "bill_id": "The bill this roll call refers to, from a recorded-vote reference or a vote-list reference.",
-        "match_rule": "Which vote-matching rule named that bill, including unmatched.",
+        "bill_id": (
+            "The bill this roll call refers to: from a bill action's recorded-vote reference, a vote-list reference, "
+            "or the vote file's own statement of its measure."
+        ),
+        "match_rule": (
+            "Which vote-matching rule named that bill: bill_action_recorded_vote (the bill's own action records this "
+            "roll call), house_vote_legislation (Congress.gov's House vote list), vote_file_legislation (the vote file "
+            "names the bill: the Clerk's legis-num, or the Senate's document or amended document), or unmatched."
+        ),
         "match_action_index": "Position of the action whose recordedVote named this roll call, where one did.",
         "match_url": "The reference URL the match was read from.",
         "conflict_count": "How many later references disagreed with the one that won; kept, never dropped.",
@@ -157,6 +164,11 @@ ROLL_CALL_VOTES = table_contract(
             "vote_date does not and is never the UTC day of a Congress.gov recordedVotes date; NULL where the file "
             "prints no date, on linkage-only rows, and on rows published before this column until a host backfills "
             "them."
+        ),
+        "legis_num": (
+            "The Clerk's own legis-num as the House vote file states it (H R 3354, H RES 682, QUORUM); empty when a "
+            "captured Clerk file states none; NULL on Senate rows, linkage-only rows and House rows captured before "
+            "this column."
         ),
     },
 )
@@ -414,6 +426,7 @@ def shape_roll_call_vote(
         "documents_json": documents_json,
         "amendments_json": amendments_json,
         "vote_day": getattr(vote, "day", None) if vote_date in (None, getattr(vote, "date", None)) else None,
+        "legis_num": (getattr(vote, "legis_num", None) or "") if getattr(vote, "publisher", None) == "clerk" else None,
     }
 
 

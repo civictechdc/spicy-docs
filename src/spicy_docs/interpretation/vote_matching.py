@@ -1,8 +1,9 @@
 """Join a roll-call vote to the bill it was taken on, from structured references only.
 
 Reads the ``recordedVotes`` entries the publisher attaches to a bill's own
-actions and the ``legislationType``/``legislationNumber`` fields the House vote
-route states for a roll call, and returns a ``VoteMatch`` per vote naming the
+actions, the ``legislationType``/``legislationNumber`` fields the House vote
+route states for a roll call, and the measure a vote file states for itself
+(``read_vote_file_statement``), and returns a ``VoteMatch`` per vote naming the
 bill, the rule that supplied it and the publisher URL the reference carried.
 This replaces a regex over prose that made the Senate branch unreachable and
 left every Senate vote silently unmatched: a recorded vote sits on the bill's
@@ -15,9 +16,12 @@ and a malformed entry costs that entry, not the bill:
 
 from __future__ import annotations
 
+import json
+import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
+from typing import Literal
 
 from spicy_docs.sources.congress.bill_status import BILL_TYPES, BillIdentity
 
@@ -35,7 +39,28 @@ _SNAKE: Mapping[str, str] = MappingProxyType(
 )
 VOTE_CHAMBERS = frozenset({"house", "senate"})
 
-VOTE_MATCH_RULES: tuple[str, ...] = ("bill_action_recorded_vote", "house_vote_legislation", "unmatched")
+VOTE_FILE_RULE = "vote_file_legislation"
+VOTE_MATCH_RULES: tuple[str, ...] = (
+    "bill_action_recorded_vote",
+    "house_vote_legislation",
+    VOTE_FILE_RULE,
+    "unmatched",
+)
+
+# What a vote file states about its measure, measured 2026-09-26 over every
+# Clerk index row of the 108th-118th (14,774; the index's Issue cell carries
+# the file's legis-num), every 108th Clerk and Senate file (1,895) and the
+# published 119th Senate rows (903). The Clerk's legis-num is a bill (``H R
+# 3354``, ``H RES 682``, ``S J RES 1`` ...), one of four procedural words, or
+# absent (Speaker elections). A Senate document is a bill (``H.R.``, ``S.Res.``
+# ...), a nomination (``PN``), a treaty (``Treaty Doc.``), an amendment listed
+# en bloc (``S.Amdt.``) or empty; an amendment vote leaves it empty and names
+# the amended measure in ``amendment_to_document_number`` (``H.R. 2555``).
+_CLERK_PROCEDURAL = frozenset({"ADJOURN", "JOURNAL", "MOTION", "QUORUM"})
+_SENATE_NON_BILL_DOCUMENTS = frozenset({"PN", "Treaty Doc.", "S.Amdt."})
+_STATED_MEASURE = re.compile(r"(?P<type>[A-Za-z][A-Za-z. ]*?)\s*(?P<number>[1-9][0-9]*)")
+
+type VoteFileStatus = Literal["bill", "none", "not_a_bill", "several", "unrecognized"]
 
 
 class VoteMatchError(ValueError):
@@ -257,6 +282,119 @@ def index_vote_references(references: Iterable[VoteReference]) -> VoteIndex:
     return VoteIndex(by_vote=by_vote, conflicts=tuple(conflicts))
 
 
+@dataclass(frozen=True, slots=True)
+class VoteFileStatement:
+    """What one roll call's own file states about its measure, and the bill link that supports, if any.
+
+    ``status`` is ``bill`` only with a ``reference``. ``none``: the file states
+    no measure. ``not_a_bill``: a procedural question, a nomination, a treaty or
+    an amendment to one. ``several``: more than one bill, so no one of them is
+    the vote's. ``unrecognized``: a spelling outside the measured vocabulary,
+    kept in ``statement`` for review. None of the last four links anything.
+    """
+
+    status: VoteFileStatus
+    statement: str | None
+    reference: VoteReference | None = None
+
+
+def _stated_bill(literal: str, congress: int) -> BillIdentity | None:
+    """``H R 3354`` or ``H.R. 2555`` as a bill of ``congress``; ``None`` for anything else."""
+    match = _STATED_MEASURE.fullmatch(literal.strip())
+    if match is None:
+        return None
+    try:
+        bill_type = bill_type_of(match["type"])
+    except VoteMatchError:
+        return None
+    return BillIdentity(congress=congress, bill_type=bill_type, number=int(match["number"]))
+
+
+def _json_list(value: object) -> list[Mapping[str, object]]:
+    if value is None:
+        return []
+    items = json.loads(value) if isinstance(value, str) else value
+    if not isinstance(items, list) or not all(isinstance(item, Mapping) for item in items):
+        raise VoteMatchError("a vote file's documents and amendments must be lists of objects")
+    return items
+
+
+def _senate_statement(key: VoteKey, documents: list[Mapping[str, object]], amendments: list[Mapping[str, object]]):
+    bills: dict[BillIdentity, str] = {}
+    other: list[str] = []
+    for document in documents:
+        kind, number = document.get("type"), document.get("number")
+        if not kind:
+            continue
+        literal = f"{kind} {number or ''}".strip()
+        if kind in _SENATE_NON_BILL_DOCUMENTS:
+            other.append(literal)
+            continue
+        stated = document.get("congress")
+        bill = _stated_bill(literal, int(stated) if stated not in (None, "") else key.congress)
+        if bill is None:
+            return "unrecognized", literal, None
+        bills.setdefault(bill, literal)
+    if not bills and not other:
+        # An amendment vote's document is empty; the amendment names the measure it amends.
+        for amendment in amendments:
+            literal = amendment.get("to_document_number")
+            if not literal:
+                continue
+            bill = _stated_bill(str(literal), key.congress)
+            if bill is None:
+                other.append(f"amendment to {literal}")
+            else:
+                bills.setdefault(bill, f"amendment to {literal}")
+    if len(bills) > 1:
+        return "several", "; ".join(bills.values()), None
+    if bills:
+        [(bill, literal)] = bills.items()
+        return "bill", literal, bill
+    if other:
+        return "not_a_bill", "; ".join(other), None
+    return "none", None, None
+
+
+def read_vote_file_statement(row: Mapping[str, object]) -> VoteFileStatement:
+    """The bill one ``roll_call_votes`` row's own file names, read from the row's native columns alone.
+
+    House: the Clerk's ``legis_num``, a bill of the vote's own Congress. Senate:
+    the one bill its ``documents_json`` names (the document's own Congress where
+    stated, else the vote's), or, when the documents name nothing, the one bill
+    its amendments amend. Reading the published columns rather than the file
+    lets a held row be relinked without fetching it again. The reference is
+    ``VOTE_FILE_RULE`` with the row's own ``source_url`` and no action index.
+    """
+    key = VoteKey(
+        congress=_required_int(row.get("congress"), "congress"),
+        chamber=_required_str(row.get("chamber"), "chamber"),
+        session=_required_int(row.get("session"), "session"),
+        roll_number=_required_int(row.get("roll_number"), "roll_number"),
+    )
+    if key.chamber == "house":
+        literal = (row.get("legis_num") or "").strip()
+        if not literal:
+            status, bill = "none", None
+        elif literal.upper() in _CLERK_PROCEDURAL:
+            status, bill = "not_a_bill", None
+        else:
+            bill = _stated_bill(literal, key.congress)
+            status = "bill" if bill is not None else "unrecognized"
+        statement = literal or None
+    else:
+        status, statement, bill = _senate_statement(
+            key, _json_list(row.get("documents_json")), _json_list(row.get("amendments_json"))
+        )
+    if bill is None:
+        return VoteFileStatement(status, statement)
+    url = row.get("source_url")
+    reference = VoteReference(
+        vote=key, bill=bill, rule=VOTE_FILE_RULE, url=url if isinstance(url, str) else None, date=None
+    )
+    return VoteFileStatement("bill", statement, reference)
+
+
 def match_votes(votes: Iterable[VoteKey], index: VoteIndex) -> tuple[VoteMatch, ...]:
     """Look each vote up by its publisher identity; O(votes) with no regular expressions."""
     matches: list[VoteMatch] = []
@@ -272,8 +410,10 @@ def match_votes(votes: Iterable[VoteKey], index: VoteIndex) -> tuple[VoteMatch, 
 __all__ = [
     "RECORDED_VOTE_FIELDS",
     "VOTE_CHAMBERS",
+    "VOTE_FILE_RULE",
     "VOTE_MATCH_RULES",
     "RecordedVoteReferences",
+    "VoteFileStatement",
     "VoteIndex",
     "VoteKey",
     "VoteMatch",
@@ -286,6 +426,7 @@ __all__ = [
     "match_votes",
     "read_house_vote_key",
     "read_recorded_vote",
+    "read_vote_file_statement",
     "read_vote_key",
     "recorded_vote_references",
 ]

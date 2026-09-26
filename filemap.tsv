@@ -630,6 +630,7 @@ tests/test_usitc_edis_bulk.py	A retained EDIS index binds every ZIP PDF to expec
 tests/test_uslm_acquisition.py	USLM source requests preserve exact responses, bounds and refusal evidence.	test
 tests/test_uslm_bill_renditions.py	Pin the five-package USLM bill-rendition measurement (gap B7's proof).	test
 tests/test_uslm_capture_example.py	The runnable USLM capture example retains exact bytes and truthful failure evidence.	test
+tests/test_vote_file_statements.py	A roll call's link to a bill from its own file: the Clerk's legis-num, the Senate's document or amended document.	test
 tests/test_walled_fetch.py	The walled fetch ladder: rung order, wall escalation, absence short-circuit, and scrubbed exhaustion.	test
 tests/test_xml_observations.py	Current-element capture matches the ancestry snapshot without copying it.	test
 tests/test_zip_archive.py	Expansion refusals happen before CRC decompression, even for ignored entries.	test

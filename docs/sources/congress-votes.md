@@ -131,10 +131,9 @@ totals blocks, and every `recorded-vote`:
 | `member/lis_member_id` | | `MemberVote.lis_id`, and `.bioguide_id` when a crosswalk resolves it |
 
 `document`/`amendment` are kept verbatim as the publisher's own statement of
-what the vote was on; matching either to a Congress.gov bill or nomination
-record is `vote_matching`'s job (the data map's `senate-vote→document`
-edge), not this reader's -- the Clerk's own bill linkage stays on
-`legis_num`, unchanged.
+what the vote was on; matching either to a bill is `vote_matching`'s job (see
+"Bill link from the vote file"), not this reader's -- the Clerk's own
+statement stays on `legis_num`, unchanged.
 
 `RollCallVote.chamber` is always the normalized `"house"`/`"senate"`; a
 Clerk-only field is `None`/`()` on a Senate record and vice versa.
@@ -439,6 +438,37 @@ columns NULL for candidate elections. Legacy rows without the appended
 column remain distinguishable from newly captured records. See the
 [retained Speaker fixture](../../tests/fixtures/congress_votes/README.md#candidate-election-fixture)
 for the exact source bytes and measured counts supporting this branch.
+
+## Bill link from the vote file
+
+`roll_call_votes.legis_num` keeps the Clerk's literal `legis-num` (empty when
+a captured Clerk file states none, NULL on Senate rows and on House rows
+captured before the column), beside the Senate's `documents_json` and
+`amendments_json`. `vote_matching.read_vote_file_statement(row)` reads those
+columns alone, so a held row relinks without fetching its file again, and
+returns a `VoteFileStatement`:
+
+| Chamber | The file states | Link |
+| --- | --- | --- |
+| House | `legis-num` `H R #`, `H RES #`, `H J RES #`, `H CON RES #`, `S #`, `S RES #`, `S J RES #`, `S CON RES #` | that bill of the vote's Congress |
+| House | `QUORUM`, `JOURNAL`, `ADJOURN`, `MOTION` | none (`not_a_bill`) |
+| House | no `legis-num` (Speaker elections) | none (`none`) |
+| Senate | one bill document (`H.R.`, `S.`, `S.Res.`, `H.J.Res.` ...) | that bill; the document's own Congress where stated, else the vote's |
+| Senate | an empty document and an amendment to one bill (`amendment_to_document_number` `H.R. 2555`) | the amended bill |
+| Senate | nominations (`PN`), treaties (`Treaty Doc.`), en bloc amendments (`S.Amdt.`) | none (`not_a_bill`) |
+| Senate | two or more different bills | none (`several`) |
+| Either | any other spelling | none (`unrecognized`, kept in `statement`) |
+
+The link's rule is `vote_file_legislation`, its URL the vote's own
+`source_url`, and it has no action index. The vocabulary above is measured
+2026-09-26 over every Clerk index row of the 108th-118th (14,774), every 108th
+Clerk and Senate file (1,895) and the published 119th rows (1,579); no
+statement fell outside it. Against the bill actions' recorded references on
+the 108th and 119th, the files agreed on 1,803 of the 1,809 roll calls both
+link, and linked 881 more. The six are Senate passages of a House bill after
+its Senate twin (108-1-225, -350, -437; 108-2-94, -184, -185): both bills'
+actions record the vote and the file names the House bill. Receipt:
+`~/Work/corpora/fork-execution-2026-09-21/votes-backfill-2026-09-26/file-links/`.
 
 ## Votes naming several documents or amendments
 
