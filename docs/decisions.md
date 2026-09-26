@@ -1233,15 +1233,43 @@ What a later change must preserve:
   four-digit-year shape, which is what ends a list at a note's own numbers
   (`FRL-8231-8`). What follows is read with the prose reader's docket
   grammar, except a number another system's label counts (`File No.`,
-  `CIS No.`) and a former identifier (`formerly X`). Until 2026-09-26 the
-  reader never searched: over the rulemaking build's `fr_docket_links` the
-  walk read 5,389 of the 5,825 link rows naming a held docket in full and
-  67 in part, and left 369 open on prose (`Public Notice:`, `FAR Case
-  2017-014, Docket No. X`). The owner reversed that after the rulemaking
-  drift audit found 442 (FR document, held docket) pairs missed, 175 from
-  action documents; the prose reading gains 465 such pairs, 421 of the 442,
-  and loses one former docket. The docstring carries the measurement and
-  what the fences cost.
+  `CIS No.`) and a former identifier (`formerly X`); a docket a space broke
+  after a hyphen (`EPA- HQ-OAR-2023-0119`) is read whole and as its tail.
+  Until 2026-09-26 the reader never searched: over the rulemaking build's
+  `fr_docket_links` the walk read 5,389 of the 5,825 link rows naming a held
+  docket in full and 67 in part, and left 369 open on prose (`Public
+  Notice:`, `FAR Case 2017-014, Docket No. X`). The owner reversed that after
+  the rulemaking drift audit found 442 (FR document, held docket) pairs
+  missed, 175 from action documents; the reader now gains 490 such pairs,
+  432 of the 442, and loses one former docket. The docstring carries the
+  measurement.
+- **The other-label fence has a closed exception, by the owner's ruling.**
+  Four counted labels were measured fronting Regulations.gov dockets rather
+  than another system's numbers, and are not fenced: `DHS No.` (5 link rows),
+  `FRA Waiver Petition No.` (4), `Administrative Record No.` (1) and `Legacy
+  ID` (1), the 11 held pairs (7 from action documents) the fence cost. What
+  follows them is still read only with the prose reader's docket grammar.
+  A new label joins the list only on the same kind of measurement.
+- **A label's counter word ends at a word boundary or its own period.**
+  Unfenced, it took the head of the next word (`Docket NOAA-NOS-2024-0104`
+  read as `AA-NOS-2024-0104`; a value opening `Notice-MVC-2015-01` as
+  `TICE-MVC-2015-01`). Over the audit's values four plural answers moved
+  (three `Notice-…` values and `NOP-13-01`), none a held docket, and the
+  single and prose readers' answers did not change, so no citation version
+  moved.
+- **Limits left in place, counted 2026-09-26 over the audit's 612,342
+  docket values** (receipt `~/Work/corpora/fork-execution-2026-09-21/
+  drift-qualification-2026-09-26/regulatory/d1d2-fix/limits.json`). The
+  column shape reads another system's number of docket shape as a docket:
+  EPA Federal Register locators (`FRL-8241-1`: 36,601 values, 37,196 link
+  rows, nearly all read
+  whole by the single reader), AMS dairy document numbers (`DA-00-05`: 224
+  values) and NRC enforcement actions (`EA-18-130`: 282 values). The FERC
+  fence is keyed on prefix, year and sequence, so FERC's year-less
+  interlocking-directorate filings (`ID-3467-000`: 299 values, 317 link rows)
+  read as dockets. None of these readings is a held docket, so a join on held
+  dockets drops them. `numbering_system` also answers a Regulations.gov
+  docket for them, because the docket shape answers first.
 - **The RIN key stays `\d{4}-[A-Z]{2}\d{2}`, written once.**
   `identifier_shapes.PUBLISHED_RIN` and `published_rin` are the only published
   key shape; `document_citations.rin` and `communication_rin` key through them.

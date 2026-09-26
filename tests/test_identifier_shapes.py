@@ -1837,6 +1837,43 @@ def test_a_former_identifier_is_not_read(reference: str, dockets: tuple[str, ...
     assert normalize_docket_references(reference) == dockets
 
 
+@pytest.mark.parametrize(
+    ("reference", "dockets"),
+    [
+        # A docket a space broke after a hyphen is read whole, before its tail.
+        ("EPA- HQ-OAR-2023-0119", ("EPA-HQ-OAR-2023-0119", "HQ-OAR-2023-0119")),
+        ("Docket No. FWS-R8- ES-2014-0039", ("FWS-R8-ES-2014-0039", "ES-2014-0039")),
+        (
+            "EPA-HQ-SFUND-1989-0007, EPA-HQ- OLEM-2018-0253, 0580",
+            ("EPA-HQ-SFUND-1989-0007", "EPA-HQ-OLEM-2018-0253", "OLEM-2018-0253"),
+        ),
+        # A department in front of its agency's docket has the same shape: both are offered.
+        ("Docket No. DOT- NHTSA-2022-0008", ("DOT-NHTSA-2022-0008", "NHTSA-2022-0008")),
+        # A head that repeats the tail's organization is a false start.
+        ("DHS Docket No. USCIS- USCIS-2021-0014", ("USCIS-2021-0014",)),
+        ("EPA-HQ- EPA-HQ-OAR-2024-0345", ("EPA-HQ-OAR-2024-0345",)),
+    ],
+)
+def test_a_docket_broken_after_a_hyphen_is_read_whole_and_as_its_tail(reference: str, dockets: tuple[str, ...]) -> None:
+    """The joined form is never dropped for its truncated tail, and a false start joins nothing."""
+    assert normalize_docket_references(reference) == dockets
+
+
+@pytest.mark.parametrize(
+    ("reference", "docket"),
+    [
+        ("DHS No. ICEB-2008-0004", "ICEB-2008-0004"),
+        ("FRA Waiver Petition No. FRA-2000-7054", "FRA-2000-7054"),
+        ("Administrative Record No. OSM-2010-0010", "OSM-2010-0010"),
+        ("Legacy ID DHS-2005-0006", "DHS-2005-0006"),
+    ],
+)
+def test_the_labels_measured_fronting_dockets_are_not_another_systems(reference: str, docket: str) -> None:
+    """The fence's closed exception: these four labels number Regulations.gov dockets."""
+    assert normalize_docket_references(reference) == (docket,)
+    assert normalize_docket_references(reference.replace(docket, "12-345")) == ()  # still only a docket's shape
+
+
 def test_a_counter_word_ends_at_a_word_boundary_or_its_period() -> None:
     """ "NO" is the head of NOAA, "No" of Notice and NOP: a counter word ends at a word, not inside one.
 
@@ -1875,6 +1912,7 @@ def _best_of_three(read, text: str) -> float:
         lambda n: "File No. SR-X-2010-001 " * n,
         lambda n: "FAR Case 2017-014, Docket No. FAR-2017-0014, " * n,
         lambda n: "(formerly X-2010-0001) " * n,
+        lambda n: "EPA- HQ-OAR-2010-0001, " * n,  # a head read back from every broken docket
         lambda n: "File Nos. " + ", ".join(f"SR-X-2010-{i:03d}" for i in range(n)),
     ],
 )

@@ -1449,6 +1449,17 @@ _COUNTED_LABEL = re.compile(
 #: A docket noun among a counted label's words makes it a docket's label
 #: ("Docket FAA No.", "E-Docket ID No.", "eDocket Number", "Dkt. No.").
 _DOCKET_NOUN = re.compile(r"(?:\be-?|\b)(?:dockets?|docs?|dkt)\b", re.IGNORECASE)
+#: The counted labels measured fronting Regulations.gov dockets, not another
+#: system's numbers, and so no fence: "DHS No. ICEB-2008-0004" (5 link rows),
+#: "FRA Waiver Petition No. FRA-2000-7054" (4), "Administrative Record No.
+#: OSM-2010-0010" (1) and "Legacy ID DHS-2005-0006" (1) -- the 11 held pairs,
+#: 7 of them from action documents, that the fence cost when it was drawn
+#: (drift audit 2026-09-26, owner's ruling). A closed list, as the fence's
+#: exception must be: what follows these labels is still read only with the
+#: prose reader's docket grammar.
+_DOCKET_FRONTING_LABEL = re.compile(
+    r"(?:^|\s)(?:DHS|Legacy|Administrative\s+Record|FRA\s+Waiver\s+Petition)\s+$", re.IGNORECASE
+)
 #: What a label numbers: its first token and the tokens one space joins to it
 #: ("File No. SR-LCH SA-2017-006"), up to punctuation, a conjunction or a
 #: docket noun.
@@ -1526,7 +1537,12 @@ def _numbered_by_other_labels(text: str) -> list[tuple[int, int]]:
     position = 0
     while (label := _COUNTED_LABEL.search(text, position)) is not None:
         position = label.end()
-        if _DOCKET_NOUN.search(label.group("words")) or (number := _LABELLED_NUMBER.match(text, position)) is None:
+        words = label.group("words")
+        if (
+            _DOCKET_NOUN.search(words)
+            or _DOCKET_FRONTING_LABEL.search(words)
+            or (number := _LABELLED_NUMBER.match(text, position)) is None
+        ):
             continue
         organization = _organization(number.group(0)).upper()
         end = number.end()
@@ -1569,7 +1585,47 @@ def _read_in_prose(text: str, start: int) -> list[tuple[int, str]]:
     if unlabelled:
         unlabelled = _outside(_numbered_by_other_labels(text), unlabelled)
     kept = sorted([*unlabelled, *((match.start("value"), match.group("value")) for match in labelled.values())])
-    return [(at, docket) for at, value in kept if (docket := normalize_docket_reference(value)) is not None]
+    found: list[tuple[int, str]] = []
+    for at, value in kept:
+        if (docket := normalize_docket_reference(value)) is None:
+            continue
+        if (joined := _joined_across_a_break(text, at, value)) is not None:
+            found.append(joined)
+        found.append((at, docket))
+    return found
+
+
+def _joined_across_a_break(text: str, at: int, value: str) -> tuple[int, str] | None:
+    """The docket a space broke after a hyphen, read whole ("EPA- HQ-OAR-2023-0119"), or ``None``.
+
+    Offered before the tail, never instead of it: shape cannot tell a broken
+    identifier (EPA-HQ-OAR-2023-0119) from a department written in front of
+    its agency's docket ("DOT- NHTSA-2022-0008", where NHTSA-2022-0008 is the
+    docket), so both are read and the join decides. A head that repeats the
+    tail's organization is a false start, not half an identifier ("USCIS-
+    USCIS-2021-0014", "EPA-HQ- EPA-HQ-OAR-2024-0345"), and adds nothing.
+    Measured 2026-09-26 over the drift audit's values (receipt
+    ``fork-execution-2026-09-21/drift-qualification-2026-09-26/regulatory/d1d2-fix``,
+    ``measure_broken_ids.py``): 14 (FR document, held docket) pairs gained,
+    none lost, one unheld reading added, DOT-NHTSA-2022-0008. Joining the
+    false starts too adds seven more unheld readings; reading the joined form
+    instead of the tail loses eight held pairs, seven of them false starts
+    and the eighth NHTSA-2022-0008.
+    """
+
+    head_end = at
+    while head_end > 0 and text[head_end - 1].isspace():
+        head_end -= 1
+    if head_end == at or head_end == 0 or text[head_end - 1] != "-":
+        return None
+    head_start = head_end
+    while head_start > 0 and (text[head_start - 1].isalnum() or text[head_start - 1] in "_-"):
+        head_start -= 1
+    head = text[head_start:head_end]
+    if _organization(head).upper() == _organization(value).upper() or not _DOCKET_BARE.fullmatch(head + value):
+        return None
+    docket = normalize_docket_reference(head + value)
+    return None if docket is None else (head_start, docket)
 
 
 def _former_names(text: str) -> list[tuple[int, int]]:
@@ -1618,24 +1674,30 @@ def normalize_docket_references(reference: object) -> tuple[str, ...]:
       "Document Identifier", "CIS No.") a bare docket shape, and a list of its
       organization's, is that system's number. Without the fence the search
       reads 11,572 more values that name no held docket, 11,184 of them
-      exchange rule filings ("File No. SR-Amex-2003-102"); it costs 11 pairs
-      whose agency writes the docket behind its own label ("DHS No.
-      ICEB-2008-0004", "FRA Waiver Petition No. FRA-2000-7054").
+      exchange rule filings ("File No. SR-Amex-2003-102"). Four labels
+      measured fronting Regulations.gov dockets are not fenced
+      (:data:`_DOCKET_FRONTING_LABEL`: "DHS No.", "FRA Waiver Petition No.",
+      "Administrative Record No.", "Legacy ID"); fenced, they cost 11 held
+      pairs, 7 from action documents, and the fence now costs none.
     - **A former identifier is not named.** "formerly" fences the first
       identifier after it, and inside parentheses the rest of the
       parenthetical ("X (formerly Y)", "(Formerly Docket Nos. Y and Z)"): 20
       pairs, each a docket the document once went by. One of them the walk
       read, and no longer does: "Formerly Docket FDA-2008-N-0041".
 
+    A docket a space broke after a hyphen ("EPA- HQ-OAR-2023-0119") is also
+    read whole, before its tail (:func:`_joined_across_a_break`).
+
     Measured 2026-09-26 over the audit's 612,342 distinct ``fr_docket_links``
     values against the dockets table (receipt
     ``fork-execution-2026-09-21/drift-qualification-2026-09-26/regulatory/d1d2-fix``):
-    506 answers change, 433 values are read that were not (323 naming a held
-    docket, 110 naming none), and 465 (FR document, held docket) pairs are
-    gained, 421 of the audit's 442 among them. The 21 still missed are the
-    label fence's 11, nine dockets with a two-digit year in unlabelled prose
-    ("Document No. DA-11-03: AMS-DA-08-0050"), where it is a report number's
-    silhouette, and one behind a stray hyphen.
+    519 answers change, 442 values are read that were not (345 naming a held
+    docket, 97 naming none), and 490 (FR document, held docket) pairs are
+    gained, 432 of the audit's 442 among them; the one pair lost is the
+    former docket above. The 10 still missed are nine dockets with a
+    two-digit year in unlabelled prose ("Document No. DA-11-03:
+    AMS-DA-08-0050"), where it is a report number's silhouette, and one
+    behind a stray hyphen ("-EPA-HQ-OLEM-2021-0815").
     """
 
     whole = normalize_docket_reference(reference)
