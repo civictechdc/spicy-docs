@@ -31,7 +31,9 @@ BILL_VERSIONS = table_contract(
     version_column="version_date",
     columns={
         "bill_id": "The bill this printing belongs to.",
-        "version_code": "The sealed version-code slug BillTrax stores and this repository never renames.",
+        "version_code": (
+            "The printing's code: its stage's sealed slug, or a numbered reprint's own package suffix (eas2)."
+        ),
         "source": "Which acquisition path supplied this row (govinfo, congress, govinfo-pdf, upload).",
         "label": "The publisher's version-type string verbatim, which is not unique per printing.",
         "version_date": "The publisher's date for this printing; the merge prefers the larger value.",

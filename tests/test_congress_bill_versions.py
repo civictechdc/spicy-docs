@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 
 from spicy_docs.interpretation.version_kind import VersionKindFinding, version_kind, version_kind_finding
-from spicy_docs.sources.congress.bill_status import BillIdentity, BillTextFormat, parse_bill_status
+from spicy_docs.sources.congress.bill_status import BillIdentity, BillTextFormat, BillTextVersion, parse_bill_status
 from spicy_docs.sources.congress.bill_versions import (
     DEFAULT_FORMAT_PREFERENCE,
     VERSION_CODES,
@@ -26,6 +26,7 @@ from spicy_docs.sources.congress.bill_versions import (
     consecutive_pairs,
     govinfo_suffix,
     printing_order,
+    printing_version_code,
     slugify,
     version_slug,
     version_slug_reprints,
@@ -672,3 +673,70 @@ def test_a_dateless_printing_whose_slug_states_no_stage_pairs_with_nothing() -> 
     printings = [("introduced-in-house", "2025-02-05"), ("rfs", ""), ("engrossed-in-house", "2025-04-07")]
     assert printing_order(printings)[0] == 1, "it keeps the first place an empty date had"
     assert consecutive_pairs(printings) == [(0, 2)]
+
+
+# ---------------------------------------------------------------------------
+# Printing identity: a numbered reprint the publisher addresses by package is its own printing.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("fixture", "identity", "codes"),
+    [
+        (
+            "status-119hr6644.xml",
+            BillIdentity(119, "hr", 6644),
+            [
+                "enrolled-bill",
+                "eas2",
+                "engrossed-amendment-house",
+                "engrossed-amendment-senate",
+                "placed-on-calendar-senate",
+                "engrossed-in-house",
+                "reported-in-house",
+                "introduced-in-house",
+                "public-law",
+            ],
+        ),
+        (
+            "status-119hr3426.xml",
+            BillIdentity(119, "hr", 3426),
+            [
+                "rfs2",
+                "returned-to-the-house-by-unanimous-consent",
+                "rfs",
+                "engrossed-in-house",
+                "reported-in-house",
+                "introduced-in-house",
+            ],
+        ),
+        ("status-118hr7643.xml", BillIdentity(118, "hr", 7643), ["rh2", "reported-in-house", "introduced-in-house"]),
+    ],
+)
+def test_a_numbered_reprint_carries_its_own_package_suffix(fixture, identity, codes) -> None:
+    status = parse_bill_status((FIXTURES / fixture).read_bytes(), identity=identity)
+    assert [printing_version_code(version) for version in status.text_versions] == codes
+    assert len(set(codes)) == len(codes), "every listed printing has its own identity"
+    by_slug = [version_slug(version.type) for version in status.text_versions]
+    assert len(set(by_slug)) < len(by_slug), "the name-derived slug gives two printings one identity"
+
+
+@pytest.mark.parametrize(
+    ("version_type", "package_id", "code"),
+    [
+        ("Engrossed Amendment Senate", "BILLS-119hr6644eas", "engrossed-amendment-senate"),
+        ("Engrossed Amendment Senate", "BILLS-119hr6644eas12", "eas12"),
+        ("Engrossed Amendment Senate", "BILLS-119hr6644eas1", "engrossed-amendment-senate"),
+        ("Engrossed Amendment Senate", None, "engrossed-amendment-senate"),
+        ("Engrossed Amendment Senate", "BILLS-119hr6644eah2", "engrossed-amendment-senate"),
+        ("Engrossed in House", "BILLS-119hr3426eh1s", "engrossed-in-house"),
+        ("Public Law", "BILLS-119hr6644enr", "public-law"),
+        ("Private Law", "BILLS-119hr6644enr", "private-law"),
+    ],
+)
+def test_only_a_stated_ordinal_of_two_or_more_on_the_stages_own_suffix_moves_the_code(
+    version_type, package_id, code
+) -> None:
+    """An original, an unnumbered or differently numbered printing, and an unstated package keep the slug."""
+    version = BillTextVersion(type=version_type, date=None, formats=(), package_id=package_id)
+    assert printing_version_code(version) == code

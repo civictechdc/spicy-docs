@@ -193,15 +193,17 @@ leaves every other byte as served. All were read keyless from GovInfo on
 
 ## Numbered reprints (2026-09-26)
 
-A bill that lists one printing stage twice, for the family's refusal of a
-repeated printing (receipt
+Bills that list one printing stage twice, for `printing_version_code` and the
+family's refusal of a repeated printing (receipt
 `fork-execution-2026-09-21/repeated-printings-2026-09-26/` under
-`~/Work/corpora`). All were read keyless from GovInfo on 2026-09-26 (UTC) and
-are complete and unchanged.
+`~/Work/corpora`). All were read keyless from GovInfo on 2026-09-26 (UTC); the
+reduction cuts whole top-level elements and leaves every other byte as served.
 
 | Fixture | Bytes | SHA-256 | Publisher response and changes |
 | --- | --- | --- | --- |
+| `status-119hr6644.xml` | 5,260 | `3187a3065e81a6482fecfd15469f603893ff1d169319a544150a9cfb06d73be7` | [119 HR 6644 BILLSTATUS](https://www.govinfo.gov/bulkdata/BILLSTATUS/119/hr/BILLSTATUS-119hr6644.xml) (392,891 bytes, `3e9738b7369ba583098a221fb84f38ea26ae03b0f647e4ccaeff16c4f045db8a`, Last-Modified 2026-09-25 16:34:18 GMT). Reduced: the top-level `constitutionalAuthorityStatementText`, `committees`, `committeeReports`, `relatedBills`, `actions`, `cosponsors`, `cboCostEstimates`, `subjects`, `summaries`, `titles` and `amendments` elements are cut; `textVersions` is byte-identical, with `eas` (2026-03-12) and `eas2` (2026-06-22) both typed "Engrossed Amendment Senate". |
 | `status-119hr3426.xml` | 24,161 | `def222e997018709ce12ecdea282e2a30049e7f3f0a41d33d0d7e93c11b35f85` | [119 HR 3426 BILLSTATUS](https://www.govinfo.gov/bulkdata/BILLSTATUS/119/hr/BILLSTATUS-119hr3426.xml), complete and unchanged (Last-Modified 2026-09-08 21:21:33 GMT): referred to the Senate as `rfs`, returned to the House by unanimous consent, and referred again as `rfs2`; its engrossed printing is `eh1s`. |
+| `status-118hr7643.xml` | 20,820 | `0cb0ebd7b9714792cece8813fdc69feeb21c67ea520fd6cf8d158c8b19f06508` | [118 HR 7643 BILLSTATUS](https://www.govinfo.gov/bulkdata/BILLSTATUS/118/hr/BILLSTATUS-118hr7643.xml), complete and unchanged (Last-Modified 2025-05-28 21:04:24 GMT): reported as `rh` and again as `rh2`. |
 | `text-119hr3426ih.xml` | 5,854 | `7498eedf63ea53add8466064b949635dc6691336ead69405af3b1bef8467ad2c` | [BILLS-119hr3426ih XML](https://www.govinfo.gov/content/pkg/BILLS-119hr3426ih/xml/BILLS-119hr3426ih.xml), complete and unchanged. |
 | `text-119hr3426rh.xml` | 6,451 | `f387ff1552ab206f546e2962ed95581bfad1a0199eac7c93737455a142262fa8` | [BILLS-119hr3426rh XML](https://www.govinfo.gov/content/pkg/BILLS-119hr3426rh/xml/BILLS-119hr3426rh.xml), complete and unchanged. |
 | `text-119hr3426eh1s.xml` | 6,691 | `e6024dec0d39a46f05832c20e4644d12209790ccd116012cab1aba5b2d53bcd5` | [BILLS-119hr3426eh1s XML](https://www.govinfo.gov/content/pkg/BILLS-119hr3426eh1s/xml/BILLS-119hr3426eh1s.xml), complete and unchanged. |

@@ -2353,3 +2353,51 @@ table is empty (0 rows at `5990abbb…`). Comparisons published under the old
 rule stay until a rebuild retires them: the host should import
 `printing_order`/`consecutive_pairs` in place of its own order and retire any
 published pair they do not establish.
+
+## A numbered reprint is its own printing
+
+2026-09-26, from spicy-regs' live bill-family generation `d380cdc0…` (receipt
+`fork-execution-2026-09-21/repeated-printings-2026-09-26/` under
+`~/Work/corpora`).
+
+**Two printings shared one identity.** 119 HR 6644 went back and forth between
+the chambers: the Senate engrossed an amendment on 2026-03-12
+(`BILLS-119hr6644eas`) and another on 2026-06-22 (`…eas2`). Congress.gov types
+both "Engrossed Amendment Senate", so both took the `version_code`
+`engrossed-amendment-senate`, and `(bill_id, version_code, source)` could not
+tell them apart. The family refused the second printing's version row and its
+first 198 sections as repeats of the first's 198, but admitted its last 78
+sections under the same key: the published printing mixed two documents, and
+each comparison into or out of the second named 198 sections never published.
+
+**The identity.** `sources.congress.bill_versions.printing_version_code` gives a
+numbered reprint its own package suffix as its code (`eas2`), and leaves every
+other printing its stage slug ([Printing identity](sources/congress-bill-versions.md#printing-identity)).
+Measured:
+
+- 26 of 89,024 bills in the retained BILLSTATUS of the 110th–113th and
+  118th–119th Congresses list one stage twice. The stage is most often the
+  Senate engrossed amendment (14), then the House's (4) and the Senate
+  referral (4). The rule separates 16 of them. In the other 13 the listing
+  states no package on either printing, or the same package twice; all 13
+  are in the 110th–113th.
+- On the published generation, 2 of 47,905 `bill_versions` rows re-key
+  (119 HR 6644's `eas2` and 118 HR 7643's `rh2`), both the later printing of
+  a repeated stage. No `bill_sections`, `section_diffs` or
+  `section_diff_items` row re-keys, and the new key has no duplicate.
+
+**A printing that still repeats is refused whole.** The family now withholds
+every row of a printing whose `(version_code, source)` an earlier printing of
+the bill carries -- its version row, sections and model rows -- and refuses
+each comparison it would be a side of, so no printing mixes two documents and
+no diff item names a withheld section. The row-level repeat refusal stays for
+the other tables. A numbered reprint's kind is its stage's (`eas2` is an
+edit-instruction document like `eas`).
+
+**What adopting it costs spicy-regs.** The host derives each printing's code
+with `printing_version_code` where it now calls `version_slug`, so host and
+provider key printings alike. Its existing re-read and stale-pair repair fix
+the published tables: 119 HR 6644's mixed printing publishes 276 rows against
+the 198 its version row states, so the bill is re-read, and the two
+comparisons published under the first printing's code are no neighbour pair
+any more and retire.

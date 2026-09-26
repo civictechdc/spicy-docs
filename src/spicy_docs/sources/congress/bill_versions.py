@@ -11,7 +11,8 @@ from `bill_status.bill_package_id_from_url`, and treat `version_slug` /
 exposing the ambiguity. `choose_format`/`format_name` pick an offered
 rendition, including a type-less format item named from its GovInfo URL folder.
 `printing_order`/`consecutive_pairs` order a bill's printings by publisher date,
-placing a dateless enrolled printing by its stage.
+placing a dateless enrolled printing by its stage, and `printing_version_code`
+gives a numbered reprint its own code from the package the publisher states.
 """
 
 from __future__ import annotations
@@ -21,7 +22,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from itertools import pairwise
 
-from spicy_docs.sources.congress.bill_status import BillIdentity, BillTextFormat
+from spicy_docs.sources.congress.bill_status import BillIdentity, BillTextFormat, BillTextVersion
+from spicy_docs.sources.govinfo.bodies import GovInfoBodySourceError, parse_package_id
 
 _SLUG_COLLAPSE = re.compile(r"[^a-z0-9]+")
 
@@ -504,6 +506,40 @@ def consecutive_pairs(printings: Sequence[tuple[str, str | None]]) -> list[tuple
     ]
 
 
+# ---------------------------------------------------------------------------
+# Printing identity: the version_code one listed printing carries.
+# ---------------------------------------------------------------------------
+
+
+def printing_version_code(version: BillTextVersion) -> str:
+    """The ``version_code`` one listed printing carries: its stage's slug, or a numbered reprint's own suffix.
+
+    Congress.gov types a numbered reprint exactly like the printing it follows:
+    119 HR 6644's Senate engrossed amendments of 2026-03-12 and 2026-06-22 are
+    both "Engrossed Amendment Senate", at ``BILLS-119hr6644eas`` and ``…eas2``,
+    so the name-derived `version_slug` gave two printings one identity. When the
+    publisher states the printing's package and its suffix is the stage's own
+    suffix followed by an ordinal of 2 or more, that suffix is the code
+    (``eas2``, ``rfs2``, ``rh2``, ``eah3``). Every other printing keeps its
+    slug: an original (``eas``), a differently numbered one (``eh1s``), and one
+    whose package is not stated -- so no printing already published re-keys
+    except a reprint that shared its original's key. A suffix need not be in
+    `VERSION_CODES` to be a code; the vocabulary names only the reprints the
+    119th census saw.
+    """
+    slug = version_slug(version.type or "")
+    if version.package_id is None:
+        return slug
+    try:
+        stated = parse_package_id(version.package_id).version
+        base = govinfo_suffix(slug)
+    except (GovInfoBodySourceError, VersionCodeError):
+        return slug
+    if stated is not None and re.fullmatch(rf"{re.escape(base)}(?:[2-9]|[1-9][0-9]+)", stated):
+        return stated
+    return slug
+
+
 __all__ = [
     "AFTER_ENROLLMENT_SLUGS",
     "DEFAULT_FORMAT_PREFERENCE",
@@ -519,6 +555,7 @@ __all__ = [
     "format_name",
     "govinfo_suffix",
     "printing_order",
+    "printing_version_code",
     "slugify",
     "version_slug",
     "version_slug_reprints",

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
@@ -45,7 +46,7 @@ from spicy_docs.schemas import BILL_SECTIONS, BILL_VERSIONS, TABLE_CONTRACTS
 from spicy_docs.schemas.bill_diff_tables import CONSECUTIVE_PAIR_RULE
 from spicy_docs.sources.congress.bill_status import BillIdentity, BillTextVersion, parse_bill_status
 from spicy_docs.sources.congress.bill_tree import engine_available, parse_bill_tree
-from spicy_docs.sources.congress.bill_versions import version_slug
+from spicy_docs.sources.congress.bill_versions import printing_version_code, version_slug
 from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.credentials import CredentialRefusedError
 
@@ -169,9 +170,7 @@ def native_capture(identity: BillIdentity, bodies: dict[str, str]) -> BillFamily
     )
 
 
-def package_capture(
-    identity: BillIdentity, code: Any = lambda version: version_slug(version.type)
-) -> BillFamilyCapture:
+def package_capture(identity: BillIdentity, code: Any = printing_version_code) -> BillFamilyCapture:
     """A native BILLSTATUS with every printing whose package has a fixture, coded by ``code``."""
     status = status_for(f"status-{identity.congress}{identity.bill_type}{identity.number}.xml", identity)
     prefix = f"BILLS-{identity.congress}{identity.bill_type}{identity.number}"
@@ -566,9 +565,31 @@ def test_a_row_repeating_an_admitted_identity_is_refused_not_emitted() -> None:
 
 
 @needs_engine
-def test_a_printing_its_code_cannot_tell_apart_is_refused_whole_not_mixed() -> None:
-    """Coded by stage name, ``rfs2`` repeats ``rfs``: it is refused whole, never mixed into ``rfs``."""
+def test_each_numbered_reprint_is_its_own_printing() -> None:
+    """119 HR 3426 was referred to the Senate twice: ``rfs`` and ``rfs2`` are two printings, each whole."""
     capture = package_capture(HR3426)
+    tables = family(capture)
+    assert [row["version_code"] for row in tables.bill_versions] == [
+        "introduced-in-house",
+        "reported-in-house",
+        "engrossed-in-house",
+        "rfs",
+        "returned-to-the-house-by-unanimous-consent",
+        "rfs2",
+    ]
+    for entry in capture.versions:
+        rows = [row for row in tables.bill_sections if row["version_code"] == entry.version_code]
+        assert [row["element_id"] for row in rows] == [node.element_id for node in entry.document.sections]
+    codes = [row["version_code"] for row in tables.bill_versions]
+    assert [(row["from_version_code"], row["to_version_code"]) for row in tables.section_diffs] == list(pairwise(codes))
+    assert unresolved_items(tables) == []
+    assert not [row for row in tables.refusals if "repeats" in row.reason]
+
+
+@needs_engine
+def test_a_printing_its_code_cannot_tell_apart_is_refused_whole_not_mixed() -> None:
+    """Coded by stage name, as before, ``rfs2`` repeats ``rfs``: it is refused whole, never mixed into ``rfs``."""
+    capture = package_capture(HR3426, code=lambda version: version_slug(version.type))
     tables = family(capture)
     first = next(entry for entry in capture.versions if entry.version.package_id == "BILLS-119hr3426rfs")
     rows = [row for row in tables.bill_sections if row["version_code"] == "rfs"]
@@ -578,6 +599,22 @@ def test_a_printing_its_code_cannot_tell_apart_is_refused_whole_not_mixed() -> N
     assert [row.table for row in refused] == ["bill_versions", "section_diffs"]
     assert not [row for row in tables.refusals if row.table == "bill_sections"], "its sections are never built"
     assert unresolved_items(tables) == []
+
+
+@needs_engine
+def test_a_numbered_reprint_is_classified_as_its_stage() -> None:
+    """``eas2`` is an engrossed Senate amendment, an edit-instruction document like ``eas``, whatever its size."""
+    pair = captured_pair_capture()
+    reprint = BillTextVersion(
+        type="Engrossed Amendment Senate", date="2026-06-22T04:00:00Z", formats=(), package_id="BILLS-119hr6028eas2"
+    )
+    entry = replace(pair.versions[1], version=reprint, version_code=printing_version_code(reprint))
+    (row,) = [row for row in family(replace(pair, versions=(entry,))).bill_versions]
+    assert (row["version_code"], row["kind"], row["kind_rule"]) == (
+        "eas2",
+        "procedural_amendments",
+        "procedural_amendments_slug",
+    )
 
 
 @needs_engine

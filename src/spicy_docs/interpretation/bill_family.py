@@ -77,6 +77,8 @@ from spicy_docs.sources.congress.bill_versions import (
     VersionCodeError,
     consecutive_pairs,
     printing_order,
+    printing_version_code,
+    version_slug,
     version_slug_reprints,
 )
 from spicy_docs.sources.congress.bill_versions import format_name as format_name_of
@@ -482,6 +484,16 @@ def _repeated_printings(ordered: Sequence[BillVersionCapture]) -> set[int]:
     return repeated
 
 
+def _kind_code(entry: BillVersionCapture) -> str:
+    """The code a printing's kind is read from: a numbered reprint (``eas2``) is its stage's kind."""
+    try:
+        stage = version_slug(entry.version.type or "")
+        reprint = printing_version_code(entry.version)
+    except VersionCodeError:
+        return entry.version_code
+    return stage if entry.version_code == reprint != stage else entry.version_code
+
+
 def build_bill_family(
     capture: BillFamilyCapture,
     *,
@@ -618,7 +630,7 @@ def build_bill_family(
             continue
         document = entry.document
         finding = version_kind.version_kind_finding(
-            entry.version_code,
+            _kind_code(entry),
             section_count=None if document is None else len(document.sections),
             body_bytes=_body_bytes(document),
         )

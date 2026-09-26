@@ -243,6 +243,29 @@ Sorting the empty date first, as the family did before, diffed 13 enrolled
 bills *into* their introduced text and never compared their last printing with
 the enrolled one ([decision](../decisions.md#a-bill-section-is-keyed-on-its-position-and-a-dateless-enrolled-printing-is-paired-by-its-stage)).
 
+## Printing identity
+
+`printing_version_code(version)` is the `version_code` one listed printing
+carries, and every table keyed on a printing uses it. It is the stage's slug,
+except for a numbered reprint: Congress.gov types a reprint exactly like the
+printing it follows, so when the publisher states the printing's package and
+its suffix is the stage's own suffix plus an ordinal of 2 or more, that suffix
+is the code.
+
+| Printing | Stated package | Code |
+| --- | --- | --- |
+| 119 HR 6644's first Senate engrossed amendment | `BILLS-119hr6644eas` | `engrossed-amendment-senate` |
+| its second, after the House amended it back | `BILLS-119hr6644eas2` | `eas2` |
+| 119 HR 3426's engrossed printing | `BILLS-119hr3426eh1s` | `engrossed-in-house` (not an ordinal of `eh`) |
+| a printing with no stated package | none | its slug |
+
+An original, a differently numbered printing and one with no stated package
+keep the code they always had, so no printing already published re-keys except
+a reprint that shared its original's key. A reprint suffix need not be in
+`VERSION_CODES`. A bill whose printings still share a code -- a listing that
+states no package, or one package listed twice -- has the later printing
+refused whole ([decision](../decisions.md#a-numbered-reprint-is-its-own-printing)).
+
 ## The PDF path
 
 `bill_pdf.acquire_bill_pdf(identity, *, acquirer, slug=None, package_id=None)`
