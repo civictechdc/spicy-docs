@@ -55,6 +55,7 @@ from spicy_docs.schemas.document_citation_tables import (
     DOCUMENT_CITATIONS,
     HOUSE_ACTIVITY_REPORTS,
 )
+from spicy_docs.schemas.federal_register import FEDERAL_REGISTER
 from spicy_docs.schemas.hearing_bill_link_tables import HEARING_BILL_LINKS
 from spicy_docs.schemas.law_tables import LAW_CODE_SECTIONS, LAWS, TABLE3_RECORDS
 from spicy_docs.schemas.legislator_tables import MEMBER_TERMS, MEMBERS
@@ -130,6 +131,8 @@ _REGISTERED: tuple[TableContract, ...] = (
     DOCKETS,
     DOCUMENTS,
     COMMENTS,
+    # The Federal Register's own table: the dated records the Regulations.gov tables cite by number.
+    FEDERAL_REGISTER,
 )
 
 if len({contract.name for contract in _REGISTERED}) != len(_REGISTERED):
@@ -175,6 +178,7 @@ __all__ = [
     "DOCUMENT",
     "DOCUMENTS",
     "DOCUMENT_CITATIONS",
+    "FEDERAL_REGISTER",
     "FINANCIAL_CHANGES",
     "HEARING_BILL_LINKS",
     "HEARING_TRANSCRIPTS",

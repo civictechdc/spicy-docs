@@ -1203,6 +1203,20 @@ def _regulations_cases() -> list[ShapedCase]:
     ]
 
 
+def _federal_register_cases() -> list[ShapedCase]:
+    """A retained Federal Register API record (the SEC comments fixture), through the projection plus the host's ``rin``.
+
+    The identity is the dated record as the fixture states it, written here rather than read back out of the row.
+    """
+    from spicy_docs.schemas.federal_register import project_federal_register_document
+
+    line = (FIXTURES / "sec_comments" / "federal-register-documents.jsonl").read_text(encoding="utf-8").splitlines()[0]
+    record = json.loads(line)["record"]
+    row = project_federal_register_document(record)
+    row["rin"] = (record.get("regulation_id_numbers") or [None])[0]
+    return [_case("federal_register", row, ("2023-15200", "2023-07-18"))]
+
+
 def all_cases() -> list[ShapedCase]:
     cases = (
         _billstatus_only_cases()
@@ -1222,6 +1236,7 @@ def all_cases() -> list[ShapedCase]:
         + _senate_expenditure_cases()
         + _hearing_bill_link_cases()
         + _regulations_cases()
+        + _federal_register_cases()
     )
     if engine_available():
         cases = _family_cases() + cases
@@ -1548,6 +1563,7 @@ FILLED_BY: dict[str, tuple[str, ...]] = {
     # the rows it published and removes the contracts' own sentences.
     "dockets": ("schemas/regulations.py",),
     "documents": ("schemas/regulations.py",),
+    "federal_register": ("schemas/federal_register.py", "sources/federal_register/native.py"),
     "comments": ("schemas/regulations.py",),
 }
 
@@ -1838,3 +1854,16 @@ def test_a_reference_must_name_its_own_columns_one_per_parent_column():
             columns={"id": "An id."},
             references=(Reference(("parent_id",), "parents", ("id",)),),
         )
+
+
+def test_the_federal_register_contract_is_the_projection_plus_the_hosts_rin():
+    """One column list: the published table is the projection's columns and the host's derived ``rin``."""
+    from spicy_docs.schemas import TABLE_CONTRACTS
+    from spicy_docs.schemas.federal_register import FEDERAL_REGISTER_COLUMNS, project_federal_register_document
+
+    contract = TABLE_CONTRACTS["federal_register"]
+    assert contract.columns == (*FEDERAL_REGISTER_COLUMNS, "rin")
+    assert tuple(project_federal_register_document({})) == FEDERAL_REGISTER_COLUMNS
+    assert contract.identity == ("document_number", "publication_date")
+    # A number alone is not the dated identity, so no table references it; the host's joins watch fr_doc_num.
+    assert not any(ref.parent_table == "federal_register" for c in TABLE_CONTRACTS.values() for ref in c.references)
