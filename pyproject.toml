@@ -1,10 +1,10 @@
 [project]
 name = "spicy-docs"
-version = "0.39.1"
+version = "0.39.2"
 description = "Faithful acquisition from government sources and immutable source-native release publication"
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "rulespec-artifacts==1.1.1",
+    "rulespec-artifacts==1.1.2",
     "jsonschema>=4.23",
 ]
 
@@ -59,7 +59,7 @@ requires = ["uv_build<0.12"]
 build-backend = "uv_build"
 
 [tool.uv.sources]
-rulespec-artifacts = { path = "vendor/rulespec_artifacts-1.1.1-py3-none-any.whl" }
+rulespec-artifacts = { path = "vendor/rulespec_artifacts-1.1.2-py3-none-any.whl" }
 # A git pin, not a PyPI range, because DeltaTrack publishes nothing to PyPI yet:
 # the project became installable only recently and `deltatrack` is an unclaimed
 # name on the index, so a version specifier alone would resolve to nothing at
