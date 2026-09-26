@@ -133,24 +133,30 @@ LAW_CODE_SECTIONS = table_contract(
 
 TABLE3_RECORDS = table_contract(
     "table3_records",
-    grain="One row per classification record on one act's OLRC Table III page.",
+    grain="One row per classification record of one act in OLRC's Table III, read from its page or the bulk file.",
     identity=("act_key", "seq"),
     version_column="observed_at",
     columns={
-        "act_key": "The act key requested: a public law number, or a pre-1957 session-law chapter.",
-        "stated_key": "The act key as the page itself states it, en dash and all.",
-        "seq": "Zero-based position of this record on the page.",
-        "congress": "The Congress the page states for the act.",
-        "act_date": "The act's date as the page states it.",
-        "statutes_at_large_volume": "The volume the page states for the act.",
-        "release_point": "The currency the page states in its Table III Tool banner.",
+        "act_key": "The act key: a public law number, or a pre-1957 session-law chapter.",
+        "stated_key": "The act number as Table III states it: `119-4` in the bulk file, `119–4` (en dash) on a page.",
+        "seq": "Zero-based position of this record in its act, in the source's own order.",
+        "congress": "The Congress Table III states for the act: `119` in the bulk file, `119th Cong.` on a page.",
+        "act_date": "The act's date as Table III states it: `2025-03-15` in the bulk file, `Mar. 15, 2025` on a page.",
+        "statutes_at_large_volume": (
+            "The volume Table III states for the act, or in the bulk file for the fragment holding this record: "
+            "`139` there, `139 Stat.` on a page."
+        ),
+        "release_point": "The release point Table III states it is current through: the bulk member's name, or a page's banner.",
         "act_section": "The native act section; NULL when a meaningful source row leaves its label blank.",
-        "record_volume": "The volume in this record's own statviewer link, where it carries one.",
+        "record_volume": (
+            "The volume of this record's Statutes at Large page: its statviewer link's on a page, its fragment's in the "
+            "bulk file; NULL where neither is stated."
+        ),
         "record_page": "The Statutes at Large page for this record.",
         "usc_title": "The Code title the section went to; NULL where it went nowhere.",
         "usc_section": "The Code section the section went to; NULL where it went nowhere.",
-        "status": "The page's status column for the record (repealed, omitted, and the like).",
-        "observed_at": "When the page was captured; the merge prefers the larger value.",
+        "status": "Table III's status for the record (repealed, omitted, and the like).",
+        "observed_at": "When the page or bulk file was captured; the merge prefers the larger value.",
         "usc_section_key": _USC_SECTION_KEY,
     },
 )
@@ -289,7 +295,10 @@ def shape_law_code_section(record: object, *, table: object, observed_at: str) -
 
 
 def shape_table3_record(record: object, *, page: object, seq: int, observed_at: str) -> Row:
-    """One ``table3_records`` row from one ``Table3Record`` on its ``Table3Page``."""
+    """One ``table3_records`` row from one ``Table3Record`` on its ``Table3Page``.
+
+    A bulk ``<act>`` fragment can stand in for the page: the row then carries the file's own spellings.
+    """
     return {
         "act_key": text(page.key),
         "stated_key": text(page.stated_key),

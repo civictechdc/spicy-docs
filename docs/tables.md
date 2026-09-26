@@ -63,7 +63,7 @@ table's columns.
 | `nominations` | One row per nomination or part, as the Congress.gov nomination list route states it. | `congress`, `citation` | `update_date` | `sources.congress.listing` (`nomination`) |
 | `laws` | One row per enacted law the Congress.gov law list route states, with its PLAW USLM citation where captured. | `congress`, `law_type`, `number` | `update_date` | `schemas.law_tables` |
 | `law_code_sections` | One row per line of one OLRC per-Congress classification table: a Code place one public law section touched. | `congress`, `session`, `seq` | `observed_at` | `schemas.law_tables` |
-| `table3_records` | One row per classification record on one act's OLRC Table III page. | `act_key`, `seq` | `observed_at` | `schemas.law_tables` |
+| `table3_records` | One row per classification record of one act in OLRC's Table III, read from its page or the bulk file. | `act_key`, `seq` | `observed_at` | `schemas.law_tables` |
 | `committees` | One row per committee or subcommittee the Congress.gov committee list route states, with its detail record where captured. | `system_code` | `update_date` | `schemas.roster_tables` |
 | `committee_assignments` | One row per member per committee or subcommittee seat a chamber roster file lists today. | `congress`, `system_code`, `bioguide_id` | `observed_at` | `schemas.roster_tables` |
 | `document_citations` | One row per occurrence of one cited key in one document's text: the key, the exact text that named it, and the character span it was read at. | `document_key`, `text_sha256`, `cite_kind`, `target_key`, `span_start` | `rule_version` | `schemas.document_citation_tables`, `interpretation.citations` |

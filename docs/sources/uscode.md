@@ -12,7 +12,7 @@ keyless: no API key, no account, no terms gate.
 | Annual archive | Year, 1994 onwards | One year of the Code as XHTML. Every title member states its edition, year, title and currency. |
 | Popular Name Tool | None | Every popular name Congress has used, with the enacting act's Table III key and often the Code section its short title lives in. |
 | Table III act | An act key | Which of the act's sections went to which Code section, and what happened to the rest. Each page also names the acts before and after it. |
-| Table III bulk | None | The whole of Table III in one zip: 48,973 acts and 317,590 classification records. |
+| Table III bulk | None | The whole of Table III in one zip: 23,209 acts in 48,973 `<act>` fragments, and 317,590 classification records. |
 
 OLRC's USLM is **not** GovInfo's. This publisher serves USLM 1.0 in
 `http://xml.house.gov/schemas/uslm/1.0` under a `uscDoc` root, where
@@ -48,8 +48,8 @@ Offline, `read_title_archive`, `read_corpus_archive` and `read_annual_archive` l
 `UsCodeTitleArchive` containing one `entry` and its exact `xml_bytes`.
 `validate_title_xml`, `validate_annual_title_html`, `parse_popular_names`,
 `parse_table3_page` and `read_table3_bulk_archive` check retained bytes against
-a selection in `spicy_docs.sources.uscode`. `iter_table3_acts` streams the bulk file's 48,973 acts without
-holding them.
+a selection in `spicy_docs.sources.uscode`. `iter_table3_acts` streams the bulk file's 48,973 `<act>`
+fragments without holding them.
 
 ## Walk Table III by its own links
 
@@ -98,7 +98,9 @@ with UsCodeAcquirer(budget=budget) as source:
   the release point the page states itself current through, checked in that
   order. On 2026-09-24 the last page,
   `119-73`, stated currency through `119-73` and named `119-74`, which answered
-  only the template. These are the chain rules spicy-regs' laws rollup applies.
+  only the template. spicy-regs' laws rollup walked these rules until
+  2026-09-26 and now derives Table III from the bulk file, which holds every
+  act a chain reaches.
 - **A failure ends the walk.** A named act that drops or is refused raises from
   `acquire_table3_act` as it would alone, after the same retries. Only that
   page names the next act.
@@ -110,10 +112,12 @@ with UsCodeAcquirer(budget=budget) as source:
   from it to stop.
 - **Start at an act the table serves**, such as the highest one you have read.
   The start is requested like any other act. A Congress whose lowest act has
-  no page cannot start cold from it. The previous Congress's walk should end
-  at a page naming an act in this one, which could seed it. That is inferred,
-  not yet observed: `119-1` names `118-273` as its prior act, and no page of
-  the 118th Congress was read. The per-Congress index
+  no page cannot start cold from it. The previous Congress's last page names
+  this Congress's first act: on 2026-09-26 `118-273` named `119-1` next
+  (receipt
+  `corpora/fork-execution-2026-09-21/open-work-investigation-2026-09-26/congress-documents.md`,
+  section 2b). A walk that must never miss an act behind its start reads the
+  bulk file instead. The per-Congress index
   (`congress119th.htm`, linked from every page) is not read by this package.
 
 To parse the retained content, use the [structure and annual section readers](uscode-structure.md)
@@ -181,7 +185,12 @@ much larger or much slower, and one budget will not fit them all:
 | Table III bulk | 15.0 MB, about 260 s with retries | 64 MiB / 900 |
 
 The Popular Name Tool is assembled per request, which is why 11 MB takes seven
-minutes. Be polite: about 1.5 seconds between request starts.
+minutes. On 2026-09-26 the Table III bulk zip arrived in 22 seconds on one
+request, byte-identical to the 2026-09-14 capture at the same release point.
+Neither `GET` nor `HEAD` states `Last-Modified`, `ETag` or `Content-Length` for
+it, so only its bytes can show it is unchanged (receipt
+`corpora/fork-execution-2026-09-21/table3-bulk-2026-09-26/`). Be polite: about
+1.5 seconds between request starts.
 
 ## Read the result correctly
 
@@ -256,9 +265,20 @@ minutes. Be polite: about 1.5 seconds between request starts.
   a paragraph with no `content-type`, and a `usckey` that is not `title:section`
   (the appendix titles state `18A:1`) each produce a defect record with its
   reason and the refused value.
+- **The bulk file splits an act across `<act>` fragments.** It holds 23,209
+  acts in 48,973 fragments, most of ten records or fewer and none above 20;
+  4,151 acts span more than one. A fragment states its own date and volume (87-845 prints one record in
+  76 and the rest in 76A), and a record's `sequence` restarts or repeats within
+  70 acts and runs out of order in 5, so a record's position in its act is its
+  place in the file. Over the 38 acts spicy-regs had published from their
+  pages, the fragments state the same 2,981 records in page order, field for
+  field; the file spells the act-level context its own way (`119`,
+  `2025-01-29`, `139`, `119-4`) where a page prints `119th Cong.`,
+  `Jan. 29, 2025`, `139 Stat.` and `119–4` (receipt
+  `corpora/fork-execution-2026-09-21/table3-bulk-2026-09-26/`).
 - **The bulk file's whole vocabulary is carried, and a new name stops the
   read.** Every attribute and child element `<act>` and `<record>` state across
-  all 48,973 acts and 317,590 records has a field: the act's `id`, `sequence`,
+  all 48,973 fragments and 317,590 records has a field: the act's `id`, `sequence`,
   `insertion`, `format`, `print_in_supplement`, `include_in_online_release_point`
   and its `public_law` — the session public-law number a pre-1957 chapter act
   carries, stated by 10,406 acts — and the record's `id`, `sequence`, `usc_key`

@@ -271,9 +271,8 @@ def iter_table3_chain(
     the next act, and nothing it received becomes an absence. ``start`` is
     requested like any other act, so it must be one the table serves: a
     Congress whose lowest act has no page cannot start from it. The previous
-    Congress's walk should end at a page naming an act in this one, which could
-    seed it; that is inferred from ``119-1`` naming ``118-273`` as its prior
-    act, not yet observed.
+    Congress's last page names this one's first act: on 2026-09-26 ``118-273``
+    named ``119-1`` next.
 
     A page's stop rules run inside the ``next()`` that follows it, so that
     call can end the walk without a request. Spend a per-run cap or check a
@@ -312,7 +311,7 @@ _ACT_CLOSE = b"</act>"
 
 
 #: Every name an ``<act>`` and a ``<record>`` state, counted over all 48,973
-#: acts and 317,590 records of ``fulldump@119-73.xml``. Each has a field below,
+#: ``<act>`` fragments (23,209 acts) and 317,590 records of ``fulldump@119-73.xml``. Each has a field below,
 #: so nothing the file states is discarded; a name absent from these sets
 #: refuses, because a vocabulary this reader has not seen is a reason to stop
 #: rather than to drop a fact in silence.
@@ -370,6 +369,9 @@ class Table3ActRecord:
 @dataclass(frozen=True, slots=True)
 class Table3Act:
     """One ``<act>`` of the bulk file, with every attribute and child it states.
+
+    The file splits an act about ten records to an ``<act>``, so one act can
+    span several; each states its own date and volume (87-845: 76 and 76A).
 
     ``public_law`` is the session's public-law number for a pre-1957 chapter
     act: chapter 3 of January 22, 1902 was Public Law 3. 10,406 acts state one.
@@ -538,7 +540,7 @@ def iter_table3_acts(
     max_member_bytes: int = DEFAULT_MAX_TABLE3_MEMBER_BYTES,
     max_act_bytes: int = 4 * 1024 * 1024,
 ) -> Iterator[Table3Act]:
-    """Stream the bulk zip's acts. 48,973 acts and 317,590 records are not held at once."""
+    """Stream the bulk zip's ``<act>`` fragments; 48,973 of them, 317,590 records, are not held at once."""
     _limit(max_act_bytes, "max_act_bytes")
     _name, _release_point, member = read_table3_bulk_member(
         body, max_bytes=max_bytes, max_member_bytes=max_member_bytes
