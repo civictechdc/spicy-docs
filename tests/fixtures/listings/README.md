@@ -340,3 +340,16 @@ The cut fixtures' source pages are `law-119-p0.json` and
 `corpora/supply-2026-09-02/receipts/laws-contract-2026-09-19/` and
 `.../roster-comparison-2026-09-19/`; the cutting script is `cut_fixtures.py`
 beside them.
+
+Ninth round, 2026-09-26, for the committee `systemCode` grammar. The unscoped
+committee list (`GET committee`, four keyed pages at `limit=250`, 818 records
+declared and served, 817 distinct codes) was walked for SpicyRegs' committee
+rosters; the code list below is derived from it, and the one detail is a
+keyed request saved whole. Neither carries the key. The walk, every code's
+detail status and its measurement script are in
+`~/Work/corpora/fork-execution-2026-09-21/committee-fixes-2026-09-26/4-committee-code-grammar/`.
+
+| Fixture | Request | Bytes | SHA-256 | Transformation |
+| --- | --- | --- | --- | --- |
+| `congress-committee-codes-2026-09-26.json` | (derived, no request) | 16,232 | `4d434a10e7c0281110701c2fed4b0e288b671d3005cf61f1f0b76bb72c0710f9` | Each distinct `systemCode` of the four pages mapped to its record's `chamber`, lowercased, sorted by code. |
+| `congress-committee-detail-n79043125.json` | GET https://api.congress.gov/v3/committee/senate/n79043125 | 1,027 | `7a9cdbaf2133376310068194e0e43599a886663803a6843f1085a40d9458af32` | Complete, unchanged response; the Senate Committee on Indian Affairs (1820-1946), keyed on its Library of Congress name-authority id. |

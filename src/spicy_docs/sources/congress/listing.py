@@ -492,7 +492,15 @@ LIST_ROUTES: dict[str, CongressListRoute] = {
 }
 
 _CHAMBERS = frozenset({"house", "senate", "joint"})
-_COMMITTEE_CODE = re.compile(r"[a-z]{4}[0-9]{2}")
+#: A committee ``systemCode`` in every shape Congress.gov's unscoped committee list states (818
+#: records, 817 codes, 2026-09-26; fixture ``congress-committee-codes-2026-09-26.json``). 721 are
+#: chamber, type, a two-character committee abbreviation and a two-digit subcommittee number
+#: (``hsju00``), and the abbreviation can hold a digit (``sp2k00``, the Senate's Year 2000 committee).
+#: The 95 historical committees with no such code are keyed on their Library of Congress name-authority
+#: id, the ``locLinkedDataId`` their history states (``n79043125``, Indian Affairs, 1820-1946): ``n``,
+#: ``no`` or ``nr`` and eight or ten digits. The detail route served all 96 outside the first shape;
+#: a shape no list states, including another name-authority prefix such as ``nb``, stays refused.
+_COMMITTEE_CODE = re.compile(r"[a-z]{2}[a-z0-9]{2}[0-9]{2}|n[or]?(?:[0-9]{8}|[0-9]{10})")
 _LAW_TYPES = frozenset({"pub", "priv"})
 _BIOGUIDE_ID = re.compile(r"[A-Z][0-9]{6}")
 # House and Senate communication type codes, from the publisher's own endpoint documentation
@@ -547,7 +555,10 @@ def _chamber_param(value: str | None, route_name: str) -> str:
 
 def _committee_code_param(value: str | None) -> str:
     if not isinstance(value, str) or _COMMITTEE_CODE.fullmatch(value) is None:
-        raise PagedJsonSourceError("committee_code must match [a-z]{4}[0-9]{2}")
+        raise PagedJsonSourceError(
+            "committee_code must be a Congress.gov systemCode: [a-z]{2}[a-z0-9]{2}[0-9]{2}, or a Library of"
+            " Congress name-authority id n, no or nr and 8 or 10 digits"
+        )
     return value
 
 

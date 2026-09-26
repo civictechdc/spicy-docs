@@ -780,6 +780,56 @@ def test_list_route_url_refuses_invalid_or_missing_path_params(route_name, kwarg
         list_route_url(LIST_ROUTES[route_name], limit=3, **kwargs)
 
 
+#: Every committee systemCode the unscoped committee list stated on 2026-09-26, with its chamber.
+LISTED_COMMITTEE_CODES = json.loads((FIXTURES / "congress-committee-codes-2026-09-26.json").read_text())
+
+
+def test_every_code_the_committee_list_states_addresses_its_detail_and_sub_routes():
+    """The grammar is the list's: 721 standard codes, ``sp2k00`` and 95 name-authority ids, 817 in all."""
+    assert len(LISTED_COMMITTEE_CODES) == 817
+    for code, chamber in LISTED_COMMITTEE_CODES.items():
+        detail = list_route_url(LIST_ROUTES["committee-detail"], chamber=chamber, system_code=code)
+        assert detail.startswith(f"{API}/committee/{chamber}/{code}?")
+        bills = list_route_url(LIST_ROUTES["committee-bills"], chamber=chamber, committee_code=code)
+        assert bills.startswith(f"{API}/committee/{chamber}/{code}/bills?")
+
+
+@pytest.mark.parametrize(
+    "code",
+    [
+        "nb79043125",
+        "n7904312",
+        "n790431250",
+        "n79043125000",
+        "n2005025889x",
+        "no9001166",
+        "sp2k0",
+        "sp2k000",
+        "s2kx00",
+        "HSJU00",
+        "n79043125/bills",
+        "",
+    ],
+)
+def test_a_committee_code_in_a_shape_no_list_states_is_refused(code):
+    """A name-authority prefix the list never uses (``nb``), a digit count it never uses, or any other shape."""
+    assert code not in LISTED_COMMITTEE_CODES
+    with pytest.raises(PagedJsonSourceError, match="Congress.gov systemCode"):
+        list_route_url(LIST_ROUTES["committee-detail"], chamber="senate", system_code=code)
+
+
+def test_a_historical_committee_keyed_on_its_name_authority_id_reads_its_detail():
+    """senate/n79043125, Indian Affairs (1820-1946): its history's ``locLinkedDataId`` is its systemCode."""
+    route = LIST_ROUTES["committee-detail"]
+    transport = Transport((FIXTURES / "congress-committee-detail-n79043125.json").read_bytes())
+    url = list_route_url(route, chamber="senate", system_code="n79043125")
+    with CongressListingReader(budget=BUDGET, api_key=KEY, transport=transport) as source:
+        page = source.page(url, records_key=route.records_key, single_record=route.single_record)
+    [committee] = page.records
+    assert committee["systemCode"] == committee["history"][0]["locLinkedDataId"] == "n79043125"
+    assert committee["isCurrent"] is False and committee["history"][0]["officialName"] == "Committee on Indian Affairs"
+
+
 def test_communication_type_accepts_a_code_the_other_chamber_lacks():
     """Per-chamber, not a shared union: "pt" (House: Petition) is not in the Senate's
     enumeration, and "pom" (Senate: Petition or Memorial) is not in the House's -- each still

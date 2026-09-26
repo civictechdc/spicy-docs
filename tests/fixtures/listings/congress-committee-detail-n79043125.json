@@ -1,0 +1,31 @@
+{
+    "committee": {
+        "communications": {
+            "count": 0,
+            "url": "https://api.congress.gov/v3/committee/senate/n79043125/senate-communication?format=json"
+        },
+        "history": [
+            {
+                "committeeTypeCode": "Standing",
+                "endDate": "1946-08-02T15:59:00Z",
+                "establishingAuthority": "16 S. J. Res. 65",
+                "libraryOfCongressName": "Indian Affairs",
+                "locLinkedDataId": "n79043125",
+                "naraId": "10458433",
+                "officialName": "Committee on Indian Affairs",
+                "startDate": "1820-01-03T16:56:02Z",
+                "updateDate": "2025-07-21T17:57:30Z"
+            }
+        ],
+        "isCurrent": false,
+        "systemCode": "n79043125",
+        "type": "Standing",
+        "updateDate": "2025-06-20T19:17:19Z"
+    },
+    "request": {
+        "chamber": "senate",
+        "contentType": "application/json",
+        "format": "json",
+        "systemCode": "n79043125"
+    }
+}
