@@ -104,7 +104,9 @@ describe document formats and collection listings. They are reference material;
 acquisition talks directly to GovInfo. This API accepts explicit bill IDs and
 versions. To fill a whole Congress instead, use the
 [bulk status route](congress-bulk-status.md), which takes one Congress and one
-bill type per call and states its own crawl bound; separate BILLSUM acquisition has separate scope and coverage
+bill type per call and states its own crawl bound, and for the text of a whole
+folder of printings, the [bulk bill text route](congress-bulk-bills.md) from the
+113th Congress on; separate BILLSUM acquisition has separate scope and coverage
 requirements. For CFR/eCFR, reuse the
 [existing sibling implementations](../source-reference.md#cfr-metadata-and-separately-acquired-xml)
 and qualify the selected source format before adding acquisition here.

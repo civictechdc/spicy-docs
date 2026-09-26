@@ -38,6 +38,7 @@ docs/sources/committee-rosters.md	Capture committee rosters and today's assignme
 docs/sources/congress-bill-tree.md	Read a bill's sections and diff two versions	doc
 docs/sources/congress-bill-versions.md	Bill-version codes, format choice and bill PDFs	doc
 docs/sources/congress-bills.md	Fetch a bill and a specific text version	doc
+docs/sources/congress-bulk-bills.md	Read bill text in bulk, one Congress, session and bill type at a time	doc
 docs/sources/congress-bulk-status.md	Back-fill BILLSTATUS one Congress and one bill type at a time	doc
 docs/sources/congress-votes.md	House Clerk and Senate LIS roll-call votes	doc
 docs/sources/crs-files.md	Capture a CRS report file	doc
@@ -257,6 +258,7 @@ src/spicy_docs/sources/congress/bill_text.py	Check current Congressional bill/re
 src/spicy_docs/sources/congress/bill_tree.py	Read one GPO bill, resolution or amendment XML with DeltaTrack, accounting for every element.	src
 src/spicy_docs/sources/congress/bill_versions.py	The sealed bill-version-code vocabulary, printing order, format choice and PDF package ids.	src
 src/spicy_docs/sources/congress/billstatus_codes.py	Literal code sentences and tables from the retained BILLSTATUS Markdown guide.	src
+src/spicy_docs/sources/congress/bulk_bills.py	Read bill text in bulk: one GovInfo ``BILLS`` folder zip per Congress, session and bill type.	src
 src/spicy_docs/sources/congress/bulk_status.py	Back-fill BILLSTATUS one Congress and one bill type at a time from the GovInfo bulk zip.	src
 src/spicy_docs/sources/congress/committee_rosters.py	House Clerk ``MemberData.xml`` and Senate ``cvc_member_data.xml``: the current committee assignments.	src
 src/spicy_docs/sources/congress/crs_files.py	CRS report files on congress.gov: keyless PDF and HTML for one explicit report.	src
@@ -466,6 +468,7 @@ tests/test_congress_bill_status.py	Literal BILLSTATUS fields, offered versions a
 tests/test_congress_bill_text.py	Current printed bill XML identity, body shape and inert external DTDs.	test
 tests/test_congress_bill_tree.py	The DeltaTrack adapter: the gate, the bodies it reads, and the element inventory.	test
 tests/test_congress_bill_versions.py	The sealed version-code vocabulary, printing order, format choice, package ids and version kind.	test
+tests/test_congress_bulk_bills.py	One BILLS folder: its listing, then its zip read once for the printings a caller keeps.	test
 tests/test_congress_bulk_status.py	One BILLSTATUS folder zip: every member proved or refused, and the bounds that refuse the zip.	test
 tests/test_congress_candidate_votes.py	Candidate-choice election totals stay distinct from ordinary position totals.	test
 tests/test_congress_index_tables.py	The Congress.gov index tables' own rules, and the data-map edges re-run on the captured records.	test

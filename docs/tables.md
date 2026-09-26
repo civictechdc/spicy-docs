@@ -249,6 +249,15 @@ steps 1 to 5 are O(A + C + V + ΣS) with no re-parsing. Step 6 diffs V−1 pairs
 not V², each bounded by the engine's own retrieval gate. Consecutive pairs is
 deliberate: the diff is the only superlinear operation in the family.
 
+`build_bill_printings` runs steps 4 to 8 alone, for a caller that reads bodies
+apart from the status (the [BILLS bulk zips](sources/congress-bulk-bills.md)):
+it takes every listed printing of one bill and a `context` set of
+`(version_code, source)` printings that emit no rows of their own -- placeholders,
+and held printings whose documents are there only to be compared with a newly
+read neighbour. Its rows equal `build_bill_family`'s for the same printings; the
+plain-language summary, which needs the status's stage and money-bill finding,
+stays with the family.
+
 The three model calls are injected at this boundary rather than as a
 `ModelCall`: a caller binds `functools.partial(classify_sections, call=…,
 model=…)`, and passing `None` skips the model tables entirely, which is what a

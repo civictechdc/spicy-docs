@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import hashlib
 from collections.abc import Callable, Collection, Iterable, Iterator, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from functools import partial
 from importlib import metadata
@@ -617,12 +617,110 @@ def build_bill_family(
             ),
         )
 
+    # 4-9. The printing tables, from the captures alone.
+    summarize_version = (
+        None
+        if summarize is None
+        else partial(_summarize_version, status=status, stage=stage, money=money, summarize=summarize)
+    )
+    printed = _printing_tables(
+        identity,
+        capture.versions,
+        admit=admit,
+        engine=engine,
+        classify=classify,
+        summarize_version=summarize_version,
+        summarize_diff=summarize_diff,
+        now=now,
+        diff=diff,
+        pair_amounts=pair_amounts,
+        text_diff_cap=text_diff_cap,
+    )
+    return replace(
+        printed,
+        bills=tuple(bills),
+        bill_actions=tuple(actions),
+        bill_committees=tuple(committees),
+        bill_publisher_summaries=tuple(publisher_summaries),
+        cbo_cost_estimates=tuple(estimates),
+        refusals=tuple(admit.refusals),
+    )
+
+
+def build_bill_printings(
+    identity: Any,
+    versions: Iterable[BillVersionCapture],
+    *,
+    engine: EngineStamp,
+    context: Collection[tuple[str, str]] = (),
+    classify: SectionClassifier | None = None,
+    summarize_diff: DiffSummarizer | None = None,
+    clock: Callable[[], datetime] | None = None,
+    diff: bool = True,
+    pair_amounts: bool = False,
+    text_diff_cap: int = TEXT_DIFF_CAP_BYTES,
+) -> BillFamilyTables:
+    """Build one bill's printing tables without its BILLSTATUS: versions, sections and comparisons.
+
+    For a caller that acquires bodies apart from status -- a bulk text zip read
+    once for every printing it holds -- and so has the printings but not a fresh
+    status document. ``versions`` is every listed printing of the bill, in any
+    order: captured ones with their documents, and the rest as placeholders
+    without, so a comparison never skips a printing. ``context`` names printings
+    by ``(version_code, source)`` that emit no version, section or model rows of
+    their own: placeholders, and held printings whose documents are here only to
+    be compared with a newly captured neighbour.
+    Only the model work that needs no status runs (``classify``,
+    ``summarize_diff``); a plain-language summary needs the status's stage and
+    money-bill finding and stays with :func:`build_bill_family`.
+    """
+    admit = _Admitter()
+    tables = _printing_tables(
+        identity,
+        versions,
+        admit=admit,
+        engine=engine,
+        classify=classify,
+        summarize_version=None,
+        summarize_diff=summarize_diff,
+        now=clock if clock is not None else _now,
+        diff=diff,
+        pair_amounts=pair_amounts,
+        text_diff_cap=text_diff_cap,
+        context=frozenset(context),
+    )
+    return replace(tables, refusals=tuple(admit.refusals))
+
+
+def _printing_tables(
+    identity: Any,
+    versions: Iterable[BillVersionCapture],
+    *,
+    admit: _Admitter,
+    engine: EngineStamp,
+    classify: SectionClassifier | None,
+    summarize_version: Callable[..., None] | None,
+    summarize_diff: DiffSummarizer | None,
+    now: Callable[[], datetime],
+    diff: bool,
+    pair_amounts: bool,
+    text_diff_cap: int,
+    context: Collection[tuple[str, str]] = frozenset(),
+) -> BillFamilyTables:
+    """Steps 4-9 of the family, shared by :func:`build_bill_family` and :func:`build_bill_printings`.
+
+    A ``context`` printing takes part only in ordering and, with a document, as
+    a side of a comparison; its own rows are left to the pass that listed or
+    captured it, and so is a pair of two context printings the caller supplied
+    no documents for.
+    """
+    key = bill_id(identity)
     # 4. One row per acquired printing, with the kind it classifies as. A
     # printing repeating an earlier one's identity is refused whole, here and in
     # every later step, rather than row by row.
-    ordered = _sorted_versions(capture.versions)
+    ordered = _sorted_versions(versions)
     repeated = _repeated_printings(ordered)
-    versions: list[Row] = []
+    versions_rows: list[Row] = []
     kinds: dict[tuple[str, str], Any] = {}
     for position, entry in enumerate(ordered):
         if position in repeated:
@@ -635,9 +733,11 @@ def build_bill_family(
             body_bytes=_body_bytes(document),
         )
         kinds[(entry.version_code, entry.source)] = finding
+        if (entry.version_code, entry.source) in context:
+            continue
         admit(
             BILL_VERSIONS,
-            versions,
+            versions_rows,
             (key, entry.version_code, entry.source),
             partial(
                 shape_bill_version,
@@ -653,7 +753,7 @@ def build_bill_family(
     sections: list[Row] = []
     section_by_reference: dict[str, Row] = {}
     for position, entry in enumerate(ordered):
-        if position in repeated:
+        if position in repeated or (entry.version_code, entry.source) in context:
             continue
         if entry.document is None:
             admit.refuse(
@@ -699,6 +799,7 @@ def build_bill_family(
             text_diff_cap=text_diff_cap,
             computed_at=now().isoformat(),
             withheld=repeated,
+            context=context,
         )
 
     # 7-8. The per-printing model tables, only where a printing carries bill text.
@@ -706,7 +807,7 @@ def build_bill_family(
     summaries: list[Row] = []
     vocabulary = classification_vocabulary_hash()
     for position, entry in enumerate(ordered):
-        if position in repeated:
+        if position in repeated or (entry.version_code, entry.source) in context:
             continue
         finding = kinds[(entry.version_code, entry.source)]
         if entry.document is None or finding.kind not in MODELLED_KINDS:
@@ -721,17 +822,8 @@ def build_bill_family(
                 rows=classifications,
                 bill_key=key,
             )
-        if summarize is not None:
-            _summarize_version(
-                entry,
-                status=status,
-                stage=stage,
-                money=money,
-                summarize=summarize,
-                admit=admit,
-                rows=summaries,
-                bill_key=key,
-            )
+        if summarize_version is not None:
+            summarize_version(entry, admit=admit, rows=summaries, bill_key=key)
 
     # 9. One diff summary per compared pair, from the comparison already in hand.
     diff_summaries: list[Row] = []
@@ -750,12 +842,7 @@ def build_bill_family(
             )
 
     return BillFamilyTables(
-        bills=tuple(bills),
-        bill_actions=tuple(actions),
-        bill_committees=tuple(committees),
-        bill_publisher_summaries=tuple(publisher_summaries),
-        cbo_cost_estimates=tuple(estimates),
-        bill_versions=tuple(versions),
+        bill_versions=tuple(versions_rows),
         bill_sections=tuple(sections),
         section_diffs=tuple(diffs),
         section_diff_items=tuple(diff_items),
@@ -763,7 +850,6 @@ def build_bill_family(
         section_classifications=tuple(classifications),
         bill_summaries=tuple(summaries),
         diff_summaries=tuple(diff_summaries),
-        refusals=tuple(admit.refusals),
     )
 
 
@@ -780,8 +866,13 @@ def _diff_pairs(
     text_diff_cap: int,
     computed_at: str,
     withheld: Collection[int] = (),
+    context: Collection[tuple[str, str]] = frozenset(),
 ) -> list[tuple[BillVersionCapture, BillVersionCapture, Any]]:
     """Diff each consecutive pair, or refuse the pair by name.
+
+    A pair of two ``context`` printings is compared only when the caller
+    supplied both documents, which is how it asks for that pair; otherwise the
+    pair belongs to the pass that captured them and nothing is filed for it.
 
     Returns each comparison beside the two printings it compared, so the diff
     summary reads the engine's own records rather than the rows this pass just
@@ -804,6 +895,12 @@ def _diff_pairs(
     for position in range(len(ordered) - 1):
         older, newer = ordered[position], ordered[position + 1]
         pair = (key, older.version_code, older.source, newer.version_code, newer.source)
+        if (
+            (older.version_code, older.source) in context
+            and (newer.version_code, newer.source) in context
+            and (older.document is None or newer.document is None)
+        ):
+            continue
         if position in withheld or position + 1 in withheld:
             admit.refuse(SECTION_DIFFS.name, pair, f"a side of the pair {REPEATED_PRINTING_REASON}")
             continue
@@ -1080,6 +1177,7 @@ __all__ = [
     "FamilyRefusal",
     "SectionClassifier",
     "build_bill_family",
+    "build_bill_printings",
     "classification_vocabulary_hash",
     "installed_engine_stamp",
     "section_reference",

@@ -222,3 +222,16 @@ read keyless from GovInfo on 2026-09-26.
 | --- | --- | --- | --- |
 | `status-113hr4200.xml` | 25,948 | `5ded9108df5a08e1a0653f5cdb5cfeb5121c838700100d385ca609098abb78c2` | member `BILLSTATUS-113hr4200.xml` (dated 2024-01-08) of [`BILLSTATUS-113-hr.zip`](https://www.govinfo.gov/bulkdata/BILLSTATUS/113/hr/BILLSTATUS-113-hr.zip) (24,696,449 bytes, `0182b94de536510f06828eb33cdfda80d2cf4efb5d8345bc2799c1d63592bbc5`) |
 | `status-117hr11.xml` | 3,592 | `74bc9641bc42a92238bdd73477c6978e21c45ff7e0c667b35ed67d59a2b2d495` | member `BILLSTATUS-117hr11.xml` (dated 2024-06-11) of [`BILLSTATUS-117-hr.zip`](https://www.govinfo.gov/bulkdata/BILLSTATUS/117/hr/BILLSTATUS-117-hr.zip) (33,733,417 bytes, `658b2d280e4e7972c86bfd810ebff0c9bb61c115b242de8c8774034dea08de03`) |
+
+## BILLS bulk folder (2026-09-26)
+
+One whole folder of the BILLS bulk collection, for `bulk_bills` (receipt
+`fork-execution-2026-09-21/bill-family-bulk-2026-09-26/partB/` under
+`~/Work/corpora`): the zip and the folder listing that states it, both read
+keyless from GovInfo on 2026-09-26 (UTC), complete and unchanged. The zip holds
+16 printings at the archive root; the listing names those 16 and the zip.
+
+| Fixture | Bytes | SHA-256 | Publisher response |
+| --- | --- | --- | --- |
+| `bulk-bills-114-2-sjres.zip` | 31,874 | `09fcc9fda780aaad85e7b3749f2faeda31610dc764ebe96a414e1d271494654d` | [`BILLS-114-2-sjres.zip`](https://www.govinfo.gov/bulkdata/BILLS/114/2/sjres/BILLS-114-2-sjres.zip), `application/zip`, Last-Modified 2023-01-06 01:02:13 GMT |
+| `listing-bills-114-2-sjres.json` | 5,939 | `d971df3810ae84868f9cab28a441536bdfd1a51d1d49ace01be557b3f9c1f0d9` | [`bulkdata/json/BILLS/114/2/sjres`](https://www.govinfo.gov/bulkdata/json/BILLS/114/2/sjres), `application/json` |

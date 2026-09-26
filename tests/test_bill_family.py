@@ -24,6 +24,7 @@ from spicy_docs.interpretation.bill_family import (
     BillVersionCapture,
     EngineStamp,
     build_bill_family,
+    build_bill_printings,
     classification_vocabulary_hash,
     installed_engine_stamp,
     section_reference,
@@ -1184,3 +1185,79 @@ def test_an_enacted_bill_carries_its_law_number_and_its_signing_provenance() -> 
     assert row["signed_date_rule"] == "public_law_and_became_law_action"
     assert row["signed_date_action_code"] == "36000"
     assert row["stage"] == "law"
+
+
+PRINTING_TABLES = (
+    "bill_versions",
+    "bill_sections",
+    "section_diffs",
+    "section_diff_items",
+    "financial_changes",
+    "section_classifications",
+    "diff_summaries",
+)
+
+
+def printings(capture: BillFamilyCapture, **arguments: Any) -> BillFamilyTables:
+    """The printing tables alone, for a caller that read the bodies apart from the status."""
+    return build_bill_printings(capture.status.identity, capture.versions, engine=TEST_ENGINE, clock=clock, **arguments)
+
+
+def placeholder(entry: BillVersionCapture) -> BillVersionCapture:
+    """The same printing as a caller that holds only its listed facts would pass it."""
+    return replace(entry, source="congress", body=None, document=None)
+
+
+@needs_engine
+def test_printings_alone_are_the_family_printing_rows_without_the_status_rows() -> None:
+    """Every printing table matches the full family's; the status and bill-summary tables stay empty."""
+    capture = native_capture(HR983, HR983_BODIES)
+    seams = {"classify": StubClassifier(), "summarize_diff": StubDiffSummarizer()}
+    whole = family(capture, **seams)
+    alone = printings(capture, **seams)
+    for name in PRINTING_TABLES:
+        assert getattr(alone, name) == getattr(whole, name), name
+    assert alone.bills == alone.bill_actions == alone.bill_summaries == ()
+    assert len(alone.section_diffs) == 4 and alone.section_classifications
+
+
+@needs_engine
+def test_a_context_printing_is_compared_but_emits_no_rows_of_its_own() -> None:
+    """A printing newly read between two held ones: its own rows and its two comparisons, and nothing else.
+
+    The held neighbours come with their documents, as context; the held
+    printings past them come as placeholders, whose pair is another pass's and
+    is neither compared nor refused here.
+    """
+    capture = native_capture(HR983, HR983_BODIES)
+    whole = family(capture, classify=StubClassifier())
+    later = {"enrolled-bill", "public-law"}
+    versions = tuple(placeholder(entry) if entry.version_code in later else entry for entry in capture.versions)
+    context = {("introduced-in-house", "govinfo"), ("rfs", "govinfo"), *((code, "congress") for code in later)}
+    alone = printings(replace(capture, versions=versions), context=context, classify=StubClassifier())
+    assert [(row["version_code"], row["source"]) for row in alone.bill_versions] == [("engrossed-in-house", "govinfo")]
+    assert {row["version_code"] for row in alone.bill_sections} == {"engrossed-in-house"}
+    assert {row["version_code"] for row in alone.section_classifications} == {"engrossed-in-house"}
+    compared = {("introduced-in-house", "engrossed-in-house"), ("engrossed-in-house", "rfs")}
+    for name in ("section_diffs", "section_diff_items"):
+        expected = [
+            row for row in getattr(whole, name) if (row["from_version_code"], row["to_version_code"]) in compared
+        ]
+        assert list(getattr(alone, name)) == expected, name
+    # rfs -> enrolled-bill has a documentless context side, and enrolled-bill ->
+    # public-law two: neither is this pass's comparison to make or to refuse.
+    assert [refusal for refusal in alone.refusals if refusal.table == "section_diffs"] == []
+
+
+@needs_engine
+def test_a_placeholder_between_two_bodies_still_stops_the_comparison_across_it() -> None:
+    """A listed printing with no body keeps its place in the order, so its neighbours are not paired past it."""
+    capture = native_capture(HR983, HR983_BODIES)
+    versions = tuple(
+        placeholder(entry) if entry.version_code == "engrossed-in-house" else entry for entry in capture.versions
+    )
+    alone = printings(replace(capture, versions=versions), context={("engrossed-in-house", "congress")})
+    assert "engrossed-in-house" not in {row["version_code"] for row in alone.bill_versions}
+    pairs = [(row["from_version_code"], row["to_version_code"]) for row in alone.section_diffs]
+    assert ("introduced-in-house", "rfs") not in pairs
+    assert pairs == [("rfs", "enrolled-bill"), ("enrolled-bill", "public-law")]

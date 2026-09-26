@@ -269,7 +269,7 @@ class BulkListing:
     folder_modified: datetime | None
 
 
-def _parse_listing_instant(value: object, *, field: str) -> datetime:
+def _parse_listing_instant(value: object, *, field: str, label: str = _LISTING_LABEL) -> datetime:
     """Parse a GovInfo bulkdata stamp ``DD-Mon-YYYY HH:MM`` -- GMT, seconds truncated, English months.
 
     The month is read from an explicit English name-to-number map rather than
@@ -280,30 +280,30 @@ def _parse_listing_instant(value: object, *, field: str) -> datetime:
     match = _LISTING_STAMP.fullmatch(value) if isinstance(value, str) else None
     month = _LISTING_MONTHS.get(match["month"]) if match else None
     if match is None or month is None:
-        raise BillSourceError(f"{_LISTING_LABEL} {field} is not the publisher's DD-Mon-YYYY HH:MM stamp")
+        raise BillSourceError(f"{label} {field} is not the publisher's DD-Mon-YYYY HH:MM stamp")
     try:
         return datetime(
             int(match["year"]), month, int(match["day"]), int(match["hour"]), int(match["minute"]), tzinfo=UTC
         )
     except ValueError as error:
-        raise BillSourceError(f"{_LISTING_LABEL} {field} is not a valid calendar date and time") from error
+        raise BillSourceError(f"{label} {field} is not a valid calendar date and time") from error
 
 
-def _listing_entry(raw: object) -> BulkListingEntry:
+def _listing_entry(raw: object, *, label: str = _LISTING_LABEL) -> BulkListingEntry:
     if not isinstance(raw, Mapping):
-        raise BillSourceError(f"{_LISTING_LABEL} entry must be a JSON object")
+        raise BillSourceError(f"{label} entry must be a JSON object")
     for field in ("name", "displayLabel", "justFileName", "link", "formattedLastModifiedTime"):
         if not isinstance(raw.get(field), str) or not raw[field]:
-            raise BillSourceError(f"{_LISTING_LABEL} entry must state a nonempty {field}")
+            raise BillSourceError(f"{label} entry must state a nonempty {field}")
     folder = raw.get("folder")
     if not isinstance(folder, bool):
-        raise BillSourceError(f"{_LISTING_LABEL} entry folder flag must be true or false")
+        raise BillSourceError(f"{label} entry folder flag must be true or false")
     for field in ("mimeType", "fileExtension", "formattedSize"):
         if field in raw and raw[field] is not None and not isinstance(raw[field], str):
-            raise BillSourceError(f"{_LISTING_LABEL} entry {field} must be a string when stated")
+            raise BillSourceError(f"{label} entry {field} must be a string when stated")
     size = raw.get("size")
     if size is not None and (isinstance(size, bool) or not isinstance(size, int) or size < 0):
-        raise BillSourceError(f"{_LISTING_LABEL} entry size must be a non-negative integer when stated")
+        raise BillSourceError(f"{label} entry size must be a non-negative integer when stated")
     return BulkListingEntry(
         name=raw["name"],
         display_label=raw["displayLabel"],
@@ -311,7 +311,9 @@ def _listing_entry(raw: object) -> BulkListingEntry:
         link=raw["link"],
         folder=folder,
         formatted_last_modified_time=raw["formattedLastModifiedTime"],
-        modified_at=_parse_listing_instant(raw["formattedLastModifiedTime"], field="formattedLastModifiedTime"),
+        modified_at=_parse_listing_instant(
+            raw["formattedLastModifiedTime"], field="formattedLastModifiedTime", label=label
+        ),
         mime_type=raw.get("mimeType"),
         file_extension=raw.get("fileExtension"),
         formatted_size=raw.get("formattedSize"),
@@ -335,31 +337,57 @@ def read_bulk_listing(
     route's promise.
     """
     bulk_listing_locator(congress, bill_type)
-    payload = check_payload(body, max_bytes, label=_LISTING_LABEL, error_type=BillSourceError, allow_empty=False)
-    value = load_integer_json(payload, source=_LISTING_LABEL, error_type=BillSourceError)
+    entries, zip_entry, folder_modified = read_folder_listing(
+        body,
+        folder_url=f"{BILLSTATUS_BULKDATA}/{congress}/{bill_type}",
+        zip_name=bulk_status_locator(congress, bill_type).rsplit("/", 1)[-1],
+        label=_LISTING_LABEL,
+        max_bytes=max_bytes,
+    )
+    return BulkListing(congress, bill_type, entries, zip_entry, folder_modified)
+
+
+def read_folder_listing(
+    body: bytes, *, folder_url: str, zip_name: str, label: str, max_bytes: int = DEFAULT_MAX_LISTING_BYTES
+) -> tuple[tuple[BulkListingEntry, ...], BulkListingEntry, datetime | None]:
+    """Read one GovInfo bulkdata folder listing: its entries, the folder's own zip entry, its stamp.
+
+    Shared by every bulk collection a caller reads a zip of (BILLSTATUS, BILLS):
+    each entry's ``link`` must be ``{folder_url}/{name}``, so a listing that
+    folds in another folder's entry refuses whole, and a listing with no entry,
+    or two, named ``zip_name`` refuses by name.
+    """
+    payload = check_payload(body, max_bytes, label=label, error_type=BillSourceError, allow_empty=False)
+    value = load_integer_json(payload, source=label, error_type=BillSourceError)
     if not isinstance(value, Mapping):
-        raise BillSourceError(f"{_LISTING_LABEL} response is not a JSON object")
+        raise BillSourceError(f"{label} response is not a JSON object")
     raw_files = value.get("files")
     if not isinstance(raw_files, list):
-        raise BillSourceError(f"{_LISTING_LABEL} response omitted its files list")
-    entries = tuple(_listing_entry(raw) for raw in raw_files)
+        raise BillSourceError(f"{label} response omitted its files list")
+    entries = tuple(_listing_entry(raw, label=label) for raw in raw_files)
     for entry in entries:
-        if entry.link != f"{BILLSTATUS_BULKDATA}/{congress}/{bill_type}/{entry.name}":
-            raise BillSourceError(f"{_LISTING_LABEL} entry belongs to another Congress or bill type")
-    zip_name = bulk_status_locator(congress, bill_type).rsplit("/", 1)[-1]
+        if entry.link != f"{folder_url}/{entry.name}":
+            raise BillSourceError(f"{label} entry belongs to another Congress or bill type")
     zip_entries = [entry for entry in entries if entry.name == zip_name]
     if not zip_entries:
-        raise BillSourceError(f"{_LISTING_LABEL} has no zip entry for the requested folder")
+        raise BillSourceError(f"{label} has no zip entry for the requested folder")
     if len(zip_entries) > 1:
-        raise BillSourceError(f"{_LISTING_LABEL} repeats the folder zip entry")
+        raise BillSourceError(f"{label} repeats the folder zip entry")
     own_stamp = value.get("formattedLastModifiedTime")
-    folder_modified = _parse_listing_instant(own_stamp, field="formattedLastModifiedTime") if own_stamp else None
-    return BulkListing(congress, bill_type, entries, zip_entries[0], folder_modified)
+    folder_modified = (
+        _parse_listing_instant(own_stamp, field="formattedLastModifiedTime", label=label) if own_stamp else None
+    )
+    return entries, zip_entries[0], folder_modified
 
 
 @dataclass(frozen=True, slots=True)
-class BulkStatusBudget:
-    """One zip per call. The entry bounds are the archive's, the byte bound the response's."""
+class BulkArchiveBudget:
+    """One zip per call. The entry bounds are the archive's, the byte bound the response's.
+
+    Shared by the BILLSTATUS and BILLS folder zips: both are GovInfo bulkdata
+    folders of one XML file per bill or printing, and the measured BILLS
+    extremes (``bulk_bills``) sit inside these bounds.
+    """
 
     max_requests: int
     max_bytes: int
@@ -376,6 +404,23 @@ class BulkStatusBudget:
         check_byte_bound(self.max_entry_bytes, "max_entry_bytes", MAX_EVIDENCE_BYTES)
         check_byte_bound(self.max_total_bytes, "max_total_bytes", MAX_BULK_STATUS_TOTAL_BYTES)
         check_timing(self.timeout_seconds, self.min_request_interval_seconds)
+
+
+#: The BILLSTATUS name callers already import; the bounds are not status-specific.
+BulkStatusBudget = BulkArchiveBudget
+
+
+def zip_entry_unchanged(seen: BulkListingEntry, since: BulkListingEntry) -> bool:
+    """Whether a folder's zip entry still states what a retained one did, proved on the listing alone.
+
+    ``name`` and ``link`` must name the same file or the comparison is refused
+    outright -- a different file's stamp could only produce a false skip --
+    and ``modified_at`` and ``size`` must both match for the zip to count as
+    unchanged.
+    """
+    if (since.name, since.link) != (seen.name, seen.link):
+        raise BillSourceError("unchanged_since names a different file than this folder's own zip entry")
+    return (seen.modified_at, seen.size) == (since.modified_at, since.size)
 
 
 @dataclass(frozen=True, slots=True)
@@ -501,11 +546,9 @@ class BulkStatusAcquirer(SourceAcquirer):
             raise TypeError("unchanged_since must be a BulkListingEntry")
         budget = self.budget
         listing_acquisition = self.list_archives(congress, bill_type) if unchanged_since is not None else None
-        if listing_acquisition is not None:
+        if listing_acquisition is not None and unchanged_since is not None:
             seen = listing_acquisition.listing.zip_entry
-            if (unchanged_since.name, unchanged_since.link) != (seen.name, seen.link):
-                raise BillSourceError("unchanged_since names a different file than this folder's own zip entry")
-            if (seen.modified_at, seen.size) == (unchanged_since.modified_at, unchanged_since.size):
+            if zip_entry_unchanged(seen, unchanged_since):
                 return BulkStatusAcquisition(
                     archive=None,
                     capture=None,
@@ -552,6 +595,7 @@ class BulkStatusAcquirer(SourceAcquirer):
 
 
 __all__ = [
+    "BulkArchiveBudget",
     "BulkListing",
     "BulkListingAcquisition",
     "BulkListingEntry",
@@ -564,4 +608,6 @@ __all__ = [
     "bulk_status_locator",
     "read_bulk_listing",
     "read_bulk_status_archive",
+    "read_folder_listing",
+    "zip_entry_unchanged",
 ]

@@ -40,6 +40,7 @@
 - [regulations.gov API](sources/regulations-gov-api.md): keyed document list and detail, attachment relationships, attachment PDFs.
 - [CBO cost estimates](sources/cbo.md): per-Congress cost-estimate feeds and estimate documents.
 - [Congress bulk status](sources/congress-bulk-status.md): one BILLSTATUS zip per Congress and bill type, every member proved or refused with its digest · [guide code tables](sources/billstatus-guide.md): the BILLSTATUS guide's own bill-type sentence and code tables.
+- [Congress bulk bill text](sources/congress-bulk-bills.md): one BILLS folder per Congress, session and bill type from the 113th on, its listing read first and its zip once for the printings a caller keeps.
 - [GovInfo package bodies](sources/govinfo-bodies.md): a report, hearing, Record, document or directory body by package id, identity proved from the summary and MODS before any body byte.
 - [Legislators crosswalk](sources/legislators.md): the community legislators JSON as the bioguide, LIS and FEC identifier crosswalk, pinned by capture.
 - [Appropriations press releases](sources/press-releases.md): the House and Senate Appropriations Committees' RSS feeds at their two live URLs, every channel and item field kept, identity proved from the channel body.

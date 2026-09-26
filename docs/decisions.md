@@ -2513,3 +2513,47 @@ counts differ, the API is newer than the file (115 HR 3354's file is from
 2020-05-28; its related bills, titles and display title have since changed; 113
 HR 4200 has since gained a CBO link), counts the policy area among subjects, or
 lists one of the two identical introduction actions (117 HR 2).
+
+## Bill text is read from the BILLS bulk zips from the 113th Congress on
+
+2026-09-26. spicy-regs' bill family held a body for 3,548 of its 228,587
+`bill_versions` rows (225,631 distinct printings; 2,956 carry both a `congress`
+placeholder and a `govinfo` row), because its only body route was the
+per-package one: three keyed requests per printing under a per-run cap of 600.
+GovInfo publishes the same bytes in bulk (receipt
+`fork-execution-2026-09-21/bill-family-bulk-2026-09-26/partB/` under
+`~/Work/corpora`).
+
+**What bulk covers.** The BILLS collection lists the 113th through 119th
+Congresses: 112 folders, 135,395 printings, 1,039,459,484 zip bytes. It holds
+137,467 of the 137,572 published printings in those Congresses (the other 105
+name a package it does not list, or none), 133,919 of them without a body today.
+The 108th-112th are not in it; their 88,059 printings reach only the
+per-package route, and 110th-112th printings still offer XML there.
+
+**The same bytes.** Every member of the 119th H.R. zips equals the per-package
+XML captured for it, 3,516 of 3,516 by SHA-256, and every member of the three
+zips measured is named in its folder listing with the same size and
+`application/xml`. So a bulk member is the printing's body, and
+`sources.congress.bulk_bills` checks it the way the per-package route checks
+its response: identity by address (the member name), media type (the listing's
+statement), not the error page. Its body record names the zip as the request
+and carries the member's own size and digest.
+
+**Not the content check.** `validate_bill_text` proves a printing's identity
+from its XML, and refuses about 8% of real printings (titles it cannot read,
+`amendment-doc` roots: 7,408 of 8,042 pass in 119/1/hr). The per-package route
+does not apply it, so the bulk route does not either; applying it would refuse
+printings the per-package route accepts.
+
+**The listing first.** A folder's listing states each printing and the zip's
+own stamp and size. It decides whether the zip moved (`zip_entry_unchanged`,
+shared with the BILLSTATUS folders) and whether it holds any printing the
+caller still needs, so the zip is downloaded only for a folder that does, read
+once, and decompressed only for the members a `keep` predicate names.
+
+**Printings apart from status.** `interpretation.bill_family.build_bill_printings`
+builds one bill's printing tables from its listed printings without a fresh
+BILLSTATUS, with a `context` set that takes part in order and comparison but
+emits no rows: a caller reading bodies in bulk passes the newly read printings,
+the held neighbours they are compared with, and the rest as placeholders.
