@@ -32,6 +32,12 @@ def _evidence_media_type(response: httpx.Response) -> str:
     return (response.headers.get("content-type") or "application/octet-stream").split(";", 1)[0]
 
 
+def _stated_length(response: httpx.Response) -> int | None:
+    """The response's ``Content-Length`` as an integer, or ``None`` when it states none or an invalid one."""
+    stated = response.headers.get("content-length")
+    return int(stated) if stated is not None and stated.isascii() and stated.isdigit() else None
+
+
 def _access_refusal(response: httpx.Response, url: str, max_bytes: int) -> RefusedResponse:
     """Retain complete bounded raw evidence for a 401/403; a failed read marks it unavailable, never absent."""
     media_type = _evidence_media_type(response)
@@ -40,7 +46,9 @@ def _access_refusal(response: httpx.Response, url: str, max_bytes: int) -> Refus
         for chunk in response.iter_raw(chunk_size=min(max_bytes + 1, 64 * 1024)):
             observed = len(body) + len(chunk)
             if observed > max_bytes:
-                return RefusedResponse(url, "transport", None, media_type, "response-byte-limit", observed)
+                return RefusedResponse(
+                    url, "transport", None, media_type, "response-byte-limit", observed, _stated_length(response)
+                )
             body.extend(chunk)
     except httpx.RequestError:
         return RefusedResponse(url, "transport", None, media_type, "response-unavailable", len(body))
@@ -185,7 +193,14 @@ class BoundedHttpCapture:
                         error = self.error_type("Body source response exceeds its byte bound")
                         attach_refused_response(
                             error,
-                            RefusedResponse(url, "transport", None, "application/octet-stream", "response-byte-limit"),
+                            RefusedResponse(
+                                url,
+                                "transport",
+                                None,
+                                "application/octet-stream",
+                                "response-byte-limit",
+                                stated_byte_size=int(stated_length),
+                            ),
                         )
                         raise error
                     body = bytearray()
@@ -207,6 +222,7 @@ class BoundedHttpCapture:
                                         "application/octet-stream",
                                         "response-byte-limit",
                                         len(body) + len(chunk),
+                                        None if stated_length is None else int(stated_length),
                                     ),
                                 )
                                 raise error

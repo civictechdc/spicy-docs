@@ -3,6 +3,9 @@
 Source adapters attach only bounded publisher response bodies and safe request
 identifiers. Transport credentials, provider responses, and request headers do
 not belong here. ``None`` means unavailable; ``b""`` is an exact empty response.
+``stated_byte_size`` is the response's own ``Content-Length``, where it stated
+one: a body refused at the byte bound before any of it was read has no observed
+size, and the stated one is what a caller can compare the next answer with.
 """
 
 from __future__ import annotations
@@ -19,6 +22,7 @@ class RefusedResponse:
     media_type: str
     unavailable_reason: str | None = None
     observed_byte_size: int | None = None
+    stated_byte_size: int | None = None
 
 
 def attach_refused_response(error: Exception, response: RefusedResponse) -> None:
@@ -43,6 +47,8 @@ def retain_refused_response(error: Exception, *, store: Path, max_bytes: int, cr
         "unavailable_reason": response.unavailable_reason,
         "observed_byte_size": response.observed_byte_size,
     }
+    if response.stated_byte_size is not None:
+        result["stated_byte_size"] = response.stated_byte_size
     if response.response_bytes is not None:
         if credential and credential.encode() in response.response_bytes:
             result["unavailable_reason"] = "credential echoed in response; bytes not retained"

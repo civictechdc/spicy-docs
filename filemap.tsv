@@ -444,6 +444,7 @@ tests/test_billstatus_guide.py	Literal guide values and original byte positions 
 tests/test_body_text.py	One text derivation per rendition, each on a real publisher response.	test
 tests/test_budget_volumes.py	The budget_volume contract, pinned on two of the eight retained volumes.	test
 tests/test_capture_access_refusals.py	A known access refusal stops immediately, including failed and oversize bodies.	test
+tests/test_capture_byte_bound.py	A body refused at the byte bound carries the Content-Length its response stated.	test
 tests/test_cbo.py	CBO's per-Congress feed read as an observation whose Links name publications.	test
 tests/test_cbo_estimates.py	The CBO letter rule: the recital gate, the located span, the publisher's reason, and the version.	test
 tests/test_cfr_acquisition.py	CFR source requests preserve exact responses, bounds and refusal evidence.	test
