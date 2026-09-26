@@ -13,6 +13,8 @@ import gzip
 import io
 import json
 import zipfile
+from datetime import date
+from pathlib import Path
 
 import httpx
 import pytest
@@ -186,6 +188,9 @@ NOT_ACCEPTABLE = {
 }
 # Long enough for scrub_credential's literal pass, which skips keys under 8 characters.
 KEY = "sam-test-key-0123"
+# The real renewals SAM held twice in the 2007 and 2008 registration-year extracts, 2026-09-26.
+SUPERSEDED = json.loads((Path(__file__).parent / "fixtures" / "sam-extract-superseded-2026-09-26.json").read_text())
+TRIGGER_DAY = date.fromisoformat(SUPERSEDED["trigger_day"])
 
 
 def _admits_gzip(accept: str) -> bool:
@@ -225,6 +230,7 @@ class _Publisher:
         self.now += seconds
 
     def reader(self, **kwargs) -> SamBulkExtract:
+        kwargs.setdefault("today", lambda: TRIGGER_DAY)
         return SamBulkExtract(
             api_key=KEY, transport=httpx.MockTransport(self), sleep=self.sleep, clock=lambda: self.now, **kwargs
         )
@@ -337,6 +343,43 @@ def test_identical_repeats_collapse_and_differing_ones_at_one_date_refuse():
     assert len(_read(_file([_registration("A"), _registration("A")], total=1))) == 1
     with pytest.raises(SamExtractError, match="two differing versions"):
         _read(_file([_registration("A", name="X"), _registration("A", name="Y")], total=1))
+    with pytest.raises(SamExtractError, match="two differing versions"):
+        newer = _registration("A", updated="2026-09-16")
+        _read(_file([_registration("A", name="X"), newer, _registration("A", name="Y")], total=1))
+
+
+def _read_on(download: bytes, day: date) -> tuple[list[dict], SamBulkExtract]:
+    reader = _Publisher(httpx.Response(200, content=download)).reader(today=lambda: day)
+    return list(reader.records()), reader
+
+
+@pytest.mark.parametrize("year", ["2007", "2008"])
+def test_a_renewal_the_source_still_holds_active_is_credited_toward_the_declared_count(year):
+    """Each file declared exactly its rows and held one UEI twice; the entity API held both records Active."""
+    older, newer = SUPERSEDED["years"][year]
+    others = [_registration(f"OTHER{i}") for i in range(3)]
+    got, reader = _read_on(_file([older, *others, newer], total=5), TRIGGER_DAY)
+    assert len(got) == 4 and newer in got and older not in got
+    prior, kept = older["entityRegistration"], newer["entityRegistration"]
+    assert reader.superseded == [
+        {
+            "uei": kept["ueiSAM"],
+            "eft_indicator": None,
+            "superseded_last_update": prior["lastUpdateDate"],
+            "superseded_expiration": prior["registrationExpirationDate"],
+            "kept_last_update": kept["lastUpdateDate"],
+            "kept_expiration": kept["registrationExpirationDate"],
+            "trigger_day": "2026-09-26",
+        }
+    ]
+
+
+@pytest.mark.parametrize("day", [date(2026, 9, 23), date(2026, 9, 24)])
+def test_a_version_updated_as_the_file_generates_earns_no_credit(day):
+    """A skipped registration plus a mid-write repeat looks like a renewal inside the count; it still refuses."""
+    older, newer = SUPERSEDED["years"]["2008"]  # the newer version was updated 2026-09-23
+    with pytest.raises(SamExtractError, match="0 concurrent superseded records, fewer than its totalRecords 2"):
+        _read_on(_file([older, newer], total=2), day)
 
 
 def test_a_trigger_naming_no_download_refuses():

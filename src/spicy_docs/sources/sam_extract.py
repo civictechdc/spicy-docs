@@ -8,7 +8,10 @@ only as ``application/x-gzip`` (all measured 2026-09-23). The trigger states
 no count, so the downloaded file's own
 ``totalRecords`` is the selection's count, and a floor: the file is written while
 registrations change, so it may hold more (never fewer) registrations, each keyed
-by UEI and EFT indicator (:func:`registrations`). The key travels merged into each
+by UEI and EFT indicator (:func:`registrations`). SAM also keeps a renewed
+registration's prior record Active until its expiry is processed and counts both, so a
+superseded version the source held before the trigger's day counts toward that floor
+(:attr:`SamBulkExtract.superseded`). The key travels merged into each
 URL's own query: httpx's ``params`` replaces a query rather than extending it,
 which once dropped every selection filter. This module owns that loop and the
 defensive file parse, so callers receive validated entity records or a
@@ -29,6 +32,7 @@ import re
 import time
 import zipfile
 from collections.abc import Callable, Iterator, Mapping, Sequence
+from datetime import UTC, date, datetime, timedelta
 from typing import Any, cast
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
@@ -105,20 +109,59 @@ def registrations(records: Sequence[dict]) -> list[dict]:
     versions of one registration (two in the 2026 extract, 2026-09-23) and registrations newer
     than its own ``totalRecords``. Identical repeats collapse; differing ones at one date refuse.
     """
-    chosen: dict[tuple[str, str | None], dict] = {}
+    return [held[-1] for held in _versions(records).values()]
+
+
+def _versions(records: Sequence[dict]) -> dict[tuple[str, str | None], list[dict]]:
+    """Each registration's distinct versions, oldest ``lastUpdateDate`` first."""
+    grouped: dict[tuple[str, str | None], list[dict]] = {}
     for record in records:
-        key = registration_key(record)
-        held = chosen.get(key)
-        if held is None:
-            chosen[key] = record
-            continue
-        mine = str(record["entityRegistration"].get("lastUpdateDate") or "")
-        theirs = str(held["entityRegistration"].get("lastUpdateDate") or "")
-        if mine == theirs and record != held:
+        held = grouped.setdefault(registration_key(record), [])
+        if record not in held:
+            held.append(record)
+    for key, held in grouped.items():
+        if len({_updated(record) for record in held}) != len(held):
             raise SamExtractError(f"SAM extract holds two differing versions of {key} at one lastUpdateDate")
-        if mine > theirs:
-            chosen[key] = record
-    return list(chosen.values())
+        held.sort(key=_updated)
+    return grouped
+
+
+def _concurrent_superseded(versions: Mapping[tuple[str, str | None], list[dict]], trigger_day: date) -> list[dict]:
+    """The superseded versions the source held concurrently, each credited toward ``totalRecords``.
+
+    SAM keeps a renewed registration's prior record Active until its expiry is processed and
+    counts both: the 2007 and 2008 registration-year extracts each declared exactly their rows
+    and held one UEI twice, a fresh trigger reproduced the 2007 file, and the entity API answered
+    two Active records for each UEI (2026-09-26; receipts in
+    corpora/fork-execution-2026-09-21/sam-superseded-2026-09-26/). A superseded version earns
+    credit only when its successor was updated before the day preceding ``trigger_day`` (SAM
+    dates are Eastern time): a version written while the file generated earns nothing, so a file
+    that skipped one registration while repeating another still refuses.
+    """
+    cutoff = (trigger_day - timedelta(days=1)).isoformat()
+    credited = []
+    for (uei, eft), held in versions.items():
+        kept = held[-1]["entityRegistration"]
+        if len(held) < 2 or not _updated(held[-1]) or _updated(held[-1]) >= cutoff:
+            continue
+        for older in held[:-1]:
+            prior = older["entityRegistration"]
+            credited.append(
+                {
+                    "uei": uei,
+                    "eft_indicator": eft,
+                    "superseded_last_update": prior.get("lastUpdateDate"),
+                    "superseded_expiration": prior.get("registrationExpirationDate"),
+                    "kept_last_update": kept.get("lastUpdateDate"),
+                    "kept_expiration": kept.get("registrationExpirationDate"),
+                    "trigger_day": trigger_day.isoformat(),
+                }
+            )
+    return credited
+
+
+def _updated(record: Mapping[str, Any]) -> str:
+    return str(record["entityRegistration"].get("lastUpdateDate") or "")
 
 
 def validate_entity(record: object) -> str:
@@ -343,6 +386,10 @@ class SamBulkExtract:
     emitted records, not downloaded bytes. Records yielded before a refusal are
     partial — callers must exhaust the iterator before writing output.
 
+    ``superseded`` lists, once :meth:`records` has yielded, each concurrent superseded
+    version credited toward the file's ``totalRecords`` (UEI, EFT indicator, both versions'
+    ``lastUpdateDate`` and expiration, and the trigger's day) for the caller's evidence.
+
     ``max_wait`` seconds of ``clock`` from the trigger bound the wait for the file
     (:data:`EXTRACT_MAX_WAIT`): no poll starts after it, polls run ``poll_interval``
     seconds apart under 30 s timeouts, and the trigger's own retries count against
@@ -364,6 +411,7 @@ class SamBulkExtract:
         poll_interval: float = EXTRACT_POLL_INTERVAL,
         sleep: Callable[[float], None] = time.sleep,
         clock: Callable[[], float] = time.monotonic,
+        today: Callable[[], date] = lambda: datetime.now(UTC).date(),
     ) -> None:
         if not api_key or not api_key.strip():
             raise SamExtractError("SAM extracts require a SAM-authorized API key")
@@ -380,6 +428,8 @@ class SamBulkExtract:
         self.poll_interval = poll_interval
         self.sleep = sleep
         self.clock = clock
+        self.today = today
+        self.superseded: list[dict] = []
         self._seen = 0
 
     def records(self) -> Iterator[dict]:
@@ -388,7 +438,7 @@ class SamBulkExtract:
         # Extract download URLs commonly 302 to a signed blob URL.
         with httpx.Client(timeout=DEFAULT_TIMEOUT, follow_redirects=True, transport=self.transport) as client:
             url = extract_entities_url(registration_status=self.registration_status, year=self.year)
-            deadline = self.clock() + self.max_wait
+            deadline, trigger_day = self.clock() + self.max_wait, self.today()
             trigger = _body(self._get(client, url))
             if isinstance(trigger, dict) and "entityData" in trigger:
                 total, records = _total_records(trigger), _entity_data(trigger)
@@ -397,13 +447,22 @@ class SamBulkExtract:
                 if download_url is None:
                     raise SamExtractError("SAM extract trigger named no download URL")
                 total, records = self._download_records(client, download_url, deadline)
-            records = registrations(records)
-            if len(records) < total:
+            versions = _versions(records)
+            records = [held[-1] for held in versions.values()]
+            self.superseded = _concurrent_superseded(versions, trigger_day)
+            held = len(records) + len(self.superseded)
+            if held < total:
                 raise SamExtractError(
-                    f"SAM extract holds {len(records):,} registrations, fewer than its totalRecords {total:,}"
+                    f"SAM extract holds {len(records):,} registrations and {len(self.superseded):,} concurrent "
+                    f"superseded records, fewer than its totalRecords {total:,}"
                 )
-            if len(records) > total:
-                logger.info("SAM extract: {:,} registrations beyond its totalRecords {:,}", len(records) - total, total)
+            if self.superseded:
+                logger.info(
+                    "SAM extract: {:,} concurrent superseded records credited toward its totalRecords",
+                    len(self.superseded),
+                )
+            if held > total:
+                logger.info("SAM extract: {:,} registrations beyond its totalRecords {:,}", held - total, total)
             for record in records:
                 if not self._budget_left():
                     return

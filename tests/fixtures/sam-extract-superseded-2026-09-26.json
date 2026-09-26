@@ -1,0 +1,114 @@
+{
+ "_source": "SAM Entity Management API v4 async extract, registrationStatus=A, one registrationDate year each, triggered 2026-09-26. Each year's file declared totalRecords equal to its row count and held one registration twice; the synchronous /entities?ueiSAM= answered totalRecords 2, both Active. entityRegistration sections only. Receipts: corpora/fork-execution-2026-09-21/sam-superseded-2026-09-26/.",
+ "trigger_day": "2026-09-26",
+ "years": {
+  "2007": [
+   {
+    "entityRegistration": {
+     "samRegistered": "Yes",
+     "ueiSAM": "WRERXDACNQ31",
+     "entityEFTIndicator": null,
+     "cageCode": "4R7V4",
+     "dodaac": null,
+     "legalBusinessName": "VETERANS HEALTH ADMINISTRATION",
+     "dbaName": "Ralph H Johnson V A Medical Center",
+     "purposeOfRegistrationCode": "Z1",
+     "purposeOfRegistrationDesc": "Federal Assistance Awards",
+     "registrationStatus": "Active",
+     "evsSource": null,
+     "registrationDate": "2007-05-04",
+     "lastUpdateDate": "2024-09-04",
+     "registrationExpirationDate": "2026-09-30",
+     "activationDate": "2023-04-07",
+     "ueiStatus": "Active",
+     "ueiExpirationDate": null,
+     "ueiCreationDate": "2020-05-01",
+     "publicDisplayFlag": "Y",
+     "exclusionStatusFlag": "N",
+     "exclusionURL": null,
+     "dnbOpenData": null
+    }
+   },
+   {
+    "entityRegistration": {
+     "samRegistered": "Yes",
+     "ueiSAM": "WRERXDACNQ31",
+     "entityEFTIndicator": null,
+     "cageCode": "4R7V4",
+     "dodaac": null,
+     "legalBusinessName": "VETERANS HEALTH ADMINISTRATION",
+     "dbaName": "Ralph H Johnson V A Medical Center",
+     "purposeOfRegistrationCode": "Z1",
+     "purposeOfRegistrationDesc": "Federal Assistance Awards",
+     "registrationStatus": "Active",
+     "evsSource": null,
+     "registrationDate": "2007-05-04",
+     "lastUpdateDate": "2026-09-09",
+     "registrationExpirationDate": "2027-08-27",
+     "activationDate": "2026-09-09",
+     "ueiStatus": "Active",
+     "ueiExpirationDate": null,
+     "ueiCreationDate": "2020-05-01",
+     "publicDisplayFlag": "Y",
+     "exclusionStatusFlag": "N",
+     "exclusionURL": null,
+     "dnbOpenData": null
+    }
+   }
+  ],
+  "2008": [
+   {
+    "entityRegistration": {
+     "samRegistered": "Yes",
+     "ueiSAM": "YEG3NMEMPGN1",
+     "entityEFTIndicator": null,
+     "cageCode": "4ZJ12",
+     "dodaac": null,
+     "legalBusinessName": "SIGHTLINE, INC.",
+     "dbaName": null,
+     "purposeOfRegistrationCode": "Z2",
+     "purposeOfRegistrationDesc": "All Awards",
+     "registrationStatus": "Active",
+     "evsSource": "E&Y",
+     "registrationDate": "2008-02-07",
+     "lastUpdateDate": "2025-09-29",
+     "registrationExpirationDate": "2026-09-24",
+     "activationDate": "2025-09-29",
+     "ueiStatus": "Active",
+     "ueiExpirationDate": null,
+     "ueiCreationDate": "2020-05-02",
+     "publicDisplayFlag": "Y",
+     "exclusionStatusFlag": "N",
+     "exclusionURL": null,
+     "dnbOpenData": null
+    }
+   },
+   {
+    "entityRegistration": {
+     "samRegistered": "Yes",
+     "ueiSAM": "YEG3NMEMPGN1",
+     "entityEFTIndicator": null,
+     "cageCode": "4ZJ12",
+     "dodaac": null,
+     "legalBusinessName": "SIGHTLINE, INC.",
+     "dbaName": null,
+     "purposeOfRegistrationCode": "Z2",
+     "purposeOfRegistrationDesc": "All Awards",
+     "registrationStatus": "Active",
+     "evsSource": "E&Y",
+     "registrationDate": "2008-02-07",
+     "lastUpdateDate": "2026-09-23",
+     "registrationExpirationDate": "2027-09-23",
+     "activationDate": "2026-09-23",
+     "ueiStatus": "Active",
+     "ueiExpirationDate": null,
+     "ueiCreationDate": "2020-05-02",
+     "publicDisplayFlag": "Y",
+     "exclusionStatusFlag": "N",
+     "exclusionURL": null,
+     "dnbOpenData": null
+    }
+   }
+  ]
+ }
+}
