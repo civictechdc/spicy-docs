@@ -1,4 +1,4 @@
-"""Regulations.gov API v4 document lists and details, page by page with exact evidence.
+"""Regulations.gov API v4 document lists, document and docket details, page by page with exact evidence.
 
 The official API answers JSON:API pages whose rows are under ``data`` and whose
 paging statement is under ``meta``: ``totalElements``, ``pageNumber``,
@@ -113,10 +113,10 @@ class RegulationsGovApiError(PagedJsonSourceError):
 
 
 class RegulationsGovApiUnavailableError(RegulationsGovApiError):
-    """Only the exact requested document answered 404/410."""
+    """Only the exact requested document or docket answered 404/410."""
 
     def __init__(self, capture: CapturedBodyResponse) -> None:
-        super().__init__(f"Regulations.gov API answered HTTP {capture.status_code} for the requested document")
+        super().__init__(f"Regulations.gov API answered HTTP {capture.status_code} for the requested item")
         self.capture = capture
 
 
@@ -199,6 +199,11 @@ def document_list_url(
 
 def document_detail_url(identity: str) -> str:
     return f"{API}/documents/{document_id(identity)}"
+
+
+def docket_detail_url(identity: str) -> str:
+    """A docket's detail route; docket ids share the document id grammar."""
+    return f"{API}/dockets/{document_id(identity)}"
 
 
 def document_attachments_url(identity: str) -> str:
@@ -340,6 +345,34 @@ def read_document_detail(capture: CapturedBodyResponse, *, identity: str) -> Doc
 
 
 @dataclass(frozen=True, slots=True)
+class DocketDetail:
+    """One docket as the publisher spelled it: the same object the Mirrulations mirror retains per docket."""
+
+    docket_id: str
+    capture: CapturedBodyResponse
+    data: Mapping[str, Any]
+    attributes: Mapping[str, Any]
+
+
+def read_docket_detail(capture: CapturedBodyResponse, *, identity: str) -> DocketDetail:
+    """A detail response names one docket object; its id must be the one requested."""
+    value = load_decimal_json(capture.body, source="Regulations.gov API", error_type=RegulationsGovApiError)
+    if not isinstance(value, Mapping):
+        raise RegulationsGovApiError("Regulations.gov docket response is not a JSON object")
+    data = value.get("data")
+    if not isinstance(data, Mapping):
+        raise RegulationsGovApiError("Regulations.gov docket response omitted its data object")
+    if data.get("type") != "dockets":
+        raise RegulationsGovApiError("Regulations.gov docket response is not a docket")
+    if document_id(data.get("id")) != identity:
+        raise RegulationsGovApiError("Regulations.gov docket response names a different docket")
+    attributes = data.get("attributes")
+    if not isinstance(attributes, Mapping):
+        raise RegulationsGovApiError("Regulations.gov docket omitted its attributes")
+    return DocketDetail(identity, capture, data, attributes)
+
+
+@dataclass(frozen=True, slots=True)
 class AttachmentRelationship:
     """A document's attachments: one unpaged ``data`` list, with no ``meta`` and no continuation."""
 
@@ -370,7 +403,7 @@ def read_attachment_relationship(capture: CapturedBodyResponse, *, identity: str
 
 
 class RegulationsGovApiReader(PagedJsonReader):
-    """Document lists, details and attachment relationships; every response is one bounded request."""
+    """Document lists, document and docket details and attachment relationships; each response is one bounded request."""
 
     def __init__(
         self,
@@ -426,6 +459,20 @@ class RegulationsGovApiReader(PagedJsonReader):
             operation="document",
             identity=identity,
             parse=lambda capture: read_document_detail(capture, identity=identity),
+        )
+
+    def docket(self, identity: str) -> DocketDetail:
+        """One docket detail; 404 and 410 raise ``RegulationsGovApiUnavailableError`` with the capture.
+
+        The publisher answers an id outside its grammar (legacy ``-RULEMAKING``
+        suffixes, say) with HTTP 400 "Invalid ID"; that raises the shared source
+        error with the capture attached, distinct from absence.
+        """
+        return self._item(
+            docket_detail_url(identity),
+            operation="docket",
+            identity=identity,
+            parse=lambda capture: read_docket_detail(capture, identity=identity),
         )
 
     def attachments(self, identity: str) -> AttachmentRelationship:

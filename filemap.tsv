@@ -339,7 +339,7 @@ src/spicy_docs/sources/public_comments/native.py	Capture exact spicy-regs public
 src/spicy_docs/sources/public_comments/profile.py	Profile for exact captures of the community public-comment table.	src
 src/spicy_docs/sources/regulations_gov/__init__.py	Regulations.gov collection profiles share acquisition mechanics and retain distinct selection rules.	src
 src/spicy_docs/sources/regulations_gov/acquisition.py	Capture a complete Mirrulations enumeration into bounded evidence pages.	src
-src/spicy_docs/sources/regulations_gov/api.py	Regulations.gov API v4 document lists and details, page by page with exact evidence.	src
+src/spicy_docs/sources/regulations_gov/api.py	Regulations.gov API v4 document lists, document and docket details, page by page with exact evidence.	src
 src/spicy_docs/sources/regulations_gov/attachments.py	Attachment and document-body files from ``downloads.regulations.gov``, one bounded PDF at a time.	src
 src/spicy_docs/sources/regulations_gov/dates.py	Regulations.gov states dates and instants on the Eastern clock; read their calendar day there.	src
 src/spicy_docs/sources/regulations_gov/definitions.py	Regulations.gov collection identities, accepted fields, and evidence data shapes.	src

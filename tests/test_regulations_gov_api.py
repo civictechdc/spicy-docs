@@ -20,6 +20,7 @@ from spicy_docs.sources.regulations_gov.api import (
     RegulationsGovApiError,
     RegulationsGovApiReader,
     RegulationsGovApiUnavailableError,
+    docket_detail_url,
     document_attachments_url,
     document_detail_url,
     document_list_url,
@@ -48,6 +49,10 @@ from spicy_docs.transport.credentials import CredentialRefusedError
 FIXTURES = Path(__file__).parent / "fixtures"
 LISTING = (FIXTURES / "listings" / "regulations-gov-documents-p1.json").read_bytes()
 DETAIL = (FIXTURES / "listings" / "regulations-gov-document-detail.json").read_bytes()
+# BIS-2023-0005 as the publisher answered it on 2026-09-26: one of the dockets
+# whose documents Mirrulations holds but whose docket record it never mirrored.
+DOCKET_DETAIL = (FIXTURES / "listings" / "regulations-gov-docket-detail.json").read_bytes()
+DOCKET = "BIS-2023-0005"
 ATTACHMENTS = (FIXTURES / "listings" / "regulations-gov-attachments.json").read_bytes()
 PDF = (FIXTURES / "regulations_gov_attachments" / "FAA-2016-6907-0001-content.pdf").read_bytes()
 BUDGET = PagedJsonBudget(4, 65536, 7, 0)
@@ -598,3 +603,54 @@ def test_the_list_page_is_a_frozen_observation():
     assert isinstance(listing, DocumentListPage)
     with pytest.raises(AttributeError):
         listing.total_elements = 0
+
+
+def test_pinned_docket_detail_is_the_object_the_mirror_retains():
+    transport = Transport(item_response(DOCKET_DETAIL))
+    with RegulationsGovApiReader(budget=BUDGET, api_key=KEY, transport=transport) as source:
+        detail = source.docket(DOCKET)
+    assert (
+        str(transport.calls[0].url) == docket_detail_url(DOCKET) == f"https://api.regulations.gov/v4/dockets/{DOCKET}"
+    )
+    assert detail.capture.body == DOCKET_DETAIL and detail.docket_id == DOCKET
+    assert detail.attributes["docketType"] == "Rulemaking" and detail.attributes["agencyId"] == "BIS"
+    assert detail.data["type"] == "dockets" and sorted(json.loads(DOCKET_DETAIL)) == ["data"]
+
+
+@pytest.mark.parametrize(
+    "mutate,message",
+    [
+        (lambda body: body.pop("data"), "omitted its data object"),
+        (lambda body: body["data"].update(type="documents"), "is not a docket"),
+        (lambda body: body["data"].update(id="BIS-2023-0006"), "names a different docket"),
+        (lambda body: body["data"].pop("attributes"), "omitted its attributes"),
+    ],
+)
+def test_docket_detail_refusals_name_the_failed_check(mutate, message):
+    body = json.loads(DOCKET_DETAIL)
+    mutate(body)
+    transport = Transport(item_response(json.dumps(body).encode()))
+    with (
+        RegulationsGovApiReader(budget=BUDGET, api_key=KEY, transport=transport) as source,
+        pytest.raises(RegulationsGovApiError, match=message),
+    ):
+        source.docket(DOCKET)
+
+
+def test_an_absent_docket_and_an_invalid_docket_id_are_different_answers():
+    absent = b'{\n  "errors" : [ {\n    "status" : "404",\n    "title" : "not found"\n  } ]\n}'
+    with (
+        RegulationsGovApiReader(budget=BUDGET, api_key=KEY, transport=Transport(item_response(absent, 404))) as source,
+        pytest.raises(RegulationsGovApiUnavailableError) as raised,
+    ):
+        source.docket("CFPB-2026-0008")
+    assert raised.value.paged_json_acquisition["operation"] == "docket"
+    # The publisher's verbatim answer to a legacy suffixed id (2026-09-26).
+    invalid = b'{\n  "errors" : [ {\n    "status" : "400",\n    "title" : "Invalid ID: GIPSA-2010-FGIS-0002-RULEMAKING"\n  } ]\n}'
+    with (
+        RegulationsGovApiReader(budget=BUDGET, api_key=KEY, transport=Transport(item_response(invalid, 400))) as source,
+        pytest.raises(PagedJsonSourceError) as refused,
+    ):
+        source.docket("GIPSA-2010-FGIS-0002-RULEMAKING")
+    assert not isinstance(refused.value, RegulationsGovApiUnavailableError)
+    assert refused.value.capture.status_code == 400 and b"Invalid ID" in refused.value.capture.body

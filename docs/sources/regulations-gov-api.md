@@ -10,8 +10,17 @@ of the same publisher and neither supersedes the other.
 | --- | --- | --- | --- |
 | Document list | Posted-date and/or last-modified window, docket, agency, search term | `data` | api.data.gov key |
 | Document detail | One document id | one `data` object | api.data.gov key |
+| Docket detail | One docket id | one `data` object | api.data.gov key |
 | Attachments relationship | One document id | `data`, unpaged | api.data.gov key |
 | Attachment or content PDF | One publisher-declared `fileFormats[].fileUrl` | the file | none |
+
+The docket detail is the object the mirror retains as
+`text-<docket>/docket/<docket>.json`. It fills dockets the mirror never
+captured: on 2026-09-26, 165 dockets named by mirrored documents or comments
+had no docket record in the mirror, and the API still served some of them. It
+answers 404 for a docket it no longer publishes, and 400 "Invalid ID" for an id
+outside its grammar, such as legacy `-RULEMAKING` suffixes. These are different
+answers, and `docket()` raises them differently.
 
 ## The list pages, and what their numbers mean
 

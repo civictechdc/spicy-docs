@@ -1,0 +1,32 @@
+{
+  "data" : {
+    "id" : "BIS-2023-0005",
+    "type" : "dockets",
+    "attributes" : {
+      "displayProperties" : [ ],
+      "keywords" : [ "AG", "Application procedures", "Country specific", "Encryption", "Enforcement", "Export clearance", "MTCR", "NSG", "Item specific", "License Exceptions", "Use/user", "Wassenaar" ],
+      "modifyDate" : "2023-03-29T14:51:26Z",
+      "dkAbstract" : null,
+      "agencyId" : "BIS",
+      "program" : null,
+      "shortTitle" : null,
+      "subType2" : null,
+      "title" : "Additions to the Entity List",
+      "generic" : null,
+      "field1" : null,
+      "docketType" : "Rulemaking",
+      "petitionNbr" : null,
+      "rin" : "Not Assigned",
+      "organization" : null,
+      "legacyId" : null,
+      "subType" : "EAR",
+      "category" : null,
+      "field2" : null,
+      "effectiveDate" : null,
+      "objectId" : "0b000064857406a6"
+    },
+    "links" : {
+      "self" : "https://api.regulations.gov/v4/dockets/BIS-2023-0005"
+    }
+  }
+}
