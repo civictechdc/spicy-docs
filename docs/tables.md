@@ -256,8 +256,9 @@ keyless CI run and every hermetic test do.
 
 Nothing is dropped silently. A pair that cannot be compared or whose order no
 date or stage establishes, a row whose identity has a null part or repeats one
-already admitted, a version the summarizer declined — each becomes a
-`FamilyRefusal` naming the table, the identity and the reason. A section is
+already admitted, a printing whose identity repeats an earlier printing's
+(refused whole, never mixed into it), a version the summarizer declined — each
+becomes a `FamilyRefusal` naming the table, the identity and the reason. A section is
 keyed on its `seq` within its printing, because `match_path` is a
 cross-version key that repeats inside one printing
 ([decision](decisions.md#a-bill-section-is-keyed-on-its-position-and-a-dateless-enrolled-printing-is-paired-by-its-stage)).

@@ -15,7 +15,7 @@ summarizer declined or the model's own reader refused each becomes a named
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Callable, Iterable, Iterator, Sequence
+from collections.abc import Callable, Collection, Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from functools import partial
@@ -460,6 +460,28 @@ def _sorted_versions(versions: Iterable[BillVersionCapture]) -> list[BillVersion
     return [captures[i] for i in printing_order([(c.version_code, c.version.date) for c in captures])]
 
 
+#: Why a printing is refused whole. Refusing only its repeated rows once
+#: published a mix: 119 HR 6644's two Senate engrossed amendments shared
+#: ``engrossed-amendment-senate``, the second's first 198 sections were refused
+#: as repeats of the first's 198, its last 78 were admitted under the same key,
+#: and every comparison into or out of it named sections never published.
+REPEATED_PRINTING_REASON = (
+    "repeats the printing identity of an earlier printing of this bill, so none of its rows are published"
+)
+
+
+def _repeated_printings(ordered: Sequence[BillVersionCapture]) -> set[int]:
+    """Positions of printings whose ``(version_code, source)`` an earlier printing already carries."""
+    seen: set[tuple[str, str]] = set()
+    repeated: set[int] = set()
+    for position, entry in enumerate(ordered):
+        printing = (entry.version_code, entry.source)
+        if printing in seen:
+            repeated.add(position)
+        seen.add(printing)
+    return repeated
+
+
 def build_bill_family(
     capture: BillFamilyCapture,
     *,
@@ -583,11 +605,17 @@ def build_bill_family(
             ),
         )
 
-    # 4. One row per acquired printing, with the kind it classifies as.
+    # 4. One row per acquired printing, with the kind it classifies as. A
+    # printing repeating an earlier one's identity is refused whole, here and in
+    # every later step, rather than row by row.
     ordered = _sorted_versions(capture.versions)
+    repeated = _repeated_printings(ordered)
     versions: list[Row] = []
     kinds: dict[tuple[str, str], Any] = {}
-    for entry in ordered:
+    for position, entry in enumerate(ordered):
+        if position in repeated:
+            admit.refuse(BILL_VERSIONS.name, (key, entry.version_code, entry.source), REPEATED_PRINTING_REASON)
+            continue
         document = entry.document
         finding = version_kind.version_kind_finding(
             entry.version_code,
@@ -612,7 +640,9 @@ def build_bill_family(
     # 5. One row per content-bearing node, and the map a model answer resolves through.
     sections: list[Row] = []
     section_by_reference: dict[str, Row] = {}
-    for entry in ordered:
+    for position, entry in enumerate(ordered):
+        if position in repeated:
+            continue
         if entry.document is None:
             admit.refuse(
                 BILL_SECTIONS.name,
@@ -656,13 +686,16 @@ def build_bill_family(
             pair_amounts=pair_amounts,
             text_diff_cap=text_diff_cap,
             computed_at=now().isoformat(),
+            withheld=repeated,
         )
 
     # 7-8. The per-printing model tables, only where a printing carries bill text.
     classifications: list[Row] = []
     summaries: list[Row] = []
     vocabulary = classification_vocabulary_hash()
-    for entry in ordered:
+    for position, entry in enumerate(ordered):
+        if position in repeated:
+            continue
         finding = kinds[(entry.version_code, entry.source)]
         if entry.document is None or finding.kind not in MODELLED_KINDS:
             continue
@@ -734,6 +767,7 @@ def _diff_pairs(
     pair_amounts: bool,
     text_diff_cap: int,
     computed_at: str,
+    withheld: Collection[int] = (),
 ) -> list[tuple[BillVersionCapture, BillVersionCapture, Any]]:
     """Diff each consecutive pair, or refuse the pair by name.
 
@@ -758,6 +792,9 @@ def _diff_pairs(
     for position in range(len(ordered) - 1):
         older, newer = ordered[position], ordered[position + 1]
         pair = (key, older.version_code, older.source, newer.version_code, newer.source)
+        if position in withheld or position + 1 in withheld:
+            admit.refuse(SECTION_DIFFS.name, pair, f"a side of the pair {REPEATED_PRINTING_REASON}")
+            continue
         if (position, position + 1) not in established:
             admit.refuse(
                 SECTION_DIFFS.name,
@@ -1020,6 +1057,7 @@ def _summarize_version(
 
 __all__ = [
     "MODELLED_KINDS",
+    "REPEATED_PRINTING_REASON",
     "BillFamilyCapture",
     "BillFamilyError",
     "BillFamilyTables",

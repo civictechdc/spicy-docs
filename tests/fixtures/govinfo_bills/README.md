@@ -190,3 +190,21 @@ leaves every other byte as served. All were read keyless from GovInfo on
 | `text-119hr5334enr.xml` | 9,478 | `e71e46d361aab11f9d7ad6863dd90c558f007eb38a09e540f08c06179c7e2dbd` | [BILLS-119hr5334enr XML](https://www.govinfo.gov/content/pkg/BILLS-119hr5334enr/xml/BILLS-119hr5334enr.xml) (113,233 bytes, `50bf7a3c48fc607dee1cc800389c0e5afd682474aa3c399e2aa1e363d6096ca2`). Reduced: Division A's two `title` elements (`H42DEB9C…`, `H751A661…`) are cut, keeping Division A's and Division B's `Sec. 1` (`H7962367…`, `H99FFDB5…`), which share the match path `sec. 1`: seqs 3 and 6 here, 3 and 80 in the whole printing. |
 | `status-119hr9022.xml` | 23,866 | `9bbca5ad13200b0c3ac548b4f1fddce0cb9ce1299639f7e20a3b8b0620515583` | [119 HR 9022 BILLSTATUS](https://www.govinfo.gov/bulkdata/BILLSTATUS/119/hr/BILLSTATUS-119hr9022.xml), complete and unchanged (publisher Last-Modified 2026-07-24 10:24:25 GMT). |
 | `text-119hr9022rh.xml` | 9,288 | `b0952d9eb609fb31393117d27ba72c966ec03ca558fd1b5ff20e4d3b77b7667b` | [BILLS-119hr9022rh XML](https://www.govinfo.gov/content/pkg/BILLS-119hr9022rh/xml/BILLS-119hr9022rh.xml) (124,422 bytes, `fc82dbe573754a737e74e6489262dd423bdb9d1e17d8b6203456c77e6c1f135b`). Reduced: every `title` but Title III is cut, and within Title III every child but its `enum`, `header`, the `ENERGY PROGRAMS` major heading, the `Title 17 Innovative Technology Loan Guarantee Program` intermediate heading and the two `appropriations-small` paragraphs under it (`HA2B9AE2…`, `HF8CCDC6…`), which share that heading's match path: seqs 4 and 5 here, 68 and 69 in the whole printing. |
+
+## Numbered reprints (2026-09-26)
+
+A bill that lists one printing stage twice, for the family's refusal of a
+repeated printing (receipt
+`fork-execution-2026-09-21/repeated-printings-2026-09-26/` under
+`~/Work/corpora`). All were read keyless from GovInfo on 2026-09-26 (UTC) and
+are complete and unchanged.
+
+| Fixture | Bytes | SHA-256 | Publisher response and changes |
+| --- | --- | --- | --- |
+| `status-119hr3426.xml` | 24,161 | `def222e997018709ce12ecdea282e2a30049e7f3f0a41d33d0d7e93c11b35f85` | [119 HR 3426 BILLSTATUS](https://www.govinfo.gov/bulkdata/BILLSTATUS/119/hr/BILLSTATUS-119hr3426.xml), complete and unchanged (Last-Modified 2026-09-08 21:21:33 GMT): referred to the Senate as `rfs`, returned to the House by unanimous consent, and referred again as `rfs2`; its engrossed printing is `eh1s`. |
+| `text-119hr3426ih.xml` | 5,854 | `7498eedf63ea53add8466064b949635dc6691336ead69405af3b1bef8467ad2c` | [BILLS-119hr3426ih XML](https://www.govinfo.gov/content/pkg/BILLS-119hr3426ih/xml/BILLS-119hr3426ih.xml), complete and unchanged. |
+| `text-119hr3426rh.xml` | 6,451 | `f387ff1552ab206f546e2962ed95581bfad1a0199eac7c93737455a142262fa8` | [BILLS-119hr3426rh XML](https://www.govinfo.gov/content/pkg/BILLS-119hr3426rh/xml/BILLS-119hr3426rh.xml), complete and unchanged. |
+| `text-119hr3426eh1s.xml` | 6,691 | `e6024dec0d39a46f05832c20e4644d12209790ccd116012cab1aba5b2d53bcd5` | [BILLS-119hr3426eh1s XML](https://www.govinfo.gov/content/pkg/BILLS-119hr3426eh1s/xml/BILLS-119hr3426eh1s.xml), complete and unchanged. |
+| `text-119hr3426rfs.xml` | 5,960 | `5d6f1a187c2cdcdcfc3bbe85a97c43d7ddc0ff3e31aed1de0ee6ffab5ef290d3` | [BILLS-119hr3426rfs XML](https://www.govinfo.gov/content/pkg/BILLS-119hr3426rfs/xml/BILLS-119hr3426rfs.xml), complete and unchanged. |
+| `text-119hr3426rhuc.xml` | 6,186 | `47bd0dfabc9b307677edf2d2e083e1c47d69f9e0c95c17b06d163773af410073` | [BILLS-119hr3426rhuc XML](https://www.govinfo.gov/content/pkg/BILLS-119hr3426rhuc/xml/BILLS-119hr3426rhuc.xml), complete and unchanged. |
+| `text-119hr3426rfs2.xml` | 7,367 | `3fc874bcfc32edf4014d8b4a2f6d03c80b1d3bfb55ab2a9d491a44fda69922e8` | [BILLS-119hr3426rfs2 XML](https://www.govinfo.gov/content/pkg/BILLS-119hr3426rfs2/xml/BILLS-119hr3426rfs2.xml), complete and unchanged. |

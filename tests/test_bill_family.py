@@ -17,6 +17,7 @@ import pytest
 
 from spicy_docs.extraction.model import ExtractionError
 from spicy_docs.interpretation.bill_family import (
+    REPEATED_PRINTING_REASON,
     BillFamilyCapture,
     BillFamilyTables,
     BillVersionCapture,
@@ -61,6 +62,7 @@ HR6028 = BillIdentity(119, "hr", 6028)
 HR983 = BillIdentity(119, "hr", 983)
 HR5334 = BillIdentity(119, "hr", 5334)
 HR9022 = BillIdentity(119, "hr", 9022)
+HR3426 = BillIdentity(119, "hr", 3426)
 
 
 def test_bill_row_counts_the_native_cosponsor_list() -> None:
@@ -165,6 +167,43 @@ def native_capture(identity: BillIdentity, bodies: dict[str, str]) -> BillFamily
         ),
         observed_at=OBSERVED_AT,
     )
+
+
+def package_capture(
+    identity: BillIdentity, code: Any = lambda version: version_slug(version.type)
+) -> BillFamilyCapture:
+    """A native BILLSTATUS with every printing whose package has a fixture, coded by ``code``."""
+    status = status_for(f"status-{identity.congress}{identity.bill_type}{identity.number}.xml", identity)
+    prefix = f"BILLS-{identity.congress}{identity.bill_type}{identity.number}"
+    return BillFamilyCapture(
+        status=status,
+        versions=tuple(
+            printing(path, version=version, version_code=code(version))
+            for version in status.text_versions
+            if version.package_id
+            and (path := CAPTURED / f"text-{version.package_id.removeprefix('BILLS-')}.xml").exists()
+            and version.package_id.startswith(prefix)
+        ),
+        observed_at=OBSERVED_AT,
+    )
+
+
+def unresolved_items(tables: BillFamilyTables) -> list[tuple[str | None, ...]]:
+    """Diff-item sides whose element and text digest name no published section."""
+    sections = {
+        (row["bill_id"], row["version_code"], row["source"], row["element_id"]): row["body_sha256"]
+        for row in tables.bill_sections
+    }
+    return [
+        (item[f"{side}_version_code"], item[f"{side}_element_id"])
+        for item in tables.section_diff_items
+        for side in ("from", "to")
+        if item[f"{side}_element_id"] is not None
+        and sections.get(
+            (item["bill_id"], item[f"{side}_version_code"], item[f"{side}_source"], item[f"{side}_element_id"])
+        )
+        != item[f"{side}_text_sha256"]
+    ]
 
 
 HR983_BODIES = {
@@ -503,18 +542,42 @@ def test_every_diff_item_resolves_to_the_section_it_names() -> None:
 
 
 @needs_engine
-def test_a_row_repeating_an_admitted_identity_is_refused_not_emitted() -> None:
-    """The same printing twice: one version row and one set of sections, the repeats refused by name."""
+def test_a_printing_repeating_an_earlier_identity_is_refused_whole() -> None:
+    """The same printing twice: one version row, one set of sections, and the second printing refused by name."""
     pair = captured_pair_capture()
     once = pair.versions[0]
     tables = family(replace(pair, versions=(once, once)))
     assert [BILL_VERSIONS.key(row) for row in tables.bill_versions] == [BILL_VERSIONS.key(tables.bill_versions[0])]
     assert len(tables.bill_sections) == len(once.document.sections)
-    repeated = [
-        row for row in tables.refusals if row.reason == "repeats the identity of a row this pass already admitted"
-    ]
-    assert [row.table for row in repeated].count("bill_versions") == 1
-    assert [row.table for row in repeated].count("bill_sections") == len(once.document.sections)
+    assert tables.section_diffs == ()
+    refused = [row for row in tables.refusals if REPEATED_PRINTING_REASON in row.reason]
+    assert [row.table for row in refused] == ["bill_versions", "section_diffs"]
+    assert not [row for row in tables.refusals if row.table == "bill_sections"]
+
+
+def test_a_row_repeating_an_admitted_identity_is_refused_not_emitted() -> None:
+    """Two summaries the publisher states for one version and action: one row, the repeat refused by name."""
+    capture = captured_pair_capture()
+    status = capture.status
+    tables = family(replace(capture, status=replace(status, summaries=(*status.summaries, status.summaries[0]))))
+    assert len(tables.bill_publisher_summaries) == len(status.summaries)
+    (refusal,) = [row for row in tables.refusals if row.table == "bill_publisher_summaries"]
+    assert refusal.reason == "repeats the identity of a row this pass already admitted"
+
+
+@needs_engine
+def test_a_printing_its_code_cannot_tell_apart_is_refused_whole_not_mixed() -> None:
+    """Coded by stage name, ``rfs2`` repeats ``rfs``: it is refused whole, never mixed into ``rfs``."""
+    capture = package_capture(HR3426)
+    tables = family(capture)
+    first = next(entry for entry in capture.versions if entry.version.package_id == "BILLS-119hr3426rfs")
+    rows = [row for row in tables.bill_sections if row["version_code"] == "rfs"]
+    assert [row["element_id"] for row in rows] == [node.element_id for node in first.document.sections]
+    assert [row["package_id"] for row in tables.bill_versions if row["version_code"] == "rfs"] == ["BILLS-119hr3426rfs"]
+    refused = [row for row in tables.refusals if REPEATED_PRINTING_REASON in row.reason]
+    assert [row.table for row in refused] == ["bill_versions", "section_diffs"]
+    assert not [row for row in tables.refusals if row.table == "bill_sections"], "its sections are never built"
+    assert unresolved_items(tables) == []
 
 
 @needs_engine
