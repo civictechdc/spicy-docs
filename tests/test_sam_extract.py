@@ -13,7 +13,7 @@ import gzip
 import io
 import json
 import zipfile
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 import httpx
@@ -193,6 +193,10 @@ SUPERSEDED = json.loads((Path(__file__).parent / "fixtures" / "sam-extract-super
 TRIGGER_DAY = date.fromisoformat(SUPERSEDED["trigger_day"])
 
 
+def _at(day: date) -> datetime:
+    return datetime(day.year, day.month, day.day, 12, tzinfo=UTC)
+
+
 def _admits_gzip(accept: str) -> bool:
     ranges = {part.split(";")[0].strip().lower() for part in accept.split(",")}
     return bool(ranges & {"*/*", "application/*", "application/x-gzip"})
@@ -230,7 +234,7 @@ class _Publisher:
         self.now += seconds
 
     def reader(self, **kwargs) -> SamBulkExtract:
-        kwargs.setdefault("today", lambda: TRIGGER_DAY)
+        kwargs.setdefault("now", lambda: _at(TRIGGER_DAY))
         return SamBulkExtract(
             api_key=KEY, transport=httpx.MockTransport(self), sleep=self.sleep, clock=lambda: self.now, **kwargs
         )
@@ -295,6 +299,83 @@ def test_the_wait_is_wall_clock_from_the_trigger_so_hanging_polls_still_end_it()
     assert {poll.extensions["timeout"]["read"] for poll in polls} == {30.0}
 
 
+class _Stalling:
+    """SAM answering each trigger with a fresh token, whose file is ready ``ready_after[token]`` seconds later.
+
+    A token absent from ``ready_after`` never finishes. ``late`` maps a token to a file it would
+    serve once abandoned, which the reader must never ask for.
+    """
+
+    def __init__(self, ready_after: dict[str, float], files: dict[str, bytes], late: dict[str, bytes] | None = None):
+        self.tokens = iter(["Tok1", "Tok2", "Tok3", "Tok4"])
+        self.ready_after, self.files, self.late = ready_after, files, late or {}
+        self.triggered: dict[str, float] = {}
+        self.now = 0.0
+        self.downloads: list[str] = []
+
+    def __call__(self, request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/entities"):
+            token = next(self.tokens)
+            self.triggered[token] = self.now
+            return httpx.Response(200, text=SENTENCE.replace("Tok123", token))
+        token = request.url.params["token"]
+        self.downloads.append(token)
+        if token in self.late and max(self.triggered.values()) > self.triggered[token]:
+            return httpx.Response(200, content=self.late[token])
+        if token in self.ready_after and self.now - self.triggered[token] >= self.ready_after[token]:
+            return httpx.Response(200, content=self.files[token])
+        return httpx.Response(400, json=IN_PROGRESS)
+
+    def sleep(self, seconds: float) -> None:
+        self.now += seconds
+
+    def reader(self, **kwargs) -> SamBulkExtract:
+        return SamBulkExtract(
+            api_key=KEY,
+            transport=httpx.MockTransport(self),
+            sleep=self.sleep,
+            clock=lambda: self.now,
+            now=lambda: _at(TRIGGER_DAY),
+            poll_interval=30.0,
+            **kwargs,
+        )
+
+
+def test_a_stalled_trigger_is_abandoned_and_the_selection_triggered_afresh():
+    """1968 on 2026-09-26: still generating after an hour, ready 0.5 minutes after a fresh trigger."""
+    sam = _Stalling({"Tok2": 30.0}, {"Tok2": _extract("A", "B")})
+    reader = sam.reader(attempt_wait=300.0, max_wait=900.0)
+    assert _ueis(reader.records()) == ["A", "B"]
+    [abandoned] = reader.abandoned
+    assert (abandoned["attempt"], abandoned["token"], abandoned["waited_seconds"]) == (1, "Tok1", 300.0)
+    assert abandoned["last_poll"] == "HTTP 400" and abandoned["triggered_at"] == _at(TRIGGER_DAY).isoformat()
+
+
+def test_an_abandoned_token_is_never_read_even_once_its_file_is_ready():
+    sam = _Stalling({"Tok2": 60.0}, {"Tok2": _extract("B")}, late={"Tok1": _extract("STALE")})
+    reader = sam.reader(attempt_wait=300.0, max_wait=900.0)
+    assert _ueis(reader.records()) == ["B"]
+    second = sam.downloads.index("Tok2")
+    assert "Tok1" not in sam.downloads[second:]
+
+
+def test_triggers_are_capped_and_each_abandoned_one_is_kept_for_the_refusal():
+    sam = _Stalling({}, {})
+    reader = sam.reader(attempt_wait=300.0, max_wait=10_000.0, attempts=3)
+    with pytest.raises(SamExtractError, match=r"last poll: HTTP 400 \(3 trigger\(s\), each abandoned\)"):
+        list(reader.records())
+    assert [entry["token"] for entry in reader.abandoned] == ["Tok1", "Tok2", "Tok3"]
+    assert set(sam.triggered) == {"Tok1", "Tok2", "Tok3"}
+
+
+def test_the_default_wait_clears_the_slowest_measured_file_on_every_attempt():
+    """2026 was ready 21-46 minutes after one trigger on 2026-09-23; every other year within 3.5."""
+    from spicy_docs.sources.sam_extract import EXTRACT_ATTEMPT_WAIT, EXTRACT_ATTEMPTS, EXTRACT_MAX_WAIT
+
+    assert EXTRACT_ATTEMPT_WAIT > 46 * 60
+    assert EXTRACT_MAX_WAIT == EXTRACT_ATTEMPTS * EXTRACT_ATTEMPT_WAIT
+
+
 def _registration(uei: str, eft: str | None = None, updated: str = "2026-09-01", name: str = "X") -> dict:
     return {
         "entityRegistration": {
@@ -349,7 +430,7 @@ def test_identical_repeats_collapse_and_differing_ones_at_one_date_refuse():
 
 
 def _read_on(download: bytes, day: date) -> tuple[list[dict], SamBulkExtract]:
-    reader = _Publisher(httpx.Response(200, content=download)).reader(today=lambda: day)
+    reader = _Publisher(httpx.Response(200, content=download)).reader(now=lambda: _at(day))
     return list(reader.records()), reader
 
 

@@ -53,13 +53,18 @@ API_KEY_PLACEHOLDER = "REPLACE_WITH_API_KEY"
 _TRIGGER_ACCEPT = {"Accept": "application/json"}
 _DOWNLOAD_ACCEPT = {"Accept": "*/*"}
 
-# The download answers "still generating" until the file is written. The 2026 registration-year
-# extract (147,256 rows, 71.5 MB gzip) was still generating 21 minutes after its trigger and ready
-# at the next poll, 46 minutes after it; when in between it finished is unmeasured (receipts in
-# sam-initial-load-2026-09-23/). The default wait is 25 minutes of wall clock from the trigger,
-# because the spicy-regs sam_entities job has 30 minutes in all (_rollup.yml's timeout_minutes
-# default) and the reader must refuse before the job is cancelled.
-EXTRACT_MAX_WAIT = 25 * 60.0
+# The download answers "still generating" until the file is written. Ready after (receipts in
+# corpora/fork-execution-2026-09-21/: sam-initial-load-2026-09-23/, sam-superseded-2026-09-26/, and
+# the spicy-regs audit journals of 2026-09-26): every 1996-2025 registration-year file, up to 75,287
+# registrations and 36 MB, within 0.5-3.5 minutes; the 2026 year (about 151,000) in 21-46 minutes on
+# 2026-09-23 (one token polled at 5, 21 and 46 minutes) and about 28 minutes on 2026-09-26. Some jobs
+# stall instead: a one-record 1968 file and a 2026 file were each still generating after an hour on
+# 2026-09-26, and the 1968 file was ready 0.5 minutes after a fresh trigger. So a trigger whose file is
+# not ready after EXTRACT_ATTEMPT_WAIT, which clears the slowest success, is abandoned and the
+# selection triggered afresh, at most EXTRACT_ATTEMPTS times; the default wait covers them all.
+EXTRACT_ATTEMPT_WAIT = 50 * 60.0
+EXTRACT_ATTEMPTS = 3
+EXTRACT_MAX_WAIT = EXTRACT_ATTEMPTS * EXTRACT_ATTEMPT_WAIT
 EXTRACT_POLL_INTERVAL = 30.0
 # Polls answered within seconds (the whole ready 71.5 MB file in 5.3 s); httpx's read timeout
 # bounds each socket read, not the transfer, so 30 s ends a stalled poll without cutting the file.
@@ -73,6 +78,14 @@ _SENTENCE_URL = re.compile(r"https://api\.sam\.gov/\S+")
 
 class SamExtractError(RuntimeError):
     """A selected SAM extract could not be acquired and validated."""
+
+
+class _ExtractNotReady(SamExtractError):
+    """A trigger's file was still generating when its attempt's deadline passed."""
+
+    def __init__(self, last: str) -> None:
+        super().__init__(f"SAM extract still generating; last poll: {last}")
+        self.last = last
 
 
 def year_window_literal(year: int) -> str:
@@ -390,13 +403,15 @@ class SamBulkExtract:
     version credited toward the file's ``totalRecords`` (UEI, EFT indicator, both versions'
     ``lastUpdateDate`` and expiration, and the trigger's day) for the caller's evidence.
 
-    ``max_wait`` seconds of ``clock`` from the trigger bound the wait for the file
+    ``max_wait`` seconds of ``clock`` from the first trigger bound the whole wait
     (:data:`EXTRACT_MAX_WAIT`): no poll starts after it, polls run ``poll_interval``
-    seconds apart under 30 s timeouts, and the trigger's own retries count against
-    it. spicy-regs' ``build_sam_entities._iter_sam_entities`` passes no ``max_wait``
-    today, so waiting out the measured 46 minutes there means raising
-    ``timeout_minutes`` in its ``rollup-sam-entities.yml`` and passing ``max_wait``
-    through.
+    seconds apart under 30 s timeouts, and the triggers' own retries count against
+    it. Each trigger's file gets ``attempt_wait`` seconds; one still generating then is
+    abandoned and the selection triggered afresh, at most ``attempts`` triggers in all.
+    Only the current trigger's download is ever polled, so an abandoned file is never
+    read. ``abandoned`` lists each abandoned trigger (attempt, token, trigger time from
+    ``now``, last poll answer, seconds waited) for the caller's evidence, and holds them
+    even when the reader then refuses.
     """
 
     def __init__(
@@ -408,45 +423,46 @@ class SamBulkExtract:
         max_records: int | None = None,
         transport: httpx.BaseTransport | None = None,
         max_wait: float = EXTRACT_MAX_WAIT,
+        attempt_wait: float = EXTRACT_ATTEMPT_WAIT,
+        attempts: int = EXTRACT_ATTEMPTS,
         poll_interval: float = EXTRACT_POLL_INTERVAL,
         sleep: Callable[[float], None] = time.sleep,
         clock: Callable[[], float] = time.monotonic,
-        today: Callable[[], date] = lambda: datetime.now(UTC).date(),
+        now: Callable[[], datetime] = lambda: datetime.now(UTC),
     ) -> None:
         if not api_key or not api_key.strip():
             raise SamExtractError("SAM extracts require a SAM-authorized API key")
         if max_records is not None and (type(max_records) is not int or max_records <= 0):
             raise SamExtractError("max_records must be a positive integer or None")
-        if any(type(value) not in (int, float) or value <= 0 for value in (max_wait, poll_interval)):
-            raise SamExtractError("extract max_wait and poll_interval must be positive seconds")
+        if any(type(value) not in (int, float) or value <= 0 for value in (max_wait, attempt_wait, poll_interval)):
+            raise SamExtractError("extract max_wait, attempt_wait and poll_interval must be positive seconds")
+        if type(attempts) is not int or attempts <= 0:
+            raise SamExtractError("extract attempts must be a positive integer")
         self.api_key = api_key
         self.registration_status = registration_status
         self.year = year
         self.max_records = max_records
         self.transport = transport
         self.max_wait = max_wait
+        self.attempt_wait = attempt_wait
+        self.attempts = attempts
         self.poll_interval = poll_interval
         self.sleep = sleep
         self.clock = clock
-        self.today = today
+        self.now = now
         self.superseded: list[dict] = []
+        self.abandoned: list[dict] = []
         self._seen = 0
 
     def records(self) -> Iterator[dict]:
         """Trigger the extract, download it, and yield validated entities."""
         self._seen = 0
+        self.superseded, self.abandoned = [], []
         # Extract download URLs commonly 302 to a signed blob URL.
         with httpx.Client(timeout=DEFAULT_TIMEOUT, follow_redirects=True, transport=self.transport) as client:
             url = extract_entities_url(registration_status=self.registration_status, year=self.year)
-            deadline, trigger_day = self.clock() + self.max_wait, self.today()
-            trigger = _body(self._get(client, url))
-            if isinstance(trigger, dict) and "entityData" in trigger:
-                total, records = _total_records(trigger), _entity_data(trigger)
-            else:
-                download_url = find_extract_download_url(trigger)
-                if download_url is None:
-                    raise SamExtractError("SAM extract trigger named no download URL")
-                total, records = self._download_records(client, download_url, deadline)
+            deadline = self.clock() + self.max_wait
+            total, records, trigger_day = self._acquire(client, url, deadline)
             versions = _versions(records)
             records = [held[-1] for held in versions.values()]
             self.superseded = _concurrent_superseded(versions, trigger_day)
@@ -468,6 +484,42 @@ class SamBulkExtract:
                     return
                 self._seen += 1
                 yield record
+
+    def _acquire(self, client: httpx.Client, url: str, deadline: float) -> tuple[int, list[dict], date]:
+        """Trigger the selection and read its file, re-triggering a stalled one; the read trigger's day."""
+        for attempt in range(1, self.attempts + 1):
+            started, triggered_at = self.clock(), self.now()
+            trigger = _body(self._get(client, url))
+            if isinstance(trigger, dict) and "entityData" in trigger:
+                return _total_records(trigger), _entity_data(trigger), triggered_at.date()
+            download_url = find_extract_download_url(trigger)
+            if download_url is None:
+                raise SamExtractError("SAM extract trigger named no download URL")
+            try:
+                total, records = self._download_records(
+                    client, download_url, min(deadline, started + self.attempt_wait)
+                )
+            except _ExtractNotReady as stalled:
+                token = parse_qs(urlparse(download_url).query).get("token", [None])[0]
+                waited = round(self.clock() - started, 1)
+                self.abandoned.append(
+                    {
+                        "attempt": attempt,
+                        "token": token,
+                        "triggered_at": triggered_at.isoformat(),
+                        "last_poll": stalled.last,
+                        "waited_seconds": waited,
+                    }
+                )
+                logger.warning("SAM extract: abandoned trigger {} (token {}) after {:,.0f} s", attempt, token, waited)
+                if attempt == self.attempts or self.clock() >= deadline:
+                    raise SamExtractError(
+                        f"SAM extract did not finish within its {self.max_wait:g} s wait; last poll: "
+                        f"{stalled.last} ({attempt} trigger(s), each abandoned)"
+                    ) from None
+                continue
+            return total, records, triggered_at.date()
+        raise AssertionError("unreachable: the last attempt returns or raises")
 
     def _budget_left(self) -> bool:
         return self.max_records is None or self._seen < self.max_records
@@ -519,12 +571,14 @@ class SamBulkExtract:
                         details.add(detail)
                         logger.debug("SAM extract still generating: {}", detail)
             self.sleep(min(self.poll_interval, max(0.0, deadline - self.clock())))
-        raise SamExtractError(f"SAM extract did not finish within its {self.max_wait:g} s wait; last poll: {last}")
+        raise _ExtractNotReady(last)
 
 
 __all__ = [
     "API",
     "API_KEY_PLACEHOLDER",
+    "EXTRACT_ATTEMPTS",
+    "EXTRACT_ATTEMPT_WAIT",
     "EXTRACT_MAX_WAIT",
     "EXTRACT_POLL_INTERVAL",
     "SamBulkExtract",
