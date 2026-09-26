@@ -2262,6 +2262,19 @@ What a later change must preserve:
   page is a failure. The previous Congress's last page should name a seed.
   That is inferred from 119-1 naming 118-273 as its prior act, not yet
   observed. The index page `congress{N}th.htm` is not read.
+
+**Amended 2026-09-26: absence is read from the bulk file, and the walker is
+gone.** spicy-regs now derives `table3_records` from Table III's bulk file, one
+request a run, and nothing calls `iter_table3_chain`, so it is removed with its
+tests and chain fixtures. The bulk file lists every act the table holds, so it
+states absence where a walk could only infer it, and it holds what a forward
+walk skipped: 119-30 and 119-53, whose pages exist and state the file's record
+(receipt `corpora/fork-execution-2026-09-21/table3-bulk-2026-09-26/`). The
+seed is observed now: 118-273 names 119-1. The first two rules above still
+hold: no refusal type means an act is absent, and a drop stays a retried
+transport failure on the page route, which `parse_table3_page` and
+`acquire_table3_act` keep serving.
+
 ## A multi-part committee report is one row per part, keyed on the publisher's granule id
 
 Decision 29, delegated 2026-09-23 and confirmed by the owner on 2026-09-24.

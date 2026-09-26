@@ -14,9 +14,6 @@ availability.
 | `table3-1955_360-head.htm` | reduced: [`1955_360.htm`](https://uscode.house.gov/table3/1955_360.htm) (117,524 bytes, 186 rows) through its first 4 rows, closed | 6,245 | `9fa0a4014cebc9e12f5497508557676d95fde44bc40ff092b8610b3ccd42569f` |
 | `table3-111_226-head.htm` | reduced: [`111_226.htm`](https://uscode.house.gov/table3/111_226.htm) (53,528 bytes, 32 rows) through its first 4 rows, closed | 6,199 | `943c62a36a58f7f0a94da6276ba073e44cd3af439656be32abbaa9143740a301` |
 | `table3-100_234-truncated.htm` | complete: every byte the publisher sent for [`100_234.htm`](https://uscode.house.gov/table3/100_234.htm), an act Table III has no page for, before it dropped the connection | 15,881 | `dc126dffdbde367d40149b96e5da70ca0d71dd9a3c95535d1d25a095ee66912e` |
-| `table3-119_69-head.htm` | reduced: [`119_69.htm`](https://uscode.house.gov/table3/119_69.htm) (41,145 bytes, 5 rows) through its first 2 rows, closed; names 119-72 next | 5,386 | `bfdfbedc105307290d363f910e045815503d008bd26e7997177ed48600f66e0b` |
-| `table3-119_72-head.htm` | reduced: [`119_72.htm`](https://uscode.house.gov/table3/119_72.htm) (39,853 bytes, 2 rows), closed; names 119-69 before and 119-73 next | 5,381 | `70f18081114a3847fb3b59f820f90c06a205f0854ce65c02ee651f22ce9e05fe` |
-| `table3-119_73-head.htm` | reduced: [`119_73.htm`](https://uscode.house.gov/table3/119_73.htm) (42,398 bytes, 8 rows) through its first 2 rows, closed; current through 119-73, names 119-74 next | 5,383 | `8255a24c50e3f8b570570c76a493597818dc9588cde2a66aa69b84a171ee6872` |
 | `table3-119_37.htm` | complete and unchanged, its per-request `jsessionid` included: every byte of [`119_37.htm`](https://uscode.house.gov/table3/119_37.htm) as retained by the 2026-09-25 rollup audit (`corpora/fork-execution-2026-09-21/parallel-rollup-audit-2026-09-25/congress-documents/raw/table3-119-37.htm`); 110 data rows, four of them with a blank act-section cell | 87,292 | `1e3fcbc7dbe87541c2183a50286567e2416074c4454c7ab707ce576f8b2e087d` |
 | `table3-fulldump-head.xml` | reduced: the first 3 `<act>` elements of `fulldump@119-73.xml` (126,260,704 bytes) inside [`table3-xml-bulk.zip`](https://uscode.house.gov/table3/table3-xml-bulk.zip) | 4,948 | `158d910a5d76fd9cf954a382061e600ff3121af9651a41d3f4b983a33a9d1c1a` |
 | `classification-tables-index.shtml` | reduced: [`classification/tables.shtml`](https://uscode.house.gov/classification/tables.shtml) (39,140 bytes) minus its 27 KB navigation menu, everything else kept | 13,285 | `6a4fbfe2c5834745dfbaabd4418549e25bf3dca3b2ac25a63e3e7fc241cfcba0` |
@@ -49,16 +46,10 @@ appended; no byte inside a kept region was rewritten except as noted here.
   remove the evidence. The publisher drops the connection there, and the tests
   replay it that way. The bytes are also the first 16 KB of every served page,
   which is why they are evidence of a failed request and never of absence.
-- **The chain pages** were captured on 2026-09-24 by the drift audit's probe,
-  which kept its session cookie, so they carry no session id. They keep their
-  caption whole: the act, its prior and next acts, and the table's currency.
 
 The build script is `build_fixtures.py` in
 `corpora/supply-2026-09-02/receipts/port-P01-uscode-2026-09-14/`, beside the
-original captures and the pin log. The chain pages' script is
-`build_chain_fixtures.py` in
-`corpora/fork-execution-2026-09-21/table3-walk-2026-09-24/spicy-docs/`; the
-originals are in `drift-audit-2026-09-24/laws/raw/table3/` beside it.
+original captures and the pin log.
 
 ## Observed shapes across every retained file
 

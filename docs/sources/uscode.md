@@ -51,74 +51,25 @@ Offline, `read_title_archive`, `read_corpus_archive` and `read_annual_archive` l
 a selection in `spicy_docs.sources.uscode`. `iter_table3_acts` streams the bulk file's 48,973 `<act>`
 fragments without holding them.
 
-## Walk Table III by its own links
+## Tell which acts Table III holds
 
-Each Table III page names the act before and after it. `iter_table3_chain`
-walks one Congress's chain. It requests a starting act and then each act a
-page names next, yielding every `UsCodeAcquisition`. When it ends on its own,
-it returns the reason as `StopIteration.value`, which a `for` loop discards:
+Read the bulk file. It lists every act the table holds, so an act it does not
+list is absent from the table at the release point its member names. A single
+act's page cannot say so: an act without a page answers with the first 16 KB
+of the site template and a dropped connection, which is also the start of every
+served page (see [below](#read-the-result-correctly)). Each page does name the
+act before and after it (`Table3Page.prior_act`, `next_act`), and those links
+skip exactly the acts with no page: `119-12` names `119-18` next, and `119-13`
+to `119-17` answer only the template. On 2026-09-26 `118-273` named `119-1`,
+so the links cross Congresses too (receipt
+`corpora/fork-execution-2026-09-21/open-work-investigation-2026-09-26/congress-documents.md`,
+section 2b). The per-Congress index (`congress119th.htm`, linked from every
+page) is not read by this package.
 
-```python
-from spicy_docs.sources.uscode import iter_table3_chain
-
-
-class Stop(Exception):
-    """Raised by the wrapper to end the walk at the caller's own limit."""
-
-
-def acquire(key):
-    # A cap or deadline belongs here, once per request (see below).
-    if not cap.take():
-        raise Stop(key)
-    return source.acquire_table3_act(key)
-
-
-with UsCodeAcquirer(budget=budget) as source:
-    chain = iter_table3_chain(acquire, "119-69", max_acts=300, within=listed_laws)
-    while True:
-        try:
-            acquired = next(chain)
-        except StopIteration as end:
-            reason = end.value  # for example "names an act past the release point it states"
-            break
-        except Stop:
-            break
-        page = acquired.result
-        print(page.key, page.next_act, len(page.records), acquired.capture.observed_at)
-```
-
-- **Only the chain establishes absence.** The acts a link passes over are the
-  ones the table has no page for: `119-12` names `119-18` next, and `119-13`
-  to `119-17` answer only the site template. A page's bytes never establish it
-  (see [below](#read-the-result-correctly)).
-- **The walk asks for nothing past its end.** It stops after `max_acts` pages,
-  or at a page whose next act is not a public law, is in another Congress,
-  does not follow the page's own act, is outside `within` (your own bound,
-  such as the public laws you list, spelled `119-4`, as a set), or is after
-  the release point the page states itself current through, checked in that
-  order. On 2026-09-24 the last page,
-  `119-73`, stated currency through `119-73` and named `119-74`, which answered
-  only the template. spicy-regs' laws rollup walked these rules until
-  2026-09-26 and now derives Table III from the bulk file, which holds every
-  act a chain reaches.
-- **A failure ends the walk.** A named act that drops or is refused raises from
-  `acquire_table3_act` as it would alone, after the same retries. Only that
-  page names the next act.
-- **Count requests inside `acquire`, not before `next()`.** A page's stop
-  rules run inside the `next()` that follows it, and that call can end the
-  walk without a request. A cap unit spent before each `next()` is also spent
-  at every natural end, which then reports the cap instead of the chain's end.
-  Spend the cap and check the deadline in the `acquire` wrapper, and raise
-  from it to stop.
-- **Start at an act the table serves**, such as the highest one you have read.
-  The start is requested like any other act. A Congress whose lowest act has
-  no page cannot start cold from it. The previous Congress's last page names
-  this Congress's first act: on 2026-09-26 `118-273` named `119-1` next
-  (receipt
-  `corpora/fork-execution-2026-09-21/open-work-investigation-2026-09-26/congress-documents.md`,
-  section 2b). A walk that must never miss an act behind its start reads the
-  bulk file instead. The per-Congress index
-  (`congress119th.htm`, linked from every page) is not read by this package.
+spicy-regs walked those links one page at a time until 2026-09-26. A walk from
+the highest held act never went back: it missed 119-30 and 119-53, which the
+bulk file lists, and a Congress whose first act has no page could not start.
+The walker, `iter_table3_chain`, was removed in the release that followed.
 
 To parse the retained content, use the [structure and annual section readers](uscode-structure.md)
 and [reference and source-credit readers](uscode-references.md). They preserve
@@ -216,7 +167,7 @@ it, so only its bytes can show it is unchanged (receipt
   from an act without a page. The acquirer treats the answer as the transport failure it is: it
   retries it and then raises with the last attempt's bytes as
   `response-incomplete` evidence (`refused_response`). Absence is read from
-  [the chain](#walk-table-iii-by-its-own-links). Other routes keep no bytes
+  [the bulk file](#tell-which-acts-table-iii-holds). Other routes keep no bytes
   from a drop; the download page and the bulk zip have dropped mid-way too.
   The receipt is `~/Work/corpora/fork-execution-2026-09-21/table3-walk-2026-09-24/`
   (the walk, and `spicy-docs/` for these measurements), with the drift
@@ -286,6 +237,17 @@ it, so only its bytes can show it is unchanged (receipt
   because a vocabulary this reader has not seen is a reason to stop rather than
   to drop a fact quietly. Two records state an empty `id` or `usckey`, so those
   two fields are optional; every other required field holds on all 317,590.
+- **The member's name and shape have changed, and only today's is read.** The
+  eight releases the Wayback Machine archived from 2020 to 2025 name the member
+  `<timestamp>_<release point>.xml` (`20200730083344_116-150.xml`) and wrap the
+  acts in one `<t3edit>` root; the 2025-08 member is `table3_xml_bulk.xml`,
+  which names no release point; today's is `fulldump@119-73.xml`, a bare
+  sequence of `<act>` elements. The reader accepts only the last and refuses
+  the others by name, so a rename stops a caller's read rather than being
+  misread; a caller should treat that refusal as a signal to update this
+  package. Across those releases, from 116-150 to 119-73, the table only grew:
+  no act was ever dropped (receipt
+  `corpora/fork-execution-2026-09-21/table3-bulk-2026-09-26/wayback/`).
 
 ## Source shapes and evidence
 

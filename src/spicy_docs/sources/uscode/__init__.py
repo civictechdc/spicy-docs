@@ -9,7 +9,7 @@ from a local file header and CRC check instead. Two publisher answers shape the
 readers: a Table III act without a page answers HTTP 200 and a connection
 dropped inside the site template, and a title the publisher lists but does not
 serve answers 302, so neither status is read as data or absence; Table III
-absence is read from the chain of acts its pages link. This publisher's USLM is
+absence is read from the bulk file, which lists every act. This publisher's USLM is
 not GovInfo's -- OLRC serves USLM 1.0 under ``uscDoc``, GovInfo 2.x under
 ``pLaw`` -- so
 :mod:`spicy_docs.sources.govinfo.uslm`'s
@@ -60,7 +60,6 @@ from .table3 import (
     Table3Record,
     iter_act_fragments,
     iter_table3_acts,
-    iter_table3_chain,
     parse_act_fragment,
     parse_table3_page,
     read_table3_bulk_archive,
@@ -103,7 +102,6 @@ __all__ = [
     "corpus_xml_locator",
     "iter_act_fragments",
     "iter_table3_acts",
-    "iter_table3_chain",
     "parse_act_fragment",
     "parse_popular_names",
     "parse_table3_page",
