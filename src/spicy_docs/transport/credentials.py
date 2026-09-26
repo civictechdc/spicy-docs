@@ -50,12 +50,14 @@ def read_api_key(env_file: Path, name: str) -> str:
 #: Query parameters that carry a secret in the routes this package requests:
 #: api.data.gov's key, and the three AWS presigning parameters that appear in a
 #: botocore error's endpoint URL whenever a caller supplies a signed S3 resource.
-_CREDENTIAL_PARAMETERS: Final = ("api_key", "X-Amz-Credential", "X-Amz-Signature", "X-Amz-Security-Token")
+#: Public so a consumer that searches published bytes for a leaked key (spicy-regs'
+#: generation audit) looks for exactly the names this package scrubs.
+CREDENTIAL_PARAMETERS: Final = ("api_key", "X-Amz-Credential", "X-Amz-Signature", "X-Amz-Security-Token")
 _CREDENTIAL_PARAMETER_PATTERN: Final = re.compile(
     # The inner group is non-capturing *and* separate from the ``=``: bound the
     # other way, the alternation takes the ``=`` as part of the last name only,
     # and every other parameter redacts its own separator away.
-    rf"((?:{'|'.join(re.escape(name) for name in _CREDENTIAL_PARAMETERS)})=)[^&\s'\"]+",
+    rf"((?:{'|'.join(re.escape(name) for name in CREDENTIAL_PARAMETERS)})=)[^&\s'\"]+",
     re.IGNORECASE,
 )
 
