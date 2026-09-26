@@ -12,6 +12,7 @@ under one heading).  ``bill_versions`` carries the GPO PDF cleanup counts as pro
 from __future__ import annotations
 
 from spicy_docs.schemas.tables import (
+    Reference,
     Row,
     digest,
     flag,
@@ -24,6 +25,7 @@ from spicy_docs.schemas.tables import bill_id as bill_key
 
 BILL_VERSIONS = table_contract(
     "bill_versions",
+    references=(Reference(("bill_id",), "congress_bills", ("bill_id",)),),
     grain="One row per printing of a bill, per source that supplied it.",
     identity=("bill_id", "version_code", "source"),
     version_column="version_date",
@@ -88,6 +90,7 @@ BILL_VERSIONS = table_contract(
 
 BILL_SECTIONS = table_contract(
     "bill_sections",
+    references=(Reference(("bill_id",), "congress_bills", ("bill_id",)),),
     grain="One row per content-bearing node of one bill version, in document order.",
     identity=("bill_id", "version_code", "source", "seq"),
     version_column="version_date",

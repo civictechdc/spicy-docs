@@ -9,10 +9,15 @@ list) and ``noticed`` (``docs_house_br``, an agenda states intent); a ``BODY`` m
 
 from __future__ import annotations
 
-from spicy_docs.schemas.tables import Row, json_column, table_contract, text
+from spicy_docs.schemas.tables import Reference, Row, json_column, table_contract, text
 
 HEARING_BILL_LINKS = table_contract(
     "hearing_bill_links",
+    references=(
+        Reference(("bill_id",), "congress_bills", ("bill_id",)),
+        Reference(("committee_system_code",), "committees", ("system_code",)),
+        Reference(("package_id",), "hearing_transcripts", ("package_id",)),
+    ),
     grain=(
         "One row per bill one source states a hearing was held on or noticed for: the pair, the source that "
         "stated it, and the committee-and-date key the statement was checked against."

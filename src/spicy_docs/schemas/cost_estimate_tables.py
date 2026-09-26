@@ -15,6 +15,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 
 from spicy_docs.schemas.tables import (
+    Reference,
     Row,
     TableContractError,
     bill_id,
@@ -62,6 +63,7 @@ BILLSTATUS_BULK = "billstatus_bulk"
 
 CBO_COST_ESTIMATES = table_contract(
     "cbo_cost_estimates",
+    references=(Reference(("bill_id",), "congress_bills", ("bill_id",)),),
     grain="One row per bill and CBO publication the bill's BILLSTATUS document names as a cost estimate of it.",
     identity=("bill_id", "publication_id"),
     version_column="pub_date",

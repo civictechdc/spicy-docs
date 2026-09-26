@@ -11,7 +11,7 @@ markup looks like.
 
 from __future__ import annotations
 
-from spicy_docs.schemas.tables import Row, joined, table_contract, text
+from spicy_docs.schemas.tables import Reference, Row, joined, table_contract, text
 
 #: The sealed rungs a print phrasing can resolve to are ``bill_stage``'s, and
 #: ``sealed_stage`` is NULL for every phrasing none of its matchers reads --
@@ -20,6 +20,7 @@ from spicy_docs.schemas.tables import Row, joined, table_contract, text
 #: set read two publishers' prose.
 BILL_COMMITTEE_ACTIONS = table_contract(
     "bill_committee_actions",
+    references=(Reference(("bill_id",), "congress_bills", ("bill_id",)),),
     grain=(
         "One row per action phrase a committee print states about one bill it names in the same sentence: "
         "the print's own phrasing, what it maps to, and how reliable the pairing is."

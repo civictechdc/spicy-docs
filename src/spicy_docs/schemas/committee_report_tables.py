@@ -9,7 +9,7 @@ is written because the print names no estimate key, and the join is on the bill 
 
 from __future__ import annotations
 
-from spicy_docs.schemas.tables import VALUE_KEY, Row, flag, table_contract, text
+from spicy_docs.schemas.tables import VALUE_KEY, Reference, Row, flag, table_contract, text
 
 #: Processing identity for report heading segmentation and table shaping.
 #: Hosts include it in their read checkpoint alongside the CBO reader version;
@@ -89,6 +89,7 @@ _BODY_COMPLETENESS_COLUMNS = {
 
 COMMITTEE_REPORTS = table_contract(
     "committee_reports",
+    references=(Reference(("bill_id",), "congress_bills", ("bill_id",)),),
     grain=(
         "One row per published part of a captured GovInfo committee report package, with the CBO estimate it "
         "reprints or refuses."

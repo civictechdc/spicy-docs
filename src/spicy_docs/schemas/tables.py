@@ -115,6 +115,26 @@ KEY_SPELLINGS: Mapping[str, Callable[[tuple[str, ...]], str]] = MappingProxyType
 
 
 @dataclass(frozen=True, slots=True)
+class Reference:
+    """Columns of one table that name a row of another published table by that table's identity.
+
+    It states meaning, not a measurement: how often a published value resolves is the host's observation
+    (spicy-regs ``table_joins``), not part of the contract. ``parent_columns`` must be the parent contract's identity,
+    so a reader can resolve a reference to one row; the registry checks that when every contract is known.
+    """
+
+    child_columns: tuple[str, ...]
+    parent_table: str
+    parent_columns: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        if not self.child_columns or len(self.child_columns) != len(self.parent_columns):
+            raise TableContractError(f"reference to {self.parent_table!r} needs one child column per parent column")
+        if _SNAKE_CASE.fullmatch(self.parent_table) is None:
+            raise TableContractError(f"referenced table name must be snake_case: {self.parent_table!r}")
+
+
+@dataclass(frozen=True, slots=True)
 class TableContract:
     """One published table: its columns in publish order, its identity, its version column and one sentence per column.
 
@@ -124,7 +144,7 @@ class TableContract:
     equality only, and a host chooses which input generation supersedes another before merging. ``descriptions`` is what
     spicy-regs's data dictionary reads, so a column added here fails that check until the prose catches up (§5.3).
     ``key_spelling`` names the :data:`KEY_SPELLINGS` entry that spells the identity as one member-key string, and
-    ``None`` means none is declared yet.
+    ``None`` means none is declared yet. ``references`` declares which columns name a row of another table.
 
     Construction refuses a non-snake_case name or column, a duplicate column, an empty identity, an identity or version
     column that is not a column, a description set not keyed exactly by the columns, and an unknown key spelling or one
@@ -138,6 +158,7 @@ class TableContract:
     descriptions: Mapping[str, str]
     grain: str
     key_spelling: str | None = None
+    references: tuple[Reference, ...] = ()
 
     def __post_init__(self) -> None:
         if not isinstance(self.name, str) or _SNAKE_CASE.fullmatch(self.name) is None:
@@ -176,6 +197,10 @@ class TableContract:
                 raise TableContractError(f"{self.name}: unknown key spelling {self.key_spelling!r}")
             if self.key_spelling == VALUE_KEY and len(self.identity) != 1:
                 raise TableContractError(f"{self.name}: {VALUE_KEY} spells a one-column identity")
+        for reference in self.references:
+            missing = [column for column in reference.child_columns if column not in seen]
+            if missing:
+                raise TableContractError(f"{self.name}: reference columns {missing} are not columns")
         object.__setattr__(self, "descriptions", MappingProxyType(dict(self.descriptions)))
 
     def key(self, row: Row) -> tuple[str, ...]:
@@ -233,6 +258,7 @@ def table_contract(
     version_column: str | None,
     columns: Mapping[str, str],
     key_spelling: str | None = None,
+    references: tuple[Reference, ...] = (),
 ) -> TableContract:
     """Build a contract from one ordered ``column -> description`` mapping.
 
@@ -247,6 +273,7 @@ def table_contract(
         descriptions=columns,
         grain=grain,
         key_spelling=key_spelling,
+        references=references,
     )
 
 

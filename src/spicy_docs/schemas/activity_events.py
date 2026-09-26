@@ -18,6 +18,7 @@ from spicy_docs.schemas.bill_model_tables import BILL_SUMMARIES
 from spicy_docs.schemas.bill_tables import CONGRESS_BILLS
 from spicy_docs.schemas.bill_version_tables import BILL_VERSIONS
 from spicy_docs.schemas.tables import (
+    Reference,
     Row,
     TableContract,
     TableContractError,
@@ -36,6 +37,7 @@ NO_SUBJECT = ""
 
 PUBLIC_ACTIVITY_EVENTS = table_contract(
     "public_activity_events",
+    references=(Reference(("bill_id",), "congress_bills", ("bill_id",)),),
     grain="One row per change detected between two runs of the bill family.",
     identity=("bill_id", "event_type", "subject_id", "occurred_at"),
     version_column="detected_at",

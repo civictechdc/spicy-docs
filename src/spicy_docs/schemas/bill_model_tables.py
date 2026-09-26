@@ -9,6 +9,7 @@ the code that produced it.  ``diff_summaries`` carries no frame because its prom
 from __future__ import annotations
 
 from spicy_docs.schemas.tables import (
+    Reference,
     Row,
     json_column,
     table_contract,
@@ -21,6 +22,7 @@ _SECTION_COLUMNS = ("bill_id", "version_code", "source", "seq", "match_path", "b
 
 SECTION_CLASSIFICATIONS = table_contract(
     "section_classifications",
+    references=(Reference(("bill_id",), "congress_bills", ("bill_id",)),),
     grain="One row per label a model assigned to one section of one printing.",
     identity=("bill_id", "version_code", "source", "seq", "label"),
     version_column="completed_at",
@@ -45,6 +47,7 @@ SECTION_CLASSIFICATIONS = table_contract(
 
 BILL_SUMMARIES = table_contract(
     "bill_summaries",
+    references=(Reference(("bill_id",), "congress_bills", ("bill_id",)),),
     grain="One row per plain-language summary of one printing of a bill.",
     identity=("bill_id", "version_code", "source"),
     version_column="completed_at",
@@ -77,6 +80,7 @@ BILL_SUMMARIES = table_contract(
 #: exactly one compared pair.
 DIFF_SUMMARIES = table_contract(
     "diff_summaries",
+    references=(Reference(("bill_id",), "congress_bills", ("bill_id",)),),
     grain="One row per model-written summary of the change between two printings of a bill.",
     identity=("bill_id", "from_version_code", "from_source", "to_version_code", "to_source"),
     version_column="completed_at",

@@ -69,7 +69,7 @@ from spicy_docs.schemas.regulations import (
 )
 from spicy_docs.schemas.roster_tables import COMMITTEE_ASSIGNMENTS, COMMITTEES
 from spicy_docs.schemas.senate_expenditure_tables import SENATE_EXPENDITURES
-from spicy_docs.schemas.tables import Row, TableContract, TableContractError
+from spicy_docs.schemas.tables import Reference, Row, TableContract, TableContractError
 
 _REGISTERED: tuple[TableContract, ...] = (
     CONGRESS_BILLS,
@@ -140,6 +140,17 @@ if len({contract.name for contract in _REGISTERED}) != len(_REGISTERED):
 #: so a table added here reaches all four without a second declaration.
 TABLE_CONTRACTS: Mapping[str, TableContract] = MappingProxyType({c.name: c for c in _REGISTERED})
 
+# A reference names a row of another published table, so it must name a
+# registered table by exactly that table's identity.
+for _contract in _REGISTERED:
+    for _reference in _contract.references:
+        _parent = TABLE_CONTRACTS.get(_reference.parent_table)
+        if _parent is None or _reference.parent_columns != _parent.identity:
+            raise TableContractError(
+                f"{_contract.name}: a reference must name a registered table by its identity, "
+                f"not {_reference.parent_table}{_reference.parent_columns}"
+            )
+
 __all__ = [
     "AMENDMENTS",
     "BILL_ACTIONS",
@@ -190,6 +201,7 @@ __all__ = [
     "TABLE_CONTRACTS",
     "TREATIES",
     "RecordType",
+    "Reference",
     "Row",
     "TableContract",
     "TableContractError",

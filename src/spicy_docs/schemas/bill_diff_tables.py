@@ -11,6 +11,7 @@ are the same account.
 from __future__ import annotations
 
 from spicy_docs.schemas.tables import (
+    Reference,
     Row,
     digest,
     flag,
@@ -43,6 +44,7 @@ _DIFF_KEY = {
 
 SECTION_DIFFS = table_contract(
     "section_diffs",
+    references=(Reference(("bill_id",), "congress_bills", ("bill_id",)),),
     grain="One row per compared pair of consecutive printings of one bill.",
     identity=("bill_id", "from_version_code", "from_source", "to_version_code", "to_source"),
     version_column="to_version_date",
@@ -67,6 +69,7 @@ SECTION_DIFFS = table_contract(
 
 SECTION_DIFF_ITEMS = table_contract(
     "section_diff_items",
+    references=(Reference(("bill_id",), "congress_bills", ("bill_id",)),),
     grain="One row per settled correspondence in one version-pair comparison.",
     identity=("bill_id", "from_version_code", "from_source", "to_version_code", "to_source", "seq"),
     version_column=None,
@@ -101,6 +104,7 @@ SECTION_DIFF_ITEMS = table_contract(
 
 FINANCIAL_CHANGES = table_contract(
     "financial_changes",
+    references=(Reference(("bill_id",), "congress_bills", ("bill_id",)),),
     grain="One row per aligned pair of dollar figures in a section whose amounts changed.",
     identity=("bill_id", "from_version_code", "from_source", "to_version_code", "to_source", "seq", "amount_index"),
     version_column=None,

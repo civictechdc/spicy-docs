@@ -16,6 +16,7 @@ from typing import Any
 
 from spicy_docs.schemas.tables import (
     VALUE_KEY,
+    Reference,
     Row,
     digest,
     flag,
@@ -29,6 +30,7 @@ from spicy_docs.schemas.tables import bill_id as bill_key
 
 AMENDMENTS = table_contract(
     "amendments",
+    references=(Reference(("sponsor_bioguide_id",), "members", ("bioguide_id",)),),
     grain="One row per amendment, as the Congress.gov amendment list route states it.",
     identity=("congress", "amendment_type", "amendment_number"),
     version_column="update_date",
@@ -56,6 +58,7 @@ AMENDMENTS = table_contract(
 
 PRESS_RELEASES = table_contract(
     "press_releases",
+    references=(Reference(("bill_id",), "congress_bills", ("bill_id",)),),
     grain="One row per item in one appropriations committee press-release feed capture.",
     identity=("release_id",),
     version_column="observed_at",
@@ -118,6 +121,7 @@ TALLY_COLUMNS: Mapping[str, str] = MappingProxyType(
 
 ROLL_CALL_VOTES = table_contract(
     "roll_call_votes",
+    references=(Reference(("bill_id",), "congress_bills", ("bill_id",)),),
     grain="One row per roll call: the publisher's own tally, and the bill it refers to.",
     identity=("congress", "chamber", "session", "roll_number"),
     version_column="vote_date",
@@ -159,6 +163,7 @@ ROLL_CALL_VOTES = table_contract(
 
 MEMBER_VOTES = table_contract(
     "member_votes",
+    references=(Reference(("bioguide_id",), "members", ("bioguide_id",)),),
     grain="One row per member's position on one roll call.",
     identity=("congress", "chamber", "session", "roll_number", "member_key"),
     version_column="vote_date",

@@ -1804,3 +1804,37 @@ def test_a_vote_id_and_a_release_id_are_stable_functions_of_their_parts() -> Non
         roll_number: int = 23
 
     assert vote_id(_Key()) == "119-house-1-23"
+
+
+def test_every_reference_names_a_registered_table_by_its_identity():
+    from spicy_docs.schemas import TABLE_CONTRACTS
+
+    references = [(c.name, r) for c in TABLE_CONTRACTS.values() for r in c.references]
+    assert references, "the registry declares its cross-table references"
+    for name, reference in references:
+        parent = TABLE_CONTRACTS[reference.parent_table]
+        assert reference.parent_columns == parent.identity, name
+        assert set(reference.child_columns) <= set(TABLE_CONTRACTS[name].columns), name
+    # The bridges DocSpec and Search read first.
+    from spicy_docs.schemas import Reference
+
+    for child in ("documents", "comments"):
+        assert Reference(("docket_id",), "dockets", ("docket_id",)) in TABLE_CONTRACTS[child].references
+
+
+def test_a_reference_must_name_its_own_columns_one_per_parent_column():
+    import pytest
+
+    from spicy_docs.schemas.tables import Reference, TableContractError, table_contract
+
+    with pytest.raises(TableContractError, match="one child column per parent column"):
+        Reference(("a", "b"), "parents", ("id",))
+    with pytest.raises(TableContractError, match="are not columns"):
+        table_contract(
+            "children",
+            grain="One row.",
+            identity=("id",),
+            version_column=None,
+            columns={"id": "An id."},
+            references=(Reference(("parent_id",), "parents", ("id",)),),
+        )

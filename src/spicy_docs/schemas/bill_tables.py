@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from spicy_docs.schemas.tables import (
     VALUE_KEY,
+    Reference,
     Row,
     bill_id,
     flag,
@@ -29,6 +30,7 @@ COMMITTEE_REFERRAL_RULE = "committee_system_code"
 
 CONGRESS_BILLS = table_contract(
     "congress_bills",
+    references=(Reference(("sponsor_bioguide_id",), "members", ("bioguide_id",)),),
     grain="One row per bill or resolution, as one BILLSTATUS document states it.",
     identity=("bill_id",),
     version_column="update_date",
@@ -133,6 +135,7 @@ CONGRESS_BILLS = table_contract(
 
 BILL_ACTIONS = table_contract(
     "bill_actions",
+    references=(Reference(("bill_id",), "congress_bills", ("bill_id",)),),
     grain="One row per action entry in a bill's BILLSTATUS document, in publisher order.",
     identity=("bill_id", "action_index"),
     version_column="action_date",
@@ -156,6 +159,10 @@ BILL_ACTIONS = table_contract(
 
 BILL_COMMITTEES = table_contract(
     "bill_committees",
+    references=(
+        Reference(("bill_id",), "congress_bills", ("bill_id",)),
+        Reference(("system_code",), "committees", ("system_code",)),
+    ),
     grain="One row per committee or subcommittee a bill reached, as its BILLSTATUS document names it.",
     identity=("bill_id", "system_code"),
     version_column="snapshot_update_date",
@@ -178,6 +185,7 @@ BILL_COMMITTEES = table_contract(
 
 BILL_PUBLISHER_SUMMARIES = table_contract(
     "bill_publisher_summaries",
+    references=(Reference(("bill_id",), "congress_bills", ("bill_id",)),),
     grain="One row per CRS summary the publisher states on a bill, at the version and action it describes.",
     identity=("bill_id", "summary_version_code", "action_date"),
     version_column="update_date",

@@ -9,7 +9,7 @@ comments the host's ``pdf_extraction_results_json``, each keyed on its dedup key
 from json import dumps as json_dumps
 
 from spicy_docs.schemas.base import RecordType
-from spicy_docs.schemas.tables import VALUE_KEY, table_contract
+from spicy_docs.schemas.tables import VALUE_KEY, Reference, table_contract
 
 
 def _extract_comment(d: dict) -> dict:
@@ -203,6 +203,7 @@ DOCKETS = table_contract(
 
 DOCUMENTS = table_contract(
     "documents",
+    references=(Reference(("docket_id",), "dockets", ("docket_id",)),),
     grain="One row per document an agency posted on Regulations.gov: a rule, notice or supporting material.",
     identity=(DOCUMENT.dedup_key,),
     version_column="modify_date",
@@ -243,6 +244,7 @@ DOCUMENTS = table_contract(
 
 COMMENTS = table_contract(
     "comments",
+    references=(Reference(("docket_id",), "dockets", ("docket_id",)),),
     grain="One row per public comment posted on Regulations.gov.",
     identity=(COMMENT.dedup_key,),
     version_column="modify_date",

@@ -16,6 +16,7 @@ from types import MappingProxyType
 from typing import Any
 
 from spicy_docs.schemas.tables import (
+    Reference,
     Row,
     TableContractError,
     flag,
@@ -123,6 +124,7 @@ HOUSE_COMMUNICATIONS = table_contract(
 
 COMMITTEE_MEETINGS = table_contract(
     "committee_meetings",
+    references=(Reference(("committee_system_code",), "committees", ("system_code",)),),
     grain="One row per scheduled committee meeting, as the Congress.gov committee-meeting routes state it.",
     identity=("congress", "chamber", "event_id"),
     version_column="update_date",

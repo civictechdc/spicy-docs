@@ -22,7 +22,15 @@ import re
 from collections.abc import Mapping
 from typing import Any
 
-from spicy_docs.schemas.tables import Row, TableContractError, natural_key, table_contract, text, usc_section_key
+from spicy_docs.schemas.tables import (
+    Reference,
+    Row,
+    TableContractError,
+    natural_key,
+    table_contract,
+    text,
+    usc_section_key,
+)
 
 #: The Statutes at Large citation as the PLAW USLM ``citableAs`` spells it,
 #: the rule the legislative data map's ``plaw→statute`` edge proved.
@@ -43,6 +51,7 @@ _USC_SECTION_KEY = (
 
 LAWS = table_contract(
     "laws",
+    references=(Reference(("bill_id",), "congress_bills", ("bill_id",)),),
     grain="One row per enacted law the Congress.gov law list route states, with its PLAW USLM citation where captured.",
     identity=("congress", "law_type", "number"),
     version_column="update_date",
