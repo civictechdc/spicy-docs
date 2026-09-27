@@ -27,7 +27,7 @@ classification separately retains original structure.
 | Mode | Behavior | Caller responsibility |
 | --- | --- | --- |
 | `iter_records()` | May omit processed keys; yields JSON in download-completion order. Default factory caches an agency's multi-collection listing. | Retain final processed keys, outcomes, and run provenance. |
-| `reader_factory(..., with_keys=True)` | `iter_records()` yields `KeyedPayload(key, last_modified, payload)` instead, `last_modified` from the same GET. | Order a record's re-fetches by `last_modified`, never by the key's suffix. |
+| `reader_factory(...)(agency, record_type).iter_keyed_records()` | Yields `KeyedPayload(key, last_modified, payload)`, `last_modified` from the same GET; `iter_records()` yields the bare payloads. | Order a record's re-fetches by `last_modified`, never by the key's suffix. |
 | `reader_factory(..., bounded=True)` | Streams the listing, fails after a transient retry, and avoids retaining processed keys. | Own checkpoints or full retry and completion receipts. |
 | `iter_source_objects()` | Lists and yields in key order; pins GETs to listed ETags and checks metadata/bytes. Each object carries its listed `last_modified`. | Preserve exact objects through the [release evidence pack](regulations-gov.md). |
 

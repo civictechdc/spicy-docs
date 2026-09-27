@@ -872,15 +872,15 @@ def _refetched_store() -> tuple[dict[str, bytes], dict[str, datetime]]:
 
 @pytest.mark.parametrize("bounded", [False, True], ids=["cached-listing", "bounded"])
 def test_keyed_reader_yields_each_payload_with_its_key_and_last_modified(bounded: bool) -> None:
-    """``with_keys=True`` pairs every payload with the key it came from and that GET's LastModified -- the only
+    """``iter_keyed_records`` pairs every payload with the key it came from and that GET's LastModified -- the only
     order a record's re-fetches have, since the suffix does not give one."""
     from spicy_docs.sources.mirrulations import KeyedPayload, reader_factory
 
     store, written = _refetched_store()
     resource = _FakeS3Resource(store, written)
-    read = reader_factory([DOCKET], resource_factory=lambda: resource, bounded=bounded, with_keys=True)
+    read = reader_factory([DOCKET], resource_factory=lambda: resource, bounded=bounded)
 
-    keyed = list(read(AGENCY, DOCKET).iter_records())
+    keyed = list(read(AGENCY, DOCKET).iter_keyed_records())
 
     assert all(type(item) is KeyedPayload for item in keyed)
     assert {item.key: (item.last_modified, item.payload) for item in keyed} == {
@@ -889,18 +889,16 @@ def test_keyed_reader_yields_each_payload_with_its_key_and_last_modified(bounded
 
 
 def test_default_reader_still_yields_bare_payloads_and_the_same_manifest() -> None:
-    """Without ``with_keys`` the reader yields exactly the decoded payload dicts it always did, and its manifest and
-    failure accounting do not depend on the option."""
+    """``iter_records`` yields exactly the decoded payload dicts it always did, and the manifest and failure
+    accounting are the same whichever of the two methods drove the pass."""
     from spicy_docs.sources.mirrulations import reader_factory
 
     store, written = _refetched_store()
     plain = reader_factory([DOCKET], resource_factory=lambda: _FakeS3Resource(store, written))(AGENCY, DOCKET)
-    keyed = reader_factory([DOCKET], resource_factory=lambda: _FakeS3Resource(store, written), with_keys=True)(
-        AGENCY, DOCKET
-    )
+    keyed = reader_factory([DOCKET], resource_factory=lambda: _FakeS3Resource(store, written))(AGENCY, DOCKET)
 
     payloads = list(plain.iter_records())
-    keyed_payloads = list(keyed.iter_records())
+    keyed_payloads = list(keyed.iter_keyed_records())
 
     assert all(type(payload) is dict for payload in payloads)
     assert sorted(payloads, key=dumps) == sorted((loads(content) for content in store.values()), key=dumps)

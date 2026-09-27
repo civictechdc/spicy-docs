@@ -2574,7 +2574,7 @@ reordered input, and never asserted to be the latest
 each object's `LastModified` (`mirrulations-evidence-pack-v2`), so replay reaches
 the same choice from evidence alone. Docket and comment packs and policies do
 not move; their selection never reads it. The raw reader's
-`reader_factory(..., with_keys=True)` yields each payload as a
+`MirrulationsReader.iter_keyed_records()` yields each payload as a
 `KeyedPayload(key, last_modified, payload)` for callers that merge re-fetches,
 such as spicy-regs' publication session. A reader handed to the document
 acquisition must now give each source object a timezone-aware `last_modified`;

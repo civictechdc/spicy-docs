@@ -9,8 +9,8 @@ per-file download + JSON decode is delegated to ``download_and_parse``.
 The reader is a *pure source*: it yields the raw JSON payloads. Flattening them
 into schema-shaped records is the job of the
 :class:`~spicy_regs.transforms.extract.ExtractRecords` transform, which stays
-in spicy-regs. ``with_keys=True`` yields each payload as a :class:`KeyedPayload`
-with its key and S3 ``LastModified`` instead.
+in spicy-regs. :meth:`MirrulationsReader.iter_keyed_records` yields each payload as a
+:class:`KeyedPayload` with its key and S3 ``LastModified``.
 
 The mirror keeps every re-fetch of a record as another object (``X.json``,
 ``X(1).json``, ``X(1)(2).json``, …), but the suffix does not order them: the
@@ -764,9 +764,37 @@ def download_keys(
     prior_outcomes: Iterable[KeyOutcome] = (),
     raise_failures: bool = False,
     transient_retries: int = 0,
-    with_keys: bool = False,
-) -> Iterator[dict] | Iterator[KeyedPayload]:
-    """Concurrently download + parse the given keys, yielding raw payloads.
+) -> Iterator[dict]:
+    """:func:`download_keyed`, yielding only each raw payload."""
+    for keyed in download_keyed(
+        s3_resource,
+        bucket_name,
+        keys,
+        workers,
+        record_type=record_type,
+        label=label,
+        outcomes=outcomes,
+        prior_outcomes=prior_outcomes,
+        raise_failures=raise_failures,
+        transient_retries=transient_retries,
+    ):
+        yield keyed.payload
+
+
+def download_keyed(
+    s3_resource: Any,
+    bucket_name: str,
+    keys: Iterable[str],
+    workers: int = DEFAULT_DOWNLOAD_WORKERS,
+    *,
+    record_type: RecordType | None = None,
+    label: str = "",
+    outcomes: list[KeyOutcome] | None = None,
+    prior_outcomes: Iterable[KeyOutcome] = (),
+    raise_failures: bool = False,
+    transient_retries: int = 0,
+) -> Iterator[KeyedPayload]:
+    """Concurrently download + parse the given keys, yielding each payload with its key and that GET's LastModified.
 
     The shared download engine for both :class:`MirrulationsReader` and the
     chunked ingest path. It accepts a key stream and keeps at most twice the
@@ -778,20 +806,19 @@ def download_keys(
     drop-and-continue behavior for callers that don't track keys. ``raise_failures``
     governs those answers only: a 401/403 propagates either way.
     ``prior_outcomes`` carries attempt counts forward when retrying keys.
-    ``with_keys`` yields each payload as a :class:`KeyedPayload` instead.
     """
     if transient_retries < 0:
         raise ValueError("transient_retries cannot be negative")
 
     prior_attempts = {outcome.key: outcome.attempts for outcome in prior_outcomes}
 
-    def download(key: str) -> dict | KeyedPayload | None:
+    def download(key: str) -> KeyedPayload | None:
         for attempt in range(transient_retries + 1):
             try:
                 last_modified, payload = _download_record(
                     s3_resource, bucket_name, key, _identity, record_type=record_type
                 )
-                return KeyedPayload(key, last_modified, payload) if with_keys else payload
+                return KeyedPayload(key, last_modified, payload)
             except UnresolvedKeyError as exc:
                 if isinstance(exc, TransientDownloadError) and attempt < transient_retries:
                     continue
@@ -813,7 +840,7 @@ def download_keys(
     done = 0
     with ThreadPoolExecutor(max_workers=n) as executor:
         iterator = iter(keys)
-        submitted: dict[Future[dict | KeyedPayload | None], str] = {}
+        submitted: dict[Future[KeyedPayload | None], str] = {}
         exhausted = False
         while submitted or not exhausted:
             while not exhausted and len(submitted) < 2 * n:
@@ -895,7 +922,7 @@ class MirrulationsReader(Reader):
 
     ``fail_fast`` governs unresolved-key failures. A 401/403 raises
     :class:`MirrulationsAccessRefusedError` either way; a refusal is never a row.
-    ``with_keys`` yields :class:`KeyedPayload` values instead of bare payloads.
+    :meth:`iter_keyed_records` yields the same records as :class:`KeyedPayload` values.
     """
 
     def __init__(
@@ -913,7 +940,6 @@ class MirrulationsReader(Reader):
         retain_keys: bool = True,
         fail_fast: bool = False,
         unresolved_keys: Iterable[str | KeyOutcome] | None = None,
-        with_keys: bool = False,
     ) -> None:
         self.s3_resource = s3_resource
         self.bucket = bucket
@@ -929,7 +955,6 @@ class MirrulationsReader(Reader):
         self.key_lister = key_lister
         self.retain_keys = retain_keys
         self.fail_fast = fail_fast
-        self.with_keys = with_keys
         # Retried before new work, so a run that is capped or interrupted cannot
         # keep postponing the keys a previous run already failed to resolve.
         prior = list(unresolved_keys or ())
@@ -1010,8 +1035,13 @@ class MirrulationsReader(Reader):
                     last_modified=last_modified,
                 )
 
-    def iter_records(self) -> Iterator[dict] | Iterator[KeyedPayload]:
+    def iter_records(self) -> Iterator[dict]:
         """Yield raw payloads for this agency and record type, retrying prior unresolved keys first."""
+        for keyed in self.iter_keyed_records():
+            yield keyed.payload
+
+    def iter_keyed_records(self) -> Iterator[KeyedPayload]:
+        """:meth:`iter_records`, each payload with its key and that GET's LastModified, to order a record's re-fetches."""
         path_pattern = self._path_pattern()
         if self.key_lister is not None:
             keys = self.key_lister()
@@ -1045,7 +1075,7 @@ class MirrulationsReader(Reader):
         # independent, I/O-bound round trips; order is irrelevant (dedup by key).
         label = f"[{self.agency}] {self.record_type.name}"
         outcomes: list[KeyOutcome] = []
-        yield from download_keys(
+        yield from download_keyed(
             self.s3_resource,
             self.bucket,
             keys,
@@ -1056,7 +1086,6 @@ class MirrulationsReader(Reader):
             prior_outcomes=self._prior_outcomes,
             raise_failures=self.fail_fast,
             transient_retries=1 if self.fail_fast else 0,
-            with_keys=self.with_keys,
         )
         # One in-run retry pass over the transport answers, the only class whose
         # bytes could differ on an immediate second ask. Everything still
@@ -1067,7 +1096,7 @@ class MirrulationsReader(Reader):
             again = [outcome.key for outcome in retry_outcomes]
             if again:
                 outcomes = [outcome for outcome in outcomes if outcome.status != STATUS_TRANSPORT]
-                yield from download_keys(
+                yield from download_keyed(
                     self.s3_resource,
                     self.bucket,
                     again,
@@ -1076,7 +1105,6 @@ class MirrulationsReader(Reader):
                     label=f"{label} retry",
                     outcomes=outcomes,
                     prior_outcomes=retry_outcomes,
-                    with_keys=self.with_keys,
                 )
 
         self.unresolved = outcomes
@@ -1139,7 +1167,6 @@ def reader_factory(
     resource_factory: Callable[[], Any] | None = None,
     bounded: bool = False,
     unresolved_keys: Callable[[str, RecordType], Iterable[str | KeyOutcome]] | None = None,
-    with_keys: bool = False,
 ) -> Callable[[str, RecordType], MirrulationsReader]:
     """Build a ``read(agency, record_type) -> MirrulationsReader`` factory.
 
@@ -1156,8 +1183,8 @@ def reader_factory(
     Without it a resume still re-asks for them -- they were never manifested --
     but only wherever the listing happens to place them.
 
-    ``with_keys=True`` makes every reader yield :class:`KeyedPayload` values, so
-    a caller merging re-fetches can order them by ``last_modified``.
+    Each reader's :meth:`~MirrulationsReader.iter_keyed_records` pairs every payload
+    with its key and LastModified, so a caller merging re-fetches can order them.
     """
     cache = (
         None
@@ -1216,7 +1243,6 @@ def reader_factory(
             retain_keys=not bounded,
             fail_fast=bounded,
             unresolved_keys=unresolved_keys(agency, record_type) if unresolved_keys else None,
-            with_keys=with_keys,
         )
 
     return read
