@@ -6,7 +6,9 @@ which bytes were read, and the body recomposes from ``bill_sections.body``.  ``b
 because a version code is not unique across acquisition paths and ``body_index`` because a reported bill carries two
 ``legis-body`` elements, but is keyed on ``seq`` within its printing: ``match_path`` is the cross-version key and
 repeats inside one printing (119-hr-5334 enrolled, two divisions' ``Sec. 1``; 119-hr-9022 reported, two paragraphs
-under one heading).  ``bill_versions`` carries the GPO PDF cleanup counts as processing provenance.
+under one heading).  ``bill_sections.congress`` is ``bill_id``'s prefix (``tables.bill_congress``), so a host can store
+the table one file per Congress with the identity unchanged.  ``bill_versions`` carries the GPO PDF cleanup counts as
+processing provenance.
 """
 
 from __future__ import annotations
@@ -15,6 +17,7 @@ from spicy_docs.schemas.tables import (
     AT_JOINED_KEY,
     Reference,
     Row,
+    bill_congress,
     digest,
     flag,
     joined,
@@ -119,6 +122,10 @@ BILL_SECTIONS = table_contract(
         "body_chars": "Character length of body.",
         "body_sha256": "Digest of body's UTF-8 bytes, so an unchanged section is recognisable without a join.",
         "version_date": "The parent printing's date, carried so this table versions with its parent.",
+        "congress": (
+            "The Congress of the bill, the prefix of bill_id (119 for 119-hr-1), so a host can store the table one "
+            "file per Congress."
+        ),
     },
 )
 
@@ -231,6 +238,7 @@ def shape_bill_section(
         "body_chars": text(len(body)),
         "body_sha256": digest(body),
         "version_date": text(version_date),
+        "congress": bill_congress(bill_id),
     }
 
 
