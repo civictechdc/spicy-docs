@@ -1,14 +1,16 @@
 """The FEC committee master: one row per committee per two-year cycle, from the bulk ``cm<yy>.zip`` files.
 
 The bulk bucket holds one file per cycle from 1980, each a ZIP whose only member is ``cm.txt``: pipe-delimited rows
-with no header and no quoting, whose fields ``cm_header_file.csv`` names. Measured on 2026-09-27 over all 24 files,
-1980 to 2026, fetched from the bucket: 298,395 rows naming 89,710 distinct committees, every row 15 fields, and no
-byte above 0x7F in any file. The rows are ASCII, so they are read as UTF-8, as the retained ``cm24`` scope of
-2026-09-12 reads them. A byte that is not UTF-8 refuses rather than decoding to other characters, which latin-1 would
-do silently.
+with no header and literal quotes, whose fields ``cm_header_file.csv`` names. Quotes are data: a name such as
+``"CALIFORNIA STATE COUNCIL OF CARPENTERS POLITICAL ACTION FUND"`` (cm84, ``C00065862``) keeps them, where CSV
+quoting would strip them and join fields. The rules below rest on the 24 files of 1980-2026 fetched on 2026-09-27
+and pinned by digest in ``~/Work/corpora/fork-execution-2026-09-21/committee-master-measure-2026-09-27/measure.json``
+(``measure.py`` beside it): every row has 15 fields, the highest byte is 0x7C, and the longest row is 408 bytes.
+The rows are ASCII, so they are read as UTF-8, as the retained ``cm24`` scope of 2026-09-12 reads them; a byte
+that is not UTF-8 refuses rather than decoding to other characters, which latin-1 would do silently.
 
 Fields stay the publisher's literal strings; no code is expanded. Consumers own acquisition and retention: this
-module names the URLs and reads retained bytes.
+module names the URLs and reads retained bytes through a blob source that verifies them by digest.
 """
 
 from __future__ import annotations
@@ -16,6 +18,7 @@ from __future__ import annotations
 import csv
 import io
 from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
 
 from spicy_docs.sources.fec.bulk_profile import MAX_DECODED_BYTES
 from spicy_docs.sources.fec.catalog import BUCKET_URL
@@ -45,8 +48,10 @@ FIRST_CYCLE = 1980
 ENCODING = "utf-8"
 #: The one member every cycle's ZIP holds.
 MEMBER = {"ordinal": 0, "name": "cm.txt"}
-#: The longest row of the 24 files measured on 2026-09-27 is 408 bytes; a row past this is not a committee-master row.
+#: The longest measured row is 408 bytes; a row past this is not a committee-master row.
 MAX_RECORD_BYTES = 16 * 1024
+#: The header file is 158 bytes.
+MAX_HEADER_BYTES = 4 * 1024
 
 
 def _cycle(cycle: int) -> int:
@@ -77,40 +82,67 @@ def committee_master_header(raw: bytes) -> tuple[str, ...]:
     return COMMITTEE_MASTER_FIELDS
 
 
-def iter_committee_master_rows(stream, *, capture: Mapping, cycle: int, header: tuple[str, ...]) -> Iterator[dict]:
+@contextmanager
+def _retained(blob_source, capture: Mapping):
+    """Open retained bytes by their digest, which the blob source verifies, and hold them to the stated size."""
+    with blob_source.open(capture["responseSha256"]) as stream:
+        size = stream.seek(0, io.SEEK_END)
+        stream.seek(0)
+        if size != capture["byteSize"]:
+            raise ValueError("FEC retained original differs from its stated byte size")
+        yield stream
+
+
+def iter_committee_master_rows(*, capture: Mapping, header_capture: Mapping, blob_source, cycle: int) -> Iterator[dict]:
     """Yield each row of one cycle's retained file as ``{cycle, fields, source}``, fields keyed by the header.
 
-    ``capture`` is the retained original's capture facts and ``stream`` its bytes. The capture must be the cycle's
-    own file, requested at :func:`committee_master_url`, and a ZIP whose only member is ``cm.txt``. ``header`` is
-    what :func:`committee_master_header` returned for the retained header file. A row with another field count
-    refuses. ``source`` gives the member's sha256 and the row's byte offset and length in it.
+    ``capture`` and ``header_capture`` are the retained originals' capture facts: the cycle's own ZIP, requested at
+    :func:`committee_master_url`, and ``cm_header_file.csv`` at :data:`HEADER_URL`. ``blob_source`` opens each by
+    its digest and must verify it, as ``rulespec_artifacts.LocalBlobSource`` does; its size must match too. The
+    header is read and checked here. ``source`` gives the member's sha256 and the row's byte offset and length.
+
+    It refuses a ZIP with any member but ``cm.txt``, a member with no rows, a row of another width, and bytes that
+    are not UTF-8 or not literal pipe-delimited text. Only natural exhaustion establishes a complete parse: a
+    refusal part-way stops the reader after earlier rows were yielded, so keep nothing from a file until it ends.
     """
-    capture = original_capture(capture)
+    capture, header_capture = original_capture(capture), original_capture(header_capture)
     if capture["requestUrl"] != committee_master_url(cycle) or capture["representation"] != "zip":
         raise ValueError("FEC committee master capture is not this cycle's ZIP")
-    if tuple(header) != COMMITTEE_MASTER_FIELDS:
-        raise ValueError("FEC committee master rows need the checked header")
-    with selected_stream(
-        stream, capture=capture, member=MEMBER, max_members=1, max_decoded_bytes=MAX_DECODED_BYTES
-    ) as (decoded, _, sha256):
-        for row in delimited_rows(
-            decoded,
-            sha256=sha256,
-            encoding=ENCODING,
-            delimiter="|",
-            quoting="literal",
-            max_record_bytes=MAX_RECORD_BYTES,
-        ):
-            fields = row["fields"]
-            if len(fields) != len(COMMITTEE_MASTER_FIELDS):
-                raise ValueError(
-                    f"FEC committee master row has {len(fields)} fields, not {len(COMMITTEE_MASTER_FIELDS)}"
-                )
-            yield {
-                "cycle": cycle,
-                "fields": dict(zip(COMMITTEE_MASTER_FIELDS, fields, strict=True)),
-                "source": row["source"],
-            }
+    if header_capture["requestUrl"] != HEADER_URL or header_capture["representation"] != "opaque":
+        raise ValueError("FEC committee master header capture is not cm_header_file.csv")
+    with _retained(blob_source, header_capture) as stream:
+        committee_master_header(stream.read(MAX_HEADER_BYTES))
+    rows = 0
+    with (
+        _retained(blob_source, capture) as original,
+        selected_stream(
+            original, capture=capture, member=MEMBER, max_members=1, max_decoded_bytes=MAX_DECODED_BYTES
+        ) as (decoded, _, sha256),
+    ):
+        try:
+            for row in delimited_rows(
+                decoded,
+                sha256=sha256,
+                encoding=ENCODING,
+                delimiter="|",
+                quoting="literal",
+                max_record_bytes=MAX_RECORD_BYTES,
+            ):
+                fields = row["fields"]
+                if len(fields) != len(COMMITTEE_MASTER_FIELDS):
+                    raise ValueError(
+                        f"FEC committee master row has {len(fields)} fields, not {len(COMMITTEE_MASTER_FIELDS)}"
+                    )
+                rows += 1
+                yield {
+                    "cycle": cycle,
+                    "fields": dict(zip(COMMITTEE_MASTER_FIELDS, fields, strict=True)),
+                    "source": row["source"],
+                }
+        except csv.Error as error:
+            raise ValueError(f"FEC committee master row is not literal pipe-delimited text: {error}") from error
+    if not rows:
+        raise ValueError("FEC committee master member has no rows")
 
 
 __all__ = [

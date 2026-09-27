@@ -507,7 +507,7 @@ tests/test_fec_agency.py	Legacy report links published by the current FEC agency
 tests/test_fec_bulk_dictionary.py	Ordered bulk dictionaries retain the source cells that justify each name.	test
 tests/test_fec_bulk_release.py	Bulk releases count original files and preserve every archive entry.	test
 tests/test_fec_candidate_release.py	Candidate-query publication preserves exact scope and source observations.	test
-tests/test_fec_committee_master.py	The FEC committee master reader: the header it checks, the rows it keys, and what it refuses.	test
+tests/test_fec_committee_master.py	The FEC committee master reader: the bytes it verifies, the header it checks, the rows it keys, and its refusals.	test
 tests/test_fec_filing_release.py	Selected filing-query publication preserves observations and source evidence.	test
 tests/test_fec_filings.py	Literal filing syntax and source coordinates; fixtures are not valid reports.	test
 tests/test_fec_financial_history_example.py	Known-answer bounds, refusal and resume controls for the financial-history example.	test

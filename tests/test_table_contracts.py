@@ -11,6 +11,7 @@ from __future__ import annotations
 import ast
 import json
 import re
+import tempfile
 from dataclasses import dataclass, fields, replace
 from pathlib import Path
 from typing import Any
@@ -1229,26 +1230,36 @@ def _federal_register_cases() -> list[ShapedCase]:
 def _fec_committee_history_cases() -> list[ShapedCase]:
     """The retained cm24 sample's principal campaign committee, read and projected; its identity written here."""
     import hashlib
-    import io
+
+    from rulespec_artifacts import LocalBlobSource
 
     from spicy_docs.schemas.fec_committee_history import project_committee_master_row
-    from spicy_docs.sources.fec.committee_master import (
-        committee_master_header,
-        committee_master_url,
-        iter_committee_master_rows,
-    )
+    from spicy_docs.sources.fec.committee_master import HEADER_URL, committee_master_url, iter_committee_master_rows
 
     folder = FIXTURES / "fec" / "committee_master"
-    raw = (folder / "cm24.zip").read_bytes()
-    capture = {
-        "requestUrl": committee_master_url(2024),
-        "observedAt": "2026-09-27T01:00:00+00:00",
-        "responseSha256": "sha256:" + hashlib.sha256(raw).hexdigest(),
-        "byteSize": len(raw),
-        "representation": "zip",
-    }
-    header = committee_master_header((folder / "cm_header_file.csv").read_bytes())
-    rows = list(iter_committee_master_rows(io.BytesIO(raw), capture=capture, cycle=2024, header=header))
+    root = Path(tempfile.mkdtemp())
+
+    def retained(name: str, url: str, representation: str) -> dict:
+        raw = (folder / name).read_bytes()
+        digest = hashlib.sha256(raw).hexdigest()
+        (root / "sha256").mkdir(exist_ok=True)
+        (root / "sha256" / digest).write_bytes(raw)
+        return {
+            "requestUrl": url,
+            "observedAt": "2026-09-27T01:00:00+00:00",
+            "responseSha256": f"sha256:{digest}",
+            "byteSize": len(raw),
+            "representation": representation,
+        }
+
+    rows = list(
+        iter_committee_master_rows(
+            capture=retained("cm24.zip", committee_master_url(2024), "zip"),
+            header_capture=retained("cm_header_file.csv", HEADER_URL, "opaque"),
+            blob_source=LocalBlobSource(root),
+            cycle=2024,
+        )
+    )
     return [_case("fec_committee_history", project_committee_master_row(rows[2]), ("C00002592", "2024"))]
 
 
