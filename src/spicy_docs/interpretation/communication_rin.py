@@ -54,3 +54,54 @@ def rin_from_report_nature(report_nature: str | None) -> RinFinding:
 
 
 __all__ = ["REPORT_NATURE_RIN", "RIN_RULES", "RinFinding", "rin_from_report_nature"]
+
+
+@dataclass(frozen=True, slots=True)
+class RinOccurrence:
+    """One RIN span in the supplied reportNature text; repeated mentions remain separate."""
+
+    rin: str
+    ordinal: int
+    matched_text: str
+    span_start: int
+    span_end: int
+    field_sha256: str
+    rule: str
+    rule_version: str
+
+
+def rin_occurrences_from_report_nature(report_nature: str | None) -> tuple[RinOccurrence, ...]:
+    """Read every source-stated RIN using the shared identifier reader.
+
+    House communication 119-EC-1278 states ``(RIN: 3235-AK79; 3235-AK80)``:
+    one label scopes both source occurrences. See the retained native-field
+    fixture in tests/fixtures/record_communications. The scalar compatibility
+    function above deliberately retains its original first-labelled result.
+    These offsets index the exact supplied field, not a whole communication.
+    """
+    import hashlib
+
+    from spicy_docs.interpretation.citations import find_citations
+
+    if report_nature is None:
+        return ()
+    if not isinstance(report_nature, str):
+        raise TypeError(f"report_nature must be a string or None, not {type(report_nature).__name__}")
+    digest = hashlib.sha256(report_nature.encode()).hexdigest()
+    return tuple(
+        RinOccurrence(
+            finding.target_key,
+            ordinal,
+            finding.matched_text,
+            finding.span_start,
+            finding.span_end,
+            digest,
+            "report_nature/shared_rin",
+            finding.rule_version,
+        )
+        for ordinal, finding in enumerate(find_citations(report_nature, kinds=("rin",)))
+        if finding.target_resolved
+    )
+
+
+__all__ += ["RinOccurrence", "rin_occurrences_from_report_nature"]

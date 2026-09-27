@@ -31,6 +31,12 @@ def _extract_comment(d: dict) -> dict:
     return {
         "comment_id": d.get("data", {}).get("id"),
         "docket_id": (v.strip('"') if (v := attrs.get("docketId")) else v),
+        "comment_on_document_id": attrs.get("commentOnDocumentId"),
+        "comment_on_object_id": attrs.get("commentOn"),
+        "original_document_id": attrs.get("originalDocumentId"),
+        "comment_reference_values_json": json_dumps(
+            {key: attrs[key] for key in ("commentOnDocumentId", "commentOn", "originalDocumentId") if key in attrs}
+        ),
         "agency_code": attrs.get("agencyId"),
         "first_name": attrs.get("firstName"),
         "last_name": attrs.get("lastName"),
@@ -149,6 +155,10 @@ COMMENT = RecordType(
     schema={
         "comment_id": str,
         "docket_id": str,
+        "comment_on_document_id": str,
+        "comment_on_object_id": str,
+        "original_document_id": str,
+        "comment_reference_values_json": str,
         "agency_code": str,
         "first_name": str,
         "last_name": str,
@@ -252,6 +262,15 @@ COMMENTS = table_contract(
     columns={
         "comment_id": "The publisher's comment id, usually its docket id and a sequence (`APHIS-2004-0018-0031`).",
         "docket_id": "The docket the publisher files the comment under (`docketId`); NULL when it names none.",
+        "comment_on_document_id": (
+            "The explicit parent document ID (`commentOnDocumentId`), independently nullable from the docket."
+        ),
+        "comment_on_object_id": "Literal `commentOn` object reference; not the public document ID namespace.",
+        "original_document_id": "Literal `originalDocumentId`; unresolved legacy source reference, not a current key.",
+        "comment_reference_values_json": (
+            "Only present native reference fields as a JSON object, preserving null and empty values. "
+            "An empty object means read with no fields; SQL NULL means not retained by an older projection."
+        ),
         "agency_code": "The publisher's code for the agency that received the comment (`agencyId`).",
         "first_name": "The submitter's first name, when given.",
         "last_name": "The submitter's last name, when given.",

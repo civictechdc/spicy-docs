@@ -26,6 +26,7 @@ from spicy_docs.schemas.bill_model_tables import (
 from spicy_docs.schemas.bill_tables import (
     BILL_ACTIONS,
     BILL_COMMITTEES,
+    BILL_COSPONSORS,
     BILL_PUBLISHER_SUMMARIES,
     CONGRESS_BILLS,
 )
@@ -59,7 +60,7 @@ from spicy_docs.schemas.fec_committee_history import FEC_COMMITTEE_HISTORY
 from spicy_docs.schemas.federal_register import FEDERAL_REGISTER
 from spicy_docs.schemas.hearing_bill_link_tables import HEARING_BILL_LINKS
 from spicy_docs.schemas.law_tables import LAW_CODE_SECTIONS, LAWS, TABLE3_RECORDS
-from spicy_docs.schemas.legislator_tables import MEMBER_TERMS, MEMBERS
+from spicy_docs.schemas.legislator_tables import MEMBER_PARTY_AFFILIATIONS, MEMBER_TERMS, MEMBERS
 from spicy_docs.schemas.regulations import (
     COMMENT,
     COMMENTS,
@@ -78,6 +79,7 @@ _REGISTERED: tuple[TableContract, ...] = (
     CONGRESS_BILLS,
     BILL_ACTIONS,
     BILL_COMMITTEES,
+    BILL_COSPONSORS,
     BILL_PUBLISHER_SUMMARIES,
     # The fifth table the same BILLSTATUS document fills (B4): the CBO
     # cost-estimate index, keyless where CBO's own site is walled.
@@ -97,6 +99,7 @@ _REGISTERED: tuple[TableContract, ...] = (
     MEMBER_VOTES,
     MEMBERS,
     MEMBER_TERMS,
+    MEMBER_PARTY_AFFILIATIONS,
     COMMITTEE_REPORTS,
     REPORT_SECTIONS,
     HEARING_TRANSCRIPTS,
@@ -166,6 +169,7 @@ __all__ = [
     "BILL_ACTIONS",
     "BILL_COMMITTEES",
     "BILL_COMMITTEE_ACTIONS",
+    "BILL_COSPONSORS",
     "BILL_PUBLISHER_SUMMARIES",
     "BILL_SECTIONS",
     "BILL_SUMMARIES",
@@ -198,6 +202,7 @@ __all__ = [
     "LAWS",
     "LAW_CODE_SECTIONS",
     "MEMBERS",
+    "MEMBER_PARTY_AFFILIATIONS",
     "MEMBER_TERMS",
     "MEMBER_VOTES",
     "NOMINATIONS",

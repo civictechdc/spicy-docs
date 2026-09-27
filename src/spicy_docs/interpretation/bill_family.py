@@ -1,4 +1,4 @@
-"""One pass over one bill: thirteen tables, in an order where nothing reads another's output.
+"""One pass over one bill: related tables, in an order where nothing reads another's output.
 
 The family builder is the one place a bill's documents and this package's
 findings meet; it lives here rather than in ``schemas/`` because composing
@@ -51,12 +51,14 @@ from spicy_docs.schemas.bill_model_tables import (
 from spicy_docs.schemas.bill_tables import (
     BILL_ACTIONS,
     BILL_COMMITTEES,
+    BILL_COSPONSORS,
     BILL_PUBLISHER_SUMMARIES,
     CONGRESS_BILLS,
     latest_action_index,
     shape_bill,
     shape_bill_action,
     shape_bill_committee,
+    shape_bill_cosponsor,
     shape_bill_publisher_summary,
 )
 from spicy_docs.schemas.bill_version_tables import (
@@ -240,6 +242,7 @@ class BillFamilyTables:
     bill_actions: tuple[Row, ...] = ()
     bill_committees: tuple[Row, ...] = ()
     bill_publisher_summaries: tuple[Row, ...] = ()
+    bill_cosponsors: tuple[Row, ...] = ()
     cbo_cost_estimates: tuple[Row, ...] = ()
     bill_versions: tuple[Row, ...] = ()
     bill_sections: tuple[Row, ...] = ()
@@ -537,7 +540,7 @@ def build_bill_family(
         referrals=referrals,
     )
 
-    # 3. The four tables one BILLSTATUS document fills.
+    # 3. Bill-level tables from the same BILLSTATUS document.
     bills: list[Row] = []
     admit(
         CONGRESS_BILLS,
@@ -591,7 +594,16 @@ def build_bill_family(
             partial(shape_bill_publisher_summary, identity, summary),
         )
 
-    # 3b. The fifth table the same document fills: the CBO cost-estimate
+    cosponsors: list[Row] = []
+    for index, _ in enumerate(status.cosponsors or ()):
+        admit(
+            BILL_COSPONSORS,
+            cosponsors,
+            (key, status.input_sha256 or "", str(index)),
+            partial(shape_bill_cosponsor, status, cosponsor_index=index),
+        )
+
+    # 3b. The CBO cost-estimate table from the same document: the cost-estimate
     # index.  Folded onto (bill, publication) first, because the publisher
     # states one publication twice on some bills and that is one estimate;
     # a url outside the measured /publication/{id} shape cannot be keyed and
@@ -649,6 +661,7 @@ def build_bill_family(
         bill_actions=tuple(actions),
         bill_committees=tuple(committees),
         bill_publisher_summaries=tuple(publisher_summaries),
+        bill_cosponsors=tuple(cosponsors),
         cbo_cost_estimates=tuple(estimates),
         refusals=tuple(admit.refusals),
     )

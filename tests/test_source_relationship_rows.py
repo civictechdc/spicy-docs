@@ -1,0 +1,182 @@
+"""Native cosponsor/affiliation replay plus explicitly synthetic missingness controls."""
+
+import hashlib
+import json
+from pathlib import Path
+from xml.etree import ElementTree as ET
+
+import pytest
+
+from spicy_docs.schemas import TABLE_CONTRACTS
+from spicy_docs.schemas.bill_tables import BILL_COSPONSORS, shape_bill_cosponsor
+from spicy_docs.schemas.legislator_tables import MEMBER_PARTY_AFFILIATIONS, shape_member_party_affiliation
+from spicy_docs.sources.congress.bill_status import BillIdentity, parse_bill_status
+from spicy_docs.sources.legislators import parse_legislators
+
+FIXTURES = Path(__file__).parent / "fixtures"
+BILL = FIXTURES / "govinfo_bills/status-118hr1-cosponsors.xml"
+HISTORY = FIXTURES / "legislators/legislators-historical-excerpt.json"
+
+
+def test_every_native_cosponsor_field_and_occurrence_survives() -> None:
+    body = BILL.read_bytes()
+    status = parse_bill_status(body, identity=BillIdentity(118, "hr", 1))
+    native = ET.fromstring(body).findall("bill/cosponsors/item")
+    assert len(status.cosponsors) == len(native) == 49
+    assert status.cosponsors_outcome == "populated"
+    assert status.input_sha256 == "sha256:" + hashlib.sha256(body).hexdigest()
+    columns = {
+        "bioguide_id": "bioguideId",
+        "full_name": "fullName",
+        "party": "party",
+        "state": "state",
+        "district": "district",
+        "sponsorship_date": "sponsorshipDate",
+        "sponsorship_withdrawn_date": "sponsorshipWithdrawnDate",
+        "is_original_raw": "isOriginalCosponsor",
+    }
+    keys = []
+    for ordinal, source in enumerate(native):
+        row = BILL_COSPONSORS.checked(shape_bill_cosponsor(status, cosponsor_index=ordinal))
+        keys.append(BILL_COSPONSORS.key(row))
+        assert tuple(row) == BILL_COSPONSORS.columns
+        for column, field in columns.items():
+            node = source.find(field)
+            assert row[column] == (None if node is None else node.text or "")
+        retained = ET.fromstring(row["source_xml"])
+        assert [(c.tag, c.text, c.attrib) for c in retained] == [(c.tag, c.text, c.attrib) for c in source]
+        assert ET.fromstring(body).find(row["source_path"].removeprefix("/billStatus/")) is not None
+    assert len(set(keys)) == 49
+    first = shape_bill_cosponsor(status, cosponsor_index=0)
+    assert (
+        first["bioguide_id"],
+        first["sponsorship_date"],
+        first["is_original_raw"],
+        first["state"],
+        first["district"],
+    ) == ("M001159", "2023-03-14", "True", "WA", "5")
+    assert first["sponsorship_withdrawn_date"] is None
+
+
+def test_native_present_empty_withdrawal_is_not_absent() -> None:
+    body = (FIXTURES / "govinfo_bills/status-113hr4200.xml").read_bytes()
+    status = parse_bill_status(body, identity=BillIdentity(113, "hr", 4200))
+    assert status.cosponsors[0].sponsorship_withdrawn_date == ""
+    assert status.cosponsors[0].sponsorship_withdrawn_date_status == "empty"
+
+
+@pytest.mark.parametrize("container, state", [(None, "absent"), ("", "empty")])
+def test_cosponsor_list_observation_is_separate_from_zero(container: str | None, state: str) -> None:
+    root = ET.fromstring(BILL.read_bytes())
+    bill = root.find("bill")
+    element = bill.find("cosponsors")
+    if container is None:
+        bill.remove(element)
+    else:
+        element.clear()
+    status = parse_bill_status(ET.tostring(root), identity=BillIdentity(118, "hr", 1))
+    assert status.cosponsors == ()
+    assert status.cosponsors_outcome == state
+
+
+def test_repeated_member_and_invalid_literal_date_remain_observations() -> None:
+    root = ET.fromstring(BILL.read_bytes())
+    entries = root.find("bill/cosponsors")
+    entries.append(ET.fromstring(ET.tostring(entries[0])))
+    entries[-1].find("sponsorshipDate").text = "2023-02-30"
+    status = parse_bill_status(ET.tostring(root), identity=BillIdentity(118, "hr", 1))
+    row = shape_bill_cosponsor(status, cosponsor_index=49)
+    assert row["bioguide_id"] == "M001159"
+    assert row["sponsorship_date"] == "2023-02-30"
+    assert row["sponsorship_date_status"] == "invalid"
+    assert BILL_COSPONSORS.key(row) != BILL_COSPONSORS.key(shape_bill_cosponsor(status, cosponsor_index=0))
+
+
+def test_native_party_change_preserves_both_assertions_and_provenance() -> None:
+    body = HISTORY.read_bytes()
+    parsed = parse_legislators(body, max_bytes=len(body))
+    member = parsed.by_bioguide["T000254"]
+    term = member.terms[3]
+    assert term.party == "Republican"
+    assert term.party_affiliations_state == "populated"
+    assert [(a.start, a.end, a.party) for a in term.party_affiliations] == [
+        ("1961-01-03", "1964-09-16", "Democrat"),
+        ("1964-09-16", "1967-01-03", "Republican"),
+    ]
+    for index in range(2):
+        row = MEMBER_PARTY_AFFILIATIONS.checked(
+            shape_member_party_affiliation(
+                member,
+                term_index=3,
+                affiliation_index=index,
+                input_sha256=parsed.input_sha256,
+                observed_at="2026-09-19T00:00:00Z",
+            )
+        )
+        target = json.loads(body)
+        for component in row["source_path"].split("/")[1:]:
+            target = target[int(component)] if isinstance(target, list) else target[component]
+        assert json.loads(row["source_json"]) == target
+        assert row["input_sha256"] == "sha256:" + hashlib.sha256(body).hexdigest()
+        assert row["term_party"] == "Republican"
+    # The transition date occurs on both source boundaries. No party is chosen
+    # here: treating the first end as exclusive is explicitly consumer policy.
+    assert term.party_affiliations[0].end == term.party_affiliations[1].start
+
+
+@pytest.mark.parametrize("value,state", [("absent", "absent"), (None, "null"), ([], "empty")])
+def test_affiliation_list_states_survive(value: object, state: str) -> None:
+    raw = json.loads(HISTORY.read_bytes())
+    source = next(r for r in raw if r["id"]["bioguide"] == "T000254")
+    if value == "absent":
+        del source["terms"][3]["party_affiliations"]
+    else:
+        source["terms"][3]["party_affiliations"] = value
+    body = json.dumps([source]).encode()
+    term = parse_legislators(body, max_bytes=len(body)).records[0].terms[3]
+    assert term.party_affiliations_state == state
+    assert term.party_affiliations == ()
+
+
+def test_overlaps_gaps_missing_ends_and_invalid_dates_are_not_repaired() -> None:
+    source = next(r for r in json.loads(HISTORY.read_bytes()) if r["id"]["bioguide"] == "T000254")
+    intervals = [
+        {"start": "1961-01-03", "end": "1964-09-17", "party": "Democrat"},
+        {"start": "1964-09-16", "end": "1965-01-01", "party": "Republican"},
+        {"start": "1966-01-01", "party": "Independent"},
+        {"start": "not-a-date", "end": None, "party": None, "extra": "retained"},
+    ]
+    source["terms"][3]["party_affiliations"] = intervals
+    body = json.dumps([source]).encode()
+    term = parse_legislators(body, max_bytes=len(body)).records[0].terms[3]
+    assert [json.loads(a.raw_json) for a in term.party_affiliations] == intervals
+    assert term.party_affiliations[2].end is None
+    assert term.party_affiliations[3].start_status == "invalid"
+    assert term.party == "Republican"
+
+
+def test_declared_relationships_include_source_part_and_meeting_scope() -> None:
+    expected = {
+        "bill_sections": [
+            (("bill_id", "version_code", "source"), "bill_versions", ("bill_id", "version_code", "source"))
+        ],
+        "section_diffs": [
+            (("bill_id", "from_version_code", "from_source"), "bill_versions", ("bill_id", "version_code", "source")),
+            (("bill_id", "to_version_code", "to_source"), "bill_versions", ("bill_id", "version_code", "source")),
+        ],
+        "report_sections": [(("package_id", "part_id"), "committee_reports", ("package_id", "part_id"))],
+        "hearing_transcripts": [
+            (("congress", "chamber", "event_id"), "committee_meetings", ("congress", "chamber", "event_id"))
+        ],
+    }
+    for name, links in expected.items():
+        actual = {(r.child_columns, r.parent_table, r.parent_columns) for r in TABLE_CONTRACTS[name].references}
+        assert set(links) <= actual
+        for child, parent_name, parent in links:
+            assert parent == TABLE_CONTRACTS[parent_name].identity
+            # A same short label in another source/part/chamber must not match.
+            left = {c: str(i) for i, c in enumerate(child)}
+            right = {p: left[c] for c, p in zip(child, parent, strict=True)}
+            other = dict(right, **{parent[-1]: "different"})
+            assert tuple(left[c] for c in child) == tuple(right[p] for p in parent)
+            assert tuple(left[c] for c in child) != tuple(other[p] for p in parent)

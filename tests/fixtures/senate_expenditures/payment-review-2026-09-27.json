@@ -1,0 +1,250 @@
+{
+  "review_date": "2026-09-27",
+  "status": "partial-manual-truth-set; not publication qualification",
+  "input_sha256": "32834f1078045ef2d298cfbe664db9527d0eb39e1557fe9eb656e2ba38e1f7b6",
+  "pages": {
+    "7": {
+      "source_page": 17,
+      "printed_page": "B-1243"
+    },
+    "8": {
+      "source_page": 18,
+      "printed_page": "B-1244"
+    }
+  },
+  "observations": [
+    {
+      "id": "first_document",
+      "page": 7,
+      "word_indices": [
+        101
+      ],
+      "literal": "DJST20250194"
+    },
+    {
+      "id": "first_date",
+      "page": 7,
+      "word_indices": [
+        102
+      ],
+      "literal": "10/07/2025"
+    },
+    {
+      "id": "first_payee",
+      "page": 7,
+      "word_indices": [
+        103,
+        104
+      ],
+      "literal": "ERAJ SHIRVANI"
+    },
+    {
+      "id": "first_start",
+      "page": 7,
+      "word_indices": [
+        105
+      ],
+      "literal": "08/05/2025"
+    },
+    {
+      "id": "first_end",
+      "page": 7,
+      "word_indices": [
+        106
+      ],
+      "literal": "08/06/2025"
+    },
+    {
+      "id": "repeat_document",
+      "page": 7,
+      "word_indices": [
+        128
+      ],
+      "literal": "DJST20250202"
+    },
+    {
+      "id": "repeat_date",
+      "page": 7,
+      "word_indices": [
+        129
+      ],
+      "literal": "10/07/2025"
+    },
+    {
+      "id": "repeat_payee",
+      "page": 7,
+      "word_indices": [
+        130,
+        131
+      ],
+      "literal": "ERAJ SHIRVANI"
+    },
+    {
+      "id": "repeat_start",
+      "page": 7,
+      "word_indices": [
+        132
+      ],
+      "literal": "08/20/2025"
+    },
+    {
+      "id": "repeat_end",
+      "page": 7,
+      "word_indices": [
+        133
+      ],
+      "literal": "08/21/2025"
+    },
+    {
+      "id": "incidental",
+      "page": 7,
+      "word_indices": [
+        107,
+        108
+      ],
+      "literal": "STAFF INCIDENTALS"
+    },
+    {
+      "id": "per_diem",
+      "page": 7,
+      "word_indices": [
+        110,
+        111,
+        112
+      ],
+      "literal": "STAFF PER DIEM"
+    },
+    {
+      "id": "transport",
+      "page": 7,
+      "word_indices": [
+        114,
+        115
+      ],
+      "literal": "STAFF TRANSPORTATION"
+    },
+    {
+      "id": "incidental_amount",
+      "page": 7,
+      "word_indices": [
+        109
+      ],
+      "literal": "$13.20",
+      "decimal": "13.20"
+    },
+    {
+      "id": "per_diem_amount",
+      "page": 7,
+      "word_indices": [
+        113
+      ],
+      "literal": "$165.89",
+      "decimal": "165.89"
+    },
+    {
+      "id": "transport_amount",
+      "page": 7,
+      "word_indices": [
+        116
+      ],
+      "literal": "$291.72",
+      "decimal": "291.72"
+    },
+    {
+      "id": "multiline",
+      "page": 7,
+      "word_indices": [
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127
+      ],
+      "literal": "SEA GIRT NJ TO MANASQUAN NJ, MARTINSBURG, MANASQUAN NJ AND RETURN"
+    },
+    {
+      "id": "negative_summary",
+      "page": 7,
+      "word_indices": [
+        35
+      ],
+      "literal": "-342.88",
+      "decimal": "-342.88"
+    },
+    {
+      "id": "organization_total",
+      "page": 7,
+      "word_indices": [
+        73
+      ],
+      "literal": "-$204,348.74",
+      "decimal": "-204348.74"
+    },
+    {
+      "id": "category_subtotal",
+      "page": 7,
+      "word_indices": [
+        100
+      ],
+      "literal": "$342.88",
+      "decimal": "342.88"
+    },
+    {
+      "id": "unresolved_page_leading_description",
+      "page": 8,
+      "word_indices": [
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "literal": "CHARLESTON TO MARTINSBURG AND RETURN"
+    }
+  ],
+  "candidate_rows": [
+    {
+      "document": "DJST20250194",
+      "payee": "ERAJ SHIRVANI",
+      "date_posted": "10/07/2025",
+      "service_start": "08/05/2025",
+      "service_end": "08/06/2025",
+      "line_ordinal": 0,
+      "description": "STAFF INCIDENTALS",
+      "amount": "13.20"
+    },
+    {
+      "document": "DJST20250194",
+      "payee": "ERAJ SHIRVANI",
+      "date_posted": "10/07/2025",
+      "service_start": "08/05/2025",
+      "service_end": "08/06/2025",
+      "line_ordinal": 1,
+      "description": "STAFF PER DIEM",
+      "amount": "165.89"
+    },
+    {
+      "document": "DJST20250194",
+      "payee": "ERAJ SHIRVANI",
+      "date_posted": "10/07/2025",
+      "service_start": "08/05/2025",
+      "service_end": "08/06/2025",
+      "line_ordinal": 2,
+      "description": "STAFF TRANSPORTATION",
+      "amount": "291.72"
+    }
+  ],
+  "unresolved": [
+    "Attachment of multiline travel text to an individual expense line",
+    "B-1244 leading description belongs to a previous-page group; no automatic attachment",
+    "Office continuation origin and section-end boundaries not certified",
+    "Negative payment lines not represented by negative summary values",
+    "Complete payment section, reconciliation and later C/D layouts not qualified"
+  ]
+}

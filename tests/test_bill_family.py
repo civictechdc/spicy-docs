@@ -74,6 +74,14 @@ def test_bill_row_counts_the_native_cosponsor_list() -> None:
     )
     capture = BillFamilyCapture(status=status, versions=(), observed_at=OBSERVED_AT)
     assert family(capture).bills[0]["cosponsor_count"] == "49"
+    rows = family(capture).bill_cosponsors
+    assert len(rows) == 49
+    assert {row["cosponsor_index"] for row in rows} == {str(i) for i in range(49)}
+    assert rows[0]["bioguide_id"] == "M001159"
+    assert rows[0]["sponsorship_date"] == "2023-03-14"
+    assert all(row["input_sha256"] == status.input_sha256 for row in rows)
+    assert not family(replace(capture, status=replace(status, cosponsors=()))).bill_cosponsors
+    assert not family(replace(capture, status=replace(status, cosponsors=None))).bill_cosponsors
     assert family(replace(capture, status=replace(status, cosponsors=()))).bills[0]["cosponsor_count"] == "0"
     assert family(replace(capture, status=replace(status, cosponsors=None))).bills[0]["cosponsor_count"] is None
 

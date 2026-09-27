@@ -1,5 +1,4 @@
-"""The four tables one BILLSTATUS document fills: ``congress_bills``, ``bill_actions``, ``bill_committees`` and
-``bill_publisher_summaries``.
+"""BILLSTATUS bill, action, committee, publisher-summary and cosponsor projections.
 
 ``congress_bills``'s first ten columns keep the exact order and spelling of spicy-regs's live
 ``build_congress_bills.COLUMNS`` because other repositories pin that prefix by digest through ``catalog.json``, so new
@@ -130,6 +129,7 @@ CONGRESS_BILLS = table_contract(
             "(this observation stated none and a host merge kept an earlier observation's value; its lineage "
             "is that earlier source, not a fresh read). NULL when url is NULL or the row predates this label."
         ),
+        "cosponsors_outcome": "Source list state: absent, empty or populated; NULL means not read.",
     },
 )
 
@@ -332,6 +332,7 @@ def shape_bill(
         "related_bill_count": text(len(related)),
         "cbo_cost_estimates_outcome": text(getattr(status, "cbo_cost_estimates_outcome", None)),
         "url_source": "billstatus" if text(status.legislation_url) else None,
+        "cosponsors_outcome": text(getattr(status, "cosponsors_outcome", None)),
     }
 
 
@@ -416,3 +417,68 @@ __all__ = [
     "shape_bill_committee",
     "shape_bill_publisher_summary",
 ]
+
+
+BILL_COSPONSORS = table_contract(
+    "bill_cosponsors",
+    grain="One cosponsor occurrence in one retained BILLSTATUS observation.",
+    identity=("bill_id", "input_sha256", "cosponsor_index"),
+    version_column=None,
+    references=(
+        Reference(("bill_id",), "congress_bills", ("bill_id",)),
+        Reference(("bioguide_id",), "members", ("bioguide_id",)),
+    ),
+    columns={
+        "bill_id": "The bill whose source lists the cosponsor.",
+        "input_sha256": "Digest of the complete input XML bytes, not the reserialized item.",
+        "cosponsor_index": "Zero-based position in the source cosponsors list, including repeated members.",
+        "bioguide_id": "Source member identifier; its presence does not prove target resolution.",
+        "full_name": "The source's fullName literal.",
+        "sponsorship_date": "Literal sponsorshipDate; absent is NULL and present empty is an empty string.",
+        "sponsorship_date_status": "Calendar spelling status: absent, empty, valid or invalid.",
+        "is_original_raw": "Literal isOriginalCosponsor text, without Boolean coercion.",
+        "sponsorship_withdrawn_date": "Literal sponsorshipWithdrawnDate; positive native-date qualification is pending.",
+        "sponsorship_withdrawn_date_status": "Calendar spelling status, not confirmation of a withdrawal event.",
+        "party": "Party as the cosponsor entry states it.",
+        "state": "State as the cosponsor entry states it.",
+        "district": "District as the cosponsor entry states it.",
+        "source_path": "XPath to the occurrence in the retained XML.",
+        "source_xml": "Reserialized source item preserving other fields; original bytes are pinned separately.",
+    },
+)
+
+
+def shape_bill_cosponsor(status: object, *, cosponsor_index: int) -> Row:
+    """Project one parsed occurrence; never merge repeated member entries."""
+    if not status.input_sha256:
+        raise ValueError("cosponsor projection requires the retained input digest")
+    if type(cosponsor_index) is not int or cosponsor_index < 0:
+        raise ValueError("cosponsor_index must be a nonnegative integer")
+    if status.cosponsors is None:
+        raise ValueError("cosponsor list was not read")
+    entry = status.cosponsors[cosponsor_index]
+    return {
+        "bill_id": bill_id(status.identity),
+        "input_sha256": status.input_sha256,
+        "cosponsor_index": text(cosponsor_index),
+        **{
+            name: text(getattr(entry, name))
+            for name in (
+                "bioguide_id",
+                "full_name",
+                "sponsorship_date",
+                "sponsorship_date_status",
+                "is_original_raw",
+                "sponsorship_withdrawn_date",
+                "sponsorship_withdrawn_date_status",
+                "party",
+                "state",
+                "district",
+            )
+        },
+        "source_path": f"/billStatus/bill/cosponsors/item[{cosponsor_index + 1}]",
+        "source_xml": entry.source_xml,
+    }
+
+
+__all__ += ["BILL_COSPONSORS", "shape_bill_cosponsor"]

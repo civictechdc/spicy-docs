@@ -93,7 +93,10 @@ BILL_VERSIONS = table_contract(
 
 BILL_SECTIONS = table_contract(
     "bill_sections",
-    references=(Reference(("bill_id",), "congress_bills", ("bill_id",)),),
+    references=(
+        Reference(("bill_id",), "congress_bills", ("bill_id",)),
+        Reference(("bill_id", "version_code", "source"), "bill_versions", ("bill_id", "version_code", "source")),
+    ),
     grain="One row per content-bearing node of one bill version, in document order.",
     identity=("bill_id", "version_code", "source", "seq"),
     # No component can hold "@": bill_id is congress-type-number, version_code a publisher printing code, source a

@@ -196,6 +196,9 @@ COMMITTEE_REPORTS = table_contract(
 
 HEARING_TRANSCRIPTS = table_contract(
     "hearing_transcripts",
+    references=(
+        Reference(("congress", "chamber", "event_id"), "committee_meetings", ("congress", "chamber", "event_id")),
+    ),
     grain="One row per captured GovInfo hearing transcript package.",
     identity=("package_id",),
     version_column="last_modified",
@@ -229,6 +232,7 @@ HEARING_TRANSCRIPTS = table_contract(
 
 REPORT_SECTIONS = table_contract(
     "report_sections",
+    references=(Reference(("package_id", "part_id"), "committee_reports", ("package_id", "part_id")),),
     grain="One row per heading block parsed out of one committee report part's text.",
     identity=("package_id", "part_id", "seq"),
     version_column="last_modified",

@@ -1200,15 +1200,29 @@ def _published_regulations_rows() -> dict[str, list[dict[str, str | None]]]:
 
 
 def _regulations_cases() -> list[ShapedCase]:
-    """The three Regulations.gov tables, over rows read back unchanged from the host's published generation.
+    """Retained published rows, with explicitly unread fields for an older comment schema.
 
     The host shapes these rows, not a ``shape_*`` here, so the published row is the one under test: the round-trip
-    loop holds each contract's column order to the Parquet footer's, and the identity is the id the row was selected by.
+    loop retains the selected identity. New comment fields were not retained
+    in that historical publication: their values stay NULL, not invented from
+    the comment ID. The original fixture remains unchanged.
     """
     published = _published_regulations_rows()
     assert set(published) == set(_PUBLISHED_REGULATIONS_IDS)
+    for row in published["comments"]:
+        new_fields = {
+            "comment_on_document_id",
+            "comment_on_object_id",
+            "original_document_id",
+            "comment_reference_values_json",
+        }
+        assert set(TABLE_CONTRACTS["comments"].columns) - set(row) == new_fields
     return [
-        _case(table, row, (identity,))
+        _case(
+            table,
+            {column: row.get(column) for column in TABLE_CONTRACTS[table].columns} if table == "comments" else row,
+            (identity,),
+        )
         for table, identities in _PUBLISHED_REGULATIONS_IDS.items()
         for row, identity in zip(published[table], identities, strict=True)
     ]
@@ -1277,9 +1291,30 @@ def _fec_committee_history_cases() -> list[ShapedCase]:
     return [_case("fec_committee_history", project_committee_master_row(rows[2]), ("C00002592", "2024"))]
 
 
+def _source_occurrence_cases() -> list[ShapedCase]:
+    from spicy_docs.schemas.bill_tables import shape_bill_cosponsor
+    from spicy_docs.schemas.legislator_tables import shape_member_party_affiliation
+    from spicy_docs.sources.congress.bill_status import BillIdentity, parse_bill_status
+    from spicy_docs.sources.legislators import parse_legislators
+
+    body = (FIXTURES / "govinfo_bills/status-118hr1-cosponsors.xml").read_bytes()
+    status = parse_bill_status(body, identity=BillIdentity(118, "hr", 1))
+    row = shape_bill_cosponsor(status, cosponsor_index=0)
+    result = [_case("bill_cosponsors", row, ("118-hr-1", status.input_sha256, "0"))]
+    body = (FIXTURES / "legislators/legislators-historical-excerpt.json").read_bytes()
+    roster = parse_legislators(body, max_bytes=len(body))
+    member = roster.by_bioguide["T000254"]
+    row = shape_member_party_affiliation(
+        member, term_index=3, affiliation_index=0, input_sha256=roster.input_sha256, observed_at=OBSERVED_AT
+    )
+    result.append(_case("member_party_affiliations", row, (member.bioguide, roster.input_sha256, "3", "0")))
+    return result
+
+
 def all_cases() -> list[ShapedCase]:
     cases = (
-        _billstatus_only_cases()
+        _source_occurrence_cases()
+        + _billstatus_only_cases()
         + _amendment_cases()
         + _press_release_cases()
         + _vote_cases()
@@ -1574,6 +1609,8 @@ def test_every_column_is_described_in_one_sentence(contract: TableContract) -> N
 #: which code fills it before its prose can be checked at all.
 SOURCE = Path(__file__).parent.parent / "src" / "spicy_docs"
 FILLED_BY: dict[str, tuple[str, ...]] = {
+    "bill_cosponsors": ("schemas/bill_tables.py", "sources/congress/bill_status.py"),
+    "member_party_affiliations": ("schemas/legislator_tables.py", "sources/legislators.py"),
     "congress_bills": ("schemas/bill_tables.py", "interpretation/bill_stage.py", "interpretation/money_bills.py"),
     "bill_actions": ("schemas/bill_tables.py", "interpretation/bill_stage.py"),
     "bill_committees": ("schemas/bill_tables.py", "interpretation/money_bills.py"),

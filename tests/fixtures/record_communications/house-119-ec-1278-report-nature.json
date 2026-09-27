@@ -1,0 +1,14 @@
+{
+  "source_path": "/Users/mikewolfd/Work/corpora/fork-execution-2026-09-21/amend-hc-qualification-2026-09-26/house-communications/evidence/blobs/sha256/c83ab13c9b9437e1cf0253c758c00297aad707d5964c04901cb6494484e2d369",
+  "source_sha256": "c83ab13c9b9437e1cf0253c758c00297aad707d5964c04901cb6494484e2d369",
+  "pointer": "/houseCommunication/reportNature",
+  "congress": 119,
+  "number": 1278,
+  "reportNature": "The Commission's extension of commission statement - Regulation SBSR (Reporting and Dissemination of Security-Based Swap Information) and Security-Based Swap Data Repository Rules; Extension [Release No.: 34-102886; File Nos.: S7-34-10; S7-35-10] (RIN: 3235-AK79; 3235-AK80) received June 26, 2025.",
+  "source_locator": "Congress.gov house-communication/119/EC/1278; retained response /houseCommunication/reportNature",
+  "scope": "Reduced native field, copied without editing; remaining response fields omitted. Not a complete communication.",
+  "expected_rins": [
+    "3235-AK79",
+    "3235-AK80"
+  ]
+}

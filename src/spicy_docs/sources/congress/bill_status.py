@@ -6,12 +6,14 @@ Publisher strings, ordering, duplicate actions, and summary HTML remain intact.
 
 from __future__ import annotations
 
+import hashlib
 import re
 from dataclasses import dataclass
-from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import Element, tostring
 
 from rulespec_artifacts import canonical_json_bytes
 
+from spicy_docs.reading.literal_dates import literal_date_status
 from spicy_docs.reading.xml import parse_xml
 
 BILL_TYPES = frozenset({"hr", "s", "hjres", "sjres", "hconres", "sconres", "hres", "sres"})
@@ -182,6 +184,34 @@ class BillSponsor:
 
 
 @dataclass(frozen=True, slots=True)
+class BillCosponsor:
+    """One source occurrence, with literal dates and flags rather than inferred membership.
+
+    None is an absent element; an empty element is an empty string. source_xml
+    is reserialized XML, not original bytes; input_sha256 on BillStatus pins
+    those bytes. Positive withdrawal-date source qualification remains open.
+    """
+
+    bioguide_id: str | None
+    full_name: str | None
+    sponsorship_date: str | None
+    is_original_raw: str | None
+    sponsorship_withdrawn_date: str | None
+    party: str | None
+    state: str | None
+    district: str | None
+    source_xml: str
+
+    @property
+    def sponsorship_date_status(self) -> str:
+        return literal_date_status(self.sponsorship_date)
+
+    @property
+    def sponsorship_withdrawn_date_status(self) -> str:
+        return literal_date_status(self.sponsorship_withdrawn_date)
+
+
+@dataclass(frozen=True, slots=True)
 class BillSummary:
     """``text`` is the summary as the publisher escaped it, from either placement.
 
@@ -254,7 +284,9 @@ class BillStatus:
     #: The publisher lists cosponsors separately from sponsors. None means a
     #: caller-created status has not examined this list; parsed XML always
     #: supplies a tuple, including an empty tuple when no items are listed.
-    cosponsors: tuple[BillSponsor, ...] | None = None
+    cosponsors: tuple[BillCosponsor, ...] | None = None
+    cosponsors_outcome: str | None = None
+    input_sha256: str | None = None
 
 
 def _validated_identity(identity: BillIdentity) -> BillIdentity:
@@ -630,7 +662,23 @@ def parse_bill_status(body: bytes, *, identity: BillIdentity, max_bytes: int = D
             BillSponsor(_text(item, "bioguideId"), _text(item, "fullName")) for item in _items(bill, "sponsors")
         ),
         cosponsors=tuple(
-            BillSponsor(_text(item, "bioguideId"), _text(item, "fullName")) for item in _items(bill, "cosponsors")
+            BillCosponsor(
+                *(
+                    _text(item, name)
+                    for name in (
+                        "bioguideId",
+                        "fullName",
+                        "sponsorshipDate",
+                        "isOriginalCosponsor",
+                        "sponsorshipWithdrawnDate",
+                        "party",
+                        "state",
+                        "district",
+                    )
+                ),
+                source_xml=tostring(item, encoding="unicode"),
+            )
+            for item in _items(bill, "cosponsors")
         ),
         text_versions=tuple(_text_version(item, identity) for item in _items(bill, "textVersions")),
         laws=tuple(BillLaw(_text(item, "number"), _text(item, "type")) for item in _items(bill, "laws")),
@@ -642,6 +690,10 @@ def parse_bill_status(body: bytes, *, identity: BillIdentity, max_bytes: int = D
             _required_text(item, "citation") for item in _items(bill, "committeeReports", "committeeReport")
         ),
         cbo_cost_estimates_outcome=estimates_outcome,
+        cosponsors_outcome=(
+            "absent" if _one(bill, "cosponsors") is None else "populated" if _items(bill, "cosponsors") else "empty"
+        ),
+        input_sha256="sha256:" + hashlib.sha256(body).hexdigest(),
     )
 
 
@@ -649,6 +701,7 @@ __all__ = [
     "BILLSTATUS_BULKDATA",
     "BillAction",
     "BillCommittee",
+    "BillCosponsor",
     "BillIdentity",
     "BillLaw",
     "BillSourceError",

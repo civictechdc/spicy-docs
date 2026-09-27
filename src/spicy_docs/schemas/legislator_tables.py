@@ -51,11 +51,12 @@ MEMBER_TERMS = table_contract(
         "term_start": "Start date of this term.",
         "term_end": "End date of this term, where the crosswalk states one.",
         "term_state": "State this term was served for.",
-        "term_party": "Party for this term.  One value per term, not a history: a mid-term switch collapses.",
+        "term_party": "The separate source term-level party assertion, not a dated history.",
         "term_district": "District for this term, spelled as the publisher does; absent for a Senate term.",
         "observed_at": (
             "The parent capture's instant, carried so a term list versions with the member row it came from."
         ),
+        "party_affiliations_state": "Nested list state: unread, absent, null, empty or populated.",
     },
 )
 
@@ -106,6 +107,7 @@ def shape_member_term(term: object, *, bioguide_id: str, term_index: int, observ
         "term_party": text(term.party),
         "term_district": text(term.district),
         "observed_at": text(observed_at),
+        "party_affiliations_state": text(term.party_affiliations_state),
     }
 
 
@@ -115,3 +117,57 @@ __all__ = [
     "shape_member",
     "shape_member_term",
 ]
+
+
+MEMBER_PARTY_AFFILIATIONS = table_contract(
+    "member_party_affiliations",
+    grain="One nested party affiliation in one retained community-crosswalk observation.",
+    identity=("bioguide_id", "input_sha256", "term_index", "affiliation_index"),
+    version_column=None,
+    references=(Reference(("bioguide_id", "term_index"), "member_terms", ("bioguide_id", "term_index")),),
+    columns={
+        "bioguide_id": "The source's member identifier.",
+        "input_sha256": "Digest of the complete retained crosswalk JSON bytes.",
+        "term_index": "Zero-based source term position.",
+        "affiliation_index": "Zero-based affiliation position within the source term.",
+        "party": "Literal nested party; NULL is not filled from the term-level party.",
+        "affiliation_start": "Literal nested start date; interval boundary policy belongs to the consumer.",
+        "affiliation_end": "Literal nested end date; a missing end does not imply an open interval.",
+        "start_status": "Calendar spelling status: absent, empty, valid or invalid.",
+        "end_status": "Calendar spelling status: absent, empty, valid or invalid.",
+        "term_party": "The separate term-level party assertion, not a dated fallback.",
+        "source_path": "JSON pointer to the affiliation in the retained capture.",
+        "source_json": "Complete affiliation object, retaining absent, null and unknown fields.",
+        "observed_at": "Caller-supplied capture instant; not a source affiliation date.",
+    },
+)
+
+
+def shape_member_party_affiliation(
+    legislator: object, *, term_index: int, affiliation_index: int, input_sha256: str, observed_at: str
+) -> Row:
+    """Project a source interval without selecting a party or filling dates."""
+    if not input_sha256 or legislator.source_record_index is None:
+        raise ValueError("affiliation projection requires input digest and source record position")
+    if any(type(i) is not int or i < 0 for i in (term_index, affiliation_index)):
+        raise ValueError("source ordinals must be nonnegative integers")
+    term = legislator.terms[term_index]
+    entry = term.party_affiliations[affiliation_index]
+    return {
+        "bioguide_id": text(legislator.bioguide),
+        "input_sha256": input_sha256,
+        "term_index": text(term_index),
+        "affiliation_index": text(affiliation_index),
+        "party": text(entry.party),
+        "affiliation_start": text(entry.start),
+        "affiliation_end": text(entry.end),
+        "start_status": text(entry.start_status),
+        "end_status": text(entry.end_status),
+        "term_party": text(term.party),
+        "source_path": f"/{legislator.source_record_index}/terms/{term_index}/party_affiliations/{affiliation_index}",
+        "source_json": entry.raw_json,
+        "observed_at": observed_at,
+    }
+
+
+__all__ += ["MEMBER_PARTY_AFFILIATIONS", "shape_member_party_affiliation"]

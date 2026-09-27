@@ -47,3 +47,17 @@ Only requested credit text is buffered; caller-owned output has separate costs.
 SpicyDocs records what the XML states. RefSpec keeps citation classification,
 target resolution, historical labels, whitespace and dash normalization, and
 the rules that select an enacting law from a source credit.
+
+## Project retained observations
+
+`schemas.native_reference_rows.shape_uscode_reference` and
+`shape_uscode_source_credit` accept scanner observations plus a source record
+key, exact input digest, locator, occurrence index and optional edition.
+They retain expanded tags, all attributes, XML paths and complete ancestry.
+Unknown href forms remain literal; an unspecified release point remains NULL.
+Source credits stay separate historical assertions, not current legal effect.
+
+The retained section-423 fragment replays every native reference and its source
+credit in `tests/test_native_reference_rows.py`. These shapers neither acquire
+nor publish, normalize targets, or replace the scanner's completion check.
+Only commit callback output after the complete scan succeeds.

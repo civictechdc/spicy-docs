@@ -78,7 +78,10 @@ DOCUMENT_CITATIONS = table_contract(
             "roster reaches."
         ),
         "target_rule": (
-            "How the key was reached.  The rule's own name for every kind but `committee_name`, where it is "
+            "How the key was reached. Bill routes distinguish inline_congress, congress_subheading, "
+            "document_fallback, unstated and document_fallback_refused after the bill_number: prefix. "
+            "A document fallback is context supplied by the caller, not proof of historical applicability. "
+            "Other kinds use the rule name except `committee_name`, where it is "
             "the resolution route: `exact` and `roster_prefix` are lookups in the roster vocabulary, while "
             "`name_prefix` and `sibling_prefix` are inferences from the printed text of this one document.  A "
             "consumer wanting only roster lookups filters on this column rather than on `target_resolved`."

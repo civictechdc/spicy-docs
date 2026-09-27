@@ -31,3 +31,10 @@ keyless body route takes none and the keyed detail route carries it in a header.
 
 Offline fixtures establish behaviour for these shapes. They establish neither
 coverage of the era nor continuing live availability.
+
+`house-119-ec-1278-report-nature.json` retains the exact native
+`/houseCommunication/reportNature` field from the Congress.gov detail response
+for House communication 119/EC/1278. Its source blob path and SHA-256 are inside
+the fixture. The reduced field preserves both printed RINs and their punctuation;
+it does not represent a complete response. The retained source was read locally
+for this qualification; this test performs no fresh acquisition.

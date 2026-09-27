@@ -21,6 +21,8 @@ every record of anyone who ever filed for President.
 
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -29,6 +31,7 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING
 
 from spicy_docs.reading.json_input import load_bounded_json
+from spicy_docs.reading.literal_dates import literal_date_status
 from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.source_acquirer import (
     SourceAcquirer,
@@ -123,18 +126,34 @@ class LegislatorsRefusedError(LegislatorsSourceError):
 
 
 @dataclass(frozen=True, slots=True)
-class Term:
-    """One publisher term row. ``end`` is ``None`` for an in-progress term.
+class PartyAffiliation:
+    """Literal nested affiliation; dates do not impose interval boundary policy.
 
-    ``party`` is the publisher's single value per term, not a history: it
-    cannot represent a mid-term party change (Strom Thurmond's 1964 switch,
-    for example, collapses to whichever party the row states), and a caller
-    wanting that history reads ``party_affiliations`` from the raw record,
-    which this crosswalk still leaves unread. ``district`` is absent for a
-    ``sen`` term and, when present, is spelled as the publisher's own decimal
-    string (an at-large ``district: 0`` included) rather than parsed back to
-    an ``int`` -- a table column keys and joins on it, and does neither
-    better as a number.
+    raw_json retains absent versus null fields and unrecognized source fields.
+    Invalid date spellings survive with a separate validation status.
+    """
+
+    start: str | None
+    end: str | None
+    party: str | None
+    raw_json: str
+
+    @property
+    def start_status(self) -> str:
+        return literal_date_status(self.start)
+
+    @property
+    def end_status(self) -> str:
+        return literal_date_status(self.end)
+
+
+@dataclass(frozen=True, slots=True)
+class Term:
+    """One source term; its single party assertion is separate from nested intervals.
+
+    Affiliation order, overlaps, gaps and missing ends remain source facts.
+    The consumer chooses interval boundary policy; no current-party fallback
+    or dated party selection is performed here.
     """
 
     type: str
@@ -143,6 +162,8 @@ class Term:
     state: str
     party: str | None = None
     district: str | None = None
+    party_affiliations: tuple[PartyAffiliation, ...] = ()
+    party_affiliations_state: str = "unread"
 
 
 @dataclass(frozen=True, slots=True)
@@ -159,6 +180,7 @@ class Legislator:
     name_first: str
     name_last: str
     terms: tuple[Term, ...]
+    source_record_index: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -169,6 +191,7 @@ class LegislatorsFile:
     by_bioguide: Mapping[str, Legislator]
     by_lis: Mapping[str, Legislator]
     by_fec: Mapping[str, Legislator]
+    input_sha256: str | None = None
 
 
 def _fec_id_shape_ok(value: str) -> bool:
@@ -227,6 +250,33 @@ def _read_fec(value: object, index: int) -> tuple[str, ...]:
     return tuple(value)
 
 
+def _read_affiliations(term: dict, record_index: int, term_index: int) -> tuple[tuple[PartyAffiliation, ...], str]:
+    if "party_affiliations" not in term:
+        return (), "absent"
+    raw = term["party_affiliations"]
+    if raw is None:
+        return (), "null"
+    where = f"community legislators record {record_index} terms[{term_index}].party_affiliations"
+    if not isinstance(raw, list):
+        raise LegislatorsSourceError(f"{where} must be a list or null")
+    entries = []
+    for index, row in enumerate(raw):
+        if not isinstance(row, dict):
+            raise LegislatorsSourceError(f"{where}[{index}] must be an object")
+        for key in ("start", "end", "party"):
+            if row.get(key) is not None and not isinstance(row[key], str):
+                raise LegislatorsSourceError(f"{where}[{index}].{key} must be a string or null")
+        entries.append(
+            PartyAffiliation(
+                row.get("start"),
+                row.get("end"),
+                row.get("party"),
+                json.dumps(row, sort_keys=True, separators=(",", ":")),
+            )
+        )
+    return tuple(entries), "populated" if entries else "empty"
+
+
 def _read_term(term: object, record_index: int, term_index: int) -> Term:
     if not isinstance(term, dict):
         raise LegislatorsSourceError(
@@ -252,6 +302,7 @@ def _read_term(term: object, record_index: int, term_index: int) -> Term:
                     f"community legislators record {record_index} terms[{term_index}].{field} is not a real "
                     f"calendar date: {value!r}"
                 ) from None
+    affiliations, affiliations_state = _read_affiliations(term, record_index, term_index)
     return Term(
         type=term_type,
         start=values["start"],
@@ -259,6 +310,8 @@ def _read_term(term: object, record_index: int, term_index: int) -> Term:
         state=values["state"],
         party=values["party"],
         district=_term_district(term, record_index, term_index),
+        party_affiliations=affiliations,
+        party_affiliations_state=affiliations_state,
     )
 
 
@@ -298,6 +351,7 @@ def _read_record(row: object, index: int) -> Legislator:
         name_first=names["first"],
         name_last=names["last"],
         terms=terms,
+        source_record_index=index,
     )
 
 
@@ -357,6 +411,7 @@ def parse_legislators(body: bytes, *, max_bytes: int, max_records: int = DEFAULT
         by_bioguide=MappingProxyType(by_bioguide),
         by_lis=MappingProxyType(by_lis),
         by_fec=MappingProxyType(by_fec),
+        input_sha256="sha256:" + hashlib.sha256(body).hexdigest(),
     )
 
 

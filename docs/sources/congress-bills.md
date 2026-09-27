@@ -56,6 +56,23 @@ entries marked withdrawn. It is independent of `<sponsors>`. Parsed XML with
 no listed entries yields zero; a caller-created status whose cosponsor list
 was not examined yields NULL.
 
+`BillCosponsor` preserves literal sponsorship dates, original-status text,
+party, state and district. `None` means an absent XML element; `""` means
+present empty. Date-status properties report invalid calendar spellings without
+changing them or losing the record. Other entry fields remain in `source_xml`,
+which is reserialized XML, not the original bytes. `BillStatus.input_sha256`
+pins those bytes; retain them with the acquisition capture.
+
+`cosponsors_outcome` distinguishes absent, empty and populated source lists;
+NULL means the caller has not read the list. `shape_bill_cosponsor(status,
+cosponsor_index=...)` produces `bill_cosponsors` occurrences keyed by bill,
+input digest and source ordinal. Repeated members remain repeated observations.
+The native 118 HR 1 fixture replays its complete cosponsor block. The 113 HR 4200
+fixture also proves present-empty `sponsorshipWithdrawnDate`; no retained
+positive withdrawal-date specimen has yet qualified event interpretation.
+Missing or empty dates never prove that no withdrawal occurred. Table registration
+and local shaping do not publish these rows or rebuild an application dataset.
+
 `<cboCostEstimates>` is the keyless route to CBO's cost-estimate index, whose
 own site is walled ([routes](../research/cbo-cost-estimate-routes-2026-09-20.md)).
 Read it as **requested-empty, never absence**: the publisher never emits the

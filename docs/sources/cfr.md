@@ -221,3 +221,19 @@ validation passed all 49 nonreserved titles in the retained August 24 snapshot
 Publisher references: [eCFR API](https://www.ecfr.gov/developers/documentation/api/v1),
 [annual CFR XML guide](https://github.com/usgpo/bulk-data/blob/main/CFR-XML_User-Guide.md),
 [bulk eCFR XML guide](https://github.com/usgpo/bulk-data/blob/main/ECFR-XML-User-Guide.md).
+
+## Project authority and source notes
+
+Pass `scan_ecfr_authority_notes` observations to
+`schemas.native_reference_rows.shape_ecfr_note` with the retained input digest,
+record key, locator and occurrence ordinal. The row keeps AUTH as `authority`
+and SOURCE as `source_note`, their complete decoded text/text runs, attributes,
+XML path and ancestry. Part scope comes from the nearest source part; title
+and edition remain NULL unless separately supplied from checked capture metadata.
+A fragment's filename is not that metadata.
+
+The part-18 native fixture proves both roles. PARAUTH and SECAUTH remain outside
+this reader's qualified shapes. Citation interpretation stays separate: preserve
+the full note beside partial findings rather than replacing it with extracted
+citations. Rows from callbacks are provisional until the scan succeeds. These
+local projections do not publish or resolve legal targets.

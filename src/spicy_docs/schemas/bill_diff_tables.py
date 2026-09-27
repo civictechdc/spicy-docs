@@ -44,7 +44,13 @@ _DIFF_KEY = {
 
 SECTION_DIFFS = table_contract(
     "section_diffs",
-    references=(Reference(("bill_id",), "congress_bills", ("bill_id",)),),
+    references=(
+        Reference(("bill_id",), "congress_bills", ("bill_id",)),
+        Reference(
+            ("bill_id", "from_version_code", "from_source"), "bill_versions", ("bill_id", "version_code", "source")
+        ),
+        Reference(("bill_id", "to_version_code", "to_source"), "bill_versions", ("bill_id", "version_code", "source")),
+    ),
     grain="One row per compared pair of consecutive printings of one bill.",
     identity=("bill_id", "from_version_code", "from_source", "to_version_code", "to_source"),
     version_column="to_version_date",

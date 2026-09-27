@@ -67,11 +67,10 @@ dropped or half-parsed.
 | `terms` is a non-empty list; each entry's `type` is `rep` or `sen`, `start` is a real ISO calendar date, and `end` is a real ISO calendar date **when present**. | A person with no terms is not a legislator record this crosswalk can place in time. The regex proves a date is spelled `####-##-##`; `datetime.date.fromisoformat` proves it is a real date (`2026-13-45` matches the regex but is not a month). `end` is optional because the publisher omits it elsewhere in these files for an in-progress item; refusing the whole file over that shape would be wrong even though no term lacks it today (measured 2026-09-19). |
 | A bioguide, LIS or FEC id names **at most one** record in the file. | These are the join keys this crosswalk exists to supply; a duplicate would make a lookup ambiguous, which is worse than refusing the file. |
 
-**`Term.party` is the publisher's one value per term, not a history.** It
-cannot represent a mid-term party change — Strom Thurmond's 1964 switch, for
-example, collapses to whichever party the row states — and this crosswalk's
-job is ids, not party history; a future revision wanting that history reads
-`party_affiliations` from the raw record, which stays unread here.
+**`Term.party` is the source's one value per term, not a dated history.**
+Nested `party_affiliations` are retained separately; see
+[party changes](#preserve-party-changes-within-a-term). Neither assertion
+silently replaces the other.
 **`Term.district`** is the publisher's `terms[].district` (absent on a `sen`
 term), kept as the spelled decimal string rather than parsed to `int` — an
 at-large `"0"` included — because a table column keys and joins on it and
@@ -183,3 +182,26 @@ The `@pytest.mark.integration` test makes live requests and is excluded by
 default (`-m 'not integration and not httpfs'`); run it explicitly with
 `uv run --frozen pytest -q -m integration tests/test_legislators.py` before
 trusting a re-pin.
+
+## Preserve party changes within a term
+
+`Term.party` remains the source's single term-level assertion.
+`Term.party_affiliations` carries every nested `PartyAffiliation` in source
+order, with literal start/end/party values and a complete `raw_json` object.
+`party_affiliations_state` distinguishes unread, absent, null, empty and
+populated lists. Date statuses report invalid spellings without rewriting them.
+Raw JSON distinguishes absent fields from explicit nulls.
+
+`shape_member_party_affiliation` projects an occurrence in
+`member_party_affiliations`, keyed by member, input digest, term index and
+nested index. Supply the parsed `LegislatorsFile.input_sha256` and capture
+instant; `Legislator.source_record_index` supplies the JSON pointer root.
+The native T000254 historical fixture retains both intervals across its 1964
+party change and the separate term-level Republican value.
+
+No dated party selection or fallback is performed. A consumer may explicitly
+choose `start <= day < end` as its boundary policy; that makes the transition
+date belong to the later interval, but the policy is not a new source fact.
+Overlaps, gaps, missing ends and contradictory assertions remain visible.
+A current roster cannot fill historical unknowns. Local source/projection tests
+do not establish publication or a rebuilt member-vote-party dataset.

@@ -124,3 +124,41 @@ The eight sampled PDFs were fetched keyless from `www.govinfo.gov` and all
 eight returned `200` with `application/pdf`. Nothing here establishes that the
 route is reliable: one success does not establish a route, and the rollup's own
 receipt is the only evidence of this family's availability.
+
+## Payment-line review gate (2026-09-27)
+
+Individual payments remain **unqualified for automated publication**. The
+retained B-1243/B-1244 pages now have a bounded, manually reviewed truth set in
+`tests/fixtures/senate_expenditures/payment-review-2026-09-27.json`.
+`reading.senate_payment_review.review_pages` retains native word boxes, raw
+page text, table cells and geometry, printed labels, and explicit source-page
+mapping. Word coordinates use the unrotated PDF space; retain the reported
+rotation when displaying them. The source-page offset comes from the retained
+fixture receipt, not from a guessed printed-page sequence.
+
+High-resolution visual review and native embedded text agree on
+`DJST20250194` and `ERAJ SHIRVANI`. The reviewed group states three expense
+lines: staff incidentals **13.20**, staff per diem **165.89**, and staff
+transportation **291.72**. These are exact decimal strings. Repeated payee
+names do not collapse distinct document groups. Negative summary amounts and
+organization/category totals have separate annotations; they are not negative
+payment examples and must not become payment rows.
+
+`validate_review_sample` checks the retained PDF digest, printed/source page
+mapping, exact word-index literals, decimal values, and complete equality with
+the annotated candidate rows. It refuses missing, extra, wrongly paired or
+floating-point payment values. Passing this gate proves agreement with this
+partial sample only. It supplies no parser and cannot establish report-wide
+completeness. Existing `senate_expenditures` raw rows stay unchanged; existing
+`summary_totals` tests still reconcile the complete retained appropriation
+summary sections using decimal arithmetic.
+
+Unresolved observations remain in the truth set. B-1244 starts with an unpriced
+travel-description continuation before the first new document group. The review
+does not assign that text automatically, attach multiline itinerary text to a
+particular expense, or carry the office heading forward. Before payment
+publication, extend visual annotations to complete document groups across page
+boundaries, prove section-end resets and record the office heading's origin
+page, test native negative payments and every subtotal layout, and reconcile a
+complete payment section. The later compensation and mail-allocation layouts
+remain outside the retained fixture scope.

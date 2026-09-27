@@ -199,7 +199,7 @@ def test_the_rules_whose_published_keys_changed_moved_their_version() -> None:
     moved = {rule.name: rule.version for rule in CITATION_RULES if rule.version != "001"}
     assert moved == {
         "us_reports_cite": "002",
-        "bill_number": "005",
+        "bill_number": "006",
         "public_law": "003",
         "statutes_at_large": "002",
         "usc_section": "003",
@@ -223,7 +223,7 @@ def test_the_rule_set_version_is_pinned_to_these_rules() -> None:
     passed the whole suite, since a reject that is no longer asserted cannot
     fail.
     """
-    assert CITATION_RULE_SET_VERSION == "ef5f36c0a43b"
+    assert CITATION_RULE_SET_VERSION == "fffaef3303b1"
 
 
 def test_the_stored_kinds_are_every_rule_that_reaches_a_key() -> None:
@@ -1028,10 +1028,10 @@ def test_a_finding_names_the_route_its_committee_key_came_from() -> None:
     assert (finding.target_key, finding.target_rule) == ("hsfa00", "exact")
 
 
-def test_every_other_kind_reports_its_own_rule_name_as_the_route() -> None:
-    """Non-committee kinds report their rule name as the route."""
+def test_bill_rule_reports_document_fallback_as_its_context_route() -> None:
+    """A normalized bill key retains the limited document-context basis."""
     (finding,) = find_citations("H.R. 471", kinds=("bill_number",), congress=119)
-    assert finding.target_rule == "bill_number"
+    assert finding.target_rule == "bill_number:document_fallback"
 
 
 def test_the_pinned_rosters_reach_both_chambers() -> None:

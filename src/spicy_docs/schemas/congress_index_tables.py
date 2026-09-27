@@ -88,6 +88,7 @@ HOUSE_COMMUNICATIONS = table_contract(
         "matching_requirement_count": "How many requirements the detail lists; every one is in matching_requirements_json.",
         "matching_requirements_json": "Every matching requirement the detail lists, as a JSON array of numbers. NULL where no detail was read.",
         "rin": "The Regulation Identifier Number read from report_nature, where the rule found one.",
+        "rin_occurrences_json": "All interpreted RIN occurrences supplied by the consumer, with exact field spans and digest. NULL means unread; [] means the supplied field was read and contained no RIN.",
         "rin_rule": "Which RIN rule fired (`report_nature_rin_label`), or `unmatched`; NULL where the rule was not run.",
         "rin_matched_text": "The exact text the RIN rule matched, so a false positive is readable from the row.",
         "update_date": (
@@ -307,12 +308,15 @@ def shape_house_communication(
     detail: Mapping[str, Any] | None,
     *,
     rin: object | None = None,
+    rin_occurrences: Sequence[Mapping[str, Any]] | None = None,
 ) -> Row:
     """One ``house_communications`` row from a list row and its detail record.
 
     ``listed`` is the list route's row for this communication, or the detail record itself when no list row was
     retained; ``rin`` is a ``RinFinding`` from ``rin_from_report_nature`` over the detail's ``reportNature``, or
-    ``None`` when that rule was not run.
+    ``None`` when that rule was not run. ``rin_occurrences`` is supplied by the
+    consumer without interpretation here: None means unread, an empty sequence
+    means the complete selected field was read with no occurrences.
     """
     read = _chain(listed, detail)
     kind = _mapping(read.get("communicationType"))
@@ -347,6 +351,7 @@ def shape_house_communication(
             None if requirements is None else json_column([_mapping(entry).get("number") for entry in requirements])
         ),
         "rin": None if rin is None else text(rin.rin),
+        "rin_occurrences_json": None if rin_occurrences is None else json_column(rin_occurrences),
         "rin_rule": None if rin is None else text(rin.rule),
         "rin_matched_text": None if rin is None else text(rin.matched_text),
         "update_date": text(read.get("updateDate")),
@@ -373,6 +378,7 @@ def shape_record_communication(
     congress: int | str,
     record_date: str,
     rin: object | None = None,
+    rin_occurrences: Sequence[Mapping[str, Any]] | None = None,
 ) -> Row:
     """One ``house_communications`` row reconstructed from a printed Record entry, with every unresolved field NULL
     beside the whole printed sentence retained in ``record_entry_text``.
@@ -412,6 +418,7 @@ def shape_record_communication(
         "matching_requirement_count": None,
         "matching_requirements_json": None,
         "rin": None if rin is None else text(rin.rin),
+        "rin_occurrences_json": None if rin_occurrences is None else json_column(rin_occurrences),
         "rin_rule": None if rin is None else text(rin.rule),
         "rin_matched_text": None if rin is None else text(rin.matched_text),
         "update_date": None,

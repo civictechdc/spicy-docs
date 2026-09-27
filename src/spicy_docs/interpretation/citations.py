@@ -306,12 +306,13 @@ class CitationContext:
     """
 
     congress: int | None = None
+    congress_basis: str = "document_fallback"
     committees: Mapping[str, CommitteeResolution] = field(default_factory=dict)
 
 
 #: ``(target key, whether the key is the hosted table's own spelling, the rule
-#: that reached it)``.  The third part is the rule's own name for every kind
-#: but ``committee_name``, where it is the resolution route.
+#: that reached it)``. Bill references name their Congress context basis;
+#: committee references name their resolution route; other kinds use the rule name.
 type TargetReader = Callable[[str, CitationContext], tuple[str, bool, str]]
 
 
@@ -348,15 +349,19 @@ def _bill_target(value: str, context: CitationContext) -> tuple[str, bool, str]:
     print states only some other way (``In the 115th Congress, H.R. 1372``
     outside a subheading) still takes the document's, and publishes a
     ``bill_id`` for the wrong Congress with ``target_resolved`` true -- which is
-    why ``house_activity_reports`` carries ``bills_congress_mismatch``. Without
+    why ``house_activity_reports`` carries ``bills_congress_mismatch``. Version
+    006 makes the source of Congress explicit in target_rule; callers requiring
+    qualified local context use find_citations(bill_congress_policy="explicit_only")
+    to abstain on that fallback. Without
     a stated Congress the canonical printed form stands and the finding says
     the key is not the catalog's; the type/number split runs longest-name-first
     so ``S. Res. 21`` is ``sres`` and not ``s``.
     """
     parts = bill_type_and_number(value)
+    route = f"bill_number:{context.congress_basis}"
     if parts is None or context.congress is None:
-        return canonical_alnum(value), False, "bill_number"
-    return natural_key(context.congress, *parts), True, "bill_number"
+        return canonical_alnum(value), False, route
+    return natural_key(context.congress, *parts), True, route
 
 
 # --- the Congress the print sets beside a bill ----------------------------------------
@@ -838,7 +843,7 @@ class CitationRule:
 CITATION_RULES: tuple[CitationRule, ...] = (
     CitationRule(
         name="bill_number",
-        version="005",
+        version="006",
         pattern=BILL_NUMBER_PATTERN,
         target_table="congress_bills",
         target_key_shape="bill_id: {congress}-{bill_type}-{number}, from the Congress set beside it, else a "
@@ -1112,8 +1117,8 @@ class CitationFinding:
     target_key: str
     target_table: str
     target_resolved: bool
-    #: How this key was reached.  The rule's own name for every kind but
-    #: ``committee_name``, where it is one of :data:`COMMITTEE_ROUTES`: the
+    #: How this key was reached. Bill references include the Congress context
+    #: basis. For ``committee_name`` it is one of :data:`COMMITTEE_ROUTES`: the
     #: two roster lookups (``exact``, ``roster_prefix``) are a different kind
     #: of claim from the two inferences (``name_prefix``, ``sibling_prefix``),
     #: and a consumer wanting only lookups filters on this.
@@ -1140,6 +1145,7 @@ def find_citations(
     pages: Sequence[str] | None = None,
     kinds: Sequence[str] = DOCUMENT_CITATION_KINDS,
     congress: int | None = None,
+    bill_congress_policy: str = "document_fallback",
     committees: Sequence[tuple[str, str]] = (),
     chamber_committees: Mapping[str, Sequence[tuple[str, str]]] | None = None,
 ) -> tuple[CitationFinding, ...]:
@@ -1154,7 +1160,12 @@ def find_citations(
     (:func:`inline_congresses`) or in a subheading over it
     (:func:`congress_subheading_scopes`), and ``committees`` is the roster vocabulary from
     :func:`committee_vocabulary`, read for the chamber whose print this is.
-    ``chamber_committees`` is each chamber's own vocabulary
+    ``bill_congress_policy="explicit_only"`` refuses the document-level fallback;
+    unsupported historical prose then stays unresolved rather than acquiring a
+    possibly wrong Congress. The compatibility default ``document_fallback``
+    retains that behavior but names its basis in ``target_rule``. It is not
+    qualified for arbitrary historical prose. Neither policy infers a Congress
+    from the current date. ``chamber_committees`` is each chamber's own vocabulary
     (``committee_vocabulary(..., own_only=True)``), for a committee name the
     print qualifies with its chamber (:data:`NAMED_CHAMBER`): ``Senate
     Committee on Armed Services`` in a House report is the Senate's, and a
@@ -1167,6 +1178,8 @@ def find_citations(
     """
     if not isinstance(text, str):
         raise CitationError(f"text must be a string, not {type(text).__name__}")
+    if bill_congress_policy not in {"document_fallback", "explicit_only"}:
+        raise CitationError("bill_congress_policy must be document_fallback or explicit_only")
     starts: tuple[int, ...] = ()
     if pages is not None:
         if "\n".join(pages) != text:
@@ -1187,7 +1200,11 @@ def find_citations(
     # is settled over the whole document at once: the sibling-prefix rule reads
     # the other candidates this document printed.
     candidates = sorted({canonical_alnum(value) for value, _, _ in matches.get("committee_name", ())})
-    context = CitationContext(congress=congress, committees=resolve_committee_names(candidates, committees))
+    context = CitationContext(
+        congress=congress,
+        congress_basis="document_fallback" if congress is not None else "unstated",
+        committees=resolve_committee_names(candidates, committees),
+    )
     # A name the print qualifies with a chamber is settled among that chamber's
     # committees, over the same candidates so its siblings still count; a name
     # with no chamber word before it reads exactly as before.
@@ -1208,11 +1225,17 @@ def find_citations(
     def context_at(rule: CitationRule, start: int) -> CitationContext:
         if rule.name == "bill_number":
             own = stated.get(start)
+            basis = "inline_congress"
             if own is None:
                 index = bisect.bisect_right(scope_starts, start) - 1
                 if index >= 0 and start < scopes[index][1]:
                     own = scopes[index][2]
-            return context if own is None or own == congress else replace(context, congress=own)
+                    basis = "congress_subheading"
+            if own is not None:
+                return replace(context, congress=own, congress_basis=basis)
+            if bill_congress_policy == "explicit_only" and congress is not None:
+                return replace(context, congress=None, congress_basis="document_fallback_refused")
+            return context
         if rule.name != "committee_name" or not named_contexts:
             return context
         return named_contexts.get(named_chamber(text, start) or "", context)
