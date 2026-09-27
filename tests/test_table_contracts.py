@@ -114,7 +114,7 @@ class ShapedCase:
     """
 
     contract: TableContract
-    row: dict[str, str | None]
+    row: dict[str, Any]
     identity: tuple[str, ...]
     json_columns: dict[str, Any]
 
@@ -1227,6 +1227,19 @@ def _federal_register_cases() -> list[ShapedCase]:
     return [_case("federal_register", row, ("2023-15200", "2023-07-18"))]
 
 
+def _regulations_attribute_cases() -> list[ShapedCase]:
+    """Retained Regulations.gov API detail records, each through its projection; the identity is the record's ``id``."""
+    from spicy_docs.schemas.regulations_attribute_tables import project_docket_attributes, project_document_attributes
+
+    folder = FIXTURES / "regulations_gov_attributes"
+    documents = json.loads((folder / "documents.json").read_text(encoding="utf-8"))
+    dockets = json.loads((folder / "dockets.json").read_text(encoding="utf-8"))
+    return [
+        _case("document_attributes", project_document_attributes(r["id"], r["attributes"]), (r["id"],))
+        for r in documents
+    ] + [_case("docket_attributes", project_docket_attributes(r["id"], r["attributes"]), (r["id"],)) for r in dockets]
+
+
 def _fec_committee_history_cases() -> list[ShapedCase]:
     """The retained cm24 sample's principal campaign committee, read and projected; its identity written here."""
     import hashlib
@@ -1283,6 +1296,7 @@ def all_cases() -> list[ShapedCase]:
         + _hearing_bill_link_cases()
         + _regulations_cases()
         + _federal_register_cases()
+        + _regulations_attribute_cases()
         + _fec_committee_history_cases()
     )
     if engine_available():
@@ -1371,7 +1385,9 @@ def test_a_single_column_identity_declares_value_1_and_a_composite_declares_none
 def test_every_shaped_row_round_trips_through_its_column_tuple(case: ShapedCase) -> None:
     contract, row = case.contract, case.row
     assert tuple(row) == contract.columns
-    assert all(value is None or isinstance(value, str) for value in row.values())
+    assert all(
+        value is None or isinstance(value, str) for c, value in row.items() if contract.column_type(c) == "VARCHAR"
+    )
     assert contract.key(row) == case.identity
     if contract.key_spelling == VALUE_KEY:
         # The member key DocSpec would admit is the rebuilt identity itself, byte for byte.
@@ -1614,6 +1630,8 @@ FILLED_BY: dict[str, tuple[str, ...]] = {
     "dockets": ("schemas/regulations.py",),
     "documents": ("schemas/regulations.py",),
     "federal_register": ("schemas/federal_register.py", "sources/federal_register/native.py"),
+    "document_attributes": ("schemas/regulations_attribute_tables.py",),
+    "docket_attributes": ("schemas/regulations_attribute_tables.py",),
     "fec_committee_history": ("schemas/fec_committee_history.py", "sources/fec/committee_master.py"),
     "comments": ("schemas/regulations.py",),
 }
@@ -1993,3 +2011,48 @@ def test_the_federal_register_contract_is_the_projection_plus_the_hosts_rin():
     assert contract.key_spelling == "federal-register-source-record-id/1"  # DocSpec's recorded id and version
     # A number alone is not the dated identity, so no table references it; the host's joins watch fr_doc_num.
     assert not any(ref.parent_table == "federal_register" for c in TABLE_CONTRACTS.values() for ref in c.references)
+
+
+def test_the_attribute_projections_type_what_the_publisher_states() -> None:
+    from datetime import UTC, datetime
+
+    from spicy_docs.schemas.regulations_attribute_tables import project_document_attributes
+
+    rows = {
+        case.row.get("document_id") or case.row.get("docket_id"): case.row for case in _regulations_attribute_cases()
+    }
+    cftc, epa = rows["CFTC-2026-0925-0001"], rows["EPA-HQ-OW-2008-0465-1709"]
+    assert cftc["effective_date"] == datetime(2026, 5, 11, 4, tzinfo=UTC)
+    assert (cftc["topics"], cftc["within_comment_period"], cftc["page_count"]) == (["Seals and Insignia"], False, 0)
+    assert (epa["authors"], epa["author_date"]) == (["USEPA"], datetime(2009, 11, 5, 19, 18, tzinfo=UTC))
+    assert rows["DOT-OST-2000-8082-0016"]["city"] == "Washington"
+    assert rows["DOS-2026-0760"]["keywords"] == ["Rulemaking", "Request for comments", "arms export"]
+    stated = {r["id"]: r for r in json.loads((FIXTURES / "regulations_gov_attributes" / "documents.json").read_text())}
+    assert (
+        json.loads(epa["display_properties_json"])
+        == stated["EPA-HQ-OW-2008-0465-1709"]["attributes"]["displayProperties"]
+    )
+
+    for attribute, stated in (
+        ("receiveDate", "2025-06-25"),
+        ("receiveDate", "2025-06-25T04:00:00+00:00"),
+        ("openForComment", "true"),
+        ("pageCount", 2**31),
+        ("topics", ["a", 1]),
+    ):
+        with pytest.raises(TableContractError):
+            project_document_attributes("X-1", {attribute: stated})
+
+
+def test_each_attribute_column_is_its_api_attribute_in_snake_case_in_attribute_order() -> None:
+    from spicy_docs.schemas.regulations_attribute_tables import attribute_of
+
+    for name in ("document_attributes", "docket_attributes"):
+        columns = TABLE_CONTRACTS[name].columns[1:]
+        attributes = [attribute_of(column) for column in columns]
+        # DocSpec's exporter names a column from its attribute this way; the projection reads the attribute back.
+        assert [
+            re.sub(r"(?<=[a-z0-9])([A-Z])", r"_\1", a).lower() + ("_json" if c.endswith("_json") else "")
+            for a, c in zip(attributes, columns, strict=True)
+        ] == list(columns)
+        assert attributes == sorted(attributes)

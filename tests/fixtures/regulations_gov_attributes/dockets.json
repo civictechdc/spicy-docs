@@ -1,0 +1,42 @@
+[
+ {
+  "attributes": {
+   "agencyId": "DOS",
+   "category": "Public Notices - None Rule Related",
+   "displayProperties": [
+    {
+     "label": "Effective Date",
+     "name": "effectiveDate",
+     "tooltip": "An agency- specified date associated with a docket (regulatory action)."
+    }
+   ],
+   "dkAbstract": "In support of the President’s Executive Order of April 9, 2025, on Reforming Foreign Defense Sales to Improve Speed and Accountability, the Department of State (the Department) issues this interim final rule removing firearm silencers, mufflers, and sound suppressors for non-automatic and semi-automatic firearms from the U.S. Munitions List (USML).",
+   "docketType": "Rulemaking",
+   "effectiveDate": "2026-11-20T05:00:00Z",
+   "field1": null,
+   "field2": null,
+   "generic": null,
+   "keywords": [
+    "Rulemaking",
+    "Request for comments",
+    "arms export"
+   ],
+   "legacyId": null,
+   "modifyDate": "2026-07-29T15:20:40Z",
+   "objectId": "0b000064b934aa34",
+   "organization": null,
+   "petitionNbr": null,
+   "program": null,
+   "rin": "1400-AG11",
+   "shortTitle": null,
+   "subType": "Other",
+   "subType2": null,
+   "title": "International Traffic in Arms Regulations: USML Category I Firearm Suppressors"
+  },
+  "id": "DOS-2026-0760",
+  "links": {
+   "self": "https://api.regulations.gov/v4/dockets/DOS-2026-0760"
+  },
+  "type": "dockets"
+ }
+]

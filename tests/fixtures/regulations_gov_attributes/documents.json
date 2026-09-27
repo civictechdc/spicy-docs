@@ -1,0 +1,281 @@
+[
+ {
+  "attributes": {
+   "additionalRins": null,
+   "address1": null,
+   "address2": null,
+   "agencyId": "CFTC",
+   "allowLateComments": false,
+   "authorDate": null,
+   "authors": null,
+   "category": null,
+   "cfrPart": "17 CFR Part 2",
+   "city": null,
+   "comment": null,
+   "commentEndDate": null,
+   "commentStartDate": "2026-05-11T04:00:00Z",
+   "country": null,
+   "displayProperties": null,
+   "docAbstract": null,
+   "docketId": "CFTC-2026-0925",
+   "documentType": "Rule",
+   "effectiveDate": "2026-05-11T04:00:00Z",
+   "email": null,
+   "exhibitLocation": null,
+   "exhibitType": null,
+   "fax": null,
+   "field1": null,
+   "field2": null,
+   "fileFormats": [
+    {
+     "fileUrl": "https://downloads.regulations.gov/CFTC-2026-0925-0001/content.pdf",
+     "format": "pdf",
+     "size": 1430106
+    },
+    {
+     "fileUrl": "https://downloads.regulations.gov/CFTC-2026-0925-0001/content.html",
+     "format": "html",
+     "size": 8201
+    }
+   ],
+   "firstName": null,
+   "frDocNum": "2026-09327",
+   "frVolNum": "91 FR 25489",
+   "govAgency": null,
+   "govAgencyType": null,
+   "implementationDate": null,
+   "lastName": null,
+   "legacyId": null,
+   "media": null,
+   "modifyDate": "2026-05-11T16:47:23Z",
+   "objectId": "09000064b92cfad6",
+   "ombApproval": null,
+   "openForComment": false,
+   "organization": null,
+   "originalDocumentId": "CFTC_FRDOC_0001-0006",
+   "pageCount": 0,
+   "paperLength": 0,
+   "paperWidth": 0,
+   "phone": null,
+   "postedDate": "2026-05-11T04:00:00Z",
+   "postmarkDate": null,
+   "reasonWithdrawn": null,
+   "receiveDate": "2026-05-11T04:00:00Z",
+   "regWriterInstruction": null,
+   "restrictReason": null,
+   "restrictReasonType": null,
+   "sourceCitation": null,
+   "startEndPage": "25489 - 25492",
+   "stateProvinceRegion": null,
+   "subject": null,
+   "submitterRep": null,
+   "submitterRepAddress": null,
+   "submitterRepCityState": null,
+   "subtype": null,
+   "title": "Official Seal - Final Rule",
+   "topics": [
+    "Seals and Insignia"
+   ],
+   "trackingNbr": null,
+   "withdrawn": false,
+   "withinCommentPeriod": false,
+   "zip": null
+  },
+  "id": "CFTC-2026-0925-0001",
+  "links": {
+   "self": "https://api.regulations.gov/v4/documents/CFTC-2026-0925-0001"
+  },
+  "relationships": {
+   "attachments": {
+    "links": {
+     "related": "https://api.regulations.gov/v4/documents/CFTC-2026-0925-0001/attachments",
+     "self": "https://api.regulations.gov/v4/documents/CFTC-2026-0925-0001/relationships/attachments"
+    }
+   }
+  },
+  "type": "documents"
+ },
+ {
+  "attributes": {
+   "additionalRins": null,
+   "address1": null,
+   "address2": null,
+   "agencyId": "DOT",
+   "allowLateComments": false,
+   "authorDate": "2007-11-09T20:22:54Z",
+   "authors": null,
+   "category": null,
+   "cfrPart": null,
+   "city": "Washington",
+   "comment": "Notice approving application.  Effective November 9, 2007, through November 9, 2009.  Petitions due November 21, 2007.",
+   "commentEndDate": null,
+   "commentStartDate": "2007-11-09T05:00:00Z",
+   "country": "United States",
+   "displayProperties": [
+    {
+     "label": "Author/ Document Date",
+     "name": "authorDate",
+     "tooltip": "Date the authors wrote or published the document"
+    }
+   ],
+   "docAbstract": "Notice approving application.  Effective November 9, 2007, through November 9, 2009.  Petitions due November 21, 2007.",
+   "docketId": "DOT-OST-2000-8082",
+   "documentType": "Other",
+   "effectiveDate": null,
+   "email": null,
+   "exhibitLocation": null,
+   "exhibitType": null,
+   "fax": null,
+   "field1": null,
+   "field2": null,
+   "fileFormats": null,
+   "firstName": null,
+   "frDocNum": null,
+   "frVolNum": null,
+   "govAgency": "DOT",
+   "govAgencyType": "Federal",
+   "implementationDate": null,
+   "lastName": null,
+   "legacyId": null,
+   "media": null,
+   "modifyDate": "2013-07-27T20:26:28Z",
+   "objectId": "09000064803626e2",
+   "ombApproval": null,
+   "openForComment": false,
+   "organization": "U.S. DOT/OST",
+   "originalDocumentId": null,
+   "pageCount": 0,
+   "paperLength": 0,
+   "paperWidth": 0,
+   "phone": null,
+   "postedDate": "2007-11-09T05:00:00Z",
+   "postmarkDate": null,
+   "reasonWithdrawn": null,
+   "receiveDate": "2007-11-09T20:22:54Z",
+   "regWriterInstruction": null,
+   "restrictReason": null,
+   "restrictReasonType": null,
+   "sourceCitation": null,
+   "startEndPage": null,
+   "stateProvinceRegion": "DC",
+   "subject": null,
+   "submitterRep": "Paul L. Gretch, Director",
+   "submitterRepAddress": null,
+   "submitterRepCityState": null,
+   "subtype": "Adjudication Notice",
+   "title": "Notice of Action Taken re: Les Investissements Nolinor Inc. d/b/a Nolinor Aviation and/or Nolinor",
+   "topics": null,
+   "trackingNbr": "803626e2",
+   "withdrawn": false,
+   "zip": null
+  },
+  "id": "DOT-OST-2000-8082-0016",
+  "links": {
+   "self": "https://api.regulations.gov/v4/documents/DOT-OST-2000-8082-0016"
+  },
+  "relationships": {
+   "attachments": {
+    "links": {
+     "related": "https://api.regulations.gov/v4/documents/DOT-OST-2000-8082-0016/attachments",
+     "self": "https://api.regulations.gov/v4/documents/DOT-OST-2000-8082-0016/relationships/attachments"
+    }
+   }
+  },
+  "type": "documents"
+ },
+ {
+  "attributes": {
+   "additionalRins": null,
+   "address1": null,
+   "address2": null,
+   "agencyId": "EPA",
+   "allowLateComments": false,
+   "authorDate": "2009-11-05T19:18:00Z",
+   "authors": [
+    "USEPA"
+   ],
+   "category": null,
+   "cfrPart": null,
+   "city": null,
+   "comment": null,
+   "commentEndDate": null,
+   "commentStartDate": null,
+   "country": null,
+   "displayProperties": [
+    {
+     "label": "Page Count",
+     "name": "pageCount",
+     "tooltip": "Number of pages In the content file"
+    },
+    {
+     "label": "Authors",
+     "name": "authors",
+     "tooltip": "Individuals and/or organizations that authored the document"
+    }
+   ],
+   "docAbstract": null,
+   "docketId": "EPA-HQ-OW-2008-0465",
+   "documentType": "Supporting & Related Material",
+   "effectiveDate": null,
+   "email": null,
+   "exhibitLocation": null,
+   "exhibitType": null,
+   "fax": null,
+   "field1": null,
+   "field2": null,
+   "fileFormats": null,
+   "firstName": null,
+   "frDocNum": null,
+   "frVolNum": null,
+   "govAgency": null,
+   "govAgencyType": null,
+   "implementationDate": null,
+   "lastName": null,
+   "legacyId": null,
+   "media": "Electronic",
+   "modifyDate": "2009-12-17T20:12:48Z",
+   "objectId": "0900006480a61608",
+   "ombApproval": null,
+   "openForComment": false,
+   "organization": null,
+   "originalDocumentId": "",
+   "pageCount": 0,
+   "paperLength": 0,
+   "paperWidth": 0,
+   "phone": null,
+   "postedDate": "2009-12-02T05:00:00Z",
+   "postmarkDate": null,
+   "reasonWithdrawn": null,
+   "receiveDate": "2009-12-01T19:15:21Z",
+   "regWriterInstruction": null,
+   "restrictReason": null,
+   "restrictReasonType": null,
+   "sourceCitation": null,
+   "startEndPage": null,
+   "stateProvinceRegion": null,
+   "subject": null,
+   "submitterRep": null,
+   "submitterRepAddress": null,
+   "submitterRepCityState": null,
+   "subtype": "Data",
+   "title": "Load - High Sensitivity [DCN 42140]",
+   "topics": null,
+   "trackingNbr": "80a61608",
+   "withdrawn": false,
+   "zip": null
+  },
+  "id": "EPA-HQ-OW-2008-0465-1709",
+  "links": {
+   "self": "https://api.regulations.gov/v4/documents/EPA-HQ-OW-2008-0465-1709"
+  },
+  "relationships": {
+   "attachments": {
+    "links": {
+     "related": "https://api.regulations.gov/v4/documents/EPA-HQ-OW-2008-0465-1709/attachments",
+     "self": "https://api.regulations.gov/v4/documents/EPA-HQ-OW-2008-0465-1709/relationships/attachments"
+    }
+   }
+  },
+  "type": "documents"
+ }
+]
