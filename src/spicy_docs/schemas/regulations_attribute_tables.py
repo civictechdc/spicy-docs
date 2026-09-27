@@ -107,7 +107,11 @@ DOCUMENT_ATTRIBUTES = _attribute_contract(
     columns=(
         ("address1", VARCHAR, "The submitter's street address, first line, as stated."),
         ("address2", VARCHAR, "The submitter's street address, second line, as stated."),
-        ("allow_late_comments", BOOLEAN, "Whether the agency accepts comments after the period closes."),
+        (
+            "allow_late_comments",
+            BOOLEAN,
+            "Whether the agency accepts comments after the period closes, as the publisher stated it on the record's latest version; the comment window's state comes from its dates.",
+        ),
         (
             "author_date",
             TIMESTAMPTZ,
@@ -164,7 +168,7 @@ DOCUMENT_ATTRIBUTES = _attribute_contract(
         (
             "open_for_comment",
             BOOLEAN,
-            "Whether the document was open for comment when captured; an observation, not a live status.",
+            "Whether the document was open for comment, an observation as the publisher stated it on the record's latest version rather than a live status; the comment window's state comes from its dates.",
         ),
         ("organization", VARCHAR, "The organization the author or submitter names."),
         (
@@ -190,7 +194,11 @@ DOCUMENT_ATTRIBUTES = _attribute_contract(
         ("subtype", VARCHAR, "The agency's subtype: Correspondence, Report, Decision and others."),
         ("topics", VARCHAR_LIST, "The publisher's topics, in its order."),
         ("tracking_nbr", VARCHAR, "The portal's tracking number."),
-        ("within_comment_period", BOOLEAN, "Whether the document arrived within the comment period, when stated."),
+        (
+            "within_comment_period",
+            BOOLEAN,
+            "Whether the document arrived within the comment period, where given, as the publisher stated it on the record's latest version; the comment window's state comes from its dates.",
+        ),
         ("zip", VARCHAR, "The submitter's postal code."),
     ),
 )
