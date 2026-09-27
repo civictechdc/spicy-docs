@@ -1770,6 +1770,74 @@ def test_member_key_prefers_the_id_the_file_states_over_a_crosswalked_one() -> N
     assert len({row["member_key"] for row in resolved}) == len(resolved)
 
 
+def test_a_typed_column_takes_only_its_own_python_value() -> None:
+    from datetime import UTC, date, datetime, timedelta, timezone
+
+    from spicy_docs.schemas.tables import COLUMN_TYPES, table_contract
+
+    typed = dict(
+        zip(("flag", "small", "big", "ratio", "day", "local", "moment", "tags"), COLUMN_TYPES[1:], strict=True)
+    )
+    columns = {name: f"The {name}." for name in ("id", "note", *typed)}
+    contract = table_contract(
+        "typed", grain="One thing.", identity=("id",), version_column=None, columns=columns, types=typed
+    )
+    good = {
+        "id": "a",
+        "note": "n",
+        "flag": False,
+        "small": -(2**31),
+        "big": 2**63 - 1,
+        "ratio": 0.5,
+        "day": date(2026, 9, 26),
+        "local": datetime.fromisoformat("2026-09-26T12:00:00"),
+        "moment": datetime(2026, 9, 26, tzinfo=UTC),
+        "tags": ["x", "y"],
+    }
+    assert contract.checked(good) is good
+    nulls = dict.fromkeys(good)
+    assert contract.checked(nulls) is nulls  # NULL is a value of every type; identity is key()'s check
+    assert [contract.column_type(c) for c in columns] == list(COLUMN_TYPES[:1] + COLUMN_TYPES)
+    wrongs = (
+        ("note", 1),
+        ("flag", "true"),
+        ("small", True),
+        ("small", 2**31),
+        ("big", 2**63),
+        ("ratio", 1),
+        ("day", datetime(2026, 9, 26, tzinfo=UTC)),
+        ("local", datetime(2026, 9, 26, tzinfo=UTC)),
+        ("moment", datetime.fromisoformat("2026-09-26T00:00:00")),
+        ("moment", datetime(2026, 9, 26, tzinfo=timezone(timedelta(hours=-4)))),
+        ("moment", "2026-09-26T00:00:00Z"),
+        ("tags", ("x",)),
+        ("tags", ["x", None]),
+    )
+    for column, wrong in wrongs:
+        with pytest.raises(TableContractError, match=f"column {column!r} is"):
+            contract.checked({**good, column: wrong})
+    with pytest.raises(TableContractError, match="identity column 'id' is int, not str"):
+        contract.key({**good, "id": 1})
+
+
+@pytest.mark.parametrize(
+    ("types", "refusal"),
+    [
+        ({"elsewhere": "BOOLEAN"}, "typed column 'elsewhere' is not a column"),
+        ({"note": "FLOAT"}, "type must be one of"),
+        ({"note": "VARCHAR"}, "type must be one of"),
+        ({"id": "INTEGER"}, "identity column 'id' must be VARCHAR"),
+        ({"tags_json": "VARCHAR[]"}, "list column 'tags_json' must not be named"),
+    ],
+)
+def test_a_type_map_refuses_what_it_cannot_mean(types: dict[str, str], refusal: str) -> None:
+    from spicy_docs.schemas.tables import table_contract
+
+    columns = {name: f"The {name}." for name in ("id", "note", "tags_json")}
+    with pytest.raises(TableContractError, match=refusal):
+        table_contract("typed", grain="One thing.", identity=("id",), version_column=None, columns=columns, types=types)
+
+
 def test_a_null_identity_part_refuses_rather_than_keying_on_none() -> None:
     contract = TABLE_CONTRACTS["bill_publisher_summaries"]
     row = dict.fromkeys(contract.columns)

@@ -71,7 +71,7 @@ from spicy_docs.schemas.regulations import (
 )
 from spicy_docs.schemas.roster_tables import COMMITTEE_ASSIGNMENTS, COMMITTEES
 from spicy_docs.schemas.senate_expenditure_tables import SENATE_EXPENDITURES
-from spicy_docs.schemas.tables import Reference, Row, TableContract, TableContractError
+from spicy_docs.schemas.tables import COLUMN_TYPES, Reference, Row, TableContract, TableContractError
 
 _REGISTERED: tuple[TableContract, ...] = (
     CONGRESS_BILLS,
@@ -168,6 +168,7 @@ __all__ = [
     "BILL_VERSIONS",
     "BUDGET_VOLUMES",
     "CBO_COST_ESTIMATES",
+    "COLUMN_TYPES",
     "COMMENT",
     "COMMENTS",
     "COMMITTEES",

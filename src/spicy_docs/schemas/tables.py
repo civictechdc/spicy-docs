@@ -3,8 +3,8 @@ every ``shape_*`` row goes through.
 
 The package is a stdlib-only leaf (``docs/research/table-contracts-2026-09-19.md`` §1), so anything a shaper needs from
 ``sources`` or ``interpretation`` -- a referral vocabulary, a prompt frame, a version-kind label -- arrives as a
-caller-named argument.  A ``Row`` holds only strings or NULL, because spicy-regs publishes these as all-VARCHAR Parquet
-read through a DuckDB view.
+caller-named argument.  A column is VARCHAR unless its contract types it (:data:`COLUMN_TYPES`), so a ``Row`` of an
+untyped contract holds only strings or NULL, which spicy-regs publishes as VARCHAR Parquet read through a DuckDB view.
 """
 
 from __future__ import annotations
@@ -13,11 +13,56 @@ import hashlib
 import json
 import re
 from collections.abc import Callable, Iterable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import date, datetime, timedelta
 from types import MappingProxyType
 
-#: One published row: the contract's columns, each already a string or NULL.
+#: One published row of an untyped contract: the contract's columns, each already a string or NULL.
 type Row = dict[str, str | None]
+
+#: The column types a contract can declare, spelled as DocSpec's table profiles spell them, so an admitted footer is
+#: checked against a contract with no mapping table in between. VARCHAR is the default and is never spelled in a
+#: contract's ``types``, so an untyped contract is exactly what it was before types existed. Each type admits one Python
+#: value in :meth:`TableContract.checked`, and ``None`` is NULL for every type. A list is a list of strings only: JSON
+#: text stays VARCHAR under a ``*_json`` name.
+VARCHAR = "VARCHAR"
+BOOLEAN = "BOOLEAN"
+INTEGER = "INTEGER"
+BIGINT = "BIGINT"
+DOUBLE = "DOUBLE"
+DATE = "DATE"
+TIMESTAMP = "TIMESTAMP"
+TIMESTAMPTZ = "TIMESTAMPTZ"
+VARCHAR_LIST = "VARCHAR[]"
+COLUMN_TYPES = (VARCHAR, BOOLEAN, INTEGER, BIGINT, DOUBLE, DATE, TIMESTAMP, TIMESTAMPTZ, VARCHAR_LIST)
+
+_INTEGER_BITS = {INTEGER: 32, BIGINT: 64}
+
+
+def _is_value_of(column_type: str, value: object) -> bool:
+    """Whether ``value`` is a non-NULL value of ``column_type``.
+
+    INTEGER and BIGINT take an int (never a bool) within 32 or 64 signed bits; DOUBLE a float; DATE a date that is not
+    a datetime; TIMESTAMP a naive datetime; TIMESTAMPTZ a datetime at offset zero (published as microseconds UTC);
+    ``VARCHAR[]`` a list of str.
+    """
+    if column_type == VARCHAR:
+        return isinstance(value, str)
+    if column_type == BOOLEAN:
+        return isinstance(value, bool)
+    if column_type in _INTEGER_BITS:
+        bound = 1 << (_INTEGER_BITS[column_type] - 1)
+        return isinstance(value, int) and not isinstance(value, bool) and -bound <= value < bound
+    if column_type == DOUBLE:
+        return isinstance(value, float)
+    if column_type == DATE:
+        return isinstance(value, date) and not isinstance(value, datetime)
+    if column_type == TIMESTAMP:
+        return isinstance(value, datetime) and value.tzinfo is None
+    if column_type == TIMESTAMPTZ:
+        return isinstance(value, datetime) and value.utcoffset() == timedelta(0)
+    return isinstance(value, list) and all(isinstance(item, str) for item in value)
+
 
 #: The separator a joined column uses.  ASCII unit separator, not a comma: a
 #: committee name, a reason code and a referral signal can all contain a comma,
@@ -167,11 +212,13 @@ class TableContract:
     equality only, and a host chooses which input generation supersedes another before merging. ``descriptions`` is what
     spicy-regs's data dictionary reads, so a column added here fails that check until the prose catches up (§5.3).
     ``key_spelling`` names the :data:`KEY_SPELLINGS` entry that spells the identity as one member-key string, and
-    ``None`` means none is declared yet. ``references`` declares which columns name a row of another table.
+    ``None`` means none is declared yet. ``references`` declares which columns name a row of another table. ``types``
+    names each column whose type is not VARCHAR.
 
     Construction refuses a non-snake_case name or column, a duplicate column, an empty identity, an identity or version
-    column that is not a column, a description set not keyed exactly by the columns, and an unknown key spelling or one
-    that cannot spell this identity.
+    column that is not a column, a description set not keyed exactly by the columns, an unknown key spelling or one
+    that cannot spell this identity, and a type map that names a non-column, an unknown type, VARCHAR itself, an
+    identity column (a key is spelled from strings), or a list column named ``*_json`` (that suffix means JSON text).
     """
 
     name: str
@@ -182,6 +229,7 @@ class TableContract:
     grain: str
     key_spelling: str | None = None
     references: tuple[Reference, ...] = ()
+    types: Mapping[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not isinstance(self.name, str) or _SNAKE_CASE.fullmatch(self.name) is None:
@@ -224,9 +272,27 @@ class TableContract:
             missing = [column for column in reference.child_columns if column not in seen]
             if missing:
                 raise TableContractError(f"{self.name}: reference columns {missing} are not columns")
+        for column, column_type in self.types.items():
+            if column not in seen:
+                raise TableContractError(f"{self.name}: typed column {column!r} is not a column")
+            if column_type not in COLUMN_TYPES or column_type == VARCHAR:
+                raise TableContractError(
+                    f"{self.name}: column {column!r} type must be one of {COLUMN_TYPES[1:]}, not {column_type!r}"
+                )
+            if column in self.identity:
+                raise TableContractError(f"{self.name}: identity column {column!r} must be VARCHAR")
+            if column_type == VARCHAR_LIST and column.endswith("_json"):
+                raise TableContractError(f"{self.name}: list column {column!r} must not be named *_json")
         object.__setattr__(self, "descriptions", MappingProxyType(dict(self.descriptions)))
+        object.__setattr__(self, "types", MappingProxyType(dict(self.types)))
 
-    def key(self, row: Row) -> tuple[str, ...]:
+    def column_type(self, column: str) -> str:
+        """``column``'s logical type: its entry in :attr:`types`, else VARCHAR."""
+        if column not in self.columns:
+            raise TableContractError(f"{self.name}: no column {column!r}")
+        return self.types.get(column, VARCHAR)
+
+    def key(self, row: Mapping[str, object]) -> tuple[str, ...]:
         """This row's identity tuple; a NULL part refuses rather than keying on ``None``.
 
         A row that cannot be keyed is a row a merge cannot deduplicate and a
@@ -240,10 +306,12 @@ class TableContract:
             value = row[column]
             if value is None:
                 raise TableContractError(f"{self.name}: identity column {column!r} is null")
+            if not isinstance(value, str):
+                raise TableContractError(f"{self.name}: identity column {column!r} is {type(value).__name__}, not str")
             parts.append(value)
         return tuple(parts)
 
-    def spelled_key(self, row: Row) -> str:
+    def spelled_key(self, row: Mapping[str, object]) -> str:
         """This row's member key under :attr:`key_spelling`, the reference a SQL compilation of it is tested against.
 
         Refuses a contract that declares no spelling, and every row :meth:`key` refuses.
@@ -252,8 +320,9 @@ class TableContract:
             raise TableContractError(f"{self.name}: declares no key spelling")
         return KEY_SPELLINGS[self.key_spelling](self.key(row))
 
-    def checked(self, row: Row) -> Row:
-        """Prove one shaped row has exactly this contract's columns, each a string or NULL, and return it unchanged.
+    def checked[R: Mapping[str, object]](self, row: R) -> R:
+        """Prove one shaped row has exactly this contract's columns, each NULL or a value of its declared type, and
+        return it unchanged.
 
         Order is not normalised here, so a test that asserts publish order is asserting something this did not already
         arrange; identity is checked separately by :meth:`key`, and no logical type is inferred from a column name or
@@ -268,8 +337,11 @@ class TableContract:
             extra = sorted(keys - columns)
             raise TableContractError(f"{self.name}: row columns differ; missing {missing}, unexpected {extra}")
         for column, value in row.items():
-            if value is not None and not isinstance(value, str):
-                raise TableContractError(f"{self.name}: column {column!r} is {type(value).__name__}, not str or None")
+            column_type = self.types.get(column, VARCHAR)
+            if value is not None and not _is_value_of(column_type, value):
+                raise TableContractError(
+                    f"{self.name}: column {column!r} is {type(value).__name__}, not {column_type} or None"
+                )
         return row
 
 
@@ -282,6 +354,7 @@ def table_contract(
     columns: Mapping[str, str],
     key_spelling: str | None = None,
     references: tuple[Reference, ...] = (),
+    types: Mapping[str, str] | None = None,
 ) -> TableContract:
     """Build a contract from one ordered ``column -> description`` mapping.
 
@@ -297,6 +370,7 @@ def table_contract(
         grain=grain,
         key_spelling=key_spelling,
         references=references,
+        types=types or {},
     )
 
 
