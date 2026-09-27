@@ -1819,6 +1819,7 @@ def test_a_typed_column_takes_only_its_own_python_value() -> None:
     wrongs = (
         ("note", 1),
         ("flag", "true"),
+        ("flag", 1),
         ("small", True),
         ("small", 2**31),
         ("big", 2**63),
@@ -1845,10 +1846,12 @@ def test_a_typed_column_takes_only_its_own_python_value() -> None:
         ({"note": "FLOAT"}, "type must be one of"),
         ({"note": "VARCHAR"}, "type must be one of"),
         ({"id": "INTEGER"}, "identity column 'id' must be VARCHAR"),
-        ({"tags_json": "VARCHAR[]"}, "list column 'tags_json' must not be named"),
+        ({"tags_json": "VARCHAR[]"}, "VARCHAR\\[\\] column 'tags_json' must not be named"),
+        ({"tags_json": "BOOLEAN"}, "BOOLEAN column 'tags_json' must not be named"),
+        ([("note", "BOOLEAN")], "types must map columns to types"),
     ],
 )
-def test_a_type_map_refuses_what_it_cannot_mean(types: dict[str, str], refusal: str) -> None:
+def test_a_type_map_refuses_what_it_cannot_mean(types: Any, refusal: str) -> None:
     from spicy_docs.schemas.tables import table_contract
 
     columns = {name: f"The {name}." for name in ("id", "note", "tags_json")}
@@ -2033,15 +2036,26 @@ def test_the_attribute_projections_type_what_the_publisher_states() -> None:
         == stated["EPA-HQ-OW-2008-0465-1709"]["attributes"]["displayProperties"]
     )
 
-    for attribute, stated in (
+    refused = (
         ("receiveDate", "2025-06-25"),
         ("receiveDate", "2025-06-25T04:00:00+00:00"),
+        ("receiveDate", "2025-06-25T04:00:00.5Z"),
+        ("receiveDate", "2021-02-30T00:00:00Z"),
+        ("receiveDate", "\uff12\uff10\uff12\uff11-01-01T00:00:00Z"),
         ("openForComment", "true"),
+        ("openForComment", 1),
         ("pageCount", 2**31),
         ("topics", ["a", 1]),
-    ):
+        ("cfrPart", ["40", "41"]),
+        ("cfrPart", 40),
+        ("displayProperties", "labels"),
+    )
+    for attribute, stated in refused:
         with pytest.raises(TableContractError):
             project_document_attributes("X-1", {attribute: stated})
+    for key in (None, ""):
+        with pytest.raises(TableContractError):
+            project_document_attributes(key, {})  # type: ignore[arg-type]
 
 
 def test_each_attribute_column_is_its_api_attribute_in_snake_case_in_attribute_order() -> None:
@@ -2056,3 +2070,25 @@ def test_each_attribute_column_is_its_api_attribute_in_snake_case_in_attribute_o
             for a, c in zip(attributes, columns, strict=True)
         ] == list(columns)
         assert attributes == sorted(attributes)
+
+
+def test_the_attribute_contracts_are_the_lanes_column_list() -> None:
+    """The members are exported to the DocSpec lane's list, so each contract must match it column for column: name,
+    order, type, identity, key spelling, reference and grain. Descriptions may differ: the list's capture counts are not
+    carried into the contracts."""
+    lane = json.loads((FIXTURES / "regulations_gov_attributes" / "contract-columns-v2.json").read_text())
+    for table in lane["tables"]:
+        contract = TABLE_CONTRACTS[table["name"]]
+        assert [(c["name"], c["type"]) for c in table["columns"]] == [
+            (column, contract.column_type(column)) for column in contract.columns
+        ]
+        assert (list(contract.identity), contract.key_spelling, contract.grain) == (
+            table["identity"],
+            table["key_spelling"],
+            table["grain"],
+        )
+        (reference,) = contract.references
+        assert (reference.parent_table, reference.parent_columns) == (
+            table["reference"]["table"],
+            (table["reference"]["column"],),
+        )

@@ -1,0 +1,535 @@
+{
+ "format": "regulations-attributes-contract-columns",
+ "version": 2,
+ "decisions": "spicy-regs 66 (publish stated submitter contact fields) and 67 (native types)",
+ "source": {
+  "state": "catalogue",
+  "pin": "sha256:2200b5e68601decb8ac664d824d025c4e2031663c10bae900dcfcd20cbd74643",
+  "supplied": "2026-09-02",
+  "imported": "2026-09-14"
+ },
+ "left_out": {
+  "document_attributes": {
+   "never stated (0 of 1,943,106)": [
+    "email",
+    "phone",
+    "submitterRepAddress",
+    "submitterRepCityState"
+   ],
+   "constant 0": [
+    "paperLength",
+    "paperWidth"
+   ],
+   "the key in a fixed URL": [
+    "links.self",
+    "relationships.attachments"
+   ],
+   "carried by documents": [
+    "docketId",
+    "agencyId",
+    "title",
+    "documentType",
+    "postedDate",
+    "modifyDate",
+    "commentStartDate",
+    "commentEndDate",
+    "fileFormats",
+    "frDocNum",
+    "withdrawn",
+    "reasonWithdrawn",
+    "additionalRins"
+   ]
+  },
+  "docket_attributes": {
+   "the key in a fixed URL": [
+    "links.self"
+   ],
+   "carried by dockets": [
+    "agencyId",
+    "title",
+    "docketType",
+    "modifyDate",
+    "dkAbstract",
+    "rin"
+   ]
+  }
+ },
+ "tables": [
+  {
+   "name": "document_attributes",
+   "grain": "One row per Regulations.gov document: the attributes the thin documents table does not carry.",
+   "identity": [
+    "document_id"
+   ],
+   "key_spelling": "value/1",
+   "reference": {
+    "table": "documents",
+    "column": "document_id"
+   },
+   "rows": 1943106,
+   "columns": [
+    {
+     "name": "document_id",
+     "type": "VARCHAR",
+     "description": "The document's id; its API record is https://api.regulations.gov/v4/documents/{document_id}.",
+     "non_null": 1943106
+    },
+    {
+     "name": "address1",
+     "type": "VARCHAR",
+     "description": "The submitter's street address, first line, as stated.",
+     "non_null": 40341,
+     "attribute": "address1"
+    },
+    {
+     "name": "address2",
+     "type": "VARCHAR",
+     "description": "The submitter's street address, second line, as stated.",
+     "non_null": 10730,
+     "attribute": "address2"
+    },
+    {
+     "name": "allow_late_comments",
+     "type": "BOOLEAN",
+     "description": "Whether the agency accepts comments after the period closes.",
+     "non_null": 1943106,
+     "attribute": "allowLateComments"
+    },
+    {
+     "name": "author_date",
+     "type": "TIMESTAMPTZ",
+     "description": "When the document was written (labelled “Author/ Document Date”), a UTC instant.",
+     "non_null": 674860,
+     "attribute": "authorDate"
+    },
+    {
+     "name": "authors",
+     "type": "VARCHAR[]",
+     "description": "The document's authors, people or organizations, in the publisher's order; almost all on Supporting & Related Material.",
+     "non_null": 217308,
+     "attribute": "authors"
+    },
+    {
+     "name": "category",
+     "type": "VARCHAR",
+     "description": "The submitter's sector category the agency assigns; 38 values.",
+     "non_null": 154651,
+     "attribute": "category"
+    },
+    {
+     "name": "cfr_part",
+     "type": "VARCHAR",
+     "description": "The CFR parts the document affects, free text as stated.",
+     "non_null": 118737,
+     "attribute": "cfrPart"
+    },
+    {
+     "name": "city",
+     "type": "VARCHAR",
+     "description": "The submitter's city.",
+     "non_null": 133496,
+     "attribute": "city"
+    },
+    {
+     "name": "comment",
+     "type": "VARCHAR",
+     "description": "The record's comment text as stated, markup included.",
+     "non_null": 410329,
+     "attribute": "comment"
+    },
+    {
+     "name": "country",
+     "type": "VARCHAR",
+     "description": "The submitter's country.",
+     "non_null": 126985,
+     "attribute": "country"
+    },
+    {
+     "name": "display_properties_json",
+     "type": "VARCHAR",
+     "description": "The agency's labels for this record's fields: a JSON array of {label, name, tooltip}, name being the attribute it labels; json_column spelling.",
+     "non_null": 1461445,
+     "attribute": "displayProperties"
+    },
+    {
+     "name": "doc_abstract",
+     "type": "VARCHAR",
+     "description": "The document's abstract or summary.",
+     "non_null": 511572,
+     "attribute": "docAbstract"
+    },
+    {
+     "name": "effective_date",
+     "type": "TIMESTAMPTZ",
+     "description": "When the action takes effect, a UTC instant.",
+     "non_null": 89352,
+     "attribute": "effectiveDate"
+    },
+    {
+     "name": "exhibit_location",
+     "type": "VARCHAR",
+     "description": "Where a physical exhibit is held.",
+     "non_null": 2393,
+     "attribute": "exhibitLocation"
+    },
+    {
+     "name": "exhibit_type",
+     "type": "VARCHAR",
+     "description": "The exhibit's type.",
+     "non_null": 36570,
+     "attribute": "exhibitType"
+    },
+    {
+     "name": "fax",
+     "type": "VARCHAR",
+     "description": "The submitter's fax number.",
+     "non_null": 54,
+     "attribute": "fax"
+    },
+    {
+     "name": "field1",
+     "type": "VARCHAR",
+     "description": "An agency-defined field; its meaning is the record's display_properties_json label (“Answer Date”, “XRIN”, “RTID”, …).",
+     "non_null": 5797,
+     "attribute": "field1"
+    },
+    {
+     "name": "field2",
+     "type": "VARCHAR",
+     "description": "An agency-defined field; its meaning is the record's display_properties_json label (“File Date” on all but one).",
+     "non_null": 135720,
+     "attribute": "field2"
+    },
+    {
+     "name": "first_name",
+     "type": "VARCHAR",
+     "description": "The submitter's given name.",
+     "non_null": 313819,
+     "attribute": "firstName"
+    },
+    {
+     "name": "fr_vol_num",
+     "type": "VARCHAR",
+     "description": "The Federal Register volume or citation, free text as stated.",
+     "non_null": 120435,
+     "attribute": "frVolNum"
+    },
+    {
+     "name": "gov_agency",
+     "type": "VARCHAR",
+     "description": "The government body that submitted the document.",
+     "non_null": 98453,
+     "attribute": "govAgency"
+    },
+    {
+     "name": "gov_agency_type",
+     "type": "VARCHAR",
+     "description": "That body's level: Federal, State, Local, Tribal, Regional, U.S. House of Representatives or U.S. Senate.",
+     "non_null": 98475,
+     "attribute": "govAgencyType"
+    },
+    {
+     "name": "implementation_date",
+     "type": "TIMESTAMPTZ",
+     "description": "The implementation or service date, a UTC instant.",
+     "non_null": 199148,
+     "attribute": "implementationDate"
+    },
+    {
+     "name": "last_name",
+     "type": "VARCHAR",
+     "description": "The submitter's family name.",
+     "non_null": 307131,
+     "attribute": "lastName"
+    },
+    {
+     "name": "legacy_id",
+     "type": "VARCHAR",
+     "description": "The record's id in a predecessor system (“Document Legacy ID”, “Legacy Exhibit Number”, …).",
+     "non_null": 134235,
+     "attribute": "legacyId"
+    },
+    {
+     "name": "media",
+     "type": "VARCHAR",
+     "description": "How the document arrived: Electronic, Paper, … (spellings vary).",
+     "non_null": 383076,
+     "attribute": "media"
+    },
+    {
+     "name": "object_id",
+     "type": "VARCHAR",
+     "description": "The publisher's internal object handle.",
+     "non_null": 1943106,
+     "attribute": "objectId"
+    },
+    {
+     "name": "omb_approval",
+     "type": "VARCHAR",
+     "description": "An OMB control number, as stated.",
+     "non_null": 8067,
+     "attribute": "ombApproval"
+    },
+    {
+     "name": "open_for_comment",
+     "type": "BOOLEAN",
+     "description": "Whether the document was open for comment when captured; an observation, not a live status.",
+     "non_null": 1943106,
+     "attribute": "openForComment"
+    },
+    {
+     "name": "organization",
+     "type": "VARCHAR",
+     "description": "The organization the author or submitter names.",
+     "non_null": 283063,
+     "attribute": "organization"
+    },
+    {
+     "name": "original_document_id",
+     "type": "VARCHAR",
+     "description": "The id of the document this one derives from; the empty string on 368,375 records.",
+     "non_null": 533772,
+     "attribute": "originalDocumentId"
+    },
+    {
+     "name": "page_count",
+     "type": "INTEGER",
+     "description": "Pages in the content file.",
+     "non_null": 1943106,
+     "attribute": "pageCount"
+    },
+    {
+     "name": "postmark_date",
+     "type": "TIMESTAMPTZ",
+     "description": "The postmark date (often labelled “Answer Date”), a UTC instant.",
+     "non_null": 29599,
+     "attribute": "postmarkDate"
+    },
+    {
+     "name": "receive_date",
+     "type": "TIMESTAMPTZ",
+     "description": "When the agency received the document, a UTC instant.",
+     "non_null": 1928713,
+     "attribute": "receiveDate"
+    },
+    {
+     "name": "reg_writer_instruction",
+     "type": "VARCHAR",
+     "description": "Agency notes (labelled “Old Submitter” on 61,052).",
+     "non_null": 66795,
+     "attribute": "regWriterInstruction"
+    },
+    {
+     "name": "restrict_reason",
+     "type": "VARCHAR",
+     "description": "Why access is restricted, free text.",
+     "non_null": 20248,
+     "attribute": "restrictReason"
+    },
+    {
+     "name": "restrict_reason_type",
+     "type": "VARCHAR",
+     "description": "The restriction's kind: Copyrighted, Confidential Business Information, Personally Identifiable Information or Other.",
+     "non_null": 75033,
+     "attribute": "restrictReasonType"
+    },
+    {
+     "name": "source_citation",
+     "type": "VARCHAR",
+     "description": "The source publication's citation.",
+     "non_null": 71150,
+     "attribute": "sourceCitation"
+    },
+    {
+     "name": "start_end_page",
+     "type": "VARCHAR",
+     "description": "The Federal Register start and end pages, as stated.",
+     "non_null": 287972,
+     "attribute": "startEndPage"
+    },
+    {
+     "name": "state_province_region",
+     "type": "VARCHAR",
+     "description": "The submitter's state, province or region.",
+     "non_null": 142556,
+     "attribute": "stateProvinceRegion"
+    },
+    {
+     "name": "subject",
+     "type": "VARCHAR",
+     "description": "The subject line.",
+     "non_null": 129254,
+     "attribute": "subject"
+    },
+    {
+     "name": "submitter_rep",
+     "type": "VARCHAR",
+     "description": "The name of the submitter's representative.",
+     "non_null": 101418,
+     "attribute": "submitterRep"
+    },
+    {
+     "name": "subtype",
+     "type": "VARCHAR",
+     "description": "The agency's subtype: Correspondence, Report, Decision, … (823 values).",
+     "non_null": 1330483,
+     "attribute": "subtype"
+    },
+    {
+     "name": "topics",
+     "type": "VARCHAR[]",
+     "description": "The publisher's topics, in its order.",
+     "non_null": 85110,
+     "attribute": "topics"
+    },
+    {
+     "name": "tracking_nbr",
+     "type": "VARCHAR",
+     "description": "The portal's tracking number.",
+     "non_null": 1380562,
+     "attribute": "trackingNbr"
+    },
+    {
+     "name": "within_comment_period",
+     "type": "BOOLEAN",
+     "description": "Whether the document arrived within the comment period, when stated.",
+     "non_null": 155468,
+     "attribute": "withinCommentPeriod"
+    },
+    {
+     "name": "zip",
+     "type": "VARCHAR",
+     "description": "The submitter's postal code.",
+     "non_null": 116880,
+     "attribute": "zip"
+    }
+   ]
+  },
+  {
+   "name": "docket_attributes",
+   "grain": "One row per Regulations.gov docket: the attributes the thin dockets table does not carry.",
+   "identity": [
+    "docket_id"
+   ],
+   "key_spelling": "value/1",
+   "reference": {
+    "table": "dockets",
+    "column": "docket_id"
+   },
+   "rows": 278607,
+   "columns": [
+    {
+     "name": "docket_id",
+     "type": "VARCHAR",
+     "description": "The docket's id; its API record is https://api.regulations.gov/v4/dockets/{docket_id}.",
+     "non_null": 278607
+    },
+    {
+     "name": "category",
+     "type": "VARCHAR",
+     "description": "The docket's status (labelled “Disposition”): Pending, Closed and others.",
+     "non_null": 92596,
+     "attribute": "category"
+    },
+    {
+     "name": "display_properties_json",
+     "type": "VARCHAR",
+     "description": "The agency's labels for this docket's fields: a JSON array of {label, name, tooltip}; [] on 64,859; json_column spelling.",
+     "non_null": 278607,
+     "attribute": "displayProperties"
+    },
+    {
+     "name": "effective_date",
+     "type": "TIMESTAMPTZ",
+     "description": "Mostly the docket's close date (labelled “Docket Close Date” on 13,111), a UTC instant.",
+     "non_null": 14132,
+     "attribute": "effectiveDate"
+    },
+    {
+     "name": "field1",
+     "type": "VARCHAR",
+     "description": "An agency-defined field (“Related Docket's RIN”, “Related To”, …); see display_properties_json.",
+     "non_null": 199,
+     "attribute": "field1"
+    },
+    {
+     "name": "field2",
+     "type": "VARCHAR",
+     "description": "An agency-defined field (“Docket Status” on 59,872); see display_properties_json.",
+     "non_null": 60527,
+     "attribute": "field2"
+    },
+    {
+     "name": "generic",
+     "type": "VARCHAR",
+     "description": "An agency program code (“Docket Item Code”, “Location”, “Program Area”).",
+     "non_null": 88468,
+     "attribute": "generic"
+    },
+    {
+     "name": "keywords",
+     "type": "VARCHAR[]",
+     "description": "The docket's keywords, in the publisher's order.",
+     "non_null": 86576,
+     "attribute": "keywords"
+    },
+    {
+     "name": "legacy_id",
+     "type": "VARCHAR",
+     "description": "The docket's id in a predecessor system.",
+     "non_null": 7931,
+     "attribute": "legacyId"
+    },
+    {
+     "name": "object_id",
+     "type": "VARCHAR",
+     "description": "The publisher's internal object handle.",
+     "non_null": 278607,
+     "attribute": "objectId"
+    },
+    {
+     "name": "organization",
+     "type": "VARCHAR",
+     "description": "Labelled “Pre-EDOCKET ID” on 3,980 and “Organization” on 3,766; see display_properties_json.",
+     "non_null": 7789,
+     "attribute": "organization"
+    },
+    {
+     "name": "petition_nbr",
+     "type": "VARCHAR",
+     "description": "A petition number.",
+     "non_null": 132,
+     "attribute": "petitionNbr"
+    },
+    {
+     "name": "program",
+     "type": "VARCHAR",
+     "description": "The program office (labelled “Center” on 64,910).",
+     "non_null": 71867,
+     "attribute": "program"
+    },
+    {
+     "name": "short_title",
+     "type": "VARCHAR",
+     "description": "A short title (labelled “Action Office” on 13,262).",
+     "non_null": 42081,
+     "attribute": "shortTitle"
+    },
+    {
+     "name": "sub_type",
+     "type": "VARCHAR",
+     "description": "The agency's docket subtype; 411 values.",
+     "non_null": 111474,
+     "attribute": "subType"
+    },
+    {
+     "name": "sub_type2",
+     "type": "VARCHAR",
+     "description": "A second docket subtype level.",
+     "non_null": 21010,
+     "attribute": "subType2"
+    }
+   ]
+  }
+ ]
+}

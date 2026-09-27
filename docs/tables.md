@@ -15,9 +15,14 @@ documents with interpretation findings — lives at
 `interpretation/bill_family.py`, where `interpretation` already imports
 `sources.congress`.
 
-Every value in a row is a string or NULL: a host publishes these as all-VARCHAR
-Parquet read through a DuckDB view, so a typed value is spelled exactly once, in
-`schemas/tables.py`'s `text`, `flag`, `json_column`, `joined` and `digest`.
+A column is VARCHAR unless its contract types it. `TableContract.types` names each
+other column's type in DocSpec's table-profile spelling (`COLUMN_TYPES`: BOOLEAN,
+INTEGER, BIGINT, DOUBLE, DATE, TIMESTAMP, TIMESTAMPTZ, `VARCHAR[]`), so an admitted
+footer is checked against the contract with no mapping in between, and `checked`
+admits each type's one Python value. An untyped contract's row holds only strings or
+NULL, a host publishes it as VARCHAR Parquet read through a DuckDB view, and a value
+is spelled exactly once, in `schemas/tables.py`'s `text`, `flag`, `json_column`,
+`joined` and `digest`. A key column is always VARCHAR.
 
 ## The tables
 
@@ -75,6 +80,8 @@ table's columns.
 | `dockets` | One row per Regulations.gov docket, the folder an agency opens for one rulemaking or other action. | `docket_id` | `modify_date` | the host, through its copy of `schemas.regulations`' extract |
 | `documents` | One row per document an agency posted on Regulations.gov: a rule, notice or supporting material. | `document_id` | `modify_date` | the host, through its copy of `schemas.regulations`' extract |
 | `comments` | One row per public comment posted on Regulations.gov. | `comment_id` | `modify_date` | the host, through its copy of `schemas.regulations`' extract |
+| `document_attributes` | One row per Regulations.gov document: the attributes the thin documents table does not carry. | `document_id` | none | `schemas.regulations_attribute_tables` (`project_document_attributes`) |
+| `docket_attributes` | One row per Regulations.gov docket: the attributes the thin dockets table does not carry. | `docket_id` | none | `schemas.regulations_attribute_tables` (`project_docket_attributes`) |
 
 Every column carries its own sentence.
 

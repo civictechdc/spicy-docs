@@ -10,3 +10,7 @@ Four Regulations.gov API detail records (`data` objects), as DocSpec's `catalogu
 
 No record states both authors and topics: of 1,943,106 documents, 217,308 state authors and 85,110 topics, and
 none states both.
+
+`contract-columns-v2.json` is the DocSpec lane's column list (its `receipts/`, 2026-09-26): each table's identity, key
+spelling, reference and grain, and each column's name, type, description and non-null count in that capture. The
+members spicy-regs publishes are exported to exactly this shape, so the contracts are tested against it.

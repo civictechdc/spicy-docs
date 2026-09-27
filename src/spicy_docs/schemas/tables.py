@@ -230,6 +230,7 @@ class TableContract:
     key_spelling: str | None = None
     references: tuple[Reference, ...] = ()
     types: Mapping[str, str] = field(default_factory=dict)
+    _column_set: frozenset[str] = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         if not isinstance(self.name, str) or _SNAKE_CASE.fullmatch(self.name) is None:
@@ -272,6 +273,8 @@ class TableContract:
             missing = [column for column in reference.child_columns if column not in seen]
             if missing:
                 raise TableContractError(f"{self.name}: reference columns {missing} are not columns")
+        if not isinstance(self.types, Mapping):
+            raise TableContractError(f"{self.name}: types must map columns to types, not {type(self.types).__name__}")
         for column, column_type in self.types.items():
             if column not in seen:
                 raise TableContractError(f"{self.name}: typed column {column!r} is not a column")
@@ -281,14 +284,15 @@ class TableContract:
                 )
             if column in self.identity:
                 raise TableContractError(f"{self.name}: identity column {column!r} must be VARCHAR")
-            if column_type == VARCHAR_LIST and column.endswith("_json"):
-                raise TableContractError(f"{self.name}: list column {column!r} must not be named *_json")
+            if column.endswith("_json"):
+                raise TableContractError(f"{self.name}: {column_type} column {column!r} must not be named *_json")
         object.__setattr__(self, "descriptions", MappingProxyType(dict(self.descriptions)))
         object.__setattr__(self, "types", MappingProxyType(dict(self.types)))
+        object.__setattr__(self, "_column_set", frozenset(self.columns))
 
     def column_type(self, column: str) -> str:
         """``column``'s logical type: its entry in :attr:`types`, else VARCHAR."""
-        if column not in self.columns:
+        if column not in self._column_set:
             raise TableContractError(f"{self.name}: no column {column!r}")
         return self.types.get(column, VARCHAR)
 
@@ -330,8 +334,8 @@ class TableContract:
         """
         if not isinstance(row, dict):
             raise TableContractError(f"{self.name}: a row must be a dict")
-        columns = set(self.columns)
-        keys = set(row)
+        columns = self._column_set
+        keys = row.keys()
         if keys != columns:
             missing = sorted(columns - keys)
             extra = sorted(keys - columns)
@@ -416,10 +420,20 @@ def usc_section_key(section: object) -> str | None:
 
 
 __all__ = [
+    "BIGINT",
+    "BOOLEAN",
+    "COLUMN_TYPES",
     "DASH_SPELLINGS",
+    "DATE",
+    "DOUBLE",
+    "INTEGER",
     "KEY_SPELLINGS",
+    "TIMESTAMP",
+    "TIMESTAMPTZ",
     "UNIT_SEPARATOR",
     "VALUE_KEY",
+    "VARCHAR",
+    "VARCHAR_LIST",
     "Row",
     "TableContract",
     "TableContractError",

@@ -2,11 +2,12 @@
 ``documents`` and ``dockets`` tables, one row per record, typed natively (spicy-regs owner decisions 66 and 67).
 
 A column is the API attribute it carries in snake_case, ``_json`` after the one attribute published as JSON text
-(``displayProperties``). Scalars are spelled by :func:`~spicy_docs.schemas.tables.text`, lists of strings are
+(``displayProperties``, spelled by :func:`~spicy_docs.schemas.tables.json_column`). Lists of strings are
 ``VARCHAR[]``, and the publisher's instants (always ``YYYY-MM-DDTHH:MM:SSZ``) are ``TIMESTAMPTZ``. Submitters' stated
 contact details are published (decision 66); attributes never stated, constant, derivable from the key, or already
 carried by the thin tables are left out, as the contract note lists them (DocSpec
-``docs/research/regulations-attributes-contract-2026-09-26.md``).
+``docs/research/regulations-attributes-contract-2026-09-26.md``). A scalar VARCHAR attribute must be stated as a
+string and ``displayProperties`` as an array, as DocSpec's exporter requires; anything else refuses.
 
 :func:`project_document_attributes` and :func:`project_docket_attributes` are the one spelling of a row: spicy-regs'
 ETL calls them per record and DocSpec's exporter proves its native spelling against them.
@@ -30,12 +31,11 @@ from spicy_docs.schemas.tables import (
     TableContractError,
     json_column,
     table_contract,
-    text,
 )
 
-#: The only instant spelling the publisher states on these attributes (every one of 3,035,813 stated values, census
-#: 2026-09-26); anything else refuses rather than being guessed at.
-_STATED_INSTANT = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
+#: The only instant spelling the publisher states on these attributes (every one of 2,935,804 stated values, census
+#: 2026-09-26); anything else refuses rather than being guessed at. ASCII digits only: ``\d`` would admit others.
+_STATED_INSTANT = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z")
 
 
 def _attribute_contract(
@@ -63,22 +63,39 @@ def attribute_of(column: str) -> str:
 def _instant(value: object) -> datetime:
     if not isinstance(value, str) or _STATED_INSTANT.fullmatch(value) is None:
         raise TableContractError(f"not a stated instant (YYYY-MM-DDTHH:MM:SSZ): {value!r}")
-    return datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
+    try:
+        return datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
+    except ValueError as error:
+        raise TableContractError(f"not a calendar instant: {value!r}") from error
 
 
-def _projected(contract: TableContract, key: str, attributes: Mapping[str, object]) -> dict[str, object]:
+type _Plan = tuple[tuple[str, str, str], ...]
+
+
+def _plan(contract: TableContract) -> _Plan:
+    """(column, attribute, type) for every non-key column, worked out once per contract rather than once per row."""
+    return tuple((column, attribute_of(column), contract.column_type(column)) for column in contract.columns[1:])
+
+
+def _projected(contract: TableContract, plan: _Plan, key: str, attributes: Mapping[str, object]) -> dict[str, object]:
     row: dict[str, object] = {contract.identity[0]: key}
-    for column in contract.columns[1:]:
-        stated = attributes.get(attribute_of(column))
-        column_type = contract.column_type(column)
+    for column, attribute, column_type in plan:
+        stated = attributes.get(attribute)
         if stated is None:
             row[column] = None
         elif column_type == TIMESTAMPTZ:
             row[column] = _instant(stated)
-        elif column_type == VARCHAR:
-            row[column] = json_column(stated) if column.endswith("_json") else text(stated)
-        else:
+        elif column_type != VARCHAR:
             row[column] = stated
+        elif column.endswith("_json"):
+            if not isinstance(stated, list):
+                raise TableContractError(f"{contract.name}: {attribute} is {type(stated).__name__}, not an array")
+            row[column] = json_column(stated)
+        elif isinstance(stated, str):
+            row[column] = stated
+        else:
+            raise TableContractError(f"{contract.name}: {attribute} is {type(stated).__name__}, not a string")
+    contract.spelled_key(row)  # refuses a NULL or empty key, which checked() would pass
     return contract.checked(row)
 
 
@@ -101,7 +118,7 @@ DOCUMENT_ATTRIBUTES = _attribute_contract(
             VARCHAR_LIST,
             "The document's authors, people or organizations, in the publisher's order; almost all on Supporting & Related Material.",
         ),
-        ("category", VARCHAR, "The submitter's sector category the agency assigns; 38 values."),
+        ("category", VARCHAR, "The submitter's sector category the agency assigns."),
         ("cfr_part", VARCHAR, "The CFR parts the document affects, free text as stated."),
         ("city", VARCHAR, "The submitter's city."),
         ("comment", VARCHAR, "The record's comment text as stated, markup included."),
@@ -124,7 +141,7 @@ DOCUMENT_ATTRIBUTES = _attribute_contract(
         (
             "field2",
             VARCHAR,
-            "An agency-defined field; its meaning is the record's display_properties_json label (“File Date” on all but one).",
+            "An agency-defined field; its meaning is the record's display_properties_json label (labelled “File Date”).",
         ),
         ("first_name", VARCHAR, "The submitter's given name."),
         ("fr_vol_num", VARCHAR, "The Federal Register volume or citation, free text as stated."),
@@ -153,12 +170,12 @@ DOCUMENT_ATTRIBUTES = _attribute_contract(
         (
             "original_document_id",
             VARCHAR,
-            "The id of the document this one derives from; the empty string on 368,375 records.",
+            "The id of the document this one derives from; sometimes the empty string.",
         ),
         ("page_count", INTEGER, "Pages in the content file."),
         ("postmark_date", TIMESTAMPTZ, "The postmark date (often labelled “Answer Date”), a UTC instant."),
         ("receive_date", TIMESTAMPTZ, "When the agency received the document, a UTC instant."),
-        ("reg_writer_instruction", VARCHAR, "Agency notes (labelled “Old Submitter” on 61,052)."),
+        ("reg_writer_instruction", VARCHAR, "Agency notes (often labelled “Old Submitter”)."),
         ("restrict_reason", VARCHAR, "Why access is restricted, free text."),
         (
             "restrict_reason_type",
@@ -170,7 +187,7 @@ DOCUMENT_ATTRIBUTES = _attribute_contract(
         ("state_province_region", VARCHAR, "The submitter's state, province or region."),
         ("subject", VARCHAR, "The subject line."),
         ("submitter_rep", VARCHAR, "The name of the submitter's representative."),
-        ("subtype", VARCHAR, "The agency's subtype: Correspondence, Report, Decision, … (823 values)."),
+        ("subtype", VARCHAR, "The agency's subtype: Correspondence, Report, Decision and others."),
         ("topics", VARCHAR_LIST, "The publisher's topics, in its order."),
         ("tracking_nbr", VARCHAR, "The portal's tracking number."),
         ("within_comment_period", BOOLEAN, "Whether the document arrived within the comment period, when stated."),
@@ -189,19 +206,19 @@ DOCKET_ATTRIBUTES = _attribute_contract(
         (
             "display_properties_json",
             VARCHAR,
-            "The agency's labels for this docket's fields: a JSON array of {label, name, tooltip}; [] on 64,859; json_column spelling.",
+            "The agency's labels for this docket's fields: a JSON array of {label, name, tooltip}; [] when none; json_column spelling.",
         ),
         (
             "effective_date",
             TIMESTAMPTZ,
-            "Mostly the docket's close date (labelled “Docket Close Date” on 13,111), a UTC instant.",
+            "Mostly the docket's close date (usually labelled “Docket Close Date”), a UTC instant.",
         ),
         (
             "field1",
             VARCHAR,
             "An agency-defined field (“Related Docket's RIN”, “Related To”, …); see display_properties_json.",
         ),
-        ("field2", VARCHAR, "An agency-defined field (“Docket Status” on 59,872); see display_properties_json."),
+        ("field2", VARCHAR, "An agency-defined field (usually “Docket Status”); see display_properties_json."),
         ("generic", VARCHAR, "An agency program code (“Docket Item Code”, “Location”, “Program Area”)."),
         ("keywords", VARCHAR_LIST, "The docket's keywords, in the publisher's order."),
         ("legacy_id", VARCHAR, "The docket's id in a predecessor system."),
@@ -209,26 +226,29 @@ DOCKET_ATTRIBUTES = _attribute_contract(
         (
             "organization",
             VARCHAR,
-            "Labelled “Pre-EDOCKET ID” on 3,980 and “Organization” on 3,766; see display_properties_json.",
+            "Labelled “Pre-EDOCKET ID” or “Organization”; see display_properties_json.",
         ),
         ("petition_nbr", VARCHAR, "A petition number."),
-        ("program", VARCHAR, "The program office (labelled “Center” on 64,910)."),
-        ("short_title", VARCHAR, "A short title (labelled “Action Office” on 13,262)."),
-        ("sub_type", VARCHAR, "The agency's docket subtype; 411 values."),
+        ("program", VARCHAR, "The program office (usually labelled “Center”)."),
+        ("short_title", VARCHAR, "A short title (sometimes labelled “Action Office”)."),
+        ("sub_type", VARCHAR, "The agency's docket subtype."),
         ("sub_type2", VARCHAR, "A second docket subtype level."),
     ),
 )
+
+_DOCUMENT_PLAN = _plan(DOCUMENT_ATTRIBUTES)
+_DOCKET_PLAN = _plan(DOCKET_ATTRIBUTES)
 
 
 def project_document_attributes(document_id: str, attributes: Mapping[str, object]) -> dict[str, object]:
     """One ``document_attributes`` row from a document's API detail record: its ``data.id`` and ``data.attributes``.
 
     A stated value of the wrong type (a string for a BOOLEAN, an instant in another spelling, a list holding a
-    non-string) refuses with :class:`~spicy_docs.schemas.tables.TableContractError`.
+    non-string, a NULL or empty id) refuses with :class:`~spicy_docs.schemas.tables.TableContractError`.
     """
-    return _projected(DOCUMENT_ATTRIBUTES, document_id, attributes)
+    return _projected(DOCUMENT_ATTRIBUTES, _DOCUMENT_PLAN, document_id, attributes)
 
 
 def project_docket_attributes(docket_id: str, attributes: Mapping[str, object]) -> dict[str, object]:
     """One ``docket_attributes`` row from a docket's API detail record: its ``data.id`` and ``data.attributes``."""
-    return _projected(DOCKET_ATTRIBUTES, docket_id, attributes)
+    return _projected(DOCKET_ATTRIBUTES, _DOCKET_PLAN, docket_id, attributes)
