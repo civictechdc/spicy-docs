@@ -77,7 +77,6 @@ docs/sources/usitc-edis.md	USITC EDIS: investigation dockets, documents and atta
 docs/sources/uslm-laws.md	Capture public laws and statute compilations	doc
 docs/superpowers/specs/2026-08-25-source-native-release-spec.md	SpicyDocs source-native release 2.0	doc
 docs/tables.md	Table contracts	doc
-ecfs_counts.json		config
 examples/__init__.py	Runnable examples checked alongside the package.	src
 examples/cfr_capture.py	Retain one explicit CFR/eCFR source response and its acquisition evidence.	src
 examples/fec_financial_history.py	Capture selected financial CSV histories through the existing FEC reader.	src
