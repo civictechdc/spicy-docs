@@ -2692,3 +2692,25 @@ None of the 2,659,863 live `bill_sections` rows or 298,395
 
 `federal-register-source-record-id/1` keeps its sealed name. For its two
 components it yields the same bytes as `at-joined/1`.
+
+## A bill section carries its Congress, so a host can store the table one file per Congress
+
+2026-09-27, from spicy-regs' multi-file table design
+(`docs/research/multi-file-tables-2026-09-26.md` §4.2 there). The owner chose
+`bill_sections` as the first table spicy-regs publishes as several files, one
+per Congress.
+
+**The partition value is a column, derived from the identity.** A split
+member's partition column must be stored inside the Parquet: its readers read
+with Hive partitioning off, so a view's columns stay the declared ones. And
+the value must be a function of the identity, or one row could sit in two
+files and a carried-forward file could keep a stale copy of a row whose fresh
+copy landed in another. `congress` is `bill_id`'s prefix, spelled by one
+helper, `schemas.tables.bill_congress`, which the shaper and the host's split
+both use. A `bill_id` with no decimal prefix refuses rather than naming a file.
+
+**The identity does not change.** It stays `(bill_id, version_code, source,
+seq)`: an identity naming the new column would re-mint every row downstream,
+and `congress` adds nothing to it. The column is appended, so a prior table
+without it NULL-fills in a host's merge; spicy-regs derives it from `bill_id`
+when it first splits the table instead.

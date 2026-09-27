@@ -14,6 +14,7 @@ import re
 import tempfile
 from dataclasses import dataclass, fields, replace
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -65,6 +66,7 @@ from spicy_docs.schemas.tables import (
     AT_JOINED_KEY,
     FEDERAL_REGISTER_RECORD_KEY,
     VALUE_KEY,
+    bill_congress,
     bill_id,
     digest,
     joined,
@@ -2003,6 +2005,46 @@ def test_the_gpo_cleanup_record_reaches_the_version_row() -> None:
     expected_pages = [{name: getattr(page, name) for name in field_names} for page in record.pages]
     assert json.loads(row["cleanup_json"]) == expected_pages
     assert TABLE_CONTRACTS["bill_versions"].checked(row) is row
+
+
+def test_every_section_row_carries_the_congress_its_bill_id_names() -> None:
+    """``congress`` is a function of the identity, which stays as it was, so a row can live in one per-Congress file."""
+    if not engine_available():
+        pytest.skip("needs the 'bill-diff' extra: uv sync --extra bill-diff")
+    rows = [case.row for case in CASES if case.contract.name == "bill_sections"]
+    assert rows
+    assert [row["congress"] for row in rows] == [row["bill_id"][: row["bill_id"].index("-")] for row in rows]
+    assert TABLE_CONTRACTS["bill_sections"].identity == ("bill_id", "version_code", "source", "seq")
+
+
+@pytest.mark.parametrize(("bill", "congress"), [("99-hr-1", "99"), ("119-hr-1", "119"), ("1000-sjres-12", "1000")])
+def test_a_section_of_any_congress_carries_its_whole_prefix(bill: str, congress: str) -> None:
+    """The fixtures are all three-digit Congresses, where a fixed-width slice would pass as well."""
+    from spicy_docs.schemas.bill_version_tables import shape_bill_section
+
+    node = SimpleNamespace(
+        body_text="Sec. 1.",
+        match_path=("sec. 1",),
+        display_path=("Sec. 1",),
+        element_id="id1",
+        section_number="1",
+        header_text="Short title",
+        display_text="Sec. 1.",
+        division_label=None,
+        division_key=None,
+        body_index=0,
+    )
+    row = shape_bill_section(
+        node, bill_id=bill, version_code="introduced-in-house", source="govinfo", seq=0, version_date=None
+    )
+    assert (bill_congress(bill), row["congress"]) == (congress, congress)
+    assert TABLE_CONTRACTS["bill_sections"].checked(row) is row
+
+
+@pytest.mark.parametrize("key", ["", "119", "hr-1", "x119-hr-1", "١١٩-hr-1", "-hr-1"])
+def test_a_bill_key_that_names_no_congress_refuses(key: str) -> None:
+    with pytest.raises(TableContractError, match="does not begin with a Congress"):
+        bill_congress(key)
 
 
 @dataclass(frozen=True, slots=True)

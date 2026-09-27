@@ -420,6 +420,18 @@ def bill_id(identity: object) -> str:
     return natural_key(identity.congress, identity.bill_type, identity.number)
 
 
+def bill_congress(bill_key: str) -> str:
+    """The Congress a ``bill_id`` names, spelled as its prefix: ``119-hr-1`` gives ``119``.
+
+    The one derivation for a row that carries both, so a table stored one file per Congress holds each row in exactly
+    the file its key names. A key with no decimal prefix refuses rather than naming a file.
+    """
+    congress, separator, _rest = bill_key.partition("-")
+    if not separator or not congress.isascii() or not congress.isdecimal():
+        raise TableContractError(f"bill_id does not begin with a Congress: {bill_key!r}")
+    return congress
+
+
 #: Every dash a U.S. Code section is printed with: hyphen, non-breaking hyphen, figure dash, en dash, em dash,
 #: horizontal bar, minus sign, and the Windows-1252 en and em dash bytes a bad decode leaves as C1 controls.  The same
 #: nine characters RefSpec's section oracle folds (``usc_section_oracle._DASHES``).
@@ -460,6 +472,7 @@ __all__ = [
     "Row",
     "TableContract",
     "TableContractError",
+    "bill_congress",
     "bill_id",
     "digest",
     "flag",
