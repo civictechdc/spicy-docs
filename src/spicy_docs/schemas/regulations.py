@@ -59,8 +59,11 @@ def _extract_comment(d: dict) -> dict:
     }
 
 
-def _extract_document(d: dict) -> dict:
+def _extract_document(d: dict, *, attachment_relationship=None) -> dict:
     attrs = d.get("data", {}).get("attributes", {})
+    from spicy_docs.sources.regulations_gov.attachment_records import attachment_records_json
+
+    related = attachment_records_json(d, attachment_relationship)
 
     # Each fileFormats entry is one downloadable rendition of the document
     # (e.g. content.pdf), carrying its own URL, format, and byte size. Keep the
@@ -83,6 +86,7 @@ def _extract_document(d: dict) -> dict:
         "comment_end_date": attrs.get("commentEndDate"),
         "file_url": attachments[0]["url"] if attachments else None,
         "attachments_json": json_dumps(attachments) if attachments else None,
+        "attachment_records_json": related,
         "fr_doc_num": attrs.get("frDocNum"),
         "withdrawn": attrs.get("withdrawn"),
         "reason_withdrawn": attrs.get("reasonWithdrawn"),
@@ -135,6 +139,7 @@ DOCUMENT = RecordType(
         "comment_end_date": str,
         "file_url": str,
         "attachments_json": str,
+        "attachment_records_json": str,
         "fr_doc_num": str,
         "withdrawn": str,
         "reason_withdrawn": str,
@@ -239,6 +244,7 @@ DOCUMENTS = table_contract(
             "Every rendition the publisher lists, a JSON array of `url`, `format` and `size` objects in its order; "
             "NULL when it lists none."
         ),
+        "attachment_records_json": "Literal records from an explicitly read document attachment relationship; NULL means unread, [] means read empty. Restrictions and alternative file formats remain native.",
         "fr_doc_num": "The Federal Register document number the publisher states (`frDocNum`), often NULL.",
         "withdrawn": "The publisher's withdrawal flag, `true` or `false`; NULL when the record states none.",
         "reason_withdrawn": "The publisher's reason for a withdrawal, spelled as stated; NULL when it states none.",

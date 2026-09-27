@@ -1207,7 +1207,7 @@ def _published_regulations_rows() -> dict[str, list[dict[str, str | None]]]:
 
 
 def _regulations_cases() -> list[ShapedCase]:
-    """Retained published rows, with explicitly unread fields for an older comment schema.
+    """Retained published rows, with explicitly unread fields for older comment/document schemas.
 
     The host shapes these rows, not a ``shape_*`` here, so the published row is the one under test: the round-trip
     loop retains the selected identity. New comment fields were not retained
@@ -1224,10 +1224,14 @@ def _regulations_cases() -> list[ShapedCase]:
             "comment_reference_values_json",
         }
         assert set(TABLE_CONTRACTS["comments"].columns) - set(row) == new_fields
+    for row in published["documents"]:
+        assert set(TABLE_CONTRACTS["documents"].columns) - set(row) == {"attachment_records_json"}
     return [
         _case(
             table,
-            {column: row.get(column) for column in TABLE_CONTRACTS[table].columns} if table == "comments" else row,
+            {column: row.get(column) for column in TABLE_CONTRACTS[table].columns}
+            if table in {"comments", "documents"}
+            else row,
             (identity,),
         )
         for table, identities in _PUBLISHED_REGULATIONS_IDS.items()
@@ -1571,7 +1575,12 @@ def test_the_published_document_row_is_the_extract_of_its_captured_record() -> N
     (published,) = (
         row for row in _published_regulations_rows()["documents"] if row["document_id"] == "FAA-2016-6907-0001"
     )
-    assert {column: published[column] for column in extracted} == extracted
+    assert extracted.keys() - published.keys() == {"attachment_records_json"}
+    assert extracted["attachment_records_json"] is None  # No related response was read.
+    retained_columns = extracted.keys() & published.keys()
+    assert {column: published[column] for column in retained_columns} == {
+        column: extracted[column] for column in retained_columns
+    }
     assert published.keys() - extracted.keys() == {"pdf_extraction_results_json"}
     assert published["pdf_extraction_results_json"] is None
 

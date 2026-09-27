@@ -386,6 +386,8 @@ def read_attachment_relationship(capture: CapturedBodyResponse, *, identity: str
     value = load_decimal_json(capture.body, source="Regulations.gov API", error_type=RegulationsGovApiError)
     if not isinstance(value, Mapping):
         raise RegulationsGovApiError("Regulations.gov attachments response is not a JSON object")
+    if "meta" in value or (isinstance(value.get("links"), Mapping) and value["links"].get("next") is not None):
+        raise RegulationsGovApiError("Attachments response is not a qualified unpaged relationship")
     rows = value.get(ATTACHMENTS_KEY)
     if not isinstance(rows, list) or not all(isinstance(row, Mapping) for row in rows):
         raise RegulationsGovApiError("Regulations.gov attachments response omitted its data list")

@@ -1,7 +1,7 @@
 """Bounded candidates from the visually reviewed Senate B payment-grid layout.
 
 Header cell geometry assigns columns; native word positions assign lines. Only
-page-local, explicitly printed office context is used. Unpriced continuation
+explicitly printed office context or a digest-pinned reviewed section is used. Unpriced continuation
 text, summaries, negative payment lines and unfamiliar layouts are retained as
 refusals. Candidates are not a complete statement or publication qualification.
 """
@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Sequence
+from dataclasses import asdict, dataclass
 from datetime import date
 from decimal import Decimal
 from itertools import pairwise
@@ -18,7 +19,7 @@ from typing import Any
 from spicy_docs.reading.senate_payment_review import review_pages
 from spicy_docs.schemas.senate_expenditure_tables import parse_amount
 
-RULE = "senate-b-payment-candidates/1"
+RULE = "senate-b-payment-candidates/2"
 MAX_BYTES = 16 * 1024 * 1024
 MAX_PAGES = 8
 MAX_WORDS_PER_PAGE = 5_000
@@ -34,6 +35,55 @@ HEADERS = {
 }
 FIELDS = ("document", "date_posted", "payee", "service_start", "service_end", "description", "amount")
 DOCUMENT = re.compile(r"DJST[0-9]{8}\Z")  # Positive native document family in the reviewed grid.
+
+
+@dataclass(frozen=True)
+class ReviewedOfficeSection:
+    """Human-reviewed contiguous PDF section, including its next printed boundary.
+
+    Page numbers refer to the exact retained input, not its printed B labels.
+    The digest binds the review to those bytes; the parser checks native headings
+    and continuity again and never carries document/payee groups across pages.
+    """
+
+    input_sha256: str
+    first_page: int
+    last_page: int
+    boundary_page: int
+    office: str
+    funding_year: str
+
+
+def _validate_section(capture, pages, section):
+    if (
+        capture["input_sha256"] != section.input_sha256
+        or section.boundary_page != section.last_page + 1
+        or section.first_page > section.last_page
+        or list(pages) != list(range(section.first_page, section.boundary_page + 1))
+    ):
+        raise ValueError("Reviewed office section needs matching bytes and contiguous pages through its boundary")
+    origin = capture["pages"][str(section.first_page)]["context"]
+    boundary = capture["pages"][str(section.boundary_page)]["context"]
+    if (
+        origin["office"] != section.office
+        or origin["funding_year"] != section.funding_year
+        or "INTERN" in section.office.upper()
+        or not boundary["office"]
+        or (boundary["office"], boundary["funding_year"]) == (section.office, section.funding_year)
+    ):
+        raise ValueError("Reviewed office section lacks its native origin or distinct next boundary")
+    first_label = origin["printed_page"] or ""
+    if not re.fullmatch(r"B-[0-9]+", first_label):
+        raise ValueError("Reviewed section requires printed B-page continuity")
+    first_number = int(first_label[2:])
+    for number in pages:
+        context = capture["pages"][str(number)]["context"]
+        if context["printed_page"] != f"B-{first_number + number - section.first_page}":
+            raise ValueError("Reviewed section printed pages are not contiguous")
+        if section.first_page < number <= section.last_page and (
+            context["office"] or context["section_heading"] or context["funding_year"]
+        ):
+            raise ValueError("Reviewed office section crosses a new native heading")
 
 
 def _date(value: str) -> date | None:
@@ -70,8 +120,14 @@ def _header(table: Any) -> tuple[dict, float] | None:
     return None
 
 
-def payment_candidates(body: bytes, *, pages: Sequence[int], source_page_offset: int = 0) -> dict[str, Any]:
-    """Read selected retained pages, never fetch or silently carry context across pages.
+def payment_candidates(
+    body: bytes,
+    *,
+    pages: Sequence[int],
+    source_page_offset: int = 0,
+    reviewed_section: ReviewedOfficeSection | None = None,
+) -> dict[str, Any]:
+    """Read retained pages; office carry requires an explicit reviewed section.
 
     ``source_page_offset`` is explicit cut-file provenance checked by the caller.
     Output retains the raw review capture, candidate fields, source word indices,
@@ -90,6 +146,8 @@ def payment_candidates(body: bytes, *, pages: Sequence[int], source_page_offset:
             if len(document[number - 1].get_text("words")) > MAX_WORDS_PER_PAGE:
                 raise ValueError("Candidate page exceeds the native word bound")
     capture = review_pages(body, pages=pages, source_page_offset=source_page_offset)
+    if reviewed_section is not None:
+        _validate_section(capture, pages, reviewed_section)
     result: dict[str, Any] = {
         "rule": RULE,
         "input_sha256": capture["input_sha256"],
@@ -98,7 +156,9 @@ def payment_candidates(body: bytes, *, pages: Sequence[int], source_page_offset:
         "refusals": [],
         "pages": [],
         "publication_qualified": False,
+        "reviewed_office_section": asdict(reviewed_section) if reviewed_section is not None else None,
     }
+    carried_office = None
     with pymupdf.open(stream=body, filetype="pdf") as document:
         for number in pages:
             page = capture["pages"][str(number)]
@@ -110,33 +170,54 @@ def payment_candidates(body: bytes, *, pages: Sequence[int], source_page_offset:
             def refuse(reason, _provenance=provenance, **detail):
                 result["refusals"].append({**_provenance, "reason": reason, **detail})
 
+            if reviewed_section is not None and number == reviewed_section.boundary_page:
+                carried_office = None
+                refuse("reviewed_section_boundary")
+                result["pages"].append({**provenance, "status": "section_boundary", "candidates": 0})
+                continue
             if page["rotation"] != 90 or not str(context["printed_page"] or "").startswith("B-"):
+                carried_office = None
                 refuse("unsupported_layout")
                 result["pages"].append({**provenance, "status": "unsupported_layout", "candidates": 0})
                 continue
-            if not context["office"]:
+            if not context["office"] and carried_office is None:
                 refuse("office_not_stated_on_page", word_indices=list(range(len(page["words"]))))
                 result["pages"].append({**provenance, "status": "unqualified_office_context", "candidates": 0})
                 continue
             native = document[number - 1]
             grids = [(table, header) for table in native.find_tables().tables if (header := _header(table))]
             if len(grids) != 1:
+                carried_office = None
                 refuse("missing_or_ambiguous_payment_header")
                 result["pages"].append({**provenance, "status": "unsupported_header", "candidates": 0})
                 continue
             table, (bands, top) = grids[0]
-            office_words = context["office"].split()
-            office_spans = [
-                list(range(i, i + len(office_words)))
-                for i in range(len(page["words"]))
-                if [w["text"] for w in page["words"][i : i + len(office_words)]] == office_words
-            ]
-            if len(office_spans) != 1 or any(
-                (pymupdf.Rect(page["words"][i]["bbox"]) * native.rotation_matrix).y1 >= top for i in office_spans[0]
-            ):
-                refuse("office_origin_not_uniquely_above_header")
-                result["pages"].append({**provenance, "status": "unqualified_office_context", "candidates": 0})
-                continue
+            if context["office"]:
+                carried_office = None
+                office_words = context["office"].split()
+                office_spans = [
+                    list(range(i, i + len(office_words)))
+                    for i in range(len(page["words"]))
+                    if [w["text"] for w in page["words"][i : i + len(office_words)]] == office_words
+                ]
+                if len(office_spans) != 1 or any(
+                    (pymupdf.Rect(page["words"][i]["bbox"]) * native.rotation_matrix).y1 >= top for i in office_spans[0]
+                ):
+                    refuse("office_origin_not_uniquely_above_header")
+                    result["pages"].append({**provenance, "status": "unqualified_office_context", "candidates": 0})
+                    continue
+                office = {
+                    "office": context["office"],
+                    "office_origin_page": page["source_page"],
+                    "office_origin_printed_page": context["printed_page"],
+                    "office_word_indices": office_spans[0],
+                    "office_context_basis": "printed_on_page",
+                }
+                if reviewed_section is not None and number == reviewed_section.first_page:
+                    carried_office = office
+            else:
+                assert carried_office is not None
+                office = {**carried_office, "office_context_basis": "reviewed_contiguous_section"}
             words = []
             outside = []
             for index, word in enumerate(page["words"]):
@@ -226,9 +307,7 @@ def payment_candidates(body: bytes, *, pages: Sequence[int], source_page_offset:
                     "line_ordinal": ordinal,
                     "description": values["description"],
                     "amount": format(amount, ".2f"),
-                    "office": context["office"],
-                    "office_origin_page": page["source_page"],
-                    "office_word_indices": office_spans[0],
+                    **office,
                     **provenance,
                     "input_sha256": capture["input_sha256"],
                     "rule": RULE,

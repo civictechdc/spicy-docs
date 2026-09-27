@@ -654,3 +654,57 @@ def test_an_absent_docket_and_an_invalid_docket_id_are_different_answers():
         source.docket("GIPSA-2010-FGIS-0002-RULEMAKING")
     assert not isinstance(refused.value, RegulationsGovApiUnavailableError)
     assert refused.value.capture.status_code == 400 and b"Invalid ID" in refused.value.capture.body
+
+
+def test_native_attachment_records_preserve_restrictions_and_content():
+    from spicy_docs.schemas.regulations import _extract_document
+
+    native = json.loads(DETAIL)
+    before = _extract_document(native)
+    with RegulationsGovApiReader(budget=BUDGET, api_key=KEY, transport=Transport(item_response(ATTACHMENTS))) as source:
+        relationship = source.attachments(DOCUMENT)
+    after = _extract_document(native, attachment_relationship=relationship)
+    assert after["attachments_json"] == before["attachments_json"]
+    assert before["attachment_records_json"] is None
+    assert json.loads(after["attachment_records_json"]) == json.loads(ATTACHMENTS)["data"]
+    assert json.loads(after["attachment_records_json"])[1]["attributes"]["fileFormats"] is None
+    with pytest.raises(ValueError, match="different document"):
+        _extract_document({"data": {"id": "OTHER"}}, attachment_relationship=relationship)
+
+
+def test_synthetic_explicit_empty_attachment_response_differs_from_unread():
+    from spicy_docs.schemas.regulations import _extract_document
+
+    with RegulationsGovApiReader(
+        budget=BUDGET, api_key=KEY, transport=Transport(item_response(b'{"data":[]}'))
+    ) as source:
+        relationship = source.attachments(DOCUMENT)
+    assert (
+        _extract_document(json.loads(DETAIL), attachment_relationship=relationship)["attachment_records_json"] == "[]"
+    )
+    assert _extract_document(json.loads(DETAIL))["attachment_records_json"] is None
+
+
+@pytest.mark.parametrize("extra", [{"meta": {"hasNextPage": True}}, {"links": {"next": "https://example.gov/next"}}])
+def test_synthetic_partial_attachment_response_cannot_be_read_empty(extra):
+    body = json.dumps({"data": [], **extra}).encode()
+    with (
+        RegulationsGovApiReader(budget=BUDGET, api_key=KEY, transport=Transport(item_response(body))) as source,
+        pytest.raises(RegulationsGovApiError, match="unpaged"),
+    ):
+        source.attachments(DOCUMENT)
+
+
+def test_attachment_capture_cannot_be_relabelled_or_refused():
+    from dataclasses import replace
+
+    from spicy_docs.schemas.regulations import _extract_document
+
+    with RegulationsGovApiReader(budget=BUDGET, api_key=KEY, transport=Transport(item_response(ATTACHMENTS))) as source:
+        relationship = source.attachments(DOCUMENT)
+    for changed in [
+        replace(relationship, document_id="OTHER"),
+        replace(relationship, capture=replace(relationship.capture, status_code=403)),
+    ]:
+        with pytest.raises(ValueError, match="successful response"):
+            _extract_document({"data": {"id": changed.document_id}}, attachment_relationship=changed)

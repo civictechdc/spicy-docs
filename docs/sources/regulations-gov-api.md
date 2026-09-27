@@ -148,6 +148,17 @@ And an attachment can exist with `fileFormats: null` and a
 attachment. `declared_files()` returns one entry per rendition and an empty
 tuple for the withheld case, so both stay visible.
 
+Flat document rows keep the main document's `fileFormats` in the compatibility
+field `attachments_json`. Separate attachment resources belong in
+`attachment_records_json`. Supply an explicitly read `AttachmentRelationship`
+to `DOCUMENT.extract(payload, attachment_relationship=relationship)` to retain
+those records. The helper verifies successful response bytes and the document
+identity in both request and resolved URLs; partial responses refuse.
+The caller must separately establish that the detail and attachment response
+belong to its selected source edition. Without that relationship read the new
+field stays NULL. A validated empty read yields `[]`; restricted records remain
+present even when they offer no files. This shaping step performs no acquisition.
+
 ## Use the routes
 
 Install the `acquisition` extra. Read the key with `read_api_key`; the variable
