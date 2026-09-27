@@ -2657,3 +2657,38 @@ decision 41 it always does, carrying its own `tool`. Rows spicy-regs filled
 before adopting this keep their text until it refills them. Its
 `sources/derived_text.py` docstring, which says one tool per comment, is
 spicy-regs' to update.
+
+## A composite identity is spelled `at-joined/1`
+
+2026-09-27, requested by DocSpec's owner (spicy-stack-f5), within the spelling
+authority DocSpec ruling R6 left to this package. It replaces the plan the
+member-key decision above stated for composites, the ordered canonical JSON
+array of their components. No contract had declared that spelling, so nothing
+re-keys.
+
+`at-joined/1` joins an identity's components in contract order with `@`. A
+component that is empty or holds `@` is refused, not escaped, so splitting the
+key on `@` always recovers the components. It needs two or more components; a
+single column is `value/1`.
+
+**Why not JSON.** DocSpec compiles every declared spelling to SQL once and
+tests it against the Python reference, byte for byte. A join on a forbidden
+separator compiles with no escaping rules. Canonical JSON would have to
+reproduce the encoder's separators, key order and escaping of every string in
+SQL, which is many chances for a mismatch that only a rare value reveals. The
+refusal costs nothing where a component's grammar already excludes `@`, and a
+contract declares the spelling only there.
+
+**Declared on:**
+- `bill_sections`, over `bill_id`, `version_code`, `source`, `seq`: a
+  congress-type-number id, a publisher printing code, a fixed source vocabulary
+  and a decimal ordinal;
+- `fec_committee_history`, over `committee_id`, `cycle`: `C` plus eight digits,
+  and a four-digit year.
+
+None of the 2,659,863 live `bill_sections` rows or 298,395
+`fec_committee_history` rows had an empty or `@`-holding component on
+2026-09-27.
+
+`federal-register-source-record-id/1` keeps its sealed name. For its two
+components it yields the same bytes as `at-joined/1`.

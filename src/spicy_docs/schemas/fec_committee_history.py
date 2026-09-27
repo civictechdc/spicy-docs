@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
-from spicy_docs.schemas.tables import table_contract
+from spicy_docs.schemas.tables import AT_JOINED_KEY, table_contract
 from spicy_docs.sources.fec.committee_master import COMMITTEE_MASTER_FIELDS
 
 #: Each published column after ``committee_id`` and ``cycle``, and the header field it copies.
@@ -45,6 +45,9 @@ FEC_COMMITTEE_HISTORY = table_contract(
     "fec_committee_history",
     grain="One row per FEC committee per two-year cycle, as that cycle's bulk committee master states it.",
     identity=("committee_id", "cycle"),
+    # No component can hold "@": committee_id is C plus eight digits and cycle a four-digit year (none of 298,395 live
+    # rows has one; 2026-09-27).
+    key_spelling=AT_JOINED_KEY,
     version_column=None,
     columns={
         "committee_id": "The FEC committee id (`CMTE_ID`).",

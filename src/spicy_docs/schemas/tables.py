@@ -171,14 +171,34 @@ def federal_register_record_key(parts: tuple[str, ...]) -> str:
     return f"{parts[0]}@{parts[1]}"
 
 
+#: The reusable composite spelling: the identity's components in contract order, joined by ``@``. It is reversible
+#: because no component may be empty or hold ``@``, which the spelling refuses per row rather than escaping. A contract
+#: declares it only for an identity whose components can never hold ``@`` by their grammar, and says why.
+AT_JOINED_KEY = "at-joined/1"
+
+
+def at_joined_key(parts: tuple[str, ...]) -> str:
+    """The ``at-joined/1`` spelling: two or more non-empty components joined by ``@``, reversible by splitting on it.
+
+    ``federal-register-source-record-id/1`` yields the same bytes for its two components and keeps its sealed name.
+    """
+    if len(parts) < 2:
+        raise TableContractError(f"{AT_JOINED_KEY} spells a composite identity, not {len(parts)} column(s)")
+    for part in parts:
+        if not part:
+            raise TableContractError(f"{AT_JOINED_KEY} refuses an empty identity component")
+        if "@" in part:
+            raise TableContractError(f"{AT_JOINED_KEY} refuses a component holding '@': {part!r}")
+    return "@".join(parts)
+
+
 #: Every member-key spelling a contract can declare, by ``name/version``, with its Python reference.  DocSpec compiles
 #: a declared spelling to SQL, tests it against the reference, and puts the spelling in every admitted state's identity
 #: (its decision 0007 §6), so an entry never changes: a new rule is a new ``name/version`` and an explicit re-key.  A
-#: composite identity declares none until one is needed (ruling R6); a new one spells the ordered canonical JSON array
-#: of its components, under its own versioned name. ``federal-register-source-record-id/1`` is the exception R6 leaves room for:
-#: it keeps the spelling DocSpec already sealed, so no admitted identity moves.
+#: composite identity declares none until one is needed (ruling R6), and then ``at-joined/1``.
+#: ``federal-register-source-record-id/1`` keeps the spelling DocSpec already sealed, so no admitted identity moves.
 KEY_SPELLINGS: Mapping[str, Callable[[tuple[str, ...]], str]] = MappingProxyType(
-    {VALUE_KEY: value_key, FEDERAL_REGISTER_RECORD_KEY: federal_register_record_key}
+    {VALUE_KEY: value_key, FEDERAL_REGISTER_RECORD_KEY: federal_register_record_key, AT_JOINED_KEY: at_joined_key}
 )
 
 
@@ -269,6 +289,8 @@ class TableContract:
                 raise TableContractError(f"{self.name}: unknown key spelling {self.key_spelling!r}")
             if self.key_spelling == VALUE_KEY and len(self.identity) != 1:
                 raise TableContractError(f"{self.name}: {VALUE_KEY} spells a one-column identity")
+            if self.key_spelling == AT_JOINED_KEY and len(self.identity) < 2:
+                raise TableContractError(f"{self.name}: {AT_JOINED_KEY} spells a composite identity")
         for reference in self.references:
             missing = [column for column in reference.child_columns if column not in seen]
             if missing:
@@ -420,6 +442,7 @@ def usc_section_key(section: object) -> str | None:
 
 
 __all__ = [
+    "AT_JOINED_KEY",
     "BIGINT",
     "BOOLEAN",
     "COLUMN_TYPES",

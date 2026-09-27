@@ -187,9 +187,13 @@ DocSpec admits a generation by reference only on a member-key spelling this
 package declares (its decision 0007, ruling R6). `TableContract.key_spelling`
 names an entry of `schemas.tables.KEY_SPELLINGS`, and `spelled_key(row)` is the
 Python reference DocSpec tests its compiled SQL against. Every contract with a
-one-column identity declares `value/1`, the value itself; a composite declares
-none until its spelling is decided. An entry never changes: a new rule gets a
-new `name/version`, and adopting it is an explicit re-key.
+one-column identity declares `value/1`, the value itself. A composite declares
+none until it needs one. Then it declares `at-joined/1`: its components in
+contract order, joined by `@`, refused if any is empty or holds `@`. That is
+declared today on `bill_sections` and `fec_committee_history`. The Federal
+Register keeps its sealed `federal-register-source-record-id/1`, which is the
+same bytes. An entry never changes: a new rule gets a new `name/version`, and
+adopting it is an explicit re-key.
 
 ### What the key measurement can and cannot see
 

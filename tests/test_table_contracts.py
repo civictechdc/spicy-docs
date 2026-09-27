@@ -62,6 +62,7 @@ from spicy_docs.schemas.cost_estimate_tables import (
 from spicy_docs.schemas.legislator_tables import shape_member, shape_member_term
 from spicy_docs.schemas.regulations import DOCUMENT, RECORD_TYPES
 from spicy_docs.schemas.tables import (
+    AT_JOINED_KEY,
     FEDERAL_REGISTER_RECORD_KEY,
     VALUE_KEY,
     bill_id,
@@ -1339,6 +1340,30 @@ def test_a_contract_that_names_a_column_it_does_not_have_refuses() -> None:
         table_contract("Broken", grain="x.", identity=("a",), version_column=None, columns={"a": "A column."})
 
 
+def test_at_joined_spells_a_composite_reversibly_and_refuses_what_it_cannot() -> None:
+    from spicy_docs.schemas.tables import at_joined_key, federal_register_record_key
+
+    assert at_joined_key(("119-hr-1", "ih", "govinfo", "3")) == "119-hr-1@ih@govinfo@3"
+    # The Register's sealed spelling is the same bytes for its two components.
+    assert at_joined_key(("00-111", "2000-01-18")) == federal_register_record_key(("00-111", "2000-01-18"))
+    for parts, refusal in (
+        (("only",), "composite identity"),
+        (("a", ""), "empty identity component"),
+        (("a@b", "c"), "holding '@'"),
+        (("a", "b@"), "holding '@'"),
+    ):
+        with pytest.raises(TableContractError, match=refusal):
+            at_joined_key(parts)
+    with pytest.raises(TableContractError, match="spells a composite identity"):
+        table_contract(
+            "broken", grain="x.", identity=("a",), version_column=None, columns={"a": "A."}, key_spelling=AT_JOINED_KEY
+        )
+    row = dict.fromkeys(TABLE_CONTRACTS["fec_committee_history"].columns)
+    row.update(committee_id="C00@1", cycle="2024")
+    with pytest.raises(TableContractError, match="holding '@'"):
+        TABLE_CONTRACTS["fec_committee_history"].spelled_key(row)
+
+
 def test_a_key_spelling_refuses_what_it_cannot_spell() -> None:
     """``value/1`` spells one non-empty component; anything else refuses, at construction or per row."""
     two = {"a": "A column.", "b": "B column."}
@@ -1368,10 +1393,15 @@ def test_a_single_column_identity_declares_value_1_and_a_composite_declares_none
     """DocSpec keys an admitted table only on a spelling this package declares (its decision 0007, ruling R6).
 
     A one-column identity is spelled as its value. A composite waits for a declared spelling, because one DocSpec
-    chose would flip every occurrence and Engine id when this package later declared its own. The one composite that
-    declares one keeps the spelling DocSpec's decision 0003 already sealed for the Federal Register, so nothing flips.
+    chose would flip every occurrence and Engine id when this package later declared its own. The Federal Register keeps
+    the spelling DocSpec's decision 0003 already sealed; a composite whose components can never hold ``@`` declares
+    ``at-joined/1``, and each such declaration is listed here by name.
     """
-    declared = {"federal_register": FEDERAL_REGISTER_RECORD_KEY}
+    declared = {
+        "federal_register": FEDERAL_REGISTER_RECORD_KEY,
+        "bill_sections": AT_JOINED_KEY,
+        "fec_committee_history": AT_JOINED_KEY,
+    }
     expected = VALUE_KEY if len(contract.identity) == 1 else declared.get(contract.name)
     assert contract.key_spelling == expected
 
@@ -1392,6 +1422,10 @@ def test_every_shaped_row_round_trips_through_its_column_tuple(case: ShapedCase)
     if contract.key_spelling == VALUE_KEY:
         # The member key DocSpec would admit is the rebuilt identity itself, byte for byte.
         assert contract.spelled_key(row) == case.identity[0]
+    if contract.key_spelling == AT_JOINED_KEY:
+        # The composite key is the rebuilt identity joined by "@", and splitting on "@" recovers it exactly.
+        assert contract.spelled_key(row) == "@".join(case.identity)
+        assert tuple(contract.spelled_key(row).split("@")) == case.identity
     # Every *_json column reads back as JSON (json.loads raises otherwise), and
     # the ones this case names read back as the record's own value.
     for column, value in row.items():
