@@ -47,3 +47,31 @@ def test_explicit_same_congress_keeps_inline_provenance_and_absence_never_uses_c
     assert find_citations("transportation and infrastructure funding", bill_congress_policy="explicit_only") == ()
     with pytest.raises(CitationError, match="bill_congress_policy"):
         find_citations("H.R. 1", bill_congress_policy="guess_current")
+
+
+def test_same_native_key_and_occurrence_in_different_source_kinds_remain_distinct():
+    """A host keyed merge must not silently replace a different source family."""
+    from dataclasses import replace
+
+    from spicy_docs.schemas.document_citation_tables import (
+        DOCUMENT_CITATIONS,
+        DocumentProvenance,
+        shape_document_citation,
+    )
+    from spicy_docs.schemas.tables import digest
+
+    text = "H.R. 1 (119th Congress)"
+    (finding,) = find_citations(text, kinds=("bill_number",))
+    provenance = DocumentProvenance("shared-key", "govinfo_package", "txt", "literal", digest(text))
+    first = shape_document_citation(finding, provenance)
+    second = shape_document_citation(finding, replace(provenance, document_kind="comment_inline"))
+    assert {key: value for key, value in first.items() if key != "document_kind"} == {
+        key: value for key, value in second.items() if key != "document_kind"
+    }
+    keyed = {DOCUMENT_CITATIONS.key(row): row for row in (first, second)}
+    assert len(keyed) == 2
+    newer = {**first, "rule_version": "999"}
+    keyed[DOCUMENT_CITATIONS.key(newer)] = newer
+    assert len(keyed) == 2
+    assert keyed[DOCUMENT_CITATIONS.key(second)] == second
+    assert keyed[DOCUMENT_CITATIONS.key(first)]["rule_version"] == "999"

@@ -890,7 +890,14 @@ def _document_citation_cases() -> list[ShapedCase]:
                     row,
                     # Rebuilt from the finding and the fixture's own text,
                     # never read back out of the row.
-                    (package, _text_digest(package), finding.kind, finding.target_key, str(finding.span_start)),
+                    (
+                        "govinfo_package",
+                        package,
+                        _text_digest(package),
+                        finding.kind,
+                        finding.target_key,
+                        str(finding.span_start),
+                    ),
                 )
             )
         cases.extend(_bill_committee_action_cases(package, findings))
@@ -968,7 +975,7 @@ def _budget_volume_cases() -> list[ShapedCase]:
                     "document_citations",
                     row,
                     # Rebuilt from the finding and the fixture's own text.
-                    (package, digested, finding.kind, finding.target_key, str(finding.span_start)),
+                    ("budget_volume", package, digested, finding.kind, finding.target_key, str(finding.span_start)),
                 )
             )
     return cases

@@ -38,7 +38,7 @@ DOCUMENT_CITATIONS = table_contract(
         "One row per occurrence of one cited key in one document's text: the key, the exact text that named it, "
         "and the character span it was read at."
     ),
-    identity=("document_key", "text_sha256", "cite_kind", "target_key", "span_start"),
+    identity=("document_kind", "document_key", "text_sha256", "cite_kind", "target_key", "span_start"),
     version_column="rule_version",
     columns={
         "document_key": (
