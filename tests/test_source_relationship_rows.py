@@ -180,3 +180,24 @@ def test_declared_relationships_include_source_part_and_meeting_scope() -> None:
             other = dict(right, **{parent[-1]: "different"})
             assert tuple(left[c] for c in child) == tuple(right[p] for p in parent)
             assert tuple(left[c] for c in child) != tuple(other[p] for p in parent)
+
+
+def test_retained_positive_withdrawal_date_preserves_native_occurrence():
+    body = (FIXTURES / "govinfo_bills/status-119s1224-withdrawal.xml").read_bytes()
+    receipt = json.loads((FIXTURES / "govinfo_bills/status-119s1224-withdrawal.provenance.json").read_text())
+    assert "sha256:" + hashlib.sha256(body).hexdigest() == receipt["sha256"]
+    status = parse_bill_status(body, identity=BillIdentity(119, "s", 1224))
+    native = ET.fromstring(body).findall("bill/cosponsors/item")
+    assert len(status.cosponsors) == len(native)
+    withdrawals = []
+    for ordinal, item in enumerate(native):
+        if item.findtext("sponsorshipWithdrawnDate"):
+            row = BILL_COSPONSORS.checked(shape_bill_cosponsor(status, cosponsor_index=ordinal))
+            assert row["sponsorship_withdrawn_date"] == item.findtext("sponsorshipWithdrawnDate")
+            assert row["sponsorship_withdrawn_date_status"] == "valid"
+            withdrawals.append(row)
+    assert len(withdrawals) == 1
+    assert withdrawals[0]["bioguide_id"] == "C001047"
+    assert withdrawals[0]["sponsorship_date"] == "2026-03-18"
+    assert withdrawals[0]["sponsorship_withdrawn_date"] == "2026-03-19"
+    assert withdrawals[0]["is_original_raw"] == "False"

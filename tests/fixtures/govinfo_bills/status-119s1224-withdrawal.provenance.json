@@ -1,0 +1,19 @@
+{
+  "archive": {
+    "byte_size": 13097635,
+    "content_encoding": "identity",
+    "content_type": "application/zip",
+    "event": "capture",
+    "method": "GET",
+    "observed_at": "2026-09-27T02:24:54.896506+00:00",
+    "recorded_at": "2026-09-27T02:24:56.811977+00:00",
+    "request_body": null,
+    "requested_url": "https://www.govinfo.gov/bulkdata/BILLSTATUS/119/s/BILLSTATUS-119-s.zip",
+    "resolved_url": "https://www.govinfo.gov/bulkdata/BILLSTATUS/119/s/BILLSTATUS-119-s.zip",
+    "sha256": "sha256:617db907fb14e02d46090a292b6f1cb830deaf3d60a7b9ed1cd814c3ad655412",
+    "stage": "bill-status-bulk",
+    "status_code": 200
+  },
+  "member": "BILLSTATUS-119s1224.xml",
+  "sha256": "sha256:aaff5126fcaf8a4f9c98b5424607afbfd02117d8069b03577ce904f5d79f31ac"
+}

@@ -437,7 +437,7 @@ BILL_COSPONSORS = table_contract(
         "sponsorship_date": "Literal sponsorshipDate; absent is NULL and present empty is an empty string.",
         "sponsorship_date_status": "Calendar spelling status: absent, empty, valid or invalid.",
         "is_original_raw": "Literal isOriginalCosponsor text, without Boolean coercion.",
-        "sponsorship_withdrawn_date": "Literal sponsorshipWithdrawnDate; positive native-date qualification is pending.",
+        "sponsorship_withdrawn_date": "Literal sponsorshipWithdrawnDate; retained BILLSTATUS source observations include positive dates.",
         "sponsorship_withdrawn_date_status": "Calendar spelling status, not confirmation of a withdrawal event.",
         "party": "Party as the cosponsor entry states it.",
         "state": "State as the cosponsor entry states it.",

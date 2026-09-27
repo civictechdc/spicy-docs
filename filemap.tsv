@@ -582,7 +582,9 @@ tests/test_legislative_data_map_tool.py	The legislative data map tool: table ren
 tests/test_legislators.py	Community legislators crosswalk: shape rules, indexes, bounds and mocked acquisition.	test
 tests/test_markup_events.py	Markup reading: source text, byte spans, callback independence and refusal bounds.	test
 tests/test_mirrulations_reader.py	MirrulationsReader over a fake in-memory S3 resource.	test
+tests/test_native_diff_navigation.py	Retained printings qualify navigation of additions, removals and renumbered moves.	test
 tests/test_native_reference_rows.py	Retained XML fragments projected without inventing edition or target identity.	test
+tests/test_native_vote_relationships.py	Native positive amendment/treaty blocks stay independent and publisher-spelled.	test
 tests/test_observation_census.py	Fixture coverage for the ``tools/analysis/observation_census.py`` receipt helper.	test
 tests/test_optional_dependencies.py	Core operations and setup failures with optional imports unavailable.	test
 tests/test_paged_json.py	The shared paged-JSON reader: exact page capture, credential handling, traversal refusals and pooled walks.	test
