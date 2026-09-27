@@ -92,6 +92,13 @@ def test_docket_and_document_acquisition_policies_declare_the_newest_observation
         "groupBy": "/data/id",
         "orderBy": "coalesce(/data/attributes/modifyDate, /data/attributes/postedDate) DESC NULLS LAST",
         "tieDisposition": "refuse-differing-record-digest-at-normalized-instant",
+        # Policy 1.3 (2026-09-27): the latest write by listed LastModified, else a stable content choice.
+        "volatileTie": {
+            "fields": ["openForComment", "withinCommentPeriod"],
+            "select": "newest-listed-s3-last-modified-when-no-other-is-within-margin",
+            "marginSeconds": 3600,
+            "otherwise": "smallest-record-digest-among-writes-within-margin-of-newest-not-asserted-latest",
+        },
     }
 
     docket_selection = docket_acquisition_policy(_docket_scope())["observationSelection"]

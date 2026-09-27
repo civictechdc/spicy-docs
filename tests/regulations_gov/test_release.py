@@ -135,7 +135,7 @@ def test_document_json_renditions_survive_publication_and_retained_replay(tmp_pa
         "application/octet-stream",
     ]
     assert rows["included[0].attributes.fileFormats[0]"]["mediaType"] == "application/json"
-    assert reader.collection_outcome["acquisitionPolicyVersion"] == "1.2"
+    assert reader.collection_outcome["acquisitionPolicyVersion"] == "1.3"
     assert (
         reader.collection_outcome["acquisitionPolicy"]["renditions"]["mediaType"]["aliases"]["json"]
         == "application/json"
@@ -163,4 +163,27 @@ def test_document_admission_refuses_the_prior_media_type_policy(tmp_path: Path) 
         destination=tmp_path / "documents",
     )
     with pytest.raises(SourceNativeReleaseError, match="requires current .* policy version"):
+        _reader(published.root, published.artifact.pin, REGULATIONS_GOV_DOCUMENT_PROFILE)
+
+
+def test_document_admission_refuses_the_last_listed_tie_policy(tmp_path: Path) -> None:
+    """Document policy 1.2 published a volatile tie's last-listed object; 1.3 publishes its latest write. A 1.2
+    release's selection must never read as 1.3's, so the current reader refuses it (replay it with SpicyDocs 0.44.0).
+    """
+    assert REGULATIONS_GOV_DOCUMENT_PROFILE.acquisition_policy_version == "1.3"
+    assert REGULATIONS_GOV_DOCKET_PROFILE.acquisition_policy_version == "1.2"
+    old_profile = replace(REGULATIONS_GOV_DOCUMENT_PROFILE, acquisition_policy_version="1.2")
+    published = SourceNativeReleasePublisher(
+        old_profile,
+        blob_store=LocalSourceNativeBlobStore(tmp_path / "blobs"),
+        clock=_completed_at,
+    ).publish(
+        iter_regulations_gov_document_pages(
+            lambda _agency: _Reader([_document_object()]),
+            query_scope=_document_scope(),
+        ),
+        build=_build(_document_scope()),
+        destination=tmp_path / "documents",
+    )
+    with pytest.raises(SourceNativeReleaseError, match="requires current .* policy version '1.3'; got '1.2'"):
         _reader(published.root, published.artifact.pin, REGULATIONS_GOV_DOCUMENT_PROFILE)

@@ -2559,3 +2559,101 @@ emits no rows: a caller reading bodies in bulk passes the newly read printings,
 the held neighbours they are compared with, and the rest as placeholders. A
 plain-language summary needs the bill's title, stage and money-bill kind, not its
 status document, so it reads them from the bill's published `congress_bills` row.
+
+## A volatile document tie goes to the latest write
+
+2026-09-27, the owner's ruling on the Mirrulations re-fetch measurement.
+Document acquisition policy `1.3` (`DOCUMENT_ACQUISITION_POLICY_VERSION`)
+replaces `1.2`'s last-listed rule. Among observations of one document version
+that differ only in `openForComment` or `withinCommentPeriod`, the one whose
+listed S3 `LastModified` is more than an hour (`VOLATILE_TIE_MARGIN_SECONDS`)
+after every other's publishes. Otherwise the smallest record digest among the
+observations written within that hour of the newest publishes: stable under
+reordered input, and never asserted to be the latest
+(`releases.observations.volatile_tie_choice`). Document evidence packs record
+each object's `LastModified` (`mirrulations-evidence-pack-v2`), so replay reaches
+the same choice from evidence alone. Docket and comment packs and policies do
+not move; their selection never reads it. The raw reader's
+`reader_factory(..., with_keys=True)` yields each payload as a
+`KeyedPayload(key, last_modified, payload)` for callers that merge re-fetches,
+such as spicy-regs' publication session. A reader handed to the document
+acquisition must now give each source object a timezone-aware `last_modified`;
+an object without one is refused ("lacks a listed LastModified"), never guessed.
+
+**The key's suffix is not an order.** Listed 2026-09-27 over ACF and FMC whole
+and eleven other agencies' dockets and documents: 1,604,507 records, 57,483 of
+them with several copies (157,462 files). The mirror has written two suffix
+grammars: stacked `X(1)(2)…(k).json`, in which chain length does follow fetch
+order, and flat `X(n).json`. But it rewrites `X.json` in place, so the no-suffix
+key sits anywhere in the order (2,408 groups). And a flat `X(2).json` written
+after a stacked chain collides with the chain's `(1)(2)` and sorts far below
+its end (438 groups). Where `LastModified` can tell, the last-listed object was
+the newest write in 1,852 of 10,583 groups.
+
+**Why `LastModified`, and why an hour.** The April 2025 bulk upload (2025-04-06
+to 14) wrote each record's copies at most
+12 seconds apart (48,508 groups), in upload order, not fetch order. The only
+wider groups were five whose `X.json` was rewritten live the next day, which
+their bodies' `modifyDate` confirms. Of 19,723 consecutive later writes of one
+record, 5 fall within an hour. So an hour clears the upload 300-fold and sends
+closer writes to the content choice, never to a guessed order. A second signal
+comes from the publisher's own clock. Across 248,468 pairs of docket and document
+copies written more than an hour apart, `modifyDate` never falls from the earlier
+write to the later. In all 10,546 docket and document groups the rule resolves,
+the chosen copy holds the greatest `modifyDate`. That signal cannot rank copies
+sharing one `modifyDate`, which is the tie itself; only S3's write order does.
+
+**What it resolves today.** Re-measured through `volatile_tie_choice`: all
+10,583 groups whose writes span more than an hour resolve to the newest write,
+and none falls back. The other 46,900 take the content choice. The real document
+ties, found by reading every copy of those agencies' 30,709 multi-copy documents,
+number 12. All 12 lie inside the bulk upload, so all take the content choice.
+The independent review found 2 more in 15 other agencies. In all 14, the later
+fetch closed the comment window. The content choice publishes
+`openForComment=true` for 10 of them, whose windows closed in 2023-24; the
+last-listed rule published `true` for all 14. The rule is right for every tie
+the nightly re-fetches make from now on. The upload-era ties keep a stable but
+stale flag, which is why the attribute tables describe these flags as the
+publisher stated them on the latest version and read the window's state from
+its dates.
+
+**What a later change must preserve.** A `1.2` document release replays with
+SpicyDocs 0.44.0, and current readers refuse it. It cannot be converted to `1.3`
+offline: its `v1` packs never recorded `LastModified`, so its receipts stay
+verifiable only with SpicyDocs 0.44.0. Another margin, fallback or
+write signal is a new policy version, measured the same way. Receipts:
+`~/Work/corpora/mirrulations-keys-2026-09-27/` (`measure_suffix_order.py`,
+`margin_evidence.py`, `remeasure_tie_rule.py`, `verify_lastmodified_order.py`,
+`run-2026-09-27/`).
+
+## A comment's missing attachment text comes from the next tool
+
+2026-09-27, spicy-regs owner decision 41 (publication session
+`spicy-stack-75`), amending decision 19 (both in spicy-regs
+`docs/research/fork-delivery-decisions-2026-09-22.md`). Decision 19 took one
+Mirrulations extraction tool per comment in the pinned `DERIVED_TEXT_TOOLS`
+order, and recorded the tool per attachment. Under it, 13 CMS comments from
+2009-2010 each lost the text of one attachment that only the second tool held.
+`list_docket_derived_text` now takes each attachment number from the
+best-ranked tool that lists an object for it.
+
+- The comment's `tool` stays the primary, its first available tool.
+- Each `DerivedAttachment.tool` records where that attachment came from.
+- `only_in_other_tools` keeps its name, the JSON field spicy-regs reads. It used
+  to name numbers left unfilled; it now names the numbers filled from a tool
+  other than the primary.
+
+**Existence decides, not content.** A primary object that exists but is empty
+stays the attachment: `pdfminer` left 1,446 zero-byte objects in decision 19's
+measurement, and filling one from another tool would turn a stated extraction
+into a guess. Nothing merges two tools' text within one attachment.
+
+**No version moves.** Derived-text selection has no versioned identity of its
+own, and the release-path policy never reads derived text. spicy-regs'
+`pdf_extraction_results_json` is `CommentDerivedText.to_json()`, with no version
+field. The provenance still tells the two rules apart. Under decision 19, a
+number in `only_in_other_tools` never appears among `attachments`; under
+decision 41 it always does, carrying its own `tool`. Rows spicy-regs filled
+before adopting this keep their text until it refills them. Its
+`sources/derived_text.py` docstring, which says one tool per comment, is
+spicy-regs' to update.

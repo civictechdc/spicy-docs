@@ -130,12 +130,19 @@ def _bytes(value: object, *, indent: int | None = None) -> bytes:
     return json.dumps(value, indent=indent, separators=None if indent else (",", ":")).encode()
 
 
+# The listed S3 LastModified a source object carries unless a test states its own.
+_LISTED_AT = datetime(2026, 8, 25, 0, 0, 0, tzinfo=UTC)
+
+
 @dataclass(frozen=True, slots=True)
 class _Object:
+    """A listed Mirrulations object, shaped like ``mirrulations.MirrulationsSourceObject``."""
+
     key: str
     etag: str
     version_id: str | None
     content: bytes
+    last_modified: datetime | None = _LISTED_AT
 
 
 class _Reader:
@@ -158,12 +165,14 @@ def _document_object(
     agency: str = "EPA",
     docket_id: str = "EPA-2026-0001",
     key_suffix: str = "",
+    last_modified: datetime = _LISTED_AT,
 ) -> _Object:
     return _Object(
         key=(f"raw-data/{agency}/{docket_id}/text-{tag}/documents/{identity}{key_suffix}.json"),
         etag=etag,
         version_id="document-version-1",
         content=_bytes(value or _document(identity), indent=2),
+        last_modified=last_modified,
     )
 
 

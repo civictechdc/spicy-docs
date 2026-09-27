@@ -38,10 +38,12 @@ publisher `json` labels to `application/json`. Fallback examines only the final
 URL path extension; query strings, fragments and parent directories do not
 supply a type. An unknown type stays `application/octet-stream`.
 
-Regulations.gov and public-comment policy `1.2` pin these rules and qualify
-publication/replay. Public-comment attachment IDs also preserve original list
-positions after invalid formats are omitted. Current readers require the new
-policies; source record schemas stay unchanged. Renditions describe offered
+Public-comment policy `1.2` and Regulations.gov policies from `1.2` on pin these
+rules and qualify publication/replay. Regulations.gov documents and comments are
+at `1.3`, dockets at `1.2` ([guide](sources/regulations-gov.md)).
+Public-comment attachment IDs also preserve original list positions after
+invalid formats are omitted. Current readers require the current policies;
+source record schemas stay unchanged. Renditions describe offered
 files. These checks do not establish equivalent XML/JSON body availability.
 
 ### 2. Federal Register XML links are exposed

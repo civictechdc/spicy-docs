@@ -8,7 +8,6 @@ per-profile not-applicable notes, and the documents default staying byte-identic
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
@@ -22,6 +21,7 @@ from spicy_docs.source_native.regulations_gov import (
     iter_regulations_gov_document_pages,
 )
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
+from tests.regulations_gov.fixtures import _Object
 from tests.source_fixtures import counted_subsets
 from tools.analysis.cross_filing_census import census
 
@@ -34,16 +34,6 @@ _PRODUCER = Producer(
     verifier_implementation_id=_IMPLEMENTATION_ID,
 )
 _WINDOW = {"agencies": ["placeholder"], "publishedFrom": "2020-01-01", "publishedThrough": "2025-12-31"}
-
-
-@dataclass(frozen=True, slots=True)
-class _Object:
-    """A minimal S3 listing object."""
-
-    key: str
-    etag: str
-    version_id: str | None
-    content: bytes
 
 
 class _Reader:

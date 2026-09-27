@@ -6,6 +6,7 @@ identity mismatches refuse.
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass, replace
 from io import BytesIO
 from pathlib import Path
 from zipfile import ZipFile
@@ -27,6 +28,8 @@ from spicy_docs.source_native.regulations_gov import (
     parse_mirrulations_request,
 )
 from spicy_docs.sources.regulations_gov import acquisition
+from spicy_docs.sources.regulations_gov.definitions import DOCUMENT_COLLECTION
+from spicy_docs.sources.regulations_gov.evidence import _pack_bytes, _PackedObject
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 from tests.regulations_gov.fixtures import (
     _build,
@@ -64,6 +67,7 @@ def test_document_pages_capture_exact_listing_metadata_and_object_bytes_once() -
     with ZipFile(BytesIO(pack.response_bytes)) as archive:
         manifest = json.loads(archive.read("manifest.json"))
         assert archive.read("objects/000000.json") == source_object.content
+    assert manifest["evidenceType"] == "mirrulations-evidence-pack-v2"
     assert manifest["objects"] == [
         {
             "byteSize": len(source_object.content),
@@ -71,10 +75,102 @@ def test_document_pages_capture_exact_listing_metadata_and_object_bytes_once() -
             "etag": source_object.etag,
             "included": True,
             "key": source_object.key,
+            "lastModified": "2026-08-25T00:00:00Z",
             "versionId": source_object.version_id,
         }
     ]
-    assert parse_document_page_response(pack.response_bytes)["results"] == [_document()]
+    parsed = parse_document_page_response(pack.response_bytes)
+    assert parsed["results"] == [_document()]
+    assert parsed["_resultsWrittenAt"] == [int(source_object.last_modified.timestamp())]
+
+
+@dataclass(frozen=True, slots=True)
+class _Unlisted:
+    """A source object from a reader written before policy 1.3: no ``last_modified`` attribute at all."""
+
+    key: str
+    etag: str
+    version_id: str | None
+    content: bytes
+
+
+def test_document_evidence_refuses_an_object_or_pack_without_its_listed_last_modified() -> None:
+    """Policy 1.3 orders volatile ties by listed LastModified, so a document object the listing gave none, and a
+    pack whose manifest lost or respelled one, refuse rather than publish an unordered tie. Docket packs keep v1."""
+    listed = _document_object()
+    # Unset, naive, and a reader whose objects have no such attribute (DocSpec's installed-wheel probe shape).
+    for source_object in (
+        replace(listed, last_modified=None),
+        replace(listed, last_modified=listed.last_modified.replace(tzinfo=None)),
+        _Unlisted(listed.key, listed.etag, listed.version_id, listed.content),
+    ):
+        with pytest.raises(RegulationsGovSourceError, match="lacks a listed LastModified"):
+            list(
+                iter_regulations_gov_document_pages(
+                    lambda _agency, value=source_object: _Reader([value]), query_scope=_document_scope()
+                )
+            )
+    with pytest.raises(RegulationsGovSourceError, match="needs every object's LastModified"):
+        _pack_bytes(
+            [_PackedObject(listed.key, listed.etag, listed.version_id, listed.content, included=True)],
+            collection=DOCUMENT_COLLECTION,
+            agency="EPA",
+            pack_index=0,
+            terminal=True,
+        )
+
+    (pack,) = iter_regulations_gov_document_pages(
+        lambda _agency: _Reader([_document_object()]), query_scope=_document_scope()
+    )
+    for respelled, reason in (
+        ("2026-08-25T00:00:00Z", None),  # the untampered spelling, rebuilt the same way, still parses
+        (None, "lacks fields: \\['lastModified'\\]"),
+        ("2026-08-25T00:00:00.000Z", "not whole-second UTC"),
+        ("2026-13-25T00:00:00Z", "not a date"),
+    ):
+        with ZipFile(BytesIO(pack.response_bytes)) as archive:
+            manifest = json.loads(archive.read("manifest.json"))
+            content = archive.read("objects/000000.json")
+        if respelled is None:
+            del manifest["objects"][0]["lastModified"]
+        else:
+            manifest["objects"][0]["lastModified"] = respelled
+        output = BytesIO()
+        with ZipFile(output, "w") as archive:
+            archive.writestr("manifest.json", json.dumps(manifest))
+            archive.writestr("objects/000000.json", content)
+        if reason is None:
+            assert parse_document_page_response(output.getvalue())["results"] == [_document()]
+            continue
+        with pytest.raises(RegulationsGovSourceError, match=reason):
+            parse_document_page_response(output.getvalue())
+
+    out_of_scope = _document_object(
+        "EPA-2026-0001-0002", value=_document("EPA-2026-0001-0002", postedDate="2026-08-23T23:59:59Z")
+    )
+    (mixed,) = iter_regulations_gov_document_pages(
+        lambda _agency: _Reader([listed, out_of_scope]), query_scope=_document_scope()
+    )
+    with ZipFile(BytesIO(mixed.response_bytes)) as archive:
+        manifest = json.loads(archive.read("manifest.json"))
+        members = [(name, archive.read(name)) for name in archive.namelist()[1:]]
+    assert [item["included"] for item in manifest["objects"]] == [True, False]
+    manifest["objects"][1]["lastModified"] = "not-an-instant"
+    output = BytesIO()
+    with ZipFile(output, "w") as archive:
+        archive.writestr("manifest.json", json.dumps(manifest))
+        for name, content in members:
+            archive.writestr(name, content)
+    with pytest.raises(RegulationsGovSourceError, match="not whole-second UTC"):
+        parse_document_page_response(output.getvalue())
+
+    (docket_pack,) = iter_regulations_gov_docket_pages(
+        lambda _agency: _Reader([_docket_object()]), query_scope=_docket_scope()
+    )
+    with ZipFile(BytesIO(docket_pack.response_bytes)) as archive:
+        docket_manifest = json.loads(archive.read("manifest.json"))
+    assert docket_manifest["evidenceType"] == "mirrulations-evidence-pack-v1"
+    assert "lastModified" not in docket_manifest["objects"][0]
 
 
 def test_out_of_scope_objects_remain_evidence_without_becoming_records(tmp_path: Path) -> None:

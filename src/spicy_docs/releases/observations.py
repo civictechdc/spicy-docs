@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import heapq
 import sqlite3
-from collections.abc import Callable, Iterable, Iterator, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from typing import Any
 
 from rulespec_artifacts import (
@@ -96,6 +96,17 @@ def _observation_version(
     return value
 
 
+def _results_written_at(profile: SourceNativeProfile, response: Mapping[str, Any]) -> list[int | None]:
+    """Each page result's source write instant when the profile states them, else None for each."""
+    results = response["results"]
+    if profile.result_written_at is None:
+        return [None] * len(results)
+    written: list[int | None] = list(profile.result_written_at(response))
+    if len(written) != len(results) or any(type(value) is not int for value in written):
+        raise SourceNativeReleaseError(f"{profile.name} write instants do not match its page results")
+    return written
+
+
 def _tie_group_is_volatile_only(
     connection: sqlite3.Connection,
     *,
@@ -127,6 +138,29 @@ def _tie_group_is_volatile_only(
         elif digest != reference:
             return False
     return True
+
+
+def volatile_tie_choice(
+    rows: Sequence[tuple[int, int | None, str]],
+    *,
+    margin_seconds: int,
+) -> int:
+    """The ordinal a volatile-only tie publishes.
+
+    ``rows`` are one tied group's ``(ordinal, written_at, record_digest)``. When every row states its write,
+    the candidates for the latest are the rows written within ``margin_seconds`` of the newest: one alone is
+    the latest write and publishes. Otherwise the smallest record digest among the candidates (every row,
+    when a write is unstated) publishes, earliest ordinal among equals: stable under reordered input, and
+    not the latest by any evidence.
+    """
+    candidates: Sequence[tuple[int, int | None, str]] = rows
+    stated = [(ordinal, written, digest) for ordinal, written, digest in rows if written is not None]
+    if len(stated) == len(rows):
+        newest = max(written for _, written, _ in stated)
+        candidates = [row for row in stated if newest - row[1] <= margin_seconds]
+        if len(candidates) == 1:
+            return candidates[0][0]
+    return min(candidates, key=lambda row: (row[2], row[0]))[0]
 
 
 def _select_observations(
@@ -194,30 +228,30 @@ def _select_observations(
         "GROUP BY candidate.traversal, candidate.source_record_id)"
     )
 
-    # For a selected volatile-only tie, prefer the last-listed fetch.
+    # A selected volatile-only tie publishes by volatile_tie_choice: its latest write when the
+    # profile states write instants that clearly order it, else a stable content choice. Listing order
+    # is no evidence of fetch order: Mirrulations lists a stacked re-fetch chain newest first and a
+    # base rewritten in place last.
     # Change only that exact identity/version; leave older tied groups unselected.
     for traversal, source_record_id, source_version in volatile_groups:
+        group = (traversal, source_record_id, source_version)
         already_preferred = connection.execute(
             "SELECT 1 FROM observations WHERE traversal = ? AND source_record_id = ? "
             "AND source_version IS ? AND selected = 1",
-            (traversal, source_record_id, source_version),
+            group,
         ).fetchone()
         if already_preferred is None:
             continue
-        connection.execute(
-            "UPDATE observations SET selected = CASE WHEN ordinal = ("
-            "SELECT max(ordinal) FROM observations "
-            "WHERE traversal = ? AND source_record_id = ? AND source_version IS ?"
-            ") THEN 1 ELSE 0 END "
+        rows = connection.execute(
+            "SELECT ordinal, written_at, record_digest FROM observations "
             "WHERE traversal = ? AND source_record_id = ? AND source_version IS ?",
-            (
-                traversal,
-                source_record_id,
-                source_version,
-                traversal,
-                source_record_id,
-                source_version,
-            ),
+            group,
+        ).fetchall()
+        chosen = volatile_tie_choice(rows, margin_seconds=profile.written_at_margin_seconds)
+        connection.execute(
+            "UPDATE observations SET selected = (ordinal = ?) "
+            "WHERE traversal = ? AND source_record_id = ? AND source_version IS ?",
+            (chosen, *group),
         )
 
 

@@ -9,11 +9,20 @@ per-file download + JSON decode is delegated to ``download_and_parse``.
 The reader is a *pure source*: it yields the raw JSON payloads. Flattening them
 into schema-shaped records is the job of the
 :class:`~spicy_regs.transforms.extract.ExtractRecords` transform, which stays
-in spicy-regs.
+in spicy-regs. ``with_keys=True`` yields each payload as a :class:`KeyedPayload`
+with its key and S3 ``LastModified`` instead.
+
+The mirror keeps every re-fetch of a record as another object (``X.json``,
+``X(1).json``, ``X(1)(2).json``, …), but the suffix does not order them: the
+no-suffix key is rewritten in place, and a flat ``X(n)`` written after an older
+stacked chain collides with it. ``LastModified`` orders every write since the
+April 2025 bulk upload, which wrote each record's copies within seconds
+(decision "A volatile document tie goes to the latest write",
+``docs/decisions.md``).
 
 ``list_docket_derived_text`` and ``fetch_derived_text`` read the mirror's own
-comment-attachment text (``derived-data``): one tool per comment, attachments in
-numeric order, each with its key, size, ETag and digest. Which status that text
+comment-attachment text (``derived-data``): each attachment from the best-ranked
+tool that has it, in numeric order, with its tool, key, size, ETag and digest. Which status that text
 earns downstream is the caller's vocabulary, not this module's.
 
 Recovery follows the package's fetcher rules (``AGENTS.md``):
@@ -154,6 +163,14 @@ def _listed_pin(summary: Any) -> tuple[str, int | None]:
     if size is not None and (isinstance(size, bool) or not isinstance(size, int) or size < 0):
         raise ValueError(f"Mirrulations listing size is invalid for {summary.key}")
     return etag, size
+
+
+def _listed_last_modified(summary: Any) -> datetime | None:
+    """A listed object's ``LastModified``, refusing one that is not a timezone-aware instant."""
+    value = getattr(summary, "last_modified", None)
+    if value is not None and (not isinstance(value, datetime) or value.utcoffset() is None):
+        raise ValueError(f"Mirrulations listing LastModified is invalid for {summary.key}")
+    return value
 
 
 def iter_json_files(
@@ -412,12 +429,26 @@ class DownloadedObject:
 
 @dataclass(frozen=True, slots=True)
 class MirrulationsSourceObject:
-    """One exact listed object, pinned through its source-issued metadata."""
+    """One exact listed object, pinned through its source-issued metadata; ``last_modified`` is the listing's."""
 
     key: str
     etag: str
     version_id: str | None
     content: bytes
+    last_modified: datetime | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class KeyedPayload:
+    """One raw payload with the key it was read from and that object's ``LastModified``.
+
+    ``last_modified`` comes from the GET that returned the payload, so it describes
+    exactly these bytes and costs no request; it is None only when S3 omitted it.
+    """
+
+    key: str
+    last_modified: datetime | None
+    payload: dict
 
 
 def download_object_bytes(
@@ -640,12 +671,25 @@ def download_and_parse(
     the caller. ``record_type`` names its declared key in the reason; direct
     download callers use the same source identity check without a type label.
     """
+    return _download_record(s3_resource, bucket_name, key, extract_fn, record_type=record_type)[1]
+
+
+def _download_record(
+    s3_resource: Any,
+    bucket_name: str,
+    key: str,
+    extract_fn: Callable[[dict], dict],
+    *,
+    record_type: RecordType | None = None,
+) -> tuple[datetime | None, dict]:
+    """:func:`download_and_parse`, also returning the GET's ``LastModified``."""
     try:
-        content = download_object_bytes(s3_resource, bucket_name, key).content
+        downloaded = download_object_bytes(s3_resource, bucket_name, key)
     except CredentialRefusedError:
         raise
     except Exception as exc:
         raise TransientDownloadError(key) from exc
+    content = downloaded.content
     if not content:
         raise EmptyPayloadError(key, "the mirror answered with zero bytes")
     try:
@@ -668,7 +712,7 @@ def download_and_parse(
             detail += f"; publisher errors: {payload['errors']}"
         raise EmptyPayloadError(key, scrub_credential(detail)[:_REASON_CHARACTERS])
     try:
-        return extract_fn(payload)
+        return downloaded.last_modified, extract_fn(payload)
     except Exception as exc:
         raise PayloadParseError(key) from exc
 
@@ -720,7 +764,8 @@ def download_keys(
     prior_outcomes: Iterable[KeyOutcome] = (),
     raise_failures: bool = False,
     transient_retries: int = 0,
-) -> Iterator[dict]:
+    with_keys: bool = False,
+) -> Iterator[dict] | Iterator[KeyedPayload]:
     """Concurrently download + parse the given keys, yielding raw payloads.
 
     The shared download engine for both :class:`MirrulationsReader` and the
@@ -733,16 +778,20 @@ def download_keys(
     drop-and-continue behavior for callers that don't track keys. ``raise_failures``
     governs those answers only: a 401/403 propagates either way.
     ``prior_outcomes`` carries attempt counts forward when retrying keys.
+    ``with_keys`` yields each payload as a :class:`KeyedPayload` instead.
     """
     if transient_retries < 0:
         raise ValueError("transient_retries cannot be negative")
 
     prior_attempts = {outcome.key: outcome.attempts for outcome in prior_outcomes}
 
-    def download(key: str) -> dict | None:
+    def download(key: str) -> dict | KeyedPayload | None:
         for attempt in range(transient_retries + 1):
             try:
-                return download_and_parse(s3_resource, bucket_name, key, _identity, record_type=record_type)
+                last_modified, payload = _download_record(
+                    s3_resource, bucket_name, key, _identity, record_type=record_type
+                )
+                return KeyedPayload(key, last_modified, payload) if with_keys else payload
             except UnresolvedKeyError as exc:
                 if isinstance(exc, TransientDownloadError) and attempt < transient_retries:
                     continue
@@ -764,7 +813,7 @@ def download_keys(
     done = 0
     with ThreadPoolExecutor(max_workers=n) as executor:
         iterator = iter(keys)
-        submitted: dict[Future[dict | None], str] = {}
+        submitted: dict[Future[dict | KeyedPayload | None], str] = {}
         exhausted = False
         while submitted or not exhausted:
             while not exhausted and len(submitted) < 2 * n:
@@ -846,6 +895,7 @@ class MirrulationsReader(Reader):
 
     ``fail_fast`` governs unresolved-key failures. A 401/403 raises
     :class:`MirrulationsAccessRefusedError` either way; a refusal is never a row.
+    ``with_keys`` yields :class:`KeyedPayload` values instead of bare payloads.
     """
 
     def __init__(
@@ -863,6 +913,7 @@ class MirrulationsReader(Reader):
         retain_keys: bool = True,
         fail_fast: bool = False,
         unresolved_keys: Iterable[str | KeyOutcome] | None = None,
+        with_keys: bool = False,
     ) -> None:
         self.s3_resource = s3_resource
         self.bucket = bucket
@@ -878,6 +929,7 @@ class MirrulationsReader(Reader):
         self.key_lister = key_lister
         self.retain_keys = retain_keys
         self.fail_fast = fail_fast
+        self.with_keys = with_keys
         # Retried before new work, so a run that is capped or interrupted cannot
         # keep postponing the keys a previous run already failed to resolve.
         prior = list(unresolved_keys or ())
@@ -914,7 +966,8 @@ class MirrulationsReader(Reader):
         Missing ETags, changed objects, size mismatches, and incomplete bodies abort
         immediately. _retry_transient retries transport failures within its budget.
         Listing stays serial to check strictly ascending keys; GETs use at most
-        download_workers futures and yield in listing order.
+        download_workers futures and yield in listing order. Each object carries
+        the listing's ``LastModified``, the only order its re-fetches have.
         """
 
         path_pattern = self._path_pattern()
@@ -926,7 +979,7 @@ class MirrulationsReader(Reader):
         )
         bucket = self.s3_resource.Bucket(self.bucket)
 
-        def listed_entries() -> Iterator[tuple[str, str, int | None]]:
+        def listed_entries() -> Iterator[tuple[str, str, int | None, datetime | None]]:
             previous_key: str | None = None
             for summary in _iter_objects(bucket, f"{self.prefix}/{self.agency}/"):
                 key = summary.key
@@ -939,14 +992,14 @@ class MirrulationsReader(Reader):
                 if previous_key is not None and key <= previous_key:
                     raise ValueError("Mirrulations listing keys are not strictly ordered")
                 previous_key = key
-                yield key, *_listed_pin(summary)
+                yield key, *_listed_pin(summary), _listed_last_modified(summary)
 
-        def get(entry: tuple[str, str, int | None]) -> DownloadedObject:
-            return _pinned_get(self.s3_resource, self.bucket, *entry, max_bytes=max_bytes)
+        def get(entry: tuple[str, str, int | None, datetime | None]) -> DownloadedObject:
+            return _pinned_get(self.s3_resource, self.bucket, *entry[:3], max_bytes=max_bytes)
 
         workers = max(1, self.download_workers)
         with ThreadPoolExecutor(max_workers=workers) as executor:
-            for (key, etag, _listed_size), downloaded in _bounded_ordered_results(
+            for (key, etag, _listed_size, last_modified), downloaded in _bounded_ordered_results(
                 executor, listed_entries(), get, workers
             ):
                 yield MirrulationsSourceObject(
@@ -954,9 +1007,10 @@ class MirrulationsReader(Reader):
                     etag=etag,
                     version_id=downloaded.version_id,
                     content=downloaded.content,
+                    last_modified=last_modified,
                 )
 
-    def iter_records(self) -> Iterator[dict]:
+    def iter_records(self) -> Iterator[dict] | Iterator[KeyedPayload]:
         """Yield raw payloads for this agency and record type, retrying prior unresolved keys first."""
         path_pattern = self._path_pattern()
         if self.key_lister is not None:
@@ -1002,6 +1056,7 @@ class MirrulationsReader(Reader):
             prior_outcomes=self._prior_outcomes,
             raise_failures=self.fail_fast,
             transient_retries=1 if self.fail_fast else 0,
+            with_keys=self.with_keys,
         )
         # One in-run retry pass over the transport answers, the only class whose
         # bytes could differ on an immediate second ask. Everything still
@@ -1021,6 +1076,7 @@ class MirrulationsReader(Reader):
                     label=f"{label} retry",
                     outcomes=outcomes,
                     prior_outcomes=retry_outcomes,
+                    with_keys=self.with_keys,
                 )
 
         self.unresolved = outcomes
@@ -1083,6 +1139,7 @@ def reader_factory(
     resource_factory: Callable[[], Any] | None = None,
     bounded: bool = False,
     unresolved_keys: Callable[[str, RecordType], Iterable[str | KeyOutcome]] | None = None,
+    with_keys: bool = False,
 ) -> Callable[[str, RecordType], MirrulationsReader]:
     """Build a ``read(agency, record_type) -> MirrulationsReader`` factory.
 
@@ -1098,6 +1155,9 @@ def reader_factory(
     values to preserve attempt counts; bare keys carry no attempt history.
     Without it a resume still re-asks for them -- they were never manifested --
     but only wherever the listing happens to place them.
+
+    ``with_keys=True`` makes every reader yield :class:`KeyedPayload` values, so
+    a caller merging re-fetches can order them by ``last_modified``.
     """
     cache = (
         None
@@ -1156,6 +1216,7 @@ def reader_factory(
             retain_keys=not bounded,
             fail_fast=bounded,
             unresolved_keys=unresolved_keys(agency, record_type) if unresolved_keys else None,
+            with_keys=with_keys,
         )
 
     return read
@@ -1165,8 +1226,10 @@ def reader_factory(
 # the raw records: one object per tool, comment and attachment number.
 DERIVED_PREFIX: Final = "derived-data"
 
-#: Extraction tools, most preferred first. Every comment takes its text from one
-#: tool. Measured 2026-09-23 over 278 dockets: the complete listings of 238
+#: Extraction tools, most preferred first. Each attachment takes its text from the
+#: first of them that has it (decision 41 of 2026-09-27; decision 19 took one tool
+#: per comment, which dropped one attachment each from 13 CMS comments of
+#: 2009-2010). Measured 2026-09-23 over 278 dockets: the complete listings of 238
 #: (every docket with a published 10+-attachment comment, and 40 random published
 #: ones; 100,515 objects) and the tool folders of 40 random dockets of any year,
 #: 347 LISTs in all. Only ``pypdf`` and ``pdfminer`` exist in any of them. The
@@ -1224,13 +1287,15 @@ class DerivedAttachment:
 
 @dataclass(frozen=True, slots=True)
 class CommentDerivedText:
-    """One comment's attachments from its chosen tool, in attachment-number order.
+    """One comment's attachments in attachment-number order, each from the best-ranked tool that has it.
 
     ``available_tools`` lists, in preference order, every tool that has text for
-    the comment; ``tool`` is the first. Numbers the chosen tool lacks are never
-    filled from another tool: ``only_in_other_tools`` names those another tool
-    has, and numbers no tool has (an attachment the mirror did not extract) are
-    simply absent.
+    the comment; ``tool`` is the first, the primary. A number the primary has no
+    object for takes the next tool's (decision 41); each attachment's ``tool``
+    records where it came from, and ``only_in_other_tools`` names the numbers
+    taken from a tool other than the primary. A primary object that exists is
+    kept even when blank. Numbers no tool has (an attachment the mirror did not
+    extract) are simply absent.
     """
 
     comment_id: str
@@ -1267,9 +1332,11 @@ def _tool_rank(tool: str) -> tuple[int, str]:
 def list_docket_derived_text(
     s3_resource: Any, agency: str, docket_id: str, *, bucket: str = BUCKET, strict: bool = True
 ) -> DocketDerivedText:
-    """List one docket's derived comment text once and choose one tool per comment.
+    """List one docket's derived comment text once and choose each attachment's tool.
 
-    One paginated listing covers every tool. Attachments order by number, so
+    One paginated listing covers every tool. Each attachment number comes from
+    the best-ranked tool (``DERIVED_TEXT_TOOLS``) that lists an object for it, so
+    one tool's missing attachment is filled from another, never its blank one. Attachments order by number, so
     ``_attachment_2_`` precedes ``_attachment_10_`` although S3 lists them the
     other way round. A 401/403 raises :class:`MirrulationsAccessRefusedError` and
     any other listing failure propagates: an unlisted docket is not a docket
@@ -1303,14 +1370,15 @@ def list_docket_derived_text(
     comments: dict[str, CommentDerivedText] = {}
     for comment_id, by_tool in by_comment.items():
         available = tuple(sorted(by_tool, key=_tool_rank))
-        chosen = by_tool[available[0]]
-        elsewhere = {number for tool in available[1:] for number in by_tool[tool]} - chosen.keys()
+        best: dict[int, DerivedAttachment] = {}
+        for tool in reversed(available):  # a better-ranked tool's object replaces a worse one's
+            best.update(by_tool[tool])
         comments[comment_id] = CommentDerivedText(
             comment_id,
             available[0],
             available,
-            tuple(chosen[number] for number in sorted(chosen)),
-            tuple(sorted(elsewhere)),
+            tuple(best[number] for number in sorted(best)),
+            tuple(sorted(number for number, record in best.items() if record.tool != available[0])),
         )
     return DocketDerivedText(comments, tuple(unrecognized))
 

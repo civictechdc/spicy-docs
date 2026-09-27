@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterator
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from io import StringIO
 from pathlib import Path
@@ -16,6 +15,7 @@ import pytest
 
 from spicy_docs.cli.source_native import main
 from spicy_docs.source_native.regulations_gov import RegulationsGovSourceError
+from tests.regulations_gov.fixtures import _Object
 
 IMPLEMENTATION_ID = "git+https://example.test/spicy-regs@" + "a" * 40
 FIXED_NOW = datetime(2026, 8, 25, tzinfo=UTC)
@@ -90,14 +90,6 @@ def _regulations_docket() -> dict[str, object]:
             },
         }
     }
-
-
-@dataclass(frozen=True, slots=True)
-class _Object:
-    key: str
-    etag: str
-    version_id: str | None
-    content: bytes
 
 
 class _Reader:

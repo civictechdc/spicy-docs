@@ -26,6 +26,7 @@ from spicy_docs.releases.format import (
 from spicy_docs.releases.observations import (
     _observation_version,
     _ordered_rendition_rows,
+    _results_written_at,
     _select_observations,
     _unclassified_source_record_id,
     _validate_evidence_media_type,
@@ -64,7 +65,7 @@ def index_pages(
         "CREATE TABLE observations (traversal INTEGER, page INTEGER, ordinal INTEGER, source_record_id TEXT, "
         "source_version TEXT, selected INTEGER NOT NULL DEFAULT 0, record_digest TEXT, "
         "record_payload BLOB, rendition_payload BLOB, evidence_ref TEXT, partition_id TEXT, "
-        "PRIMARY KEY (traversal, ordinal));"
+        "written_at INTEGER, PRIMARY KEY (traversal, ordinal));"
         "CREATE TABLE failures (traversal INTEGER, page INTEGER, record_index INTEGER, "
         "source_record_id TEXT, failure_class TEXT, reason_code TEXT, evidence_ref TEXT, "
         "partition_id TEXT, PRIMARY KEY (traversal, page, record_index));"
@@ -147,6 +148,7 @@ def index_pages(
                         _partition_id(f"{page.traversal_index}:{page.page_index}"),
                     ),
                 )
+                written_at = _results_written_at(profile, response) if records_included else []
                 for record_index, raw_record in enumerate(response["results"] if records_included else ()):
                     try:
                         record = profile.classify_record(raw_record)
@@ -192,7 +194,7 @@ def index_pages(
                         raise SourceNativeReleaseError(f"{profile.name} wrapped record lacks sourceRecordId")
                     try:
                         connection.execute(
-                            "INSERT INTO observations VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)",
+                            "INSERT INTO observations VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)",
                             (
                                 page.traversal_index,
                                 page.page_index,
@@ -204,6 +206,7 @@ def index_pages(
                                 canonical_json_bytes(renditions),
                                 evidence_ref,
                                 _partition_id(source_record_id),
+                                written_at[record_index],
                             ),
                         )
                     except sqlite3.IntegrityError as error:

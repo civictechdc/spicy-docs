@@ -10,7 +10,8 @@ comment, missing attachments, stray keys, refusals, and capped, ETag-pinned fetc
 """
 
 from collections.abc import Iterable
-from json import dumps
+from datetime import UTC, datetime
+from json import dumps, loads
 from types import SimpleNamespace
 
 import pytest
@@ -66,11 +67,13 @@ class _FakeObj:
         key: str,
         content: bytes,
         get_requests: list[tuple[str, dict[str, str]]] | None = None,
+        last_modified: datetime | None = None,
     ) -> None:
         self.key = key
         self._content = content
         self.e_tag = f'"etag:{key}"'
         self.size = len(content)
+        self.last_modified = last_modified
         self._get_requests = get_requests
 
     def get(self, **kwargs: str) -> dict:
@@ -83,22 +86,23 @@ class _FakeObj:
             "ContentLength": len(self._content),
             "ETag": self.e_tag,
             "VersionId": f"version:{self.key}",
-        }
+        } | ({"LastModified": self.last_modified} if self.last_modified is not None else {})
 
 
 class _FakeObjects:
-    def __init__(self, store: dict[str, bytes]) -> None:
+    def __init__(self, store: dict[str, bytes], written: dict[str, datetime] | None = None) -> None:
         self._store = store
+        self._written = written or {}
 
     def filter(self, Prefix: str):
         for key, content in self._store.items():
             if key.startswith(Prefix):
-                yield _FakeObj(key, content)
+                yield _FakeObj(key, content, last_modified=self._written.get(key))
 
 
 class _FakeBucket:
-    def __init__(self, store: dict[str, bytes]) -> None:
-        self.objects = _FakeObjects(store)
+    def __init__(self, store: dict[str, bytes], written: dict[str, datetime] | None = None) -> None:
+        self.objects = _FakeObjects(store, written)
 
 
 class _FakeListingClient:
@@ -122,8 +126,11 @@ class _FakeListingClient:
 
 
 class _FakeS3Resource:
-    def __init__(self, store: dict[str, bytes]) -> None:
+    """``written`` gives a key's LastModified, stated by its listing summary and its GET alike."""
+
+    def __init__(self, store: dict[str, bytes], written: dict[str, datetime] | None = None) -> None:
         self._store = store
+        self._written = written or {}
         self.get_requests: list[tuple[str, dict[str, str]]] = []
 
     @property
@@ -131,10 +138,10 @@ class _FakeS3Resource:
         return SimpleNamespace(client=_FakeListingClient(self))
 
     def Bucket(self, name: str) -> _FakeBucket:
-        return _FakeBucket(self._store)
+        return _FakeBucket(self._store, self._written)
 
     def Object(self, name: str, key: str) -> _FakeObj:
-        return _FakeObj(key, self._store[key], self.get_requests)
+        return _FakeObj(key, self._store[key], self.get_requests, self._written.get(key))
 
 
 class _RaisingObj:
@@ -823,9 +830,9 @@ def test_download_keys_bounds_pending_work_for_a_streaming_listing(
 
     def blocked_download(_resource, _bucket, key, _extract, *, record_type=None):
         release.wait(timeout=5)
-        return {"key": key}
+        return None, {"key": key}
 
-    monkeypatch.setattr(mirrulations, "download_and_parse", blocked_download)
+    monkeypatch.setattr(mirrulations, "_download_record", blocked_download)
     with ThreadPoolExecutor(max_workers=1) as executor:
         result = executor.submit(lambda: list(mirrulations.download_keys(object(), BUCKET, keys(), workers=4)))
         assert initial_window_filled.wait(timeout=5)
@@ -844,6 +851,75 @@ def test_bounded_reader_factory_streams_keys_without_building_a_manifest_list() 
 
     assert len(list(reader.iter_records())) == 1
     assert reader.last_keys == []
+
+
+def _refetched_store() -> tuple[dict[str, bytes], dict[str, datetime]]:
+    """One docket's re-fetches in the mirror's real key shapes (ACF-2023-0003, listed 2026-09-27): a base and a
+    stacked chain from the April 2025 bulk upload, then a flat ``(2)`` written in 2026."""
+    docket = "EPA-2024-0001"
+    base = f"{PREFIX}/{AGENCY}/{docket}/text-{docket}/docket/{docket}"
+    keys = [f"{base}.json", f"{base}(1).json", f"{base}(1)(2).json", f"{base}(2).json"]
+    bulk = datetime(2025, 4, 6, 15, 59, 52, tzinfo=UTC)
+    written = dict(zip(keys, (bulk, bulk, bulk, datetime(2026, 7, 22, 4, 32, 38, tzinfo=UTC)), strict=True))
+    store = {}
+    for index, key in enumerate(keys):
+        payload = _docket_payload(docket)
+        payload["data"]["attributes"]["title"] = f"fetch {index}"
+        store[key] = dumps(payload).encode()
+    # S3 lists in key order, which puts the 2026 re-fetch before the base.
+    return dict(sorted(store.items())), written
+
+
+@pytest.mark.parametrize("bounded", [False, True], ids=["cached-listing", "bounded"])
+def test_keyed_reader_yields_each_payload_with_its_key_and_last_modified(bounded: bool) -> None:
+    """``with_keys=True`` pairs every payload with the key it came from and that GET's LastModified -- the only
+    order a record's re-fetches have, since the suffix does not give one."""
+    from spicy_docs.sources.mirrulations import KeyedPayload, reader_factory
+
+    store, written = _refetched_store()
+    resource = _FakeS3Resource(store, written)
+    read = reader_factory([DOCKET], resource_factory=lambda: resource, bounded=bounded, with_keys=True)
+
+    keyed = list(read(AGENCY, DOCKET).iter_records())
+
+    assert all(type(item) is KeyedPayload for item in keyed)
+    assert {item.key: (item.last_modified, item.payload) for item in keyed} == {
+        key: (written[key], loads(content)) for key, content in store.items()
+    }
+
+
+def test_default_reader_still_yields_bare_payloads_and_the_same_manifest() -> None:
+    """Without ``with_keys`` the reader yields exactly the decoded payload dicts it always did, and its manifest and
+    failure accounting do not depend on the option."""
+    from spicy_docs.sources.mirrulations import reader_factory
+
+    store, written = _refetched_store()
+    plain = reader_factory([DOCKET], resource_factory=lambda: _FakeS3Resource(store, written))(AGENCY, DOCKET)
+    keyed = reader_factory([DOCKET], resource_factory=lambda: _FakeS3Resource(store, written), with_keys=True)(
+        AGENCY, DOCKET
+    )
+
+    payloads = list(plain.iter_records())
+    keyed_payloads = list(keyed.iter_records())
+
+    assert all(type(payload) is dict for payload in payloads)
+    assert sorted(payloads, key=dumps) == sorted((loads(content) for content in store.values()), key=dumps)
+    assert sorted(payloads, key=dumps) == sorted((item.payload for item in keyed_payloads), key=dumps)
+    assert (plain.last_keys, plain.failed_keys) == (keyed.last_keys, keyed.failed_keys)
+    assert sorted(plain.last_keys) == sorted(store)
+
+
+def test_iter_source_objects_carries_each_listed_last_modified() -> None:
+    """The exact path hands the release its listing's LastModified per object, and refuses a naive one."""
+    store, written = _refetched_store()
+    reader = MirrulationsReader(_FakeS3Resource(store, written), BUCKET, PREFIX, AGENCY, DOCKET)
+
+    assert {item.key: item.last_modified for item in reader.iter_source_objects()} == written
+
+    naive = {key: value.replace(tzinfo=None) for key, value in written.items()}
+    naive_reader = MirrulationsReader(_FakeS3Resource(store, naive), BUCKET, PREFIX, AGENCY, DOCKET)
+    with pytest.raises(ValueError, match="LastModified is invalid"):
+        list(naive_reader.iter_source_objects())
 
 
 def test_bounded_reader_preserves_one_in_run_transient_retry() -> None:
@@ -1671,27 +1747,79 @@ def test_derived_text_takes_one_tool_per_comment_in_pinned_order() -> None:
     }
 
 
-def test_derived_text_records_attachments_only_another_tool_has() -> None:
-    """A number the chosen tool lacks is not filled from another tool; it is named, and gaps no tool fills stay silent."""
-    from spicy_docs.sources.mirrulations import list_docket_derived_text
+def test_derived_text_fills_an_attachment_the_primary_tool_lacks_from_the_other() -> None:
+    """Decision 41: pypdf holds attachments 1 and 3, pdfminer 1 and 2, so 2 comes from pdfminer and the rest from
+    pypdf. The comment's ``tool`` stays pypdf, each attachment records its own tool, and ``only_in_other_tools``
+    names the number that fell back (13 CMS comments of 2009-2010 lost such an attachment under decision 19)."""
+    store = _listing_order(
+        {
+            _derived_key("pypdf", "0001", 1): b"one",
+            _derived_key("pypdf", "0001", 3): b"three",
+            _derived_key("pdfminer", "0001", 1): b"one again",
+            _derived_key("pdfminer", "0001", 2): b"two",
+        }
+    )
 
+    comment = _one_comment(_FakeS3Resource(store))
+
+    assert [(a.attachment, a.tool) for a in comment.attachments] == [(1, "pypdf"), (2, "pdfminer"), (3, "pypdf")]
+    assert (comment.tool, comment.available_tools, comment.only_in_other_tools) == (
+        "pypdf",
+        ("pypdf", "pdfminer"),
+        (2,),
+    )
+    assert [a["tool"] for a in comment.to_json()["attachments"]] == ["pypdf", "pdfminer", "pypdf"]
+
+
+def test_derived_text_keeps_a_blank_primary_object_and_fills_only_missing_ones() -> None:
+    """A primary object that exists but is empty is the primary's attachment, not a gap (decision 19 measured
+    pdfminer's zero-byte objects); only a number the primary has no object for falls back."""
+    from spicy_docs.sources.mirrulations import fetch_derived_text
+
+    store = _listing_order(
+        {
+            _derived_key("pypdf", "0001", 1): b"",
+            _derived_key("pypdf", "0001", 3): b"three",
+            _derived_key("pdfminer", "0001", 1): b"one from pdfminer",
+            _derived_key("pdfminer", "0001", 2): b"two",
+        }
+    )
+    resource = _FakeS3Resource(store)
+
+    fetched = fetch_derived_text(resource, _one_comment(resource))
+
+    assert [(a.attachment, a.tool, a.text) for a in fetched.attachments] == [
+        (1, "pypdf", ""),
+        (2, "pdfminer", "two"),
+        (3, "pypdf", "three"),
+    ]
+    assert fetched.only_in_other_tools == (2,)
+
+
+def test_derived_text_takes_each_number_from_the_best_ranked_tool_that_has_it() -> None:
+    """With three tools, each number comes from the best-ranked one holding it, and a gap no tool fills stays
+    silent: an attachment the mirror did not extract is absent, not refused."""
     store = _listing_order(
         {
             _derived_key("pypdf", "0001", 1): b"one",
             _derived_key("pypdf", "0001", 4): b"four",
             _derived_key("pdfminer", "0001", 1): b"one again",
             _derived_key("pdfminer", "0001", 2): b"two",
+            _derived_key("docling", "0001", 2): b"two again",
             _derived_key("docling", "0001", 3): b"three",
         }
     )
 
-    comments = list_docket_derived_text(_FakeS3Resource(store), AGENCY, DERIVED_DOCKET).comments
+    comment = _one_comment(_FakeS3Resource(store))
 
-    comment = comments[f"{DERIVED_DOCKET}-0001"]
-    assert [(a.tool, a.attachment) for a in comment.attachments] == [("pypdf", 1), ("pypdf", 4)]
+    assert [(a.attachment, a.tool) for a in comment.attachments] == [
+        (1, "pypdf"),
+        (2, "pdfminer"),
+        (3, "docling"),
+        (4, "pypdf"),
+    ]
     assert comment.available_tools == ("pypdf", "pdfminer", "docling")
     assert comment.only_in_other_tools == (2, 3)
-    assert f"{DERIVED_DOCKET}-0002" not in comments
 
 
 def test_derived_text_lists_the_docket_prefix_once_and_refuses_unexplained_keys_by_default() -> None:

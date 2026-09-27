@@ -14,14 +14,16 @@ from spicy_docs.sources.regulations_gov.definitions import (
     COMMENT_COLLECTION,
     DOCKET_COLLECTION,
     DOCUMENT_COLLECTION,
-    EVIDENCE_PACK_TYPE,
+    DOCUMENT_TIE_VOLATILE_FIELDS,
     MAX_EVIDENCE_PACK_OBJECTS,
     MAX_EVIDENCE_PACK_RAW_BYTES,
     MAX_OBJECT_BYTES,
     MAX_QUERY_DAYS,
     MAX_TRAVERSALS,
+    VOLATILE_TIE_MARGIN_SECONDS,
     MirrulationsWindow,
     RegulationsGovSourceError,
+    evidence_pack_type,
 )
 from spicy_docs.sources.regulations_gov.records import (
     _data_attributes,
@@ -223,7 +225,7 @@ class MirrulationsAcquisitionCheck:
             raise RegulationsGovSourceError("Mirrulations evidence request collection differs")
         del response_bytes
         if (
-            response.get("_evidenceType") != EVIDENCE_PACK_TYPE
+            response.get("_evidenceType") != evidence_pack_type(self.collection)
             or response.get("_collection") != self.collection
             or response.get("_agency") != page_window.agency
             or response.get("_packIndex") != page_window.pack_index
@@ -286,7 +288,7 @@ def _records_included(
     if not isinstance(page_window, MirrulationsWindow) or page_window.collection != collection:
         raise RegulationsGovSourceError("Mirrulations page lacks a validated request")
     if (
-        response.get("_evidenceType") != EVIDENCE_PACK_TYPE
+        response.get("_evidenceType") != evidence_pack_type(collection)
         or response.get("_agency") != page_window.agency
         or response.get("_packIndex") != page_window.pack_index
         or response.get("_terminal") is not page_window.terminal
@@ -476,6 +478,20 @@ def _acquisition_policy(
         if collection == DOCUMENT_COLLECTION
         else "/data/attributes/modifyDate DESC NULLS LAST"
     )
+    selection: dict[str, Any] = {
+        "groupBy": "/data/id",
+        "orderBy": order_by,
+        "tieDisposition": "refuse-differing-record-digest-at-normalized-instant",
+    }
+    if collection == DOCUMENT_COLLECTION:
+        # Policy 1.3 (DOCUMENT_ACQUISITION_POLICY_VERSION). Dockets and comments keep the
+        # statement above byte for byte, so their sealed policy digests do not move.
+        selection["volatileTie"] = {
+            "fields": sorted(DOCUMENT_TIE_VOLATILE_FIELDS),
+            "select": "newest-listed-s3-last-modified-when-no-other-is-within-margin",
+            "marginSeconds": VOLATILE_TIE_MARGIN_SECONDS,
+            "otherwise": "smallest-record-digest-among-writes-within-margin-of-newest-not-asserted-latest",
+        }
     return {
         "collection": collection,
         "coverageLimits": [
@@ -491,11 +507,7 @@ def _acquisition_policy(
         "maxRawBytesPerEvidencePack": MAX_EVIDENCE_PACK_RAW_BYTES,
         "maxObjectBytes": MAX_OBJECT_BYTES,
         "maxTraversals": MAX_TRAVERSALS,
-        "observationSelection": {
-            "groupBy": "/data/id",
-            "orderBy": order_by,
-            "tieDisposition": "refuse-differing-record-digest-at-normalized-instant",
-        },
+        "observationSelection": selection,
         "strategy": "complete-mirrulations-source-enumeration",
         "renditions": (
             {"positions": "original-file-format-indexes", "mediaType": media_type_policy()}

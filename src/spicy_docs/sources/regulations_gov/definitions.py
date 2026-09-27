@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Final, Literal, Protocol
 
 DOCUMENT_COLLECTION: Final = "documents"
@@ -38,6 +39,12 @@ ACQUISITION_POLICY_VERSION: Final = "1.2"
 # to collapse (tieDisposition refuse-differing-record-digest-at-normalized-instant); a 1.2 comment
 # release replays with a reader from before that change (SpicyDocs 0.28.0 or earlier).
 COMMENT_ACQUISITION_POLICY_VERSION: Final = "1.3"
+# Documents' policy moved to 1.3 on 2026-09-27: a tie differing only in DOCUMENT_TIE_VOLATILE_FIELDS
+# goes to the observation whose listed S3 LastModified leads every other by more than
+# VOLATILE_TIE_MARGIN_SECONDS, else to the smallest record digest (not asserted latest), where 1.2
+# took the last-listed object. Their packs record LastModified (DOCUMENT_EVIDENCE_PACK_TYPE). A 1.2
+# document release replays with a reader from before that change (SpicyDocs 0.44.0 or earlier).
+DOCUMENT_ACQUISITION_POLICY_VERSION: Final = "1.3"
 MAX_TRAVERSALS: Final = 1
 MAX_EVIDENCE_PACK_OBJECTS: Final = 1_000
 MAX_EVIDENCE_PACK_RAW_BYTES: Final = 16 * 1024 * 1024
@@ -46,7 +53,17 @@ MAX_OBJECT_BYTES: Final = 16 * 1024 * 1024
 # source's whole history is the cheap shape (2026-08-25 spec, 2026-09-02 amendment).
 MAX_QUERY_DAYS: Final = 40 * 366  # ~40 years, counting every year as a leap year
 EVIDENCE_PACK_TYPE: Final = "mirrulations-evidence-pack-v1"
+# v1 plus each object's listed S3 LastModified, which only the document selection reads.
+DOCUMENT_EVIDENCE_PACK_TYPE: Final = "mirrulations-evidence-pack-v2"
 EVIDENCE_PACK_MEDIA_TYPE: Final = "application/zip"
+# A volatile-only document tie goes to the newest write only when it leads every other copy by more
+# than this. Measured 2026-09-27 over 13 agencies' listings (57,483 records with several copies): the
+# April 2025 bulk upload wrote each record's copies at most 12 s apart (48,508 groups; the 5 wider
+# ones were a live rewrite a day later, by their bodies' modifyDate), in upload order, not fetch
+# order; 5 of 19,723 consecutive later writes of one record fall within an hour. One hour clears
+# the upload 300-fold; closer writes take the content choice, never a guessed order. Receipt:
+# ~/Work/corpora/mirrulations-keys-2026-09-27/ (margin_evidence.py, run-2026-09-27/).
+VOLATILE_TIE_MARGIN_SECONDS: Final = 3600
 
 _ASCII_ID: Final = re.compile(r"^[A-Za-z0-9._-]+$")
 _ASCII_KEY: Final = re.compile(r"^[\x21-\x7e]+$")
@@ -269,6 +286,21 @@ class MirrulationsObject(Protocol):
 
     @property
     def content(self) -> bytes: ...
+
+    # Read only for documents, whose ties it orders; a document object without a
+    # timezone-aware value is refused (policy 1.3).
+    @property
+    def last_modified(self) -> datetime | None: ...
+
+
+def packs_record_last_modified(collection: str) -> bool:
+    """Whether a collection's packs record each object's listed LastModified: documents, whose ties it orders."""
+    return collection == DOCUMENT_COLLECTION
+
+
+def evidence_pack_type(collection: str) -> str:
+    """The pack format a collection's evidence uses."""
+    return DOCUMENT_EVIDENCE_PACK_TYPE if packs_record_last_modified(collection) else EVIDENCE_PACK_TYPE
 
 
 class MirrulationsObjectReader(Protocol):

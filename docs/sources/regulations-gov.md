@@ -16,7 +16,11 @@ The [CLI](../cli.md#publish) requires dates and named agencies:
 | Comments | `postedDate` | `modifyDate` |
 
 - An object's S3 path, collection, agency, and body identity must agree.
-  Refetch filename suffixes do not create new identities.
+  Refetch filename suffixes do not create new identities, and do not order
+  them either: the mirror rewrites `X.json` in place and reuses `X(n)` after an
+  older `X(1)(2)…` chain. Document packs also record each object's listed S3
+  `LastModified` (`mirrulations-evidence-pack-v2`); docket and comment packs
+  stay `v1`.
 - Documents with null or unusable posted dates remain excluded evidence.
   Dockets and comments require their respective scope dates.
 - Each query acquires the full named agency/collection listing, then selects
@@ -45,13 +49,18 @@ and receipt are in `spicy_docs.sources.regulations_gov.dates`.
 
 | Collection | Repeated winning version |
 | --- | --- |
-| Documents | Identical canonical records collapse. If only `openForComment` or `withinCommentPeriod` differs, the last-listed observation wins. Other differences refuse publication. |
+| Documents | Identical canonical records collapse. If only `openForComment` or `withinCommentPeriod` differs, the observation written last wins when its listed `LastModified` is more than an hour after every other's; otherwise the smallest record digest among those written within the hour of the newest wins, a stable choice not asserted to be the latest. Other differences refuse publication. |
 | Dockets | Identical canonical records collapse; differences refuse publication. |
 | Comments | Every repeated identity/version refuses publication, including identical records and null versions. |
 
 The two document fields can change without a new source version. Tie comparison
 omits only those fields; the selected record digest includes both, and evidence
 retains every observation. See [source-specific rules](../decisions.md#similar-sources-can-need-different-rules).
+The hour is measured: the April 2025 bulk upload wrote each record's copies at
+most 12 seconds apart, in upload order, and only 5 of 19,723 later consecutive
+writes fall within an hour ([decision](../decisions.md#a-volatile-document-tie-goes-to-the-latest-write),
+`VOLATILE_TIE_MARGIN_SECONDS`). Copies from that upload therefore take the
+content choice; every later write is ordered by S3.
 
 Closed classifiers refuse unknown fields, malformed identity, wrong agency, and
 ambiguous versions. Renditions preserve attachment locators and metadata; they
@@ -61,9 +70,12 @@ public table, retaining the source release and blob store for original JSON.
 Policy `1.2` pins rendition typing: publisher media types or known aliases take
 precedence, then the final URL path extension supplies a known type. Queries,
 fragments and parent directory names do not supply an extension. JSON becomes
-`application/json`; unknown types remain `application/octet-stream`. All three
-profiles share this policy version; dockets still state no renditions. Current
-readers refuse earlier policies. The raw record schemas remain `1.0`.
+`application/json`; unknown types remain `application/octet-stream`. Dockets
+state no renditions. Every later version keeps this typing: comments moved to
+`1.3` when identical same-instant repeats began to collapse, and documents moved
+to `1.3` for the `LastModified` tie rule and `v2` packs. Dockets remain on `1.2`.
+Current readers refuse earlier policies; replay a `1.2` document release with
+SpicyDocs 0.44.0. The raw record schemas remain `1.0`.
 
 ## Change and check
 

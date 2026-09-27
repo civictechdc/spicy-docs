@@ -27,8 +27,17 @@ classification separately retains original structure.
 | Mode | Behavior | Caller responsibility |
 | --- | --- | --- |
 | `iter_records()` | May omit processed keys; yields JSON in download-completion order. Default factory caches an agency's multi-collection listing. | Retain final processed keys, outcomes, and run provenance. |
+| `reader_factory(..., with_keys=True)` | `iter_records()` yields `KeyedPayload(key, last_modified, payload)` instead, `last_modified` from the same GET. | Order a record's re-fetches by `last_modified`, never by the key's suffix. |
 | `reader_factory(..., bounded=True)` | Streams the listing, fails after a transient retry, and avoids retaining processed keys. | Own checkpoints or full retry and completion receipts. |
-| `iter_source_objects()` | Lists and yields in key order; pins GETs to listed ETags and checks metadata/bytes. | Preserve exact objects through the [release evidence pack](regulations-gov.md). |
+| `iter_source_objects()` | Lists and yields in key order; pins GETs to listed ETags and checks metadata/bytes. Each object carries its listed `last_modified`. | Preserve exact objects through the [release evidence pack](regulations-gov.md). |
+
+**Re-fetches.** The mirror keeps each re-fetch of a record as another object, but
+its `(n)` suffix is not a fetch order: `X.json` is rewritten in place, and a flat
+`X(2).json` written in 2026 sorts below an `X(1)(2)…(17).json` chain from 2025.
+S3 `LastModified` orders every write since the April 2025 bulk upload; copies
+from that upload lie seconds apart in upload order and cannot be ordered. The
+release path's rule and its measurement are in the
+[decision](../decisions.md#a-volatile-document-tie-goes-to-the-latest-write).
 
 **Recovery.** A 401/403 during an agency-object listing or GET raises
 `MirrulationsAccessRefusedError`, a `CredentialRefusedError`. It ends the run
@@ -90,11 +99,14 @@ iteration cancels queued work; running calls finish under their transport limits
 `derived-data/<agency>/<docket>/mirrulations/extracted_txt/comments_extracted_text/<tool>/`.
 
 - `list_docket_derived_text(resource, agency, docket_id)` lists that prefix once
-  for every tool and returns a `CommentDerivedText` per comment: one tool, chosen
-  by the pinned `DERIVED_TEXT_TOOLS` order (the measurement is beside it), the
-  tools that were available, and `DerivedAttachment(attachment, tool, key, size,
-  etag)` records in numeric order. An attachment the chosen tool lacks is not
-  filled from another tool; `only_in_other_tools` names the numbers another tool has.
+  for every tool and returns a `CommentDerivedText` per comment: the primary
+  `tool`, first by the pinned `DERIVED_TEXT_TOOLS` order (the measurement is
+  beside it), the tools that were available, and `DerivedAttachment(attachment,
+  tool, key, size, etag)` records in numeric order. Each number comes from the
+  best-ranked tool that lists an object for it, and each record names that tool;
+  `only_in_other_tools` names the numbers filled from a tool other than the
+  primary. A primary object that exists is kept even when empty. See the
+  [decision](../decisions.md#a-comments-missing-attachment-text-comes-from-the-next-tool).
 - A key outside the layout means the comments may be incomplete, so the docket
   is refused. `strict=False` returns the readable comments and the rest as
   `unrecognized_keys`; a caller that passes it must check that field before

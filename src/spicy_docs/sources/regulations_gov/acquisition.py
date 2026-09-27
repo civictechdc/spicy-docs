@@ -17,11 +17,13 @@ from spicy_docs.sources.regulations_gov.definitions import (
     RegulationsGovPage,
     RegulationsGovRead,
     RegulationsGovSourceError,
+    packs_record_last_modified,
 )
 from spicy_docs.sources.regulations_gov.evidence import (
     _decode_json,
     _pack_bytes,
     _PackedObject,
+    last_modified_text,
 )
 from spicy_docs.sources.regulations_gov.records import (
     _key_claimed_identity,
@@ -83,6 +85,11 @@ def _iter_pages(
                     raise RegulationsGovSourceError(f"Mirrulations object {key} version is invalid")
                 if not isinstance(content, bytes) or not content or len(content) > MAX_OBJECT_BYTES:
                     raise RegulationsGovSourceError(f"Mirrulations object {key} bytes are invalid")
+                last_modified = (
+                    last_modified_text(getattr(source_object, "last_modified", None), key)
+                    if packs_record_last_modified(collection)
+                    else None
+                )
                 record = classifier(_decode_json(content))
                 identity = source_record_id(record)
                 if _key_claimed_identity(key) != identity:
@@ -153,6 +160,7 @@ def _iter_pages(
                     version_id=version_id,
                     content=content,
                     included=included,
+                    last_modified=last_modified,
                 )
             )
             pack_raw_bytes += len(content)

@@ -6,12 +6,14 @@ differing bodies at one normalized instant still refuse a tie.
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from zipfile import ZipFile
 
 import pytest
 
+from spicy_docs.releases.observations import volatile_tie_choice
 from spicy_docs.source_native import (
     SourceNativeReleaseError,
     SourceNativeReleasePublisher,
@@ -21,7 +23,8 @@ from spicy_docs.source_native.profiles import (
     REGULATIONS_GOV_DOCUMENT_PROFILE,
 )
 from spicy_docs.source_native.regulations_gov import (
-    DOCUMENT_TIE_VOLATILE_FIELDS,
+    VOLATILE_TIE_MARGIN_SECONDS,
+    document_source_record_digest,
     iter_regulations_gov_docket_pages,
     iter_regulations_gov_document_pages,
 )
@@ -284,68 +287,194 @@ def test_repeated_normalized_document_versions_refuse_a_tie(tmp_path: Path) -> N
         )
 
 
-def test_read_time_derived_field_only_difference_collapses_without_tying(tmp_path: Path) -> None:
-    """Collapse a tied version whose only difference is read-time ``openForComment``: BIS-2023-0021-0001
-    refetches can cross the comment deadline without changing modifyDate, so the last-listed object
-    (openForComment=True here) publishes as the only available fetch-recency signal, and the discarded
-    observation is counted and retained.
-    """
-    assert DOCUMENT_TIE_VOLATILE_FIELDS == {"openForComment", "withinCommentPeriod"}
-    identity = "BIS-2023-0021-0001"
-    closed = _document(
-        identity,
-        agencyId="BIS",
-        docketId="BIS-2023-0021",
-        modifyDate="2023-10-13T01:04:10Z",
-        postedDate="2023-10-01T00:00:00Z",
-        openForComment=False,
-    )
-    reopened = _document(
-        identity,
-        agencyId="BIS",
-        docketId="BIS-2023-0021",
-        modifyDate="2023-10-13T01:04:10Z",
-        postedDate="2023-10-01T00:00:00Z",
-        openForComment=True,
-    )
-    scope = _bis_document_scope()
-    release = tmp_path / "documents"
-
+def _publish_documents(tmp_path: Path, name: str, objects: list, scope: dict[str, object]) -> tuple[list, dict]:
+    """Publish one document release from listed objects; its records and receipt. Publishing replays the release
+    from its retained evidence, so a selection that evidence cannot reproduce fails here."""
+    release = tmp_path / name
     published = SourceNativeReleasePublisher(
         REGULATIONS_GOV_DOCUMENT_PROFILE,
         blob_store=LocalSourceNativeBlobStore(tmp_path / "blobs"),
         clock=_completed_at,
     ).publish(
-        iter_regulations_gov_document_pages(
-            lambda _agency: _Reader(
-                [
-                    _document_object(identity, value=closed, tag="1", agency="BIS", docket_id="BIS-2023-0021"),
-                    _document_object(identity, value=reopened, tag="2", agency="BIS", docket_id="BIS-2023-0021"),
-                ]
-            ),
-            query_scope=scope,
-        ),
+        iter_regulations_gov_document_pages(lambda _agency: _Reader(objects), query_scope=scope),
         build=_build(scope),
         destination=release,
     )
-    reader = _reader(release, published.artifact.pin, REGULATIONS_GOV_DOCUMENT_PROFILE)
+    records = list(_reader(release, published.artifact.pin, REGULATIONS_GOV_DOCUMENT_PROFILE).iter_records())
+    return records, json.loads((release / "receipts/publication.json").read_bytes())
 
-    published_records = list(reader.iter_records())
-    assert len(published_records) == 1
-    assert published_records[0]["record"]["data"]["attributes"]["openForComment"] is True
 
-    receipt = json.loads((release / "receipts/publication.json").read_bytes())
-    assert receipt["discoveredRecordCount"] == 2
-    assert receipt["inputObservationCount"] == 2
-    assert receipt["publishedRecordCount"] == 1
+def _flag(records: list) -> object:
+    assert len(records) == 1
+    return records[0]["record"]["data"]["attributes"]["openForComment"]
+
+
+def _at(stamp: str) -> datetime:
+    return datetime.fromisoformat(stamp)
+
+
+def test_volatile_tie_goes_to_the_later_write_listed_before_a_bulk_uploaded_base(tmp_path: Path) -> None:
+    """ACF-2023-0003's shape (live listing 2026-09-27): the base ``X.json`` came in the April 2025 bulk upload, and a
+    re-fetch in 2026 was written as the flat ``X(2).json``, which S3 lists first. Both state one modifyDate and differ
+    only in ``openForComment``; the later write (closed) publishes, not the last-listed base (open)."""
+    identity, docket = "ACF-2023-0003-0001", "ACF-2023-0003"
+    open_, closed = (
+        _document(
+            identity,
+            agencyId="ACF",
+            docketId=docket,
+            modifyDate="2023-10-13T01:04:10Z",
+            postedDate="2023-09-01T00:00:00Z",
+            openForComment=flag,
+        )
+        for flag in (True, False)
+    )
+    objects = [
+        _document_object(
+            identity,
+            value=closed,
+            tag=docket,
+            agency="ACF",
+            docket_id=docket,
+            key_suffix="(2)",
+            last_modified=_at("2026-07-22T04:32:38Z"),
+        ),
+        _document_object(
+            identity, value=open_, tag=docket, agency="ACF", docket_id=docket, last_modified=_at("2025-04-06T15:59:52Z")
+        ),
+    ]
+
+    records, receipt = _publish_documents(tmp_path, "documents", objects, _acf_document_scope())
+
+    assert _flag(records) is False
+    assert (receipt["inputObservationCount"], receipt["publishedRecordCount"]) == (2, 1)
     assert receipt["discardedObservationCount"] == 1
 
-    # Both mirror objects -- differing only in openForComment -- stay
-    # byte-exact in acquisition evidence; the collapse happens only at
-    # selection.
-    discovered = [record for row in payload_rows(release, "acquisition-pages") for record in row["discoveredRecords"]]
-    assert [record["sourceRecordId"] for record in discovered] == [identity, identity]
-    assert len({record["recordDigest"] for record in discovered}) == 2
+
+def test_volatile_tie_goes_to_the_later_write_after_a_rewritten_base(tmp_path: Path) -> None:
+    """BIS_FRDOC_0001's shape (live listing 2026-09-27): a stacked chain from the April 2025 bulk upload, the base
+    ``X.json`` rewritten in place on 2026-04-09, then flat re-fetches up to ``X(8).json`` on 2026-09-24. S3 lists the
+    base last, so the last-listed rule published the April copy; the September write publishes."""
+    identity, docket = "BIS_FRDOC_0001-0123", "BIS_FRDOC_0001"
+
+    def version(modified: str, flag: bool) -> dict:
+        return _document(
+            identity,
+            agencyId="BIS",
+            docketId=docket,
+            modifyDate=modified,
+            postedDate="2023-03-01T00:00:00Z",
+            openForComment=flag,
+        )
+
+    objects = [
+        _document_object(
+            identity,
+            value=version("2023-03-02T01:00:00Z", True),
+            tag=docket,
+            agency="BIS",
+            docket_id=docket,
+            key_suffix="(1)(2)(3)",
+            last_modified=_at("2025-04-13T04:42:07Z"),
+        ),
+        _document_object(
+            identity,
+            value=version("2023-10-13T01:04:10Z", False),
+            tag=docket,
+            agency="BIS",
+            docket_id=docket,
+            key_suffix="(8)",
+            last_modified=_at("2026-09-24T16:52:41Z"),
+        ),
+        _document_object(
+            identity,
+            value=version("2023-10-13T01:04:10Z", True),
+            tag=docket,
+            agency="BIS",
+            docket_id=docket,
+            last_modified=_at("2026-04-09T15:19:10Z"),
+        ),
+    ]
+
+    records, receipt = _publish_documents(tmp_path, "documents", objects, _bis_document_scope())
+
+    assert _flag(records) is False
+    assert (receipt["inputObservationCount"], receipt["discardedObservationCount"]) == (3, 2)
+
+
+@pytest.mark.parametrize(
+    ("docket", "identity", "suffixes", "written"),
+    [
+        # DEA-2023-0148-0026 as listed 2026-09-27: its tied copies are the ends of a stacked chain that the April 2025
+        # bulk upload wrote in one second, so LastModified cannot order them.
+        (
+            "DEA-2023-0148",
+            "DEA-2023-0148-0026",
+            ("(1)(2)(3)(4)(5)(6)(7)(8)(9)(10)(11)", "(1)(2)(3)(4)(5)(6)(7)(8)(9)(10)"),
+            ("2025-04-13T12:58:33Z", "2025-04-13T12:58:33Z"),
+        ),
+        # Two live flat re-fetches 3,010 s apart, the second-closest pair of consecutive later writes measured.
+        ("DEA-2024-0001", "DEA-2024-0001-0001", ("(3)", "(4)"), ("2026-08-20T13:18:51Z", "2026-08-20T14:09:01Z")),
+    ],
+    ids=["bulk-uploaded-stacked-chain", "live-writes-within-the-margin"],
+)
+def test_volatile_tie_within_the_margin_takes_the_smallest_digest_in_either_order(
+    tmp_path: Path, docket: str, identity: str, suffixes: tuple[str, str], written: tuple[str, str]
+) -> None:
+    """Writes no more than ``VOLATILE_TIE_MARGIN_SECONDS`` apart carry no fetch order, so the tie publishes the smaller
+    record digest -- a stable choice, not the latest -- whichever key holds which copy."""
+    open_, closed = (
+        _document(
+            identity,
+            agencyId="DEA",
+            docketId=docket,
+            modifyDate="2024-04-02T01:04:01Z",
+            postedDate="2024-01-03T05:00:00Z",
+            openForComment=flag,
+        )
+        for flag in (True, False)
+    )
+    stable = min((open_, closed), key=document_source_record_digest)["data"]["attributes"]["openForComment"]
+    scope = {"agencies": ["DEA"], "publishedFrom": "2024-01-01", "publishedThrough": "2024-12-31"}
+    published = []
+    for name, bodies in (("as-listed", (open_, closed)), ("swapped", (closed, open_))):
+        objects = [
+            _document_object(
+                identity,
+                value=body,
+                tag=docket,
+                agency="DEA",
+                docket_id=docket,
+                key_suffix=suffix,
+                last_modified=_at(stamp),
+            )
+            for body, suffix, stamp in zip(bodies, suffixes, written, strict=True)
+        ]
+        published.append(_flag(_publish_documents(tmp_path, name, objects, scope)[0]))
+
+    assert published == [stable, stable]
+
+
+@pytest.mark.parametrize(
+    ("rows", "expected"),
+    [
+        # One hour and one second apart: the later write, though listed first.
+        ([(0, 1_000 + 3_601, "sha256:c"), (1, 1_000, "sha256:b")], 0),
+        # Exactly the margin apart: not clearly apart, so the smaller digest.
+        ([(0, 1_000, "sha256:b"), (1, 1_000 + 3_600, "sha256:c")], 0),
+        # The newest must lead every other copy; the choice stays among the two it does not lead, never the
+        # older copy with the smallest digest overall.
+        ([(2, 0, "sha256:a"), (0, 90_000, "sha256:c"), (1, 90_010, "sha256:b")], 1),
+        # A copy without a stated write cannot be ordered.
+        ([(0, None, "sha256:b"), (1, 90_000, "sha256:c")], 0),
+        # Equal smallest digests fall to the earliest ordinal.
+        ([(3, 5, "sha256:a"), (1, 5, "sha256:a"), (2, 6, "sha256:b")], 1),
+    ],
+    ids=["clearly-apart", "at-the-margin", "leads-every-copy", "unstated-write", "equal-digests"],
+)
+def test_volatile_tie_choice(rows: list, expected: int) -> None:
+    assert VOLATILE_TIE_MARGIN_SECONDS == 3_600
+    assert volatile_tie_choice(rows, margin_seconds=VOLATILE_TIE_MARGIN_SECONDS) == expected
 
 
 def test_read_time_derived_field_difference_with_a_substantive_difference_still_refuses_the_tie(

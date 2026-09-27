@@ -13,7 +13,7 @@ REGULATIONS_GOV_DOCUMENT_PROFILE: Final = SourceNativeProfile(
     source_system_id=definitions.DOCUMENT_SOURCE_SYSTEM_ID,
     source_system_version=definitions.SOURCE_SYSTEM_VERSION,
     acquisition_policy_id=definitions.DOCUMENT_ACQUISITION_POLICY_ID,
-    acquisition_policy_version=definitions.ACQUISITION_POLICY_VERSION,
+    acquisition_policy_version=definitions.DOCUMENT_ACQUISITION_POLICY_VERSION,
     scope_id=definitions.DOCUMENT_SCOPE_ID,
     source_schema_key=definitions.DOCUMENT_SOURCE_SCHEMA_KEY,
     source_schema=schemas.REGULATIONS_GOV_DOCUMENT_SCHEMA,
@@ -49,6 +49,11 @@ REGULATIONS_GOV_DOCUMENT_PROFILE: Final = SourceNativeProfile(
     # (openForComment); judge those ties on the narrower digest instead of
     # refusing (2026-09-02, spec §4 amendment).
     tie_comparison_digest=records.document_tie_comparison_digest,
+    # Such a tie publishes the copy the mirror wrote last, by listed S3
+    # LastModified, when it leads every other by the measured margin; else the
+    # smallest record digest (policy 1.3, 2026-09-27; see VOLATILE_TIE_MARGIN_SECONDS).
+    result_written_at=evidence.results_written_at,
+    written_at_margin_seconds=definitions.VOLATILE_TIE_MARGIN_SECONDS,
 )
 
 REGULATIONS_GOV_DOCKET_PROFILE: Final = SourceNativeProfile(

@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from functools import partial
 from io import BytesIO
 from typing import Any
@@ -21,11 +23,12 @@ from spicy_docs.sources.regulations_gov.definitions import (
     COMMENT_COLLECTION,
     DOCKET_COLLECTION,
     DOCUMENT_COLLECTION,
-    EVIDENCE_PACK_TYPE,
     MAX_EVIDENCE_PACK_OBJECTS,
     MAX_EVIDENCE_PACK_RAW_BYTES,
     MAX_OBJECT_BYTES,
     RegulationsGovSourceError,
+    evidence_pack_type,
+    packs_record_last_modified,
 )
 from spicy_docs.sources.regulations_gov.records import (
     _data_attributes,
@@ -40,6 +43,34 @@ from spicy_docs.sources.regulations_gov.validation import (
 _decode_json = partial(
     load_integer_json, source="Regulations.gov", error_type=RegulationsGovSourceError, number_label="float"
 )
+
+# A pack's one spelling of a listed LastModified: whole-second UTC. S3 states whole seconds.
+_LAST_MODIFIED_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+_LAST_MODIFIED = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z")
+_OBJECT_FIELDS = frozenset({"byteSize", "entry", "etag", "included", "key", "versionId"})
+
+
+def last_modified_text(value: object, key: str) -> str:
+    """A listed ``LastModified`` in the pack's spelling, refusing a missing or naive one."""
+    if not isinstance(value, datetime) or value.utcoffset() is None:
+        raise RegulationsGovSourceError(f"Mirrulations object {key} lacks a listed LastModified")
+    return value.astimezone(UTC).strftime(_LAST_MODIFIED_FORMAT)
+
+
+def _last_modified_seconds(value: object) -> int:
+    """POSIX seconds of a pack's LastModified, refusing any other spelling."""
+    if not isinstance(value, str) or _LAST_MODIFIED.fullmatch(value) is None:
+        raise RegulationsGovSourceError("Mirrulations evidence-pack LastModified is not whole-second UTC")
+    try:
+        parsed = datetime.strptime(value, _LAST_MODIFIED_FORMAT).replace(tzinfo=UTC)
+    except ValueError as error:
+        raise RegulationsGovSourceError("Mirrulations evidence-pack LastModified is not a date") from error
+    return int(parsed.timestamp())
+
+
+def results_written_at(response: Mapping[str, Any]) -> Sequence[int]:
+    """Each result's listed LastModified in POSIX seconds, in results order (document packs only)."""
+    return response["_resultsWrittenAt"]
 
 
 def _enumeration_entry(value: object) -> dict[str, Any]:
@@ -76,6 +107,8 @@ class _PackedObject:
     version_id: str | None
     content: bytes
     included: bool
+    # Listed LastModified in the pack's spelling, where packs_record_last_modified.
+    last_modified: str | None = None
 
 
 def _pack_bytes(
@@ -90,6 +123,9 @@ def _pack_bytes(
         raise RegulationsGovSourceError("Mirrulations evidence pack has too many objects")
     if sum(len(item.content) for item in objects) > MAX_EVIDENCE_PACK_RAW_BYTES:
         raise RegulationsGovSourceError("Mirrulations evidence pack exceeds its raw-byte bound")
+    last_modified = packs_record_last_modified(collection)
+    if last_modified and any(item.last_modified is None for item in objects):
+        raise RegulationsGovSourceError("Mirrulations document evidence needs every object's LastModified")
     manifest_objects = [
         {
             "byteSize": len(item.content),
@@ -99,13 +135,14 @@ def _pack_bytes(
             "key": item.key,
             "versionId": item.version_id,
         }
+        | ({"lastModified": item.last_modified} if last_modified else {})
         for index, item in enumerate(objects)
     ]
     manifest = canonical_json_bytes(
         {
             "agency": agency,
             "collection": collection,
-            "evidenceType": EVIDENCE_PACK_TYPE,
+            "evidenceType": evidence_pack_type(collection),
             "objects": manifest_objects,
             "packIndex": pack_index,
             "terminal": terminal,
@@ -148,7 +185,7 @@ def _parse_page_response(
         terminal = manifest.get("terminal")
         if (
             manifest.get("collection") != collection
-            or manifest.get("evidenceType") != EVIDENCE_PACK_TYPE
+            or manifest.get("evidenceType") != evidence_pack_type(collection)
             or not isinstance(agency, str)
             or _ASCII_ID.fullmatch(agency) is None
             or isinstance(pack_index, bool)
@@ -163,12 +200,15 @@ def _parse_page_response(
         expected_names = ["manifest.json"]
         entries: list[dict[str, Any]] = []
         packed_records: list[dict[str, Any]] = []
+        written_at: list[int] = []
         raw_byte_count = 0
+        last_modified = packs_record_last_modified(collection)
+        fields = _OBJECT_FIELDS | {"lastModified"} if last_modified else _OBJECT_FIELDS
         for index, value in enumerate(values):
             row = _closed_mapping(
                 value,
-                allowed=frozenset({"byteSize", "entry", "etag", "included", "key", "versionId"}),
-                required=frozenset({"byteSize", "entry", "etag", "included", "key", "versionId"}),
+                allowed=fields,
+                required=fields,
                 label="Mirrulations evidence-pack object",
             )
             entry = row.get("entry")
@@ -199,16 +239,21 @@ def _parse_page_response(
                 raise RegulationsGovSourceError("Mirrulations evidence-pack record agency differs")
             entries.append({"agency": agency, **metadata})
             packed_records.append({"included": included, "record": record})
+            if last_modified:
+                seconds = _last_modified_seconds(row.get("lastModified"))
+                if included:
+                    written_at.append(seconds)
         if names != expected_names:
             raise RegulationsGovSourceError("Mirrulations evidence pack has extra or reordered members")
     results = [item["record"] for item in packed_records if item["included"]]
     return {
         "_agency": agency,
         "_collection": collection,
-        "_evidenceType": EVIDENCE_PACK_TYPE,
+        "_evidenceType": evidence_pack_type(collection),
         "_objects": entries,
         "_packIndex": pack_index,
         "_packedRecords": packed_records,
+        **({"_resultsWrittenAt": written_at} if last_modified else {}),
         "_terminal": terminal,
         "count": len(results),
         "next_page_url": None,

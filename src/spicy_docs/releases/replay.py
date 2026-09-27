@@ -23,6 +23,7 @@ from spicy_docs.releases.format import (
 from spicy_docs.releases.observations import (
     _accepted_traversal,
     _observation_version,
+    _results_written_at,
     _select_observations,
 )
 from spicy_docs.releases.partitions import (
@@ -56,7 +57,7 @@ def _replay_acquisition(
         "UNIQUE (traversal, window_index, window_page));"
         "CREATE TABLE observations (traversal INTEGER, ordinal INTEGER, source_record_id TEXT, "
         "source_version TEXT, selected INTEGER NOT NULL DEFAULT 0, record_digest TEXT, "
-        "record_payload BLOB, evidence_ref TEXT, PRIMARY KEY (traversal, ordinal));"
+        "record_payload BLOB, evidence_ref TEXT, written_at INTEGER, PRIMARY KEY (traversal, ordinal));"
         "CREATE TABLE failures (traversal INTEGER, source_record_id TEXT, evidence_ref TEXT, "
         "PRIMARY KEY (traversal, source_record_id));"
     )
@@ -218,6 +219,7 @@ def _replay_acquisition(
             if not isinstance(discovered, list):
                 raise SourceNativeReleaseError("acquisition page discoveredRecords is not an array")
             expected_discovered = []
+            written_at = _results_written_at(profile, response) if records_included else []
             for record_index, raw in enumerate(response["results"] if records_included else ()):
                 try:
                     classified = profile.classify_record(raw)
@@ -249,7 +251,7 @@ def _replay_acquisition(
                 expected_discovered.append({"recordDigest": digest, "sourceRecordId": identity})
                 try:
                     connection.execute(
-                        "INSERT INTO observations VALUES (?, ?, ?, ?, 0, ?, ?, ?)",
+                        "INSERT INTO observations VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?)",
                         (
                             traversal,
                             ordinal,
@@ -258,6 +260,7 @@ def _replay_acquisition(
                             digest,
                             canonical_json_bytes(wrapped),
                             evidence_ref,
+                            written_at[record_index],
                         ),
                     )
                 except sqlite3.IntegrityError as error:

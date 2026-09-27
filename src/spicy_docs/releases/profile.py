@@ -204,6 +204,13 @@ class SourceNativeProfile:
     # refusing as an unresolved tie -- its result is never published or
     # stored, and it must not change what record_digest covers.
     tie_comparison_digest: Callable[[Mapping[str, Any]], str] | None = None
+    # A tie that tie_comparison_digest collapses publishes its latest write when this states each page
+    # result's source write instant (POSIX seconds, in results order) and the newest leads every other
+    # observation by more than written_at_margin_seconds. Otherwise the smallest record digest among the
+    # observations within that margin of the newest (all of them, without write instants) publishes:
+    # stable under reordered input, never asserted to be the latest (observations.volatile_tie_choice).
+    result_written_at: Callable[[Mapping[str, Any]], Sequence[int]] | None = None
+    written_at_margin_seconds: int = 0
 
     # Opt-in source rules for whole files; existing byte profiles keep their bound.
     parse_page_stream: ParsePageStream | None = None
@@ -234,6 +241,10 @@ class SourceNativeProfile:
             raise ValueError("equal observation versions can be refused only by a versioned profile")
         if self.tie_comparison_digest is not None and self.observation_version is None:
             raise ValueError("a tie comparison digest can only judge ties on a versioned profile")
+        if self.result_written_at is not None and self.tie_comparison_digest is None:
+            raise ValueError("write instants only order ties a tie comparison digest collapses")
+        if type(self.written_at_margin_seconds) is not int or self.written_at_margin_seconds < 0:
+            raise ValueError("the write-instant margin must be a nonnegative integer of seconds")
 
         if self.source_state_scope == "complete-snapshot" and self.traversal_acceptance != "source-enumeration":
             raise ValueError("complete source state requires a source-enumeration acceptance proof")
