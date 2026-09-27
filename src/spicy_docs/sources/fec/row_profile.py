@@ -4,21 +4,18 @@ Coordinates identify observations; financial identifiers remain literal fields.
 No header names, transaction deduplication or amendment interpretation is inferred.
 """
 
-import csv
 import hashlib
 import re
 from collections.abc import Mapping
-from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import cache
-from zipfile import ZipFile
 
 from rulespec_artifacts import canonical_json_bytes, schema_bundle_digest
 
-from spicy_docs.reading.zip_archive import inspect_archive_stream, seekable_stream
 from spicy_docs.releases.profile import SourceNativeBlobPage, SourceNativeProfile
-from spicy_docs.sources.fec.bulk_profile import MAX_DECODED_BYTES, MAX_INVENTORY_BYTES, MAX_MEMBERS
-from spicy_docs.sources.fec.filings import _Lines, filing_records_from_stream
+from spicy_docs.sources.fec.bulk_profile import MAX_DECODED_BYTES, MAX_MEMBERS
+from spicy_docs.sources.fec.delimited import delimited_rows, selected_stream
+from spicy_docs.sources.fec.filings import filing_records_from_stream
 from spicy_docs.sources.fec.originals import MAX_FILE_BYTES, original_capture
 
 SCHEMA_NAME = "fec-positional-row"
@@ -125,61 +122,6 @@ def iter_retained_positional_rows(scope, *, blob_source):
     )
 
 
-@contextmanager
-def _decoded_stream(stream, scope):
-    capture = scope["capture"]
-    if scope["member"] is None:
-        if capture["byteSize"] > scope["max_decoded_bytes"]:
-            raise ValueError("FEC original exceeds its decoded byte bound")
-        yield stream, None, capture["responseSha256"]
-        return
-    with seekable_stream(stream, byte_size=capture["byteSize"]) as original:
-        inventory = inspect_archive_stream(
-            original,
-            byte_size=capture["byteSize"],
-            max_entries=scope["max_members"],
-            max_decoded_bytes=scope["max_decoded_bytes"],
-            max_metadata_bytes=MAX_INVENTORY_BYTES,
-        )
-        ordinal = scope["member"]["ordinal"]
-        if ordinal >= len(inventory["members"]):
-            raise ValueError("FEC selected ZIP member is missing")
-        selected = inventory["members"][ordinal]
-        if selected["name"] != scope["member"]["name"] or selected["isDirectory"]:
-            raise ValueError("FEC selected ZIP member identity differs or is a directory")
-        # The complete bounded decoder has verified every member. Reuse the same
-        # original for standard streaming reads; never reopen it for each row/page.
-        with ZipFile(original) as archive, archive.open(archive.infolist()[ordinal]) as decoded:
-            yield decoded, scope["member"], selected["sha256"]
-
-
-def _delimited_rows(stream, *, sha256, scope):
-    lines = _Lines(stream, scope["encoding"], scope["max_record_bytes"])
-    while True:
-        lines.start = lines.end
-        fields = next(
-            csv.reader(
-                lines,
-                delimiter=scope["delimiter"],
-                quoting=csv.QUOTE_MINIMAL if scope["quoting"] == "csv" else csv.QUOTE_NONE,
-                strict=True,
-            ),
-            None,
-        )
-        if fields is None:
-            return
-        yield {
-            "kind": "row",
-            "fields": fields,
-            "source": {
-                "sha256": sha256,
-                "byte_offset": lines.start,
-                "byte_length": lines.end - lines.start,
-                "encoding": scope["encoding"],
-            },
-        }
-
-
 def _page(index, rows, *, terminal):
     return {"requestKey": _key(index), "page": index, "results": rows, "terminal": terminal}
 
@@ -195,13 +137,26 @@ def _parse_file(stream, *, query_scope, request_key, evidence_ref, byte_size, me
         expected_media,
     ):
         raise ValueError("FEC row original differs from its selected capture")
-    with _decoded_stream(stream, scope) as (decoded, member, digest):
+    with selected_stream(
+        stream,
+        capture=capture,
+        member=scope["member"],
+        max_members=scope["max_members"],
+        max_decoded_bytes=scope["max_decoded_bytes"],
+    ) as (decoded, member, digest):
         records = (
             filing_records_from_stream(
                 decoded, sha256=digest, encoding=scope["encoding"], max_record_bytes=scope["max_record_bytes"]
             )
             if scope["format"] == "fec"
-            else _delimited_rows(decoded, sha256=digest, scope=scope)
+            else delimited_rows(
+                decoded,
+                sha256=digest,
+                encoding=scope["encoding"],
+                delimiter=scope["delimiter"],
+                quoting=scope["quoting"],
+                max_record_bytes=scope["max_record_bytes"],
+            )
         )
         page, rows, size = 0, [], 0
         for ordinal, parsed in enumerate(records):

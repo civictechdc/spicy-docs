@@ -204,6 +204,7 @@ src/spicy_docs/schemas/document_capture/__init__.py	DocumentCapture schemas and 
 src/spicy_docs/schemas/document_capture/provenance.py	SpicyDocs provenance checks, additional to the unchanged Rulespec schema.	src
 src/spicy_docs/schemas/document_capture/xml.py	Version-1 capture XML: a reversible encoding of parsed DocumentCapture JSON that preserves fields unknown to this…	src
 src/spicy_docs/schemas/document_citation_tables.py	The shared ``document_citations`` link table (one row per occurrence of one cited key, with the exact matched text and…	src
+src/spicy_docs/schemas/fec_committee_history.py	The FEC committee master as a table: one row per committee per two-year cycle, and its row projection.	src
 src/spicy_docs/schemas/federal_register.py	Stable public Federal Register source columns and their faithful projection.	src
 src/spicy_docs/schemas/hearing_bill_link_tables.py	One row per (hearing, bill, source) stating a hearing was held on or noticed for a bill.	src
 src/spicy_docs/schemas/law_tables.py	The ``laws`` table (Congress.gov law list rows joined to their PLAW USLM citation), ``law_code_sections`` (OLRC…	src
@@ -288,6 +289,8 @@ src/spicy_docs/sources/fec/bulk_profile.py	Publish selected original bulk files 
 src/spicy_docs/sources/fec/candidate_profile.py	Publish one pinned OpenFEC candidate query, preserving its literal scope.	src
 src/spicy_docs/sources/fec/catalog.py	Small, source-owned route declarations; no dataset or document catalog.	src
 src/spicy_docs/sources/fec/client.py	Official FEC raw metadata readers and independently selected asset transfers.	src
+src/spicy_docs/sources/fec/committee_master.py	The FEC committee master: one row per committee per two-year cycle, from the bulk ``cm<yy>.zip`` files.	src
+src/spicy_docs/sources/fec/delimited.py	One FEC original or selected ZIP member, decoded and split into literal delimited rows with byte coordinates.	src
 src/spicy_docs/sources/fec/field_layouts.json		config
 src/spicy_docs/sources/fec/filing_profile.py	Publish one pinned, complete OpenFEC processed-filings query observation.	src
 src/spicy_docs/sources/fec/filings.py	Offline positional filing records, separate from financial field mappings.	src
@@ -504,6 +507,7 @@ tests/test_fec_agency.py	Legacy report links published by the current FEC agency
 tests/test_fec_bulk_dictionary.py	Ordered bulk dictionaries retain the source cells that justify each name.	test
 tests/test_fec_bulk_release.py	Bulk releases count original files and preserve every archive entry.	test
 tests/test_fec_candidate_release.py	Candidate-query publication preserves exact scope and source observations.	test
+tests/test_fec_committee_master.py	The FEC committee master reader: the header it checks, the rows it keys, and what it refuses.	test
 tests/test_fec_filing_release.py	Selected filing-query publication preserves observations and source evidence.	test
 tests/test_fec_filings.py	Literal filing syntax and source coordinates; fixtures are not valid reports.	test
 tests/test_fec_financial_history_example.py	Known-answer bounds, refusal and resume controls for the financial-history example.	test

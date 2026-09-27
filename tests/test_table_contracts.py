@@ -1226,6 +1226,32 @@ def _federal_register_cases() -> list[ShapedCase]:
     return [_case("federal_register", row, ("2023-15200", "2023-07-18"))]
 
 
+def _fec_committee_history_cases() -> list[ShapedCase]:
+    """The retained cm24 sample's principal campaign committee, read and projected; its identity written here."""
+    import hashlib
+    import io
+
+    from spicy_docs.schemas.fec_committee_history import project_committee_master_row
+    from spicy_docs.sources.fec.committee_master import (
+        committee_master_header,
+        committee_master_url,
+        iter_committee_master_rows,
+    )
+
+    folder = FIXTURES / "fec" / "committee_master"
+    raw = (folder / "cm24.zip").read_bytes()
+    capture = {
+        "requestUrl": committee_master_url(2024),
+        "observedAt": "2026-09-27T01:00:00+00:00",
+        "responseSha256": "sha256:" + hashlib.sha256(raw).hexdigest(),
+        "byteSize": len(raw),
+        "representation": "zip",
+    }
+    header = committee_master_header((folder / "cm_header_file.csv").read_bytes())
+    rows = list(iter_committee_master_rows(io.BytesIO(raw), capture=capture, cycle=2024, header=header))
+    return [_case("fec_committee_history", project_committee_master_row(rows[2]), ("C00002592", "2024"))]
+
+
 def all_cases() -> list[ShapedCase]:
     cases = (
         _billstatus_only_cases()
@@ -1246,6 +1272,7 @@ def all_cases() -> list[ShapedCase]:
         + _hearing_bill_link_cases()
         + _regulations_cases()
         + _federal_register_cases()
+        + _fec_committee_history_cases()
     )
     if engine_available():
         cases = _family_cases() + cases
@@ -1576,6 +1603,7 @@ FILLED_BY: dict[str, tuple[str, ...]] = {
     "dockets": ("schemas/regulations.py",),
     "documents": ("schemas/regulations.py",),
     "federal_register": ("schemas/federal_register.py", "sources/federal_register/native.py"),
+    "fec_committee_history": ("schemas/fec_committee_history.py", "sources/fec/committee_master.py"),
     "comments": ("schemas/regulations.py",),
 }
 

@@ -103,3 +103,22 @@ covers retained delimited data and raw filing records, known-answer controls,
 stream lifetime, independent replay and an installed core-only wheel. Field-name
 mapping, financial interpretation, database restoration, amendment selection,
 downstream adoption and population backfills retain their separate status.
+
+## The committee master
+
+`spicy_docs.sources.fec.committee_master` reads the bulk committee master directly,
+without a release: one `cm<yy>.zip` per two-year cycle from 1980, each holding only
+`cm.txt`, pipe-delimited with no header and no quoting. `committee_master_url(cycle)`
+names each file, and `committee_master_header` refuses a `cm_header_file.csv` that
+differs from the 15 fields it maps. `iter_committee_master_rows` yields each row keyed
+by those fields, with the member's sha256 and the row's byte coordinates, and refuses
+a capture of another cycle, a ZIP with any other member, and a row of another width.
+The `fec_committee_history` contract projects those rows, one per committee per cycle,
+and a blank field becomes NULL.
+
+Measured on 2026-09-27 over all 24 files: 298,395 rows, 89,710 distinct committees,
+every row 15 fields, and no byte above 0x7F. The reader decodes UTF-8, as the retained
+`cm24` scope does, so a byte that is not UTF-8 refuses instead of changing characters.
+
+The ZIP selection and the row split live once in `spicy_docs.sources.fec.delimited`,
+shared with the positional row profile.
