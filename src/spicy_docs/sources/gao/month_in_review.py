@@ -24,11 +24,13 @@ import argparse
 import json
 import re
 import sys
+import threading
 import time
+from collections import deque
 from collections.abc import Callable, Iterable, Sequence
 from contextlib import nullcontext
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import TYPE_CHECKING, Final
@@ -540,89 +542,139 @@ def _iso(instant: datetime) -> str:
     return instant.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
+@dataclass
+class _Walk:
+    """What the workers of one walk share, read and written only under ``lock``."""
+
+    lock: threading.Lock
+    queue: deque[GaoListingScope]
+    #: The receipts' last recorded contact: every worker's first request waits out the spacing from it.
+    contact: datetime | None
+    begun: int = 0
+    failed: int = 0
+    consecutive_failures: int = 0
+    pause_until: datetime | None = None
+    stop: str | None = None
+
+
 def walk_listing(
     scopes: Sequence[GaoListingScope],
     *,
-    acquirer: GaoListingAcquirer,
+    acquirers: Callable[[], GaoListingAcquirer],
     store: Path,
     receipts: Path,
     zyte_budget: ZyteBudget,
     proxy_records: Callable[[], Sequence[ZyteProxyRecord]] = tuple,
     credential: str = "",
-    spacing_seconds: float | None = None,
+    concurrency: int = 1,
+    spacing_seconds: float = CRAWL_DELAY_SECONDS,
+    failure_backoff_seconds: float = CRAWL_DELAY_SECONDS,
+    max_consecutive_failures: int = 1,
     clock: Callable[[], datetime] = utc_now,
     sleep: Callable[[float], None] = time.sleep,
 ) -> int:
-    """Walk each scope's pages in order, resuming from ``receipts``; 0 when done or stopped at budget, 1 on refusal.
+    """Walk each scope's pages in order, resuming from ``receipts``; 0 when done or stopped at budget, 1 after a failure.
 
     Every page's exact bytes go to ``store`` and one row to ``receipts`` (appended). A retained page is never
-    fetched again; a failure is recorded, stops the walk, and is retried on the next run. Request starts are
-    spaced by ``spacing_seconds`` (default: the acquirer's interval) counted from the last contact the receipts
-    record, so stopping and resuming never shortens the spacing.
+    fetched again. ``concurrency`` workers each take whole scopes in turn, each with its own acquirer from
+    ``acquirers``, so a scope is still read page by page against its first page. A failure is recorded and stops
+    its scope, which the next run retries; the other scopes' pages are kept. Each failure pauses every worker for
+    ``failure_backoff_seconds``, doubling with each failure in a row, and ``max_consecutive_failures`` in a row stop
+    the walk. The default, one worker allowed one failure, stops at the first. The Zyte budget is an exact ceiling:
+    a request is counted before it starts. Each worker spaces its own request starts by ``spacing_seconds``, its
+    first from the last contact the receipts record, so stopping and resuming never shortens the spacing; the
+    default is one request every 420 seconds, the site's stated crawl delay.
     """
     from rulespec_artifacts import LocalBlobWriter
 
     from spicy_docs.reading.refusals import retain_refused_response
     from spicy_docs.transport.credentials import scrub_credential
 
+    if isinstance(concurrency, bool) or not isinstance(concurrency, int) or concurrency < 1:
+        raise ValueError("concurrency must be a positive integer")
+    if (
+        isinstance(max_consecutive_failures, bool)
+        or not isinstance(max_consecutive_failures, int)
+        or max_consecutive_failures < 1
+    ):
+        raise ValueError("max_consecutive_failures must be a positive integer")
+    check_timing(1, spacing_seconds)
+    check_timing(1, failure_backoff_seconds)
     progress, contact = _read_receipts(receipts)
     writer = LocalBlobWriter(store)
     run_id = str(uuid4())
-    spacing = acquirer.budget.min_request_interval_seconds if spacing_seconds is None else spacing_seconds
+    spent_before = zyte_budget.spent
+    shared = _Walk(threading.Lock(), deque(scopes), contact)
     with receipts.open("a", encoding="utf-8") as sink:
 
         def emit(kind: str, **value: object) -> None:
+            """Append one row; callers hold ``shared.lock``, so rows from different workers never interleave."""
             sink.write(
                 scrub_credential(json.dumps({"kind": kind, "run_id": run_id, **value}, ensure_ascii=False), credential)
                 + "\n"
             )
             sink.flush()
 
-        emit(
-            "started",
-            scopes=[scope.key for scope in scopes],
-            max_zyte_requests=zyte_budget.max_requests,
-            spacing_seconds=spacing,
-        )
-        for scope in scopes:
-            state = progress.setdefault(scope.key, _Progress())
+        def begin() -> datetime | None:
+            """Reserve one request under the budget, or stop the walk; returns the pause to wait out, if any."""
+            with shared.lock:
+                if shared.stop is None and spent_before + shared.begun >= zyte_budget.max_requests:
+                    shared.stop = "Zyte request budget reached; run again to resume"
+                if shared.stop is not None:
+                    raise _Stopped
+                shared.begun += 1
+                return shared.pause_until
+
+        def failed(
+            scope: GaoListingScope, page_index: int, attempted: datetime, error: Exception, max_bytes: int
+        ) -> None:
+            detail: dict[str, object] = {
+                "scope": scope.key,
+                "page_index": page_index,
+                "attempted_at": _iso(attempted),
+                "error_type": type(error).__name__,
+                # Scrub before truncating, or a credential's prefix could survive.
+                "error": scrub_credential(str(error), credential)[:1000],
+                "zyte_requests": zyte_budget.spent,
+            }
+            with shared.lock:
+                refused = retain_refused_response(error, store=store, max_bytes=max_bytes, credential=credential)
+                if refused is not None:
+                    detail["refused_evidence"] = refused
+                emit("failed", **detail)
+                shared.failed += 1
+                shared.consecutive_failures += 1
+                backoff = failure_backoff_seconds * 2 ** (shared.consecutive_failures - 1)
+                shared.pause_until = clock() + timedelta(seconds=backoff)
+                if shared.consecutive_failures >= max_consecutive_failures:
+                    shared.stop = f"{shared.consecutive_failures} consecutive failures; run again to retry"
+
+        def walk_scope(acquirer: GaoListingAcquirer, scope: GaoListingScope, last: datetime | None) -> datetime | None:
+            """One scope, page after page; returns this worker's last request start."""
+            with shared.lock:
+                state = progress.setdefault(scope.key, _Progress())
             while (page_index := state.next_page()) is not None:
-                if zyte_budget.spent >= zyte_budget.max_requests:
-                    emit(
-                        "stopped",
-                        reason="Zyte request budget reached; run again to resume",
-                        zyte_requests=zyte_budget.spent,
-                    )
-                    return 0
-                if contact is not None and (wait := spacing - (clock() - contact).total_seconds()) > 0:
+                pause = begin()
+                waits = [spacing_seconds - (clock() - last).total_seconds()] if last is not None else []
+                if pause is not None:
+                    waits.append((pause - clock()).total_seconds())
+                if (wait := max(waits, default=0)) > 0:
                     sleep(wait)
-                contact = clock()
+                last = clock()
                 try:
                     page, capture = acquirer.acquire_page(
                         scope, page_index, expected_last_page_index=state.last, expected_page_size=state.size
                     )
-                    stored = writer.put(
-                        [capture.body], max_bytes=acquirer.budget.max_page_bytes, expected_digest=capture.sha256
-                    )
+                    with shared.lock:
+                        stored = writer.put(
+                            [capture.body], max_bytes=acquirer.budget.max_page_bytes, expected_digest=capture.sha256
+                        )
                 except Exception as error:  # noqa: BLE001 - recorded with its evidence, then retried on resume
-                    detail: dict[str, object] = {
-                        "scope": scope.key,
-                        "page_index": page_index,
-                        "attempted_at": _iso(contact),
-                        "error_type": type(error).__name__,
-                        # Scrub before truncating, or a credential's prefix could survive.
-                        "error": scrub_credential(str(error), credential)[:1000],
-                        "zyte_requests": zyte_budget.spent,
-                    }
-                    refused = retain_refused_response(
-                        error, store=store, max_bytes=acquirer.budget.max_page_bytes, credential=credential
-                    )
-                    if refused is not None:
-                        detail["refused_evidence"] = refused
-                    emit("failed", **detail)
-                    return 1
-                records = proxy_records()
-                record = records[-1] if records and records[-1].requested_url == capture.requested_url else None
+                    failed(scope, page_index, last, error, acquirer.budget.max_page_bytes)
+                    return last
+                record = next(
+                    (item for item in reversed(proxy_records()) if item.requested_url == capture.requested_url), None
+                )
                 row = {
                     "scope": scope.key,
                     "page_index": page_index,
@@ -640,10 +692,66 @@ def walk_listing(
                     "proxy_mode": None if record is None else record.mode,
                     "zyte_request_id": None if record is None else record.zyte_request_id,
                 }
-                emit("page", **row)
-                state.add({**row, "kind": "page"})
-        emit("complete", scopes=[scope.key for scope in scopes], zyte_requests=zyte_budget.spent)
-    return 0
+                with shared.lock:
+                    emit("page", **row)
+                    state.add({**row, "kind": "page"})
+                    shared.consecutive_failures = 0
+            return last
+
+        def worker() -> None:
+            try:
+                with acquirers() as acquirer:
+                    last = shared.contact
+                    while True:
+                        with shared.lock:
+                            if shared.stop is not None or not shared.queue:
+                                return
+                            scope = shared.queue.popleft()
+                        last = walk_scope(acquirer, scope, last)
+            except _Stopped:
+                return
+            except Exception as error:  # noqa: BLE001 - a worker that cannot run stops the walk, recorded
+                with shared.lock:
+                    shared.failed += 1
+                    shared.stop = f"a worker could not run: {type(error).__name__}"
+                    emit(
+                        "failed", error_type=type(error).__name__, error=scrub_credential(str(error), credential)[:1000]
+                    )
+
+        with shared.lock:
+            emit(
+                "started",
+                scopes=[scope.key for scope in scopes],
+                max_zyte_requests=zyte_budget.max_requests,
+                spacing_seconds=spacing_seconds,
+                concurrency=concurrency,
+            )
+        workers = [threading.Thread(target=worker, name=f"gao-listing-{index}") for index in range(concurrency)]
+        for thread in workers:
+            thread.start()
+        for thread in workers:
+            thread.join()
+        unfinished = [
+            scope.key
+            for scope in scopes
+            if progress.get(scope.key, _Progress()).next_page() is not None
+            or progress.get(scope.key, _Progress()).last is None
+        ]
+        with shared.lock:
+            if not unfinished:
+                emit("complete", scopes=[scope.key for scope in scopes], zyte_requests=zyte_budget.spent)
+            else:
+                emit(
+                    "stopped",
+                    reason=shared.stop or "a scope stopped at a failure; run again to retry it",
+                    unfinished=unfinished,
+                    zyte_requests=zyte_budget.spent,
+                )
+    return 1 if shared.failed else 0
+
+
+class _Stopped(Exception):
+    """The walk has stopped; a worker starts no further request."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -810,16 +918,19 @@ def _walk(args: argparse.Namespace) -> int:
             mode=HTTP_RESPONSE_BODY,
             budget=zyte_budget,
         )
-        with GaoListingAcquirer(budget=budget, transport=transport) as acquirer:
-            return walk_listing(
-                scopes,
-                acquirer=acquirer,
-                store=args.store,
-                receipts=args.receipts,
-                zyte_budget=zyte_budget,
-                proxy_records=lambda: transport.records,
-                credential=token,
-            )
+        return walk_listing(
+            scopes,
+            acquirers=lambda: GaoListingAcquirer(budget=budget, transport=transport),
+            store=args.store,
+            receipts=args.receipts,
+            zyte_budget=zyte_budget,
+            proxy_records=lambda: transport.records,
+            credential=token,
+            concurrency=args.concurrency,
+            spacing_seconds=args.delay_seconds,
+            failure_backoff_seconds=args.failure_backoff_seconds,
+            max_consecutive_failures=args.max_consecutive_failures,
+        )
     except (ValueError, OSError) as error:
         print(scrub_credential(str(error), token), file=sys.stderr)
         return 1
@@ -855,7 +966,19 @@ def main(argv: list[str] | None = None) -> int:
     walk.add_argument("--store", type=Path, required=True, help="Content-addressed page store")
     walk.add_argument("--receipts", type=Path, required=True, help="JSONL receipts, appended; the resume state")
     walk.add_argument("--max-zyte-requests", type=int, required=True, help="Hard ceiling on Zyte calls this run")
-    walk.add_argument("--delay-seconds", type=float, default=CRAWL_DELAY_SECONDS, help="Seconds between requests")
+    walk.add_argument(
+        "--delay-seconds", type=float, default=CRAWL_DELAY_SECONDS, help="Seconds between one worker's requests"
+    )
+    walk.add_argument("--concurrency", type=int, default=1, help="Workers, each walking whole scopes in turn")
+    walk.add_argument(
+        "--failure-backoff-seconds",
+        type=float,
+        default=CRAWL_DELAY_SECONDS,
+        help="Pause every worker this long after a failure, doubling for each failure in a row",
+    )
+    walk.add_argument(
+        "--max-consecutive-failures", type=int, default=1, help="Failures in a row that stop the whole walk"
+    )
     walk.add_argument("--timeout-seconds", type=float, default=180.0)
     walk.add_argument("--max-page-bytes", type=int, default=DEFAULT_MAX_PAGE_BYTES)
     read = commands.add_parser("read", help="Verify retained pages offline and print products and decisions as JSONL")

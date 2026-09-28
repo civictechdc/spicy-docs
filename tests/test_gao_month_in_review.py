@@ -54,6 +54,18 @@ def august_site(**replace: bytes) -> dict[str, bytes]:
     return {AUGUST.page_url(index): replace.get(str(index), body) for index, body in enumerate(AUGUST_PAGES)}
 
 
+def month_site(*scopes: GaoListingScope) -> dict[str, bytes]:
+    """August's pages retitled as other months: only the title and canonical link name the month."""
+    site: dict[str, bytes] = {}
+    for scope in scopes:
+        for index, body in enumerate(AUGUST_PAGES):
+            renamed = body.replace(AUGUST.title.encode(), scope.title.encode()).replace(
+                f'rel="canonical" href="{AUGUST.url}"'.encode(), f'rel="canonical" href="{scope.url}"'.encode()
+            )
+            site[scope.page_url(index)] = renamed
+    return site
+
+
 class Clock:
     """A clock that only moves when the walk sleeps."""
 
@@ -69,26 +81,41 @@ class Clock:
 
 
 def walk(
-    tmp_path, zyte: FakeZyte, *, requests: int = 10, clock: Clock | None = None, spacing: float = 0, scopes=(AUGUST,)
+    tmp_path,
+    zyte: FakeZyte,
+    *,
+    requests: int = 10,
+    clock: Clock | None = None,
+    spacing: float = 0,
+    scopes=(AUGUST,),
+    concurrency: int = 1,
+    max_consecutive_failures: int = 1,
 ):
     clock = clock or Clock()
     budget = ZyteBudget(requests)
     transport = ZyteTransport(zyte, max_bytes=4 * 1024 * 1024, timeout_seconds=30, budget=budget)
-    acquirer = GaoListingAcquirer(
-        budget=GaoListingBudget(min_request_interval_seconds=0, timeout_seconds=30), transport=transport, clock=clock
-    )
-    with acquirer:
-        code = walk_listing(
-            list(scopes),
-            acquirer=acquirer,
-            store=tmp_path / "store",
-            receipts=tmp_path / "receipts.jsonl",
-            zyte_budget=budget,
-            proxy_records=lambda: transport.records,
-            spacing_seconds=spacing,
+
+    def acquirers() -> GaoListingAcquirer:
+        return GaoListingAcquirer(
+            budget=GaoListingBudget(min_request_interval_seconds=0, timeout_seconds=30),
+            transport=transport,
             clock=clock,
-            sleep=clock.sleep,
         )
+
+    code = walk_listing(
+        list(scopes),
+        acquirers=acquirers,
+        store=tmp_path / "store",
+        receipts=tmp_path / "receipts.jsonl",
+        zyte_budget=budget,
+        proxy_records=lambda: transport.records,
+        spacing_seconds=spacing,
+        concurrency=concurrency,
+        max_consecutive_failures=max_consecutive_failures,
+        failure_backoff_seconds=60,
+        clock=clock,
+        sleep=clock.sleep,
+    )
     return code, [json.loads(line) for line in (tmp_path / "receipts.jsonl").read_text().splitlines()]
 
 
@@ -255,8 +282,9 @@ def test_a_walk_stops_at_its_zyte_budget_and_resumes_where_it_stopped(tmp_path):
 def test_a_failed_page_stops_the_walk_and_is_retried_on_resume(tmp_path):
     """A provider failure is recorded and stops the walk; resuming retries that page and continues."""
     code, rows = walk(tmp_path, FakeZyte(august_site(), fail={AUGUST.page_url(2)}))
-    assert code == 1 and rows[-1]["kind"] == "failed" and rows[-1]["page_index"] == 2
-    assert "520" in rows[-1]["error"] and rows[-1]["error_type"] == "ZyteTransportError"
+    (failed,) = [row for row in rows if row["kind"] == "failed"]
+    assert code == 1 and failed["page_index"] == 2 and rows[-1]["kind"] == "stopped"
+    assert "520" in failed["error"] and failed["error_type"] == "ZyteTransportError"
     zyte = FakeZyte(august_site())
     assert walk(tmp_path, zyte)[0] == 0 and zyte.calls == [AUGUST.page_url(2), AUGUST.page_url(3)]
 
@@ -269,12 +297,61 @@ def test_a_pager_that_changes_shape_mid_walk_refuses_and_keeps_the_page(tmp_path
     )
     assert moved != AUGUST_PAGES[2]
     code, rows = walk(tmp_path, FakeZyte(august_site(**{"2": moved})))
-    failed = rows[-1]
-    assert code == 1 and failed["kind"] == "failed" and "changed shape" in failed["error"]
+    (failed,) = [row for row in rows if row["kind"] == "failed"]
+    assert code == 1 and "changed shape" in failed["error"]
     assert failed["refused_evidence"]["stage"] == "source-validation"
     assert (
         tmp_path / "store" / "sha256" / failed["refused_evidence"]["sha256"].removeprefix("sha256:")
     ).read_bytes() == moved
+
+
+JUNE, JULY = GaoListingScope(2026, 6), GaoListingScope(2026, 7)
+
+
+def test_parallel_periods_fetch_each_page_once_and_one_periods_failure_spares_the_others(tmp_path):
+    """Periods walk in parallel; a failure stops only its own period, and the others' pages are all kept."""
+    site = month_site(JUNE, JULY, AUGUST)
+    zyte = FakeZyte(site, fail={JULY.page_url(1)})
+    code, rows = walk(tmp_path, zyte, scopes=(JUNE, JULY, AUGUST), concurrency=3, max_consecutive_failures=3)
+    assert code == 1 and len(zyte.calls) == len(set(zyte.calls)) == 10
+    assert [(row["scope"], row["page_index"]) for row in rows if row["kind"] == "failed"] == [("2026-07", 1)]
+    run = read_listing_run(tmp_path / "receipts.jsonl", tmp_path / "store")
+    assert set(run.complete_scopes) == {"2026-06", "2026-08"} and run.incomplete_scopes == ("2026-07",)
+    assert rows[-1]["kind"] == "stopped" and rows[-1]["unfinished"] == ["2026-07"]
+
+    again = FakeZyte(site)
+    code, rows = walk(tmp_path, again, scopes=(JUNE, JULY, AUGUST), concurrency=3)
+    assert code == 0 and sorted(again.calls) == sorted(JULY.page_url(index) for index in (1, 2, 3))
+    run = read_listing_run(tmp_path / "receipts.jsonl", tmp_path / "store")
+    assert len(run.complete_scopes) == 3 and len(run.pages) == 12 and len(run.products) == 33
+    assert {product.scopes for product in run.products} == {("2026-06", "2026-07", "2026-08")}
+
+
+def test_the_zyte_budget_is_an_exact_ceiling_under_concurrency(tmp_path):
+    """Parallel workers never start more requests than the budget, however they interleave."""
+    zyte = FakeZyte(month_site(JUNE, JULY, AUGUST))
+    code, rows = walk(tmp_path, zyte, requests=5, scopes=(JUNE, JULY, AUGUST), concurrency=3)
+    assert code == 0 and len(zyte.calls) == 5 and rows[-1]["kind"] == "stopped"
+    assert "budget" in rows[-1]["reason"] and sum(row["kind"] == "page" for row in rows) == 5
+
+
+def test_consecutive_failures_back_off_and_then_stop_every_period(tmp_path):
+    """Each failure pauses the walk, twice as long as the last, and enough in a row stop it before any other period."""
+    site = month_site(JUNE, JULY, AUGUST)
+    clock = Clock()
+    zyte = FakeZyte(site, fail=set(site))
+    code, rows = walk(tmp_path, zyte, clock=clock, scopes=(JUNE, JULY, AUGUST), max_consecutive_failures=3)
+    assert code == 1 and zyte.calls == [JUNE.page_url(0), JULY.page_url(0), AUGUST.page_url(0)]
+    assert clock.sleeps == [60.0, 120.0] and not [row for row in rows if row["kind"] == "page"]
+    assert rows[-1]["kind"] == "stopped" and "3 consecutive failures" in rows[-1]["reason"]
+
+
+def test_one_worker_stops_at_its_first_failure_by_default(tmp_path):
+    """The default, one worker and one failure allowed, stops the whole walk at the first failure."""
+    zyte = FakeZyte(month_site(JUNE, JULY), fail={JUNE.page_url(1)})
+    code, rows = walk(tmp_path, zyte, scopes=(JUNE, JULY))
+    assert code == 1 and zyte.calls == [JUNE.page_url(0), JUNE.page_url(1)]
+    assert rows[-1]["unfinished"] == ["2026-06", "2026-07"]
 
 
 def test_requests_are_spaced_from_the_last_recorded_contact_across_runs(tmp_path):

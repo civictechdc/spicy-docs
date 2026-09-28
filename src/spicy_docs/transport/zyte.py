@@ -13,6 +13,7 @@ reverse.
 from __future__ import annotations
 
 import hashlib
+import threading
 from collections.abc import Sequence
 from dataclasses import dataclass
 
@@ -23,6 +24,7 @@ from spicy_docs.sources.zyte import (
     HTTP_RESPONSE_BODY,
     MODES,
     ZyteHttpFetcher,
+    ZyteHttpResponse,
     ZyteTransportError,
 )
 
@@ -36,7 +38,7 @@ class ZyteBudget:
 
     A per-acquirer request budget cannot bound spend on a paid proxy, because a
     measurement opens one acquirer per family. This is the one counter that
-    does, and it refuses rather than exceeding its ceiling.
+    does, and it refuses rather than exceeding its ceiling. It is locked, so parallel workers share it exactly.
     """
 
     def __init__(self, max_requests: int) -> None:
@@ -44,15 +46,17 @@ class ZyteBudget:
             raise ZyteTransportError("max_requests must be positive")
         self.max_requests = max_requests
         self._spent = 0
+        self._lock = threading.Lock()
 
     @property
     def spent(self) -> int:
         return self._spent
 
     def take(self) -> None:
-        if self._spent >= self.max_requests:
-            raise ZyteTransportError(f"Zyte request budget of {self.max_requests} is exhausted")
-        self._spent += 1
+        with self._lock:
+            if self._spent >= self.max_requests:
+                raise ZyteTransportError(f"Zyte request budget of {self.max_requests} is exhausted")
+            self._spent += 1
 
 
 @dataclass(frozen=True, slots=True)
@@ -104,6 +108,7 @@ class ZyteTransport(httpx.BaseTransport):
         self._mode = mode
         self._budget = budget
         self._records: list[ZyteProxyRecord] = []
+        self._records_lock = threading.Lock()
 
     @property
     def records(self) -> Sequence[ZyteProxyRecord]:
@@ -133,18 +138,9 @@ class ZyteTransport(httpx.BaseTransport):
             # The caller's client follows no redirect; reporting the proxy's
             # final URL as an answer to the requested one would hide the hop.
             raise ZyteTransportError("Zyte resolved the target to a different URL than the one requested")
-        record = ZyteProxyRecord(
-            ordinal=len(self._records) + 1,
-            requested_url=url,
-            resolved_url=response.resolved_url,
-            mode=response.mode,
-            zyte_request_id=response.request_id,
-            status_code=response.status_code,
-            content_type=response.content_type,
-            byte_size=len(response.body),
-            sha256=hashlib.sha256(response.body).hexdigest(),
-        )
-        self._records.append(record)
+        digest = hashlib.sha256(response.body).hexdigest()
+        with self._records_lock:
+            record = self._record(url, response, digest)
         headers = [("content-type", response.content_type)] if response.content_type else []
         return httpx.Response(
             response.status_code,
@@ -156,6 +152,22 @@ class ZyteTransport(httpx.BaseTransport):
             request=request,
             extensions={"zyte_proxy_record": record},
         )
+
+    def _record(self, url: str, response: ZyteHttpResponse, digest: str) -> ZyteProxyRecord:
+        """Number and keep one record; the caller holds the lock, so parallel requests get distinct ordinals."""
+        record = ZyteProxyRecord(
+            ordinal=len(self._records) + 1,
+            requested_url=url,
+            resolved_url=response.resolved_url,
+            mode=response.mode,
+            zyte_request_id=response.request_id,
+            status_code=response.status_code,
+            content_type=response.content_type,
+            byte_size=len(response.body),
+            sha256=digest,
+        )
+        self._records.append(record)
+        return record
 
 
 __all__ = [

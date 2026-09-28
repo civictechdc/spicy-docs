@@ -501,8 +501,19 @@ uv run --frozen python -m spicy_docs.sources.gao.month_in_review read \
 
 A walk appends one receipt row per page: requested and final URL, status,
 time, digest, blob path and the Zyte request id. It fetches each retained
-page at most once, stops at the budget, and stops at the first failure,
-recording it. Run it again to resume; failed pages are retried.
+page at most once and never starts more requests than `--max-zyte-requests`.
+By default it stops at the first failure, recording it. Run it again to
+resume; failed pages are retried.
+
+The default is the polite walk: one worker, 420 seconds apart. A run can
+override that with flags. `--concurrency N` runs N workers, each taking whole
+scopes in turn, so every scope is still read page by page against its first
+page. `--delay-seconds` spaces each worker's own requests.
+`--max-consecutive-failures` lets a failure stop only its own scope, keeping
+every other scope's pages. Each failure pauses every worker for
+`--failure-backoff-seconds`, doubling with each failure in a row, and that
+many failures in a row stop the whole walk. For the 2009-2026 backfill on
+2026-09-28, the owner ran `--concurrency 6 --delay-seconds 0`.
 `read_listing_run` re-reads only scopes whose every page is retained; a scope
 a walk was asked for but has not finished, started or not, is named
 unfinished. It
