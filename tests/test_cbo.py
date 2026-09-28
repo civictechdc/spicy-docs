@@ -15,15 +15,19 @@ import pytest
 from spicy_docs.sources.cbo import (
     CBO_COST_ESTIMATES_FEED_URL,
     CboAcquirer,
+    CboBillNumberError,
     CboBudget,
     CboChallengeError,
     CboSourceError,
     CboUnavailableError,
     cbo_cost_estimates_feed_locator,
     cbo_estimate_document_locator,
+    cbo_feed_bills,
     cbo_per_congress_feed_locator,
+    feed_item_bills,
     parse_cbo_cost_estimates_feed,
 )
+from spicy_docs.sources.congress.bill_status import BillIdentity
 from spicy_docs.transport import retry
 
 FIXTURES = Path(__file__).parent / "fixtures" / "cbo"
@@ -408,3 +412,93 @@ def test_budget_and_client_configuration_are_explicit():
             )
     with pytest.raises(TypeError):
         CboAcquirer(budget=(3, 4096, 7, 0), transport=Transport())
+
+
+# --- which bills a feed item names ------------------------------------------------
+
+#: Every ``Bill_Number`` form in the 112th and 113th feeds (2026-09-28) and the
+#: 116th-119th (2026-09-14), one real spelling each, with the bill it names.
+#: Receipt: ``~/Work/corpora/fork-execution-2026-09-21/cbo-112-113/`` (``feed-shapes.json``,
+#: ``other-feed-shapes.json``).
+MAPPED_FORMS = (
+    ("H.R. 8", ("hr", 8)),
+    ("S. 2241", ("s", 2241)),
+    ("H.J. Res. 118", ("hjres", 118)),
+    ("H. J. Res. 48", ("hjres", 48)),
+    ("H.J.Res. 124", ("hjres", 124)),
+    ("H.J. Res 45", ("hjres", 45)),
+    ("S.J.Res. 44", ("sjres", 44)),
+    ("S.J. Res. 20", ("sjres", 20)),
+    ("H. Con. Res. 92", ("hconres", 92)),
+    ("H.Con.Res. 103", ("hconres", 103)),
+    ("H.Con.Res 14", ("hconres", 14)),
+    ("H. Con. Res 14", ("hconres", 14)),
+    ("S. Con. Res. 33", ("sconres", 33)),
+    ("H.R 260", ("hr", 260)),
+    ("H.R.681", ("hr", 681)),
+    ("H. R. 3350", ("hr", 3350)),
+    ("H.r. 4679", ("hr", 4679)),
+    ("S.559", ("s", 559)),
+    ("S.  1591", ("s", 1591)),
+)
+
+
+@pytest.mark.parametrize(("bill_number", "expected"), MAPPED_FORMS)
+def test_every_measured_bill_number_form_names_its_one_bill(bill_number, expected):
+    """Each measured spelling maps to the one bill it names, in the feed's own Congress."""
+    assert feed_item_bills(113, bill_number) == (BillIdentity(113, *expected),)
+
+
+def test_an_empty_bill_number_names_no_bill_rather_than_refusing():
+    """CBO's empty Bill_Number (a suspension-calendar notice, a reconciliation title) is a value, not a refusal."""
+    assert feed_item_bills(112, None) == ()
+
+
+@pytest.mark.parametrize(
+    ("bill_number", "shape"),
+    [
+        ("700", "N"),  # 117th: no type to read
+        ("S.A. 948", "S.A. N"),  # 116th: a Senate amendment, not a bill
+        ("H.R. 7529,", "H.R. N,"),  # 119th: trailing text
+        ("H.R. 1, H.R. 2", "H.R. N, H.R. N"),  # a list no feed has stated
+        ("HR 5", "HR N"),
+        ("H.R. 0", "H.R. N"),
+        ("H.Res.Con. 4", "H.Res.Con. N"),
+    ],
+)
+def test_a_bill_number_no_rule_maps_is_refused_with_its_shape(bill_number, shape):
+    """A form outside the measured grammar refuses and names its shape, never guessing a type or splitting a list."""
+    with pytest.raises(CboBillNumberError) as raised:
+        feed_item_bills(113, bill_number)
+    assert raised.value.shape == shape
+    assert isinstance(raised.value, CboSourceError)
+
+
+def test_a_feed_maps_to_a_sorted_bill_set_and_counts_what_names_none():
+    """Two spellings of one bill fold onto it, every item's publication is kept, and a blank or refused item is
+    counted rather than dropped."""
+    items = [
+        ("62001", "H.J. Res. 59"),
+        ("62002", "S. 12"),
+        ("62003", ""),
+        ("62004", "H.J.Res. 59"),
+        ("62005", "S.A. 948"),
+        ("62006", "H.R. 9"),
+    ]
+    body = (
+        b'<?xml version="1.0"?>\n<response>'
+        + b"".join(
+            f'<item key="{index}"><Title>T</Title><Date>Fri, 11 Sep 2026 17:00:00 -0400</Date>'
+            f"<Link>https://www.cbo.gov/publication/{pub}</Link><Description></Description>"
+            f"<Bill_Number>{number}</Bill_Number></item>".encode()
+            for index, (pub, number) in enumerate(items)
+        )
+        + b"</response>"
+    )
+    named = cbo_feed_bills(parse_cbo_cost_estimates_feed(body), 113)
+    assert [(b.identity, b.publication_ids) for b in named.bills] == [
+        (BillIdentity(113, "hjres", 59), ("62001", "62004")),
+        (BillIdentity(113, "hr", 9), ("62006",)),
+        (BillIdentity(113, "s", 12), ("62002",)),
+    ]
+    assert (named.congress, named.blank, named.refused) == (113, 1, (("62005", "S.A. N"),))

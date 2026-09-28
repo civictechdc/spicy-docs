@@ -48,6 +48,7 @@ from urllib.parse import urlsplit
 
 from spicy_docs.reading.pdf_bytes import check_pdf_bytes
 from spicy_docs.reading.xml import scan_xml
+from spicy_docs.sources.congress.bill_status import BillIdentity
 from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.source_acquirer import (
     SourceAcquirer,
@@ -247,6 +248,97 @@ class _FeedScan:
             description=self._fields.get("Description") or None,
             bill_number=self._fields.get("Bill_Number") or None,
         )
+
+
+class CboBillNumberError(CboSourceError):
+    """A ``Bill_Number`` no rule maps to a bill; ``shape`` is its spelling with every digit run as ``N``."""
+
+    def __init__(self, bill_number: str) -> None:
+        self.shape = re.sub(r"[0-9]+", "N", bill_number)
+        super().__init__(f"CBO feed Bill_Number {self.shape!r} names no bill this rule maps")
+
+
+#: How CBO spells each measure type in ``Bill_Number``, as its abbreviation
+#: words.  Every form in the 112th, 113th and 116th-119th feeds (2026-09-14 and
+#: -28) is those words, each ended by a period, a space or both, then the
+#: number: ``H.R. 8``, ``H. J. Res. 48``, ``H.J.Res. 124``, ``H.Con.Res 14``,
+#: ``H.R.681``, ``S.  1591``, ``H.r. 4679``.  One item never names several
+#: bills in any of them.  A bare number (``700``), an amendment (``S.A. 948``),
+#: trailing text (``H.R. 7529,``) and a list refuse: guessing a type or
+#: splitting a list is a rule no measured form needed.
+_BILL_TYPE_WORDS: dict[tuple[str, ...], str] = {
+    ("h", "r"): "hr",
+    ("s",): "s",
+    ("h", "j", "res"): "hjres",
+    ("s", "j", "res"): "sjres",
+    ("h", "con", "res"): "hconres",
+    ("s", "con", "res"): "sconres",
+    ("h", "res"): "hres",
+    ("s", "res"): "sres",
+}
+_BILL_NUMBER = re.compile(r"(?P<words>(?:[A-Za-z]+(?:\.\s*|\s+))+)(?P<number>[1-9][0-9]*)")
+
+
+def feed_item_bills(congress: int, bill_number: str | None) -> tuple[BillIdentity, ...]:
+    """The bills one feed item's ``Bill_Number`` names in its feed's Congress; ``()`` when the publisher left it empty.
+
+    An empty ``Bill_Number`` is CBO's own value (a suspension-calendar notice,
+    a reconciliation title), so it names no bill rather than refusing; a
+    nonempty one outside the measured forms raises :class:`CboBillNumberError`.
+    """
+    if bill_number is None:
+        return ()
+    match = _BILL_NUMBER.fullmatch(bill_number.strip())
+    words = None if match is None else tuple(word.casefold() for word in re.findall(r"[A-Za-z]+", match["words"]))
+    bill_type = None if words is None else _BILL_TYPE_WORDS.get(words)
+    if match is None or bill_type is None:
+        raise CboBillNumberError(bill_number)
+    return (BillIdentity(congress, bill_type, int(match["number"])),)
+
+
+@dataclass(frozen=True, slots=True)
+class CboFeedBill:
+    """One bill a feed names, and the publication ids of the items naming it, in feed order."""
+
+    identity: BillIdentity
+    publication_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class CboFeedBills:
+    """The bill set a feed names, sorted by type and number, and every item that named none.
+
+    ``blank`` counts the items whose ``Bill_Number`` is empty; ``refused``
+    holds ``(publication_id, shape)`` for every item whose ``Bill_Number``
+    :func:`feed_item_bills` refused.  Sorted, because a feed's order within one
+    ``Date`` changes between captures of identical bytes-per-item.
+    """
+
+    congress: int
+    bills: tuple[CboFeedBill, ...]
+    blank: int
+    refused: tuple[tuple[str, str], ...]
+
+
+def cbo_feed_bills(feed: CboCostEstimatesFeed, congress: int) -> CboFeedBills:
+    """Map every item of one Congress's feed to its bills, in one pass; refusals are counted, never dropped."""
+    named: dict[BillIdentity, list[str]] = {}
+    blank = 0
+    refused: list[tuple[str, str]] = []
+    for item in feed.items:
+        try:
+            bills = feed_item_bills(congress, item.bill_number)
+        except CboBillNumberError as error:
+            refused.append((item.publication_id, error.shape))
+            continue
+        if not bills:
+            blank += 1
+        for bill in bills:
+            named.setdefault(bill, []).append(item.publication_id)
+    ordered = sorted(named, key=lambda bill: (bill.bill_type, bill.number))
+    return CboFeedBills(
+        congress, tuple(CboFeedBill(bill, tuple(named[bill])) for bill in ordered), blank, tuple(refused)
+    )
 
 
 def parse_cbo_cost_estimates_feed(body: bytes, *, max_bytes: int = DEFAULT_MAX_BYTES) -> CboCostEstimatesFeed:
