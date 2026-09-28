@@ -19,6 +19,8 @@ public-table = ["polars", "pyarrow"]
 courtlistener-local = ["duckdb>=1.5.5,<2", "indexed-bzip2>=1.7,<2", "pyarrow"]
 # Retained publisher HTML whose source fields lack a structured representation.
 html = ["beautifulsoup4==4.14.3"]
+# Retained community YAML metadata, with literal dates and bounded parsing.
+yaml = ["PyYAML>=6,<7"]
 # PDF/image decoding is shared; select recognition providers separately.
 pdf = ["pymupdf>=1.28,<2", "pillow>=12,<13"]
 # Raw page text for consumers that use pypdf's extraction behavior.

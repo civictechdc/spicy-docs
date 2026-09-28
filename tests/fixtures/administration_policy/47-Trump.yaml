@@ -1,0 +1,56 @@
+- bills:
+  - hconres89
+  document_title: H. Con. Res. 89 – Directing the President to remove United States
+    Armed Forces from Hostilities with Iran (September 24, 2026)
+  congress: 119
+  date_issued: '2026-09-24'
+  file: statements/47-Trump/119/2026-09-24_hconres89.pdf
+  fetched_from_url: https://www.whitehouse.gov/wp-content/uploads/2026/09/SAP-H.Con_.Res_.-89-Sen.pdf
+  date_fetched: '2026-09-24T20:09:26.581671'
+  source: https://www.whitehouse.gov/omb/information-resources/legislative/statements-of-administration-policy/
+- bills:
+  - sjres32
+  - sjres138
+  document_title: S.J. Res. 32 and S.J. Res. 138 – Joint Resolutions Providing for
+    Congressional Disapproval of Proposed Foreign Military Sales to Israel
+  congress: 119
+  date_issued: '2026-04-15'
+  file: statements/47-Trump/119/2026-04-15_sjres32,sjres138.pdf
+  fetched_from_url: https://www.whitehouse.gov/wp-content/uploads/2026/04/SAP-SJR32-138.pdf
+  date_fetched: '2026-06-16T10:28:28.908227'
+  source: https://www.whitehouse.gov/omb/information-resources/legislative/statements-of-administration-policy/
+- bills:
+  - hjres104
+  - hjres105
+  - hjres106
+  document_title: H.J.Res. 104, H.J.Res. 105, H.J.Res. 106 – Joint Resolutions Providing
+    for Congressional Disapproval of the Rules submitted by the Bureau of Land Management
+  congress: 119
+  date_issued: '2025-09-05'
+  file: statements/47-Trump/119/2025-09-05_hjres104,hjres105,hjres106.pdf
+  fetched_from_url: https://www.whitehouse.gov/wp-content/uploads/2025/09/SAP-HJRES104-HJRES105-HJRES106.pdf
+  date_fetched: '2026-03-16T15:59:11.400635'
+  source: https://www.whitehouse.gov/omb/information-resources/legislative/statements-of-administration-policy/
+- bills:
+  - sjres34
+  - sjres41
+  document_title: S.J. Res. 34, S.J. Res. 41 – Joint Resolutions Providing for Congressional
+    Disapproval of Proposed Sales to Israel
+  congress: 119
+  date_issued: '2025-07-30'
+  file: statements/47-Trump/119/2025-07-30_sjres34,sjres41.pdf
+  fetched_from_url: https://www.whitehouse.gov/wp-content/uploads/2025/09/SAP-SJR34-SJR41.pdf
+  date_fetched: '2026-03-16T15:59:11.608536'
+  source: https://www.whitehouse.gov/omb/information-resources/legislative/statements-of-administration-policy/
+- bills:
+  - sjres26
+  - sjres33
+  document_title: 'S.J. Res. 26, S.J. Res. 33 – Joint Resolutions Providing for Congressional
+    Disapproval of Proposed Foreign Military Sales to Israel of Certain Defense Articles
+    and Services '
+  congress: 119
+  date_issued: '2025-04-03'
+  file: statements/47-Trump/119/2025-04-03_sjres26,sjres33.pdf
+  fetched_from_url: https://www.whitehouse.gov/wp-content/uploads/2025/03/SJR26-SJR33-SAP.pdf
+  date_fetched: '2026-03-16T15:59:20.007534'
+  source: https://www.whitehouse.gov/omb/information-resources/legislative/statements-of-administration-policy/

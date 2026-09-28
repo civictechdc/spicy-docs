@@ -1,0 +1,19 @@
+- bills:
+  - hr115
+  document_title: H.R. 115 – Midnight Rules Relief Act
+  congress: 118
+  date_issued: '2024-12-16'
+  file: statements/46-Biden/118/2024-12-16_hr115.pdf
+  fetched_from_url: https://www.whitehouse.gov/wp-content/uploads/2024/12/SAP-HR115.pdf
+  date_fetched: '2024-12-30T15:38:21.975111'
+  source: https://www.whitehouse.gov/omb/statements-of-administration-policy/
+- bills:
+  - hr3746
+  document_title: H.R. 3746 – Fiscal Responsibility Act of 2023
+  congress: 118
+  date_issued: '2023-05-30'
+  file: statements/46-Biden/118/2023-05-30_hr3746.pdf
+  fetched_from_url: https://www.whitehouse.gov/wp-content/uploads/2023/05/SAP-H.R.-3746.pdf
+  date_fetched: '2023-05-30T16:50:35.849346'
+  source: https://www.whitehouse.gov/omb/statements-of-administration-policy/
+  rescinded: true

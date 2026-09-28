@@ -27,6 +27,7 @@
 - [GAO pages](sources/gao.md)
 - [Congressional bills](sources/congress-bills.md)
 - [Bill stages](sources/bill-stage.md): source-backed passage, veto and enactment interpretation with retained action evidence.
+- [Administration-policy statements](sources/administration-policy.md): pinned community metadata, explicit bill links and selected archived PDFs.
 - [CFR/eCFR XML](sources/cfr.md)
 - [eCFR authority notes and source metadata](sources/ecfr-authority.md)
 - [CFR agencies and subject index](sources/cfr-roster-index.md)

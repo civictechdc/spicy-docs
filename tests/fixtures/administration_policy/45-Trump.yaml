@@ -1,0 +1,36 @@
+- bills:
+  - hjres38
+  - hjres36
+  - hjres41
+  - hjres40
+  - hjres37
+  document_title: H.J. Res. 38, H.J. Res. 36, H.J. Res. 41, H.J. Res. 40, H.J. Res.
+    37 – Statement of Administration Policy
+  congress: 115
+  date_issued: '2017-02-01'
+  file: statements/45-Trump/115/2017-02-01_hjres38,hjres36,hjres41,hjres40,hjres37.pdf
+  fetched_from_url: https://www.whitehouse.gov/sites/whitehouse.gov/files/briefing-room/presidential-actions/related-omb-material/saps-2-1-17.pdf
+  date_fetched: '2021-05-11T17:25:46.999252'
+- bills:
+  - hjres67
+  - hjres66
+  document_title: 'H.J. Res. 67 and 66 – Disapproving the rule submitted by the Department
+    of Labor '
+  congress: 115
+  date_issued: '2017-03-13'
+  file: statements/45-Trump/115/2017-03-13_hjres67,hjres66.pdf
+  fetched_from_url: https://www.whitehouse.gov/sites/whitehouse.gov/files/briefing-room/presidential-actions/related-omb-material/saphjr66_20170313.pdf
+  date_fetched: '2021-05-11T17:25:54.672603'
+- bills:
+  - sjres77
+  - sjres78
+  - sjres79
+  - sjres80
+  document_title: S.J. Res. 77, S.J. Res. 78, S.J. Res. 79, and S.J. Res. 80 - Providing
+    for congressional disapproval of the proposed export to the United Arab Emirates
+    of certain defense articles and services
+  congress: 116
+  date_issued: '2020-12-09'
+  file: statements/45-Trump/116/2020-12-09_sjres77,sjres78,sjres79,sjres80.pdf
+  fetched_from_url: https://trumpwhitehouse.archives.gov/wp-content/uploads/2020/12/SAP_SJ_RES_77-80.pdf
+  date_fetched: '2021-05-11T19:31:00.000Z'

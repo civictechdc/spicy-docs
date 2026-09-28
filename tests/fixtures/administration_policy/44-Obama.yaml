@@ -1,0 +1,40 @@
+- bills:
+  - hr1388
+  document_title: Generations Invigorating Volunteerism and Education (GIVE) Act
+  congress: 111
+  date_issued: '2009-03-17'
+  file: statements/44-Obama/111/2009-03-17_hr1388.pdf
+  fetched_from_url: https://obamawhitehouse.archives.gov/sites/default/files/omb/legislative/sap/111/saphr1388r_20090317.pdf
+  date_fetched: '2021-01-27T18:13:32.931Z'
+- bills:
+  - hr2250
+  - hr2681
+  document_title: EPA Regulatory Relief Act of 2011/ Cement Sector Regulatory Relief
+    Act of 2011
+  congress: 112
+  date_issued: '2011-10-03'
+  file: statements/44-Obama/112/2011-10-03_hr2250/hr2681.pdf
+  fetched_from_url: https://obamawhitehouse.archives.gov/sites/default/files/omb/legislative/sap/112/saphr2250-2681_20111003.pdf
+  date_fetched: '2021-01-27T18:11:28.983Z'
+- bills:
+  - hjres70
+  - hjres71
+  - hjres72
+  - hjres73
+  - hr3230
+  document_title: Limited Appropriations Resolutions, 2014
+  congress: 113
+  date_issued: '2013-10-02'
+  file: statements/44-Obama/113/2013-10-02_hjr70717273andhr3230.pdf
+  fetched_from_url: https://obamawhitehouse.archives.gov/sites/default/files/omb/legislative/sap/113/saphrj70-71-72-73_hr3230hr_20131002.pdf
+  date_fetched: '2021-01-27T18:08:29.913Z'
+- bills:
+  - hjres89
+  - hr3273
+  document_title: Federal Worker Pay Fairness Act and Deficit Reduction and Economic
+    Growth Working Group Act of 2013
+  congress: 113
+  date_issued: '2013-10-08'
+  file: statements/44-Obama/113/2013-10-08_hjr89andhr3273.pdf
+  fetched_from_url: https://obamawhitehouse.archives.gov/sites/default/files/omb/legislative/sap/113/saphjr89h_hr3273h_20131008_0.pdf
+  date_fetched: '2021-01-27T18:08:27.172Z'

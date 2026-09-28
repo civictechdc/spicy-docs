@@ -1,0 +1,80 @@
+{
+  "40-Reagan.yaml": {
+    "upstream_url": "https://raw.githubusercontent.com/unitedstates/statements-of-administration-policy/2bdff048a85b1febd3c7fa85ab2b86426d2ef4fc/archive/40-Reagan.yaml",
+    "upstream_sha256": "sha256:dd1a95f0bf4be06ae7567c7b74171fa460c8ae2665b408f1fd5853ba8c11fe93",
+    "record_indexes": [
+      0,
+      560
+    ]
+  },
+  "41-Bush.yaml": {
+    "upstream_url": "https://raw.githubusercontent.com/unitedstates/statements-of-administration-policy/2bdff048a85b1febd3c7fa85ab2b86426d2ef4fc/archive/41-Bush.yaml",
+    "upstream_sha256": "sha256:b30f9579e8abb02931ae68742266d31e84528dea8b6e3b3a4459997ad04d3924",
+    "record_indexes": [
+      0,
+      209,
+      486,
+      511,
+      518,
+      673
+    ]
+  },
+  "42-Clinton.yaml": {
+    "upstream_url": "https://raw.githubusercontent.com/unitedstates/statements-of-administration-policy/2bdff048a85b1febd3c7fa85ab2b86426d2ef4fc/archive/42-Clinton.yaml",
+    "upstream_sha256": "sha256:19d34096d2d5326ac78d83d32e6e053106ee4ecf18f2262d45e7887b30805ffd",
+    "record_indexes": [
+      0,
+      1029,
+      1044,
+      1046,
+      1080,
+      1353
+    ]
+  },
+  "43-Bush.yaml": {
+    "upstream_url": "https://raw.githubusercontent.com/unitedstates/statements-of-administration-policy/2bdff048a85b1febd3c7fa85ab2b86426d2ef4fc/archive/43-Bush.yaml",
+    "upstream_sha256": "sha256:b65d83daacd4c39b62d8daf2e9e6f7e62f8a1389d5a92f1e8a57448c20781cc7",
+    "record_indexes": [
+      0,
+      443
+    ]
+  },
+  "44-Obama.yaml": {
+    "upstream_url": "https://raw.githubusercontent.com/unitedstates/statements-of-administration-policy/2bdff048a85b1febd3c7fa85ab2b86426d2ef4fc/archive/44-Obama.yaml",
+    "upstream_sha256": "sha256:57f6b13e6a33f08b8559dbbd4231d612bf3bd20c730524e41ebc959235e4ae0a",
+    "record_indexes": [
+      0,
+      148,
+      307,
+      310
+    ]
+  },
+  "45-Trump.yaml": {
+    "upstream_url": "https://raw.githubusercontent.com/unitedstates/statements-of-administration-policy/2bdff048a85b1febd3c7fa85ab2b86426d2ef4fc/archive/45-Trump.yaml",
+    "upstream_sha256": "sha256:1504e35f020918ac9f10df129e02b69642be74373bd9e061765ee4580b2a0971",
+    "record_indexes": [
+      0,
+      10,
+      144
+    ]
+  },
+  "46-Biden.yaml": {
+    "upstream_url": "https://raw.githubusercontent.com/unitedstates/statements-of-administration-policy/2bdff048a85b1febd3c7fa85ab2b86426d2ef4fc/archive/46-Biden.yaml",
+    "upstream_sha256": "sha256:57d489a21c3e392734bd23f59be125bab3c020b6f5a7f6aded5e07e2041ce936",
+    "record_indexes": [
+      0,
+      112
+    ]
+  },
+  "47-Trump.yaml": {
+    "upstream_url": "https://raw.githubusercontent.com/unitedstates/statements-of-administration-policy/2bdff048a85b1febd3c7fa85ab2b86426d2ef4fc/archive/47-Trump.yaml",
+    "upstream_sha256": "sha256:6d7dfe2c993b827205128838fcbf9d335d7cfad3dac3e13e3267aeea922cc1e8",
+    "record_indexes": [
+      0,
+      66,
+      127,
+      128,
+      165
+    ]
+  }
+}
