@@ -112,11 +112,25 @@ def product_page_metadata(raw: bytes, product_id: str) -> GaoTargetMetadata:
     if len(set(dates)) > 1:
         raise ValueError("GAO product page states conflicting publication dates")
     day = datetime.strptime(dates[0], "%b %d, %Y").replace(tzinfo=UTC).date().isoformat() if dates else None
-    reports = {href for href, label in fields.report_links if " ".join("".join(label).split()) == FULL_REPORT_LABEL}
-    if len(reports) != 1:
-        raise ValueError(f"GAO product page must link exactly one {FULL_REPORT_LABEL} PDF, not {len(reports)}")
     product_url = parsed["results"][0]["canonicalUrl"]
-    link = urlsplit(urljoin(product_url, reports.pop()))
-    if link.hostname not in _REPORT_LINK_HOSTS or link.query or link.fragment or not link.path.startswith("/assets/"):
+    paths = {
+        _asset_path(product_url, href)
+        for href, label in fields.report_links
+        if " ".join("".join(label).split()) == FULL_REPORT_LABEL
+    }
+    if len(paths) != 1:
+        raise ValueError(f"GAO product page must link exactly one {FULL_REPORT_LABEL} PDF, not {len(paths)}")
+    return GaoTargetMetadata(product_id, title, product_url, REPORT_FILE_ROOT + paths.pop(), day)
+
+
+def _asset_path(product_url: str, href: str) -> str:
+    """The asset path a Full Report link names, resolved against the page.
+
+    Links are compared by this path, so one PDF linked relatively and absolutely, on either host, is one link. A
+    fragment (``#page=2``) addresses a place in the file, not another file, and is dropped; a query can ask the
+    server for something else and refuses, as does another host or a path outside ``/assets/``.
+    """
+    link = urlsplit(urljoin(product_url, href))
+    if link.hostname not in _REPORT_LINK_HOSTS or link.query or not link.path.startswith("/assets/"):
         raise ValueError("GAO Full Report link is not an asset path on gao.gov")
-    return GaoTargetMetadata(product_id, title, product_url, REPORT_FILE_ROOT + link.path, day)
+    return link.path

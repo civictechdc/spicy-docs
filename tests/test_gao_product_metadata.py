@@ -1,5 +1,6 @@
 """Qualified source heading/date reading does not infer days or accept wrong identities."""
 
+from io import BytesIO
 from pathlib import Path
 from zipfile import ZipFile
 
@@ -28,9 +29,9 @@ def test_retained_product_page_heading_and_published_date():
         product_page_metadata(FIXTURE.read_bytes(), "gao-17-999")
 
 
-def changed_page(old, new):
+def changed_page(old, new, *, also=(b"", b"")):
     with ZipFile(FIXTURE) as archive:
-        body = archive.read("product.html").replace(old, new)
+        body = archive.read("product.html").replace(old, new).replace(*also)
     url = "https://www.gao.gov/products/" + PRODUCT
     return next(
         iter_gao_product_pages(
@@ -70,6 +71,32 @@ def test_pdf_url_is_the_path_the_page_labels_full_report(href):
     """Synthetic: a Full Report link to another asset path keeps the page's path, not one built from the id."""
     raw = changed_page(b'<a href="/assets/gao-17-317.pdf">', f'<a href="{href}">'.encode())
     assert product_page_metadata(raw, PRODUCT).pdf_url == "https://files.gao.gov/assets/690/683460.pdf"
+
+
+@pytest.mark.parametrize(
+    "href",
+    ["/assets/gao-17-317.pdf#page=2", "https://www.gao.gov/assets/gao-17-317.pdf#toc", "/assets/gao-17-317.pdf#"],
+)
+def test_a_fragment_addresses_the_same_file(href):
+    """Synthetic: a fragment names a place in the PDF, not another PDF, so it is dropped rather than refused."""
+    raw = changed_page(b'<a href="/assets/gao-17-317.pdf">', f'<a href="{href}">'.encode())
+    assert product_page_metadata(raw, PRODUCT).pdf_url == "https://files.gao.gov/assets/gao-17-317.pdf"
+
+
+@pytest.mark.parametrize(
+    "href",
+    ["https://www.gao.gov/assets/gao-17-317.pdf", "https://files.gao.gov/assets/gao-17-317.pdf#page=1"],
+)
+def test_one_pdf_linked_twice_is_one_full_report_link(href):
+    """Synthetic: the Highlights link relabelled Full Report and pointed at the same PDF another way is still one."""
+    raw = changed_page(
+        b'<a href="/assets/gao-17-317-highlights.pdf">',
+        f'<a href="{href}">'.encode(),
+        also=(b">Highlights Page</div>", b">Full Report</div>"),
+    )
+    with ZipFile(BytesIO(raw)) as archive:
+        assert archive.read("product.html").count(b">Full Report</div>") == 2
+    assert product_page_metadata(raw, PRODUCT).pdf_url == "https://files.gao.gov/assets/gao-17-317.pdf"
 
 
 @pytest.mark.parametrize(
