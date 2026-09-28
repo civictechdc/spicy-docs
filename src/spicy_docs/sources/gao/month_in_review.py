@@ -76,8 +76,10 @@ _LABEL: Final = "GAO listing page"
 _PAGE_HREF = re.compile(r"\?page=(\d+)")
 #: HTML's own whitespace. A non-breaking space is text GAO wrote, and the feed's titles keep it.
 _HTML_WHITESPACE = re.compile(r"[\t\n\f\r ]+")
-#: One B-number, with the letter suffix older decisions carry (``B-235577.2-O.M.``).
-_DECISION_NUMBER = re.compile(r"B-\d+(?:\.\d+)?(?:-[A-Z.]+)?")
+#: One B-number as GAO states it: its file number, then whatever suffix older decisions carry (``B-235577.2-O.M.``,
+#: a bare ``B-414056.``). Decisions are kept apart and keyed on their whole stated number, so each part need only
+#: be a B-number, not a checked one.
+_DECISION_NUMBER = re.compile(r"B-\d+[A-Z0-9.\-]*")
 #: Older decisions list their numbers with commas or semicolons, with stray spaces and a trailing separator.
 _DECISION_SEPARATOR = re.compile(r"[,;]")
 _NOT_ALPHANUMERIC = re.compile(r"[^a-z0-9]")

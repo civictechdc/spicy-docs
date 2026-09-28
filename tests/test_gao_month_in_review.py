@@ -183,7 +183,7 @@ def test_a_teaser_gao_gives_no_product_number_is_kept_apart_by_its_link():
 
 
 #: The first decision teaser of August 2026's last page, respelled the four ways older indexes spell decisions (seen on
-#: 2009, 2010, 2011 and 2012 pages the 2026-09-28 backfill first refused).
+#: 2009-2012 and 2017 pages the 2026-09-28 backfill first refused).
 DECISION = b'href="/products/b-424129.2"'
 OLDER_DECISIONS = [
     (
@@ -192,6 +192,11 @@ OLDER_DECISIONS = [
         ("B-404896", "B-404896.2"),
     ),
     ("/products/b-235577.2-o.m.", "B-235577.2-O.M.", ("B-235577.2-O.M.",)),
+    (
+        "/products/b-414056%2Cb-414056.2%2Cb-414056.",
+        "B-414056,B-414056.2,B-414056.",
+        ("B-414056", "B-414056.2", "B-414056."),
+    ),
     ("/products/b-402003-b-402003.2", "B-402003; B-402003.2", ("B-402003", "B-402003.2")),
     (
         "/products/b-407312%2Cb-407372%2C-b-407382",
