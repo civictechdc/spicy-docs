@@ -830,7 +830,7 @@ def test_download_keys_bounds_pending_work_for_a_streaming_listing(
 
     def blocked_download(_resource, _bucket, key, _extract, *, record_type=None):
         release.wait(timeout=5)
-        return None, {"key": key}
+        return mirrulations.DownloadedObject(b"{}", None, None, None, 2), {"key": key}
 
     monkeypatch.setattr(mirrulations, "_download_record", blocked_download)
     with ThreadPoolExecutor(max_workers=1) as executor:
@@ -885,6 +885,10 @@ def test_keyed_reader_yields_each_payload_with_its_key_and_last_modified(bounded
     assert all(type(item) is KeyedPayload for item in keyed)
     assert {item.key: (item.last_modified, item.payload) for item in keyed} == {
         key: (written[key], loads(content)) for key, content in store.items()
+    }
+    # The GET's ETag and the bytes read identify each object, so a caller keeps no body to prove what it read.
+    assert {item.key: (item.etag, item.size) for item in keyed} == {
+        key: (f'"etag:{key}"', len(content)) for key, content in store.items()
     }
 
 

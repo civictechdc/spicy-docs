@@ -3259,3 +3259,12 @@ republished and the rows are re-read. The
 `public_tables` comment profile takes its columns from `COMMENT.schema`, as it
 did for the reference columns, so it gains both; its schema id stays
 `public-comments:1.0`, as it did then.
+
+## A keyed Mirrulations payload carries its GET's ETag and size
+
+Unreleased, 2026-09-28. `KeyedPayload` gains `etag` and `size`, from the same
+GET as `last_modified`, so a caller that keeps only fields of a record can still
+say which bytes it read without a listing or the body. The spicy-regs comment
+re-read (owner decision 2026-09-28, option a) keeps them per object. Both are
+optional fields with defaults; `_download_record` now returns the GET's
+`DownloadedObject` with the payload, and `download_and_parse` is unchanged.

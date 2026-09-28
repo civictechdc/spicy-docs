@@ -440,15 +440,17 @@ class MirrulationsSourceObject:
 
 @dataclass(frozen=True, slots=True)
 class KeyedPayload:
-    """One raw payload with the key it was read from and that object's ``LastModified``.
+    """One raw payload with the key it was read from and that GET's ``LastModified``, ``ETag`` and byte size.
 
-    ``last_modified`` comes from the GET that returned the payload, so it describes
-    exactly these bytes and costs no request; it is None only when S3 omitted it.
+    All three come from the GET that returned the payload, so they describe exactly these
+    bytes and cost no request; ``last_modified`` and ``etag`` are None only when S3 omitted them.
     """
 
     key: str
     last_modified: datetime | None
     payload: dict
+    etag: str | None = None
+    size: int | None = None
 
 
 def download_object_bytes(
@@ -681,8 +683,8 @@ def _download_record(
     extract_fn: Callable[[dict], dict],
     *,
     record_type: RecordType | None = None,
-) -> tuple[datetime | None, dict]:
-    """:func:`download_and_parse`, also returning the GET's ``LastModified``."""
+) -> tuple[DownloadedObject, dict]:
+    """:func:`download_and_parse`, also returning the GET's object (its bytes and metadata)."""
     try:
         downloaded = download_object_bytes(s3_resource, bucket_name, key)
     except CredentialRefusedError:
@@ -712,7 +714,7 @@ def _download_record(
             detail += f"; publisher errors: {payload['errors']}"
         raise EmptyPayloadError(key, scrub_credential(detail)[:_REASON_CHARACTERS])
     try:
-        return downloaded.last_modified, extract_fn(payload)
+        return downloaded, extract_fn(payload)
     except Exception as exc:
         raise PayloadParseError(key) from exc
 
@@ -815,10 +817,10 @@ def download_keyed(
     def download(key: str) -> KeyedPayload | None:
         for attempt in range(transient_retries + 1):
             try:
-                last_modified, payload = _download_record(
+                downloaded, payload = _download_record(
                     s3_resource, bucket_name, key, _identity, record_type=record_type
                 )
-                return KeyedPayload(key, last_modified, payload)
+                return KeyedPayload(key, downloaded.last_modified, payload, downloaded.etag, len(downloaded.content))
             except UnresolvedKeyError as exc:
                 if isinstance(exc, TransientDownloadError) and attempt < transient_retries:
                     continue
