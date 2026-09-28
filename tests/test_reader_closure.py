@@ -8,8 +8,11 @@ checks operation without the producer's acquisition dependencies installed.
 
 from __future__ import annotations
 
+import ast
 import subprocess
 import sys
+from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 
@@ -171,3 +174,35 @@ for record_type in RECORD_TYPES.values():
 """
     completed = subprocess.run([sys.executable, "-c", probe], capture_output=True, text=True, check=False)
     assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+def _imported_modules(path: Path, package: str) -> Iterator[tuple[int, str]]:
+    """Every module an ``import`` statement in ``path`` names, at any depth, with relative imports resolved."""
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"), filename=str(path))):
+        if isinstance(node, ast.Import):
+            yield from ((node.lineno, alias.name) for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            parts = package.split(".")[: len(package.split(".")) - node.level + 1] if node.level else []
+            yield node.lineno, ".".join([*parts, node.module] if node.module else parts)
+
+
+def test_no_schemas_source_imports_anything_but_the_stdlib_and_schemas() -> None:
+    """Read every ``import`` in ``schemas/``, including one inside a function or a branch, and name each outside.
+
+    The runtime probe above sees only what importing and extracting executes; a shaper that imports ``sources`` when
+    it runs would pass it. This reads the source instead, so such an import fails wherever it sits.
+    """
+    root = Path(__file__).resolve().parents[1] / "src" / "spicy_docs" / "schemas"
+    outside = []
+    for path in sorted(root.rglob("*.py")):
+        relative = path.relative_to(root.parents[1]).with_suffix("")
+        package = ".".join(relative.parts if path.name == "__init__.py" else relative.parts[:-1])
+        package = package.removesuffix(".__init__")
+        for line, module in _imported_modules(path, package):
+            top = module.split(".")[0]
+            if module == "spicy_docs.schemas" or module.startswith("spicy_docs.schemas."):
+                continue
+            if top != "spicy_docs" and top in sys.stdlib_module_names:
+                continue
+            outside.append(f"{path.relative_to(root)}:{line} imports {module}")
+    assert outside == []

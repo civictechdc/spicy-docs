@@ -10,6 +10,7 @@ import pytest
 from spicy_docs.schemas import TABLE_CONTRACTS
 from spicy_docs.schemas.bill_tables import BILL_COSPONSORS, shape_bill_cosponsor
 from spicy_docs.schemas.legislator_tables import MEMBER_PARTY_AFFILIATIONS, shape_member_party_affiliation
+from spicy_docs.schemas.tables import TableContractError
 from spicy_docs.sources.congress.bill_status import BillIdentity, parse_bill_status
 from spicy_docs.sources.legislators import LegislatorsSourceError, parse_legislators
 
@@ -60,6 +61,18 @@ def test_every_native_cosponsor_field_and_occurrence_survives() -> None:
         first["district"],
     ) == ("M001159", "2023-03-14", "True", "WA", "5")
     assert first["sponsorship_withdrawn_date"] is None
+
+
+@pytest.mark.parametrize("index", [49, 50, -1, True, "0"], ids=["length", "past length", "negative", "bool", "str"])
+def test_an_index_outside_the_list_is_a_named_refusal(index: object) -> None:
+    """An index the 49-entry list does not hold refuses as a contract error, which the bill family files by name.
+
+    An ``IndexError`` or ``TypeError`` from the list would escape ``SHAPER_REFUSALS`` and abort the bill's pass.
+    """
+    status = parse_bill_status(BILL.read_bytes(), identity=BillIdentity(118, "hr", 1))
+    assert len(status.cosponsors) == 49
+    with pytest.raises(TableContractError, match="cosponsor_index"):
+        shape_bill_cosponsor(status, cosponsor_index=index)  # type: ignore[arg-type]
 
 
 def test_native_present_empty_withdrawal_is_not_absent() -> None:
@@ -194,15 +207,23 @@ def test_declared_relationships_include_source_part_and_meeting_scope() -> None:
             (("congress", "chamber", "event_id"), "committee_meetings", ("congress", "chamber", "event_id"))
         ],
     }
-    # The column that keeps a same short label in another source, part or chamber from matching.
-    qualifier = {"bill_versions": "source", "committee_reports": "part_id", "committee_meetings": "chamber"}
     for name, links in expected.items():
         actual = {(r.child_columns, r.parent_table, r.parent_columns) for r in TABLE_CONTRACTS[name].references}
         assert set(links) <= actual
-        for child, parent_name, parent in links:
+        for _child, parent_name, parent in links:
             assert parent == TABLE_CONTRACTS[parent_name].identity
-            paired = dict(zip(parent, child, strict=True))
-            assert paired[qualifier[parent_name]].endswith(qualifier[parent_name]), (name, paired)
+    # A same short label in another source, part or chamber must not match: every declared reference to these
+    # parents, in any contract, pairs the parent's qualifying column with the child's own column for it.
+    qualifier = {"bill_versions": "source", "committee_reports": "part_id", "committee_meetings": "chamber"}
+    checked = 0
+    for contract in TABLE_CONTRACTS.values():
+        for reference in contract.references:
+            if reference.parent_table in qualifier:
+                paired = dict(zip(reference.parent_columns, reference.child_columns, strict=True))
+                column = qualifier[reference.parent_table]
+                assert paired[column].endswith(column), (contract.name, reference)
+                checked += 1
+    assert checked >= sum(len(links) for links in expected.values())
 
 
 def test_retained_positive_withdrawal_date_preserves_native_occurrence():
