@@ -75,3 +75,23 @@ def test_same_native_key_and_occurrence_in_different_source_kinds_remain_distinc
     assert len(keyed) == 2
     assert keyed[DOCUMENT_CITATIONS.key(second)] == second
     assert keyed[DOCUMENT_CITATIONS.key(first)]["rule_version"] == "999"
+
+
+def test_a_context_names_no_document_fallback_without_a_congress():
+    """An unset basis follows the Congress; one that contradicts it refuses, since target_rule publishes it."""
+    from spicy_docs.interpretation.citations import CITATION_RULES_BY_NAME, CitationContext
+
+    bill = CITATION_RULES_BY_NAME["bill_number"]
+    assert bill.target_key("H.R. 7806", CitationContext()) == ("HR7806", False, "bill_number:unstated")
+    assert bill.target_key("H.R. 7806", CitationContext(118)) == ("118-hr-7806", True, "bill_number:document_fallback")
+    assert CitationContext(congress=118, congress_basis="inline_congress").congress_basis == "inline_congress"
+    assert CitationContext(congress_basis="document_fallback_refused").congress_basis == "document_fallback_refused"
+    for congress, basis in [
+        (None, "document_fallback"),
+        (None, "congress_subheading"),
+        (118, "unstated"),
+        (118, "document_fallback_refused"),
+        (118, "caller"),
+    ]:
+        with pytest.raises(CitationError, match="contradicts"):
+            CitationContext(congress=congress, congress_basis=basis)

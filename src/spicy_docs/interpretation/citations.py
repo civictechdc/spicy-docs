@@ -303,11 +303,32 @@ class CitationContext:
     (:func:`congress_subheading_scopes`). ``committees`` is the ``{canonical candidate:
     CommitteeResolution}`` map :func:`resolve_committee_names` produced for this
     one document.
+
+    ``congress_basis`` names where ``congress`` came from, and left unset it
+    follows ``congress``: ``document_fallback`` with one, ``unstated`` without.
+    A basis that contradicts ``congress`` refuses, because it is published in
+    ``target_rule`` (``bill_number:<basis>``): a Congress needs
+    ``inline_congress``, ``congress_subheading`` or ``document_fallback``, and
+    no Congress ``unstated`` or ``document_fallback_refused``. The field keeps
+    its place so positional construction still means what it did.
     """
 
     congress: int | None = None
-    congress_basis: str = "document_fallback"
+    congress_basis: str | None = None
     committees: Mapping[str, CommitteeResolution] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.congress_basis is None:
+            object.__setattr__(self, "congress_basis", "unstated" if self.congress is None else "document_fallback")
+        elif self.congress_basis not in (_UNSTATED_BASES if self.congress is None else _STATED_BASES):
+            state = "no Congress" if self.congress is None else "a Congress"
+            raise CitationError(f"congress_basis {self.congress_basis!r} contradicts {state}")
+
+
+#: Where a stated Congress came from, and why none is stated; ``bill_number``'s ``target_rule`` is ``bill_number:``
+#: plus one of these.
+_STATED_BASES = frozenset({"inline_congress", "congress_subheading", "document_fallback"})
+_UNSTATED_BASES = frozenset({"unstated", "document_fallback_refused"})
 
 
 #: ``(target key, whether the key is the hosted table's own spelling, the rule
@@ -1200,11 +1221,7 @@ def find_citations(
     # is settled over the whole document at once: the sibling-prefix rule reads
     # the other candidates this document printed.
     candidates = sorted({canonical_alnum(value) for value, _, _ in matches.get("committee_name", ())})
-    context = CitationContext(
-        congress=congress,
-        congress_basis="document_fallback" if congress is not None else "unstated",
-        committees=resolve_committee_names(candidates, committees),
-    )
+    context = CitationContext(congress=congress, committees=resolve_committee_names(candidates, committees))
     # A name the print qualifies with a chamber is settled among that chamber's
     # committees, over the same candidates so its siblings still count; a name
     # with no chamber word before it reads exactly as before.
