@@ -142,3 +142,57 @@ def test_unsupported_continuation_header_invalidates_later_carry(monkeypatch):
     assert result["pages"][1]["status"] == "unsupported_header"
     assert result["pages"][2]["status"] == "unqualified_office_context"
     assert all(row["page"] == 7 for row in result["candidates"])
+
+
+@pytest.mark.parametrize("change", ["repeated", "below_header"])
+def test_office_origin_must_be_printed_once_above_the_header(parsed, monkeypatch, change):
+    """The office name counts as printed on the page only as one span above the payment header.
+
+    Synthetic mutations of the native B-1243 capture: the office printed a second time, and the one printing moved
+    into the payment body. Either way the page's office is unqualified and nothing on it becomes a candidate.
+    """
+    capture = deepcopy(parsed["capture"])
+    words = capture["pages"]["7"]["words"]
+    office = [words[index] for index in (221, 222, 223)]
+    if change == "repeated":
+        words.extend(deepcopy(office))
+    else:
+        body_x = words[101]["bbox"]  # DJST20250194, the first payment line
+        for word in office:
+            word["bbox"] = [body_x[0], word["bbox"][1], body_x[2], word["bbox"][3]]
+    monkeypatch.setattr(reader, "review_pages", lambda *args, **kwargs: capture)
+    result = reader.payment_candidates(BODY, pages=[7], source_page_offset=10)
+    assert not result["candidates"]
+    assert [row["reason"] for row in result["refusals"]] == ["office_origin_not_uniquely_above_header"]
+    assert result["pages"][0]["status"] == "unqualified_office_context"
+
+
+@pytest.mark.parametrize(
+    ("page", "printed", "message"),
+    [("8", "B-1250", "printed pages are not contiguous"), ("7", "1243", "printed B-page continuity")],
+)
+def test_reviewed_section_needs_consecutive_printed_b_pages(monkeypatch, page, printed, message):
+    """A reviewed section's retained pages must print consecutive B-page labels from its origin (synthetic gaps)."""
+    capture = reader.review_pages(BODY, pages=[7, 8, 9, 10], source_page_offset=10)
+    capture["pages"][page]["context"]["printed_page"] = printed
+    monkeypatch.setattr(reader, "review_pages", lambda *args, **kwargs: capture)
+    with pytest.raises(ValueError, match=message):
+        reader.payment_candidates(BODY, pages=[7, 8, 9, 10], reviewed_section=SECTION)
+
+
+def test_an_intern_compensation_section_never_carries_its_office(monkeypatch):
+    """Intern compensation is refused as a reviewed section even with a native origin and a distinct boundary.
+
+    Synthetic: the native B-1246 heading, INTERN COMPENSATION - JUSTICE, moved to the origin page, and the Senator's
+    office to the boundary, so only the intern rule can refuse.
+    """
+    from dataclasses import replace
+
+    capture = reader.review_pages(BODY, pages=[7, 8, 9, 10], source_page_offset=10)
+    intern = capture["pages"]["10"]["context"]["office"]
+    assert intern == "INTERN COMPENSATION - JUSTICE"
+    capture["pages"]["7"]["context"]["office"] = intern
+    capture["pages"]["10"]["context"]["office"] = SECTION.office
+    monkeypatch.setattr(reader, "review_pages", lambda *args, **kwargs: capture)
+    with pytest.raises(ValueError, match="native origin"):
+        reader.payment_candidates(BODY, pages=[7, 8, 9, 10], reviewed_section=replace(SECTION, office=intern))

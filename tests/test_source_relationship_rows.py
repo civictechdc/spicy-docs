@@ -11,7 +11,7 @@ from spicy_docs.schemas import TABLE_CONTRACTS
 from spicy_docs.schemas.bill_tables import BILL_COSPONSORS, shape_bill_cosponsor
 from spicy_docs.schemas.legislator_tables import MEMBER_PARTY_AFFILIATIONS, shape_member_party_affiliation
 from spicy_docs.sources.congress.bill_status import BillIdentity, parse_bill_status
-from spicy_docs.sources.legislators import parse_legislators
+from spicy_docs.sources.legislators import LegislatorsSourceError, parse_legislators
 
 FIXTURES = Path(__file__).parent / "fixtures"
 BILL = FIXTURES / "govinfo_bills/status-118hr1-cosponsors.xml"
@@ -142,6 +142,27 @@ def test_affiliation_list_states_survive(value: object, state: str) -> None:
     assert term.party_affiliations == ()
 
 
+@pytest.mark.parametrize(
+    ("value", "message"),
+    [
+        ("Democrat", r"party_affiliations must be a list or null"),
+        ({"party": "Democrat"}, r"party_affiliations must be a list or null"),
+        (["Democrat"], r"party_affiliations\[0\] must be an object"),
+        ([{"start": 19610103, "party": "Democrat"}], r"party_affiliations\[0\]\.start must be a string or null"),
+        ([{"start": "1961-01-03", "end": ["1964-09-16"]}], r"party_affiliations\[0\]\.end must be a string or null"),
+        ([{"start": "1961-01-03", "party": True}], r"party_affiliations\[0\]\.party must be a string or null"),
+    ],
+    ids=["string", "object", "string entry", "integer start", "list end", "boolean party"],
+)
+def test_a_malformed_affiliation_list_refuses_the_document(value: object, message: str) -> None:
+    """Synthetic shapes the crosswalk has not published: each refuses, never read as an empty list or a coerced value."""
+    source = next(r for r in json.loads(HISTORY.read_bytes()) if r["id"]["bioguide"] == "T000254")
+    source["terms"][3]["party_affiliations"] = value
+    body = json.dumps([source]).encode()
+    with pytest.raises(LegislatorsSourceError, match=message):
+        parse_legislators(body, max_bytes=len(body))
+
+
 def test_overlaps_gaps_missing_ends_and_invalid_dates_are_not_repaired() -> None:
     source = next(r for r in json.loads(HISTORY.read_bytes()) if r["id"]["bioguide"] == "T000254")
     intervals = [
@@ -173,17 +194,15 @@ def test_declared_relationships_include_source_part_and_meeting_scope() -> None:
             (("congress", "chamber", "event_id"), "committee_meetings", ("congress", "chamber", "event_id"))
         ],
     }
+    # The column that keeps a same short label in another source, part or chamber from matching.
+    qualifier = {"bill_versions": "source", "committee_reports": "part_id", "committee_meetings": "chamber"}
     for name, links in expected.items():
         actual = {(r.child_columns, r.parent_table, r.parent_columns) for r in TABLE_CONTRACTS[name].references}
         assert set(links) <= actual
         for child, parent_name, parent in links:
             assert parent == TABLE_CONTRACTS[parent_name].identity
-            # A same short label in another source/part/chamber must not match.
-            left = {c: str(i) for i, c in enumerate(child)}
-            right = {p: left[c] for c, p in zip(child, parent, strict=True)}
-            other = dict(right, **{parent[-1]: "different"})
-            assert tuple(left[c] for c in child) == tuple(right[p] for p in parent)
-            assert tuple(left[c] for c in child) != tuple(other[p] for p in parent)
+            paired = dict(zip(parent, child, strict=True))
+            assert paired[qualifier[parent_name]].endswith(qualifier[parent_name]), (name, paired)
 
 
 def test_retained_positive_withdrawal_date_preserves_native_occurrence():
