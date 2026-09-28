@@ -7,6 +7,17 @@ stated freshness; publication and independent replay classify only those pinned 
 declared column is preserved, including nulls, "See attached" bodies and empty ``text_content``;
 the upstream table already selected the current row per ``comment_id``, so this profile records
 that selection and refuses repeated identities.
+
+**Scope: upstream's published tree, not the fork's mirror.** The community table this reads is
+civictechdc spicy-regs' tree at ``PUBLIC_TABLE_BASE_URL``: ``comment_partition_locator`` builds
+every locator on that host, capture and replay refuse any other, and the closed schema is that
+tree's 16-column row, 15 columns per partition file (``schemas.spicy_regs_public_tables``). The
+fork mirrors comments at the same paths on its own R2 in a different shape: its partition file
+has 20 columns (``agency_code=ACF/part-0.parquet``, 2026-09-28), the ``comments`` table contract
+of ``schemas.regulations`` less ``agency_code``, adding 0.50.0's four comment-reference columns
+and the host's ``pdf_extraction_results_json``. ``validate_partition_columns`` refusing that file
+is by design. The ``comments`` contract is the fork mirror's shape; capturing it as a source would
+be a separate profile under its own policy version, not a wider one here.
 """
 
 from __future__ import annotations
