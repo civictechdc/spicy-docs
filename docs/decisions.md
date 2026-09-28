@@ -134,6 +134,70 @@ The profile covers only the named product IDs. Exact HTML and the literal
 publisher topic survive; interpreting that topic belongs downstream. The
 [GAO guide](sources/gao.md) owns capture limits and refusal rules.
 
+## GAO's own listing: the robots ruling, the class rule and the major-rule exception
+
+**Access, owner ruling 2026-09-28.** `robots.txt` disallows
+`/reports-testimonies` by prefix and asks every agent for `Crawl-delay: 420`.
+The owner accepted the disallow for the GAO listing backfill. The library
+default keeps the delay: one worker, 420 seconds apart, and it stays that way
+so the reviewed path is the polite one. The owner then overrode the delay for
+the backfill of 2009-2025 and January-August 2026 with run flags
+(`--concurrency 3 --delay-seconds 0`, after six workers stalled). That is a
+decision about one run, not a new default. The guide
+([GAO's own listing](sources/listings.md#gaos-own-listing-month-in-review-and-annual-index))
+keeps the run's settings and why.
+
+**The number decides the class.** A `GAO-` number is a product, a `B-` number a
+legal decision, and anything else, or no number, is set apart. The heading
+does not decide: GAO files GAO-numbered major-rule reports under a legal
+heading, and three B-numbered decisions under topic headings. Over all 1,212
+pages (29,996 teasers, re-read independently in review), the number is the one
+field that agrees with what the product is.
+
+**The major-rule exception, owner ruling 2026-09-28.** `gao_reports` carries
+every Federal Agency Major Rule Report, so a teaser with that label is a
+product whatever its number. GAO switched numbering in 2017: `GAO-` numbers up
+to 2017-02-17, `B-` numbers from 2017-04-20. Every one of the 1,655 carries
+both the label and the heading, checked before the rule was written. None
+had to be guessed.
+
+**Keys.**
+- A product is keyed on the page the listing links. A GAO number's page is the
+  number lowercased. A prerelease path keys on the number.
+- A `-N` twin page folds into its base page when every other field agrees,
+  and stays its own product when one differs (`gao-14-280r-0`).
+- A decision or other entry is keyed on its page, since one B-number can have
+  two pages released months apart.
+- The stated number stays whole; a link must agree with it token for token.
+
+**A dropped provider read is the provider's error.** `ZyteHttpFetcher` and
+`FirecrawlFetcher` raise their own `ZyteTransportError` or
+`FirecrawlTransportError` for every `http.client` failure: a malformed status
+line from `urlopen`, a body cut short, a cut error body. The one catch lives in
+`transport.provider_api.read_provider_payload`. A raw `IncompleteRead` had
+escaped the walled-fetch ladder, which catches only each adapter's own error,
+and ended the whole fallback chain.
+
+### What an importer must change
+
+- spicy-regs `sources/gao_listing.py` reads `read_listing_run`,
+  `GaoListingRun` (`pages`, `products`, `decisions`, `others`,
+  `complete_scopes`, `incomplete_scopes`) and `GaoListedProduct`
+  (`product_id`, `product_number`, `label`, `heading`, `released`,
+  `published`, `topics`, `title`).
+  - `products` now includes the B-numbered major-rule reports. Their
+    `product_id` is the page (`b-331093`) and their `product_number` the
+    B-number.
+  - A `-N` twin that agrees with its base page is no longer a separate product.
+- `ZyteTransportError` callers: `sources/walled_fetch.py`,
+  `sources/usitc_edis/credentialed.py`, `cli/fec.py` and
+  `transport/acquisition.py`. Each now also receives the failures that used to
+  escape as raw `http.client` errors, so the walled-fetch ladder moves on to
+  its next rung rather than aborting. No call site changes.
+- `walk_listing` takes `proxy_record` (a URL to its latest `ZyteProxyRecord`,
+  e.g. `ZyteTransport.record_for`) in place of `proxy_records`. `concurrency`
+  is capped at 8, and `sleep` defaults to an interruptible wait.
+
 ## Supported entry points
 
 The package root keeps one public export module for current consumers, with
