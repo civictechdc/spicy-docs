@@ -20,6 +20,7 @@ from spicy_docs.sources.cbo import (
     CboFeedBillError,
     CboSourceError,
     CboUnavailableError,
+    PublicLawCitation,
     cbo_cost_estimates_feed_locator,
     cbo_estimate_document_locator,
     cbo_feed_bills,
@@ -27,6 +28,7 @@ from spicy_docs.sources.cbo import (
     feed_item_bills,
     parse_cbo_cost_estimates_feed,
     title_bills,
+    title_citation,
 )
 from spicy_docs.sources.congress.bill_status import BillIdentity
 from spicy_docs.transport import retry
@@ -528,6 +530,39 @@ def test_an_ambiguous_title_is_refused_by_shape(title, shape):
     assert (raised.value.field, raised.value.shape) == ("title", shape)
 
 
+@pytest.mark.parametrize(
+    ("title", "law"),
+    [
+        # 112th feed, item 22065 (Bill_Number H.R. 3082): a law of the 111th Congress.
+        ("P.L. 111-322, the Continuing Appropriations and Surface Transportation Extensions Act, 2011", (111, 322)),
+        ("Public Law 112-8, Further Additional Continuing Appropriations Amendments, 2011", (112, 8)),  # 112th
+        ("Public Law 110-50 Passport Backlog Reduction Act of 2007", (110, 50)),  # 110th, no comma
+    ],
+)
+def test_a_title_leading_with_a_public_law_names_that_law_in_its_own_congress(title, law):
+    """A leading public-law citation reads as that law, whose Congress the citation states; it names no bill here."""
+    assert title_citation(112, title) == PublicLawCitation(*law)
+    assert title_bills(112, title) == ()
+
+
+def test_a_law_a_bill_title_cites_later_is_what_it_amends_not_a_second_citation():
+    """108th H.R. 4596: the leading bill stands; a law cited after it is the bill's subject."""
+    title = "H.R. 4596, A bill to amend Public Law 97-435 to extend the authorization for the"
+    assert title_citation(108, title) == BillIdentity(108, "hr", 4596)
+
+
+def test_a_leading_public_law_with_a_second_law_is_ambiguous_but_a_later_bill_is_its_subject():
+    """119th: two items title P.L. 119-21 and cite the budget resolution it followed, the law is still what they
+    lead with. A second law (synthetic: none is measured) would be a guess to rank, and refuses."""
+    title = (
+        "Public Law 119-21, to Provide for Reconciliation Pursuant to Title II of H. Con. Res. 14 Title VII, Finance"
+    )
+    assert title_citation(119, title) == PublicLawCitation(119, 21)
+    with pytest.raises(CboFeedBillError) as raised:
+        title_citation(112, "P.L. 112-4 and P.L. 112-6, the Continuing Appropriations Amendments")
+    assert (raised.value.field, raised.value.shape) == ("title", "two-citations")
+
+
 def test_a_title_citing_its_own_bill_twice_is_not_ambiguous():
     """Synthetic: a repeat of the leading citation names the same bill, so it maps."""
     assert title_bills(113, "H.R. 3409, Stop the War on Coal Act (H.R. 3409)") == (BillIdentity(113, "hr", 3409),)
@@ -545,6 +580,7 @@ def test_a_feed_maps_to_a_sorted_bill_set_marked_by_how_each_was_found():
         ("62006", "", "H.R. 9, a bill to name a post office"),
         ("62007", "", "S. 12, a second statement by title"),
         ("62008", "", "Information Concerning Provisions in Title IV of H.R. 1"),
+        ("62009", "", "Public Law 112-8, Further Additional Continuing Appropriations Amendments, 2011"),
     ]
     body = (
         b'<?xml version="1.0"?>\n<response>'
@@ -562,5 +598,5 @@ def test_a_feed_maps_to_a_sorted_bill_set_marked_by_how_each_was_found():
         (BillIdentity(113, "hr", 9), ("62006",), "title"),
         (BillIdentity(113, "s", 12), ("62002", "62007"), "bill_number"),
     ]
-    assert (named.congress, named.unnamed) == (113, 1)
+    assert (named.congress, named.unnamed, named.public_law) == (113, 1, 1)
     assert named.refused == (("62005", "bill_number", "S.A. N"), ("62008", "title", "not-at-start"))

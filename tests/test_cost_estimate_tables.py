@@ -434,7 +434,26 @@ def test_title_bill_id_names_the_bill_a_title_leads_with_and_exposes_a_wrong_num
     assert rows["43273"]["title_bill_id"] == rows["43273"]["bill_id"] == "112-s-3240"
     assert rows["43280"]["title_bill_id"] is None  # "... Under Title I of S. 3240"
     assert rows["43585"]["title_bill_id"] == "112-hr-4402"  # found by its title, so equal by construction
-    assert rows["22065"]["title_bill_id"] is None  # "P.L. 111-322, ...": the wrong Congress is not seen
+    assert rows["22065"]["title_bill_id"] is None  # "P.L. 111-322, ...": a law, and no host map to its bill
+
+
+def test_a_title_leading_with_a_public_law_names_the_bill_the_host_says_enacted_it() -> None:
+    """CBO filed its estimate of P.L. 111-322 under the 112th's H.R. 3082, the enacting bill's number in the 111th.
+    With the host's laws map (retained 111th BILLSTATUS H.R. 3082 states that law) title_bill_id names the 111th
+    bill, so the wrong Congress shows; a map without the law leaves it NULL, and a bad map value is a refusal."""
+    law_bills = {"111-public-322": "111-hr-3082"}
+    rows = {
+        r["publication_id"]: r
+        for r in build_cbo_feed_cost_estimates(FEED_112, 112, law_bills=law_bills).cbo_cost_estimates
+    }
+    assert (rows["22065"]["bill_id"], rows["22065"]["title_bill_id"]) == ("112-hr-3082", "111-hr-3082")
+    assert rows["43626"]["title_bill_id"] == "112-s-1707"  # a bill-led title ignores the map
+    empty = build_cbo_feed_cost_estimates(FEED_112, 112, law_bills={}).cbo_cost_estimates
+    assert next(r for r in empty if r["publication_id"] == "22065")["title_bill_id"] is None
+    tables = build_cbo_feed_cost_estimates(FEED_112, 112, law_bills={"111-public-322": ""})
+    assert "22065" not in {r["publication_id"] for r in tables.cbo_cost_estimates}
+    (refusal,) = tables.refusals
+    assert refusal.identity == ("112-hr-3082", "22065") and "law_bills" in refusal.reason
 
 
 def test_title_bill_id_is_filled_on_billstatus_rows_too() -> None:
@@ -449,6 +468,11 @@ def test_title_bill_id_is_filled_on_billstatus_rows_too() -> None:
         "118-hr-801",
         "118-hr-810",
     )
+    by_law = replace(parsed, cbo_cost_estimates=(replace(estimate, title="P.L. 118-5, the Act as enacted"),))
+    capture = BillFamilyCapture(status=by_law, versions=())
+    assert build_bill_family(capture, engine=ENGINE, diff=False).cbo_cost_estimates[0]["title_bill_id"] is None
+    mapped = build_bill_family(capture, engine=ENGINE, diff=False, law_bills={"118-public-5": "118-hr-801"})
+    assert mapped.cbo_cost_estimates[0]["title_bill_id"] == "118-hr-801"
 
 
 def test_an_unmappable_item_or_an_undated_one_is_a_named_refusal() -> None:

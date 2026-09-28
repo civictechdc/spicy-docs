@@ -168,13 +168,15 @@ CBO_COST_ESTIMATES = table_contract(
         "publication_id_rule": "The rule that produced publication_id; a url shape, never a guess at an id.",
         "title_bill_id": (
             'The bill this estimate\'s own title leads with ("H.R. 3447, a bill to extend ..."), keyed as bill_id '
-            "is and read by the feed's title rule; NULL where the title leads with no citation, cites the bill "
-            'only after its start ("Senate Amendment 1183 to S. 744") or leads with an abbreviation that is '
-            "no bill type.  Where it differs from bill_id the row is a numbering error and this is the bill the "
-            "estimate scores: over the 108th-119th (2026-09-28), 5 BILLSTATUS rows -- four carrying CBO's own "
-            "wrong number, and 114 H.R. 3347, whose record lists CBO's estimate of H.R. 3447 though the feed "
-            "states 3447 -- and 5 feed rows, 112 H.R. 1707 for S. 1707 among them.  A wrong Congress is not "
-            "seen: the 112th feed files P.L. 111-322 under H.R. 3082, a 111th-Congress number."
+            'is and read by the feed\'s title rule; for a title leading with a public law ("P.L. 111-322, ..."), the '
+            "bill the host's laws table says enacted it, where the host supplies that map.  NULL where the title "
+            'leads with no citation, cites the bill only after its start ("Senate Amendment 1183 to S. 744"), is '
+            "ambiguous, or names a law the host did not map.  Where it differs from bill_id the row is a numbering "
+            "error and this is the bill the estimate scores: over the 108th-119th (2026-09-28), 5 BILLSTATUS rows "
+            "and 5 feed rows by bill titles -- four of CBO's own wrong numbers on both, 112 H.R. 1707 for S. 1707 "
+            "on the feed, and 114 H.R. 3347 on BILLSTATUS, whose record lists CBO's estimate of H.R. 3447 -- and, "
+            "with a law map, 2 more on both (P.L. 119-21's estimates filed under H. Con. Res. 14) and 1 more on "
+            "the feed (P.L. 111-322 filed under the 112th's H.R. 3082, its bill's number in the 111th)."
         ),
     },
 )
@@ -288,7 +290,7 @@ def shape_cbo_cost_estimate(
     *,
     report_citations: Iterable[object] | None = (),
     source: str = BILLSTATUS_BULK,
-    title_bill: object | None = None,
+    title_bill_id: str | None = None,
 ) -> Row:
     """One ``cbo_cost_estimates`` row from one folded estimate of one bill.
 
@@ -299,8 +301,10 @@ def shape_cbo_cost_estimate(
     handful of estimates, so the repetition is bounded.  ``None`` means no
     BILLSTATUS record was read for the bill (a ``cbo_feed`` row a host shaped
     without one) and publishes NULL rather than a zero no document stated.
-    ``title_bill`` is the bill the estimate's own title leads with
-    (``sources.cbo.title_bills``), or ``None``.
+    ``title_bill_id`` is the bill the estimate's own title leads with, keyed
+    as ``bill_id`` is, or ``None``; the caller reads it
+    (``interpretation.bill_family``), from a public law through the host's
+    laws table.
     """
     if source not in ESTIMATE_SOURCES:
         raise TableContractError(f"cbo_cost_estimates source must be one of {', '.join(ESTIMATE_SOURCES)}")
@@ -323,7 +327,7 @@ def shape_cbo_cost_estimate(
         "report_citation_count": None if citations is None else text(len(citations)),
         "report_citations_json": None if citations is None else json_column(citations),
         "publication_id_rule": PUBLICATION_ID_RULE,
-        "title_bill_id": None if title_bill is None else bill_id(title_bill),
+        "title_bill_id": text(title_bill_id),
     }
 
 

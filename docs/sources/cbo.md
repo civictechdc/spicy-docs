@@ -91,9 +91,19 @@ publication, `merge_cbo_cost_estimates` keeps the BILLSTATUS row.
 and there `bill_id` is wrong: 112 H.R. 1707 for S. 1707, 115 S. 2416 for S.
 2461, 117 S. 2671 for S. 2761, 119 H.R. 648 for H.R. 658 and 119 H.R. 5201 for
 H.R. 5021 on the feed, the last four on BILLSTATUS too, and 114 H.R. 3347 for
-H.R. 3447 on BILLSTATUS alone, whose feed item states 3447. A wrong Congress is
-not seen: the 112th feed files P.L. 111-322 under H.R. 3082, the 111th
-Congress's number.
+H.R. 3447 on BILLSTATUS alone, whose feed item states 3447.
+
+A title can lead with a public law instead (`P.L. 111-322, the Continuing
+Appropriations ...`, `Public Law 112-8, ...`; nine feed titles of the
+108th-119th). `title_citation` reads that law in its own Congress, and the
+host passes its `laws` table as `law_bills`, a map from `law_id` to the
+enacting `bill_id`; with it `title_bill_id` is the law's bill, without it NULL,
+counted apart. With a map built from the retained BILLSTATUS `<laws>`, three
+more rows differ: the 112th feed files P.L. 111-322 under H.R. 3082, whose
+bill was the 111th Congress's H.R. 3082, and both routes file two estimates of
+P.L. 119-21 (H.R. 1) under H. Con. Res. 14. A blank-`Bill_Number` item titled by
+a law (the 110th's P.L. 110-50 and the 112th's P.L. 112-8) names no bill:
+`cbo_feed_bills` counts it as `public_law`, and it has no row.
 
 Receipts, with the feeds' bytes and every script:
 `~/Work/corpora/fork-execution-2026-09-21/cbo-112-113/` (`feeds/`,

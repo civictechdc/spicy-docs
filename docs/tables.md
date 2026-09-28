@@ -938,7 +938,10 @@ is a new table rather than columns appended to `congress_bills`.
 - **`title_bill_id` exposes a wrong number.** Every row names the bill its own
   title leads with; where that differs from `bill_id`, `bill_id` is a numbering
   error and `title_bill_id` the bill scored: 5 BILLSTATUS rows and 5 feed rows
-  over the 108th-119th.
+  over the 108th-119th. A title leading with a public law names the law's bill
+  through the host's `laws` map (`law_bills`); with it 3 more rows differ, the
+  112th feed's P.L. 111-322 filed under the wrong Congress's H.R. 3082 among
+  them, and without it the column is NULL.
 - **`report_citation_count` is the text route's reachability, per row.** 883 of
   the 1,368 scored bills (64.5%) have a committee report at all; the Senate
   shortfall is structural, since 155 of 395 scored Senate bills were reported

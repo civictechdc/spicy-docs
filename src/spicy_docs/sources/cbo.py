@@ -330,28 +330,65 @@ def feed_item_bills(congress: int, bill_number: str | None) -> tuple[BillIdentit
     return (BillIdentity(congress, bill_type, int(match["number"])),)
 
 
-def title_bills(congress: int, title: str) -> tuple[BillIdentity, ...]:
-    """The bill a title names by leading with its citation, for an item whose ``Bill_Number`` is empty.
+@dataclass(frozen=True, slots=True)
+class PublicLawCitation:
+    """A public law a title leads with (``P.L. 111-322``): its own Congress and number, which need not be the feed's."""
 
-    61 of the 112th's 92 such items and 170 of the 113th's 186 lead with one
-    (``H.R. 4402, Critical Minerals Policy Act of 2012``); the rest name no
-    bill (``Sequester Replacement Reconciliation Act``, ``Public Law 112-8,
-    ...``) and read ``()``.  Anything ambiguous refuses: a second citation of
-    another bill (``two-citations``), a citation after the start
-    (``not-at-start``: the 119th's ``... in Title IV of H.R. 1``), or an
-    abbreviation and number that is no bill type (``unknown-form``).
+    congress: int
+    number: int
+
+
+#: A public-law citation as the feed titles spell one, capitalized and starting a token: ``P.L. 112-6`` and
+#: ``Public Law 112-8`` lead nine titles of the 108th-119th feeds, and ``Public Law106-348`` occurs later in one.
+#: The law's own Congress is stated, so a law of another Congress (the 112th feed's P.L. 111-322) reads as that.
+_PUBLIC_LAW = re.compile(
+    r"(?<![A-Za-z0-9.])(?:P\.\s?L\.|Public\s+Law)\s*(?P<congress>[1-9][0-9]*)-(?P<number>[1-9][0-9]*)(?![0-9A-Za-z])"
+)
+
+
+def title_citation(congress: int, title: str) -> BillIdentity | PublicLawCitation | None:
+    """The bill, or public law, a title names by leading with its citation; ``None`` where it leads with neither.
+
+    A bill citation reads in the feed's Congress (``H.R. 4402, Critical
+    Minerals Policy Act of 2012``); a public law in its own (``P.L.
+    111-322, the Continuing Appropriations ...``).  Prose names nothing
+    (``Sequester Replacement Reconciliation Act``).  Anything ambiguous
+    refuses: a second citation of another bill after a leading bill, or of
+    another law after a leading law (``two-citations``); a bill citation after
+    the start (``not-at-start``: the 119th's ``... in Title IV of H.R. 1``);
+    an abbreviation and number that is no bill type or law (``unknown-form``).
+    What a title cites after its lead in the other kind is its subject, not a
+    second name for it: a law a bill amends (``H.R. 4596, A bill to amend
+    Public Law 97-435 ...``), a resolution a law follows (``Public Law 119-21,
+    to Provide for Reconciliation Pursuant to Title II of H. Con. Res. 14``).
     """
+    laws = list(_PUBLIC_LAW.finditer(title))
     citations = list(_TITLE_CITATION.finditer(title))
+    if laws and laws[0].start() == 0:
+        if len({(law["congress"], law["number"]) for law in laws}) != 1:
+            raise CboFeedBillError("title", "two-citations")
+        return PublicLawCitation(int(laws[0]["congress"]), int(laws[0]["number"]))
     if not citations:
         if _ABBREVIATED_LEAD.match(title):
             raise CboFeedBillError("title", "unknown-form")
-        return ()
+        return None
     if citations[0].start() != 0:
         raise CboFeedBillError("title", "not-at-start")
     bills = {bill for citation in citations for bill in feed_item_bills(congress, citation.group(0))}
     if len(bills) != 1:
         raise CboFeedBillError("title", "two-citations")
-    return tuple(bills)
+    return bills.pop()
+
+
+def title_bills(congress: int, title: str) -> tuple[BillIdentity, ...]:
+    """The bill a title leads with (:func:`title_citation`), for an item whose ``Bill_Number`` is empty.
+
+    61 of the 112th's 92 such items and 170 of the 113th's 186 lead with one.
+    A title leading with a public law names no bill by itself: its bill is
+    the host's laws table's to say.
+    """
+    cited = title_citation(congress, title)
+    return (cited,) if isinstance(cited, BillIdentity) else ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -373,16 +410,18 @@ class CboFeedBills:
     """The bill set a feed names, sorted by type and number, and every item that named none.
 
     ``unnamed`` counts the items whose ``Bill_Number`` is empty and whose title
-    leads with no citation; ``refused`` holds ``(publication_id, field,
-    shape)`` for every item :class:`CboFeedBillError` refused.  Sorted, because
-    a feed's order within one ``Date`` differs between captures whose items are
-    identical.
+    leads with no citation, and ``public_law`` those whose title leads with a
+    public law, which names no bill here; ``refused`` holds
+    ``(publication_id, field, shape)`` for every item
+    :class:`CboFeedBillError` refused.  Sorted, because a feed's order within
+    one ``Date`` differs between captures whose items are identical.
     """
 
     congress: int
     bills: tuple[CboFeedBill, ...]
     unnamed: int
     refused: tuple[tuple[str, str, str], ...]
+    public_law: int = 0
 
 
 def cbo_feed_bills(feed: CboCostEstimatesFeed, congress: int) -> CboFeedBills:
@@ -393,19 +432,23 @@ def cbo_feed_bills(feed: CboCostEstimatesFeed, congress: int) -> CboFeedBills:
     """
     named: dict[BillIdentity, list[str]] = {}
     by_number: set[BillIdentity] = set()
-    unnamed = 0
+    unnamed = public_law = 0
     refused: list[tuple[str, str, str]] = []
     for item in feed.items:
+        cited: BillIdentity | PublicLawCitation | None = None
         try:
             if item.bill_number is not None:
                 bills = feed_item_bills(congress, item.bill_number)
                 by_number.update(bills)
             else:
-                bills = title_bills(congress, item.title)
+                cited = title_citation(congress, item.title)
+                bills = (cited,) if isinstance(cited, BillIdentity) else ()
         except CboFeedBillError as error:
             refused.append((item.publication_id, error.field, error.shape))
             continue
-        if not bills:
+        if isinstance(cited, PublicLawCitation):
+            public_law += 1
+        elif not bills:
             unnamed += 1
         for bill in bills:
             named.setdefault(bill, []).append(item.publication_id)
@@ -417,6 +460,7 @@ def cbo_feed_bills(feed: CboCostEstimatesFeed, congress: int) -> CboFeedBills:
         ),
         unnamed,
         tuple(refused),
+        public_law,
     )
 
 
