@@ -2,8 +2,8 @@
 thin ``documents``, ``dockets`` and ``comments`` tables, one row per record, typed natively (spicy-regs owner decisions
 66 and 67).
 
-A column is the API attribute it carries in snake_case, ``_json`` after the one attribute published as JSON text
-(``displayProperties``, spelled by :func:`~spicy_docs.schemas.tables.json_column`). Lists of strings are
+A column is the API attribute it carries in snake_case, ``_json`` after an attribute published as JSON text
+(``displayProperties``, and on comments ``fileFormats``, spelled by :func:`~spicy_docs.schemas.tables.json_column`). Lists of strings are
 ``VARCHAR[]``, and the publisher's instants (always ``YYYY-MM-DDTHH:MM:SSZ``) are ``TIMESTAMPTZ``. Submitters' stated
 contact details are published (decision 66); attributes never stated, constant, derivable from the key, or already
 carried by the thin tables are left out, as the contract note lists them (DocSpec
@@ -11,12 +11,15 @@ carried by the thin tables are left out, as the contract note lists them (DocSpe
 string and ``displayProperties`` as an array, as DocSpec's exporter requires; anything else refuses.
 
 :func:`project_document_attributes`, :func:`project_docket_attributes` and :func:`project_comment_attributes` are the
-one spelling of a row: spicy-regs' ETL calls them per record and DocSpec's exporter proves its native spelling against
-them.
+one spelling of a row: spicy-regs' ETL calls them per record. DocSpec's exporter proves its native spelling against the
+document and docket projections; it has no comment exporter, and its display-properties check would refuse
+``fileFormats``, so a comment exporter needs its own.
 
 ``comment_attributes`` follows the same rules, with one difference the owner ruled on 2026-09-28: a comment's stated
-``email`` and ``phone`` are left out. Documents state neither, so decision 66 never ruled on them; on comments they
-are private individuals' contact details, bulk-queryable once published, with little analytic value.
+``email``, ``phone`` and ``fax`` are left out. Documents state neither email nor phone, so decision 66 never ruled on
+them; on comments they are private individuals' contact details, bulk-queryable once published, with little analytic
+value, and 162 of the 170 stated fax values read so far are phone numbers. The exclusion is by attribute, not by value:
+a contact-shaped value typed into a published field (``city``, ``submitterRep``, ...) is published as stated.
 :data:`COMMENT_ATTRIBUTES_LEFT_OUT` lists every comment attribute left out and why.
 """
 
@@ -267,7 +270,6 @@ COMMENT_ATTRIBUTES = _attribute_contract(
             "The agency's labels for this record's fields: a JSON array of {label, name, tooltip}, name being the attribute it labels; json_column spelling.",
         ),
         ("doc_abstract", VARCHAR, "A summary the agency recorded for the comment; rarely stated."),
-        ("fax", VARCHAR, "The submitter's fax number."),
         (
             "file_formats_json",
             VARCHAR,
@@ -303,7 +305,7 @@ COMMENT_ATTRIBUTES = _attribute_contract(
 #: read re-measures them); the thin ``comments`` table's attributes are what ``schemas.regulations.COMMENT.extract``
 #: reads, which a test derives rather than lists.
 COMMENT_ATTRIBUTES_LEFT_OUT: Mapping[str, tuple[str, ...]] = {
-    "private contact details, left out by owner ruling (2026-09-28)": ("email", "phone"),
+    "private contact details, left out by owner ruling (2026-09-28)": ("email", "fax", "phone"),
     "never stated": ("field1", "field2", "submitterRepAddress", "submitterRepCityState"),
     "constant (false)": ("openForComment",),
 }

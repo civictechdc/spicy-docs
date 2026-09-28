@@ -4183,8 +4183,8 @@ comments entry.
 
 ## Comments get an attribute table: `comment_attributes`
 
-Unreleased, 2026-09-28; the owner ruled it in, for the same 0.52.0 release as
-the comment columns above. `comment_attributes` is to `comments` what
+Unreleased, 2026-09-28; the owner ruled it in, for the same release as the
+comment columns above. `comment_attributes` is to `comments` what
 `document_attributes` is to `documents`: one row per comment, keyed
 `comment_id` spelled `value/1`, referencing `comments`, built by the same
 `_attribute_contract` and projected by `project_comment_attributes`, the one
@@ -4193,12 +4193,18 @@ naming and decision 67's typing: `withdrawn` BOOLEAN, `page_count` INTEGER,
 `postmark_date` TIMESTAMPTZ, `display_properties_json` in `json_column`
 spelling, everything else VARCHAR as stated.
 
-**Contact details follow decision 66, less `email` and `phone`** (owner,
-2026-09-28). `address1`, `address2`, `city`, `state_province_region`, `zip`,
-`country`, `fax` and `submitter_rep` are published. `email` and `phone` are
+**Contact details follow decision 66, less `email`, `phone` and `fax`**
+(owner, 2026-09-28). `address1`, `address2`, `city`, `state_province_region`,
+`zip`, `country` and `submitter_rep` are published. `email` and `phone` are
 left out on purpose: documents state neither, so decision 66 never ruled on
 them, and on comments they are private individuals' contact details,
-bulk-queryable once published, with little analytic value.
+bulk-queryable once published, with little analytic value. `fax` is left out
+with them: 162 of its 170 stated values read were phone numbers.
+
+**The exclusion is by attribute, not by value** (owner, 2026-09-28). An email
+or phone number typed into a published field (`city`, `submitterRep`,
+`stateProvinceRegion`, `govAgency`; about 20 in 5.95M comments) is published as
+stated, like every other stated value.
 
 Left out, as `COMMENT_ATTRIBUTES_LEFT_OUT` lists, and the thin table's own
 attributes (what `COMMENT.extract` reads; a test derives the set by changing
@@ -4206,7 +4212,7 @@ each attribute and watching the extracted row):
 
 | Reason | Attributes |
 | --- | --- |
-| Private contact details (owner ruling) | `email`, `phone` |
+| Private contact details (owner ruling) | `email`, `phone`, `fax` |
 | Never stated | `field1`, `field2`, `submitterRepAddress`, `submitterRepCityState` |
 | Constant | `openForComment` (false) |
 
@@ -4217,7 +4223,8 @@ columns here: the thin `comments` table carries none of them (its
 content file).
 
 "Never stated" and "constant" are measured on the spicy-regs re-read of every
-comment: on the first 4,368,949 objects read, `restrictReason` (25),
+comment: on the first 4,368,949 objects read, agencies ACF to CFPB (the other
+agencies then rested on the 179-agency sample), `restrictReason` (25),
 `restrictReasonType` (22) and `fileFormats` (4) are stated after all, so they
 are columns, which the 5,945-comment sample had missed; `openForComment` is
 false on all of them. Receipts under `~/Work/corpora/supply-2026-09-02/receipts/comments-full-reread-2026-09-28/comment-attributes/`:

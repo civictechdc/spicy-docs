@@ -49,22 +49,31 @@ def test_every_comment_attribute_is_a_column_carried_by_comments_or_left_out_for
     assert sum(len(part) for part in parts) == len(COMMENT_ATTRIBUTE_FIELDS)  # disjoint
 
 
-def test_email_and_phone_are_left_out_even_when_stated():
+def test_email_phone_and_fax_are_left_out_even_when_stated():
     contract = TABLE_CONTRACTS["comment_attributes"]
-    assert not {"email", "phone"} & set(contract.columns)
+    assert not {"email", "phone", "fax"} & set(contract.columns)
     assert COMMENT_ATTRIBUTES_LEFT_OUT["private contact details, left out by owner ruling (2026-09-28)"] == (
         "email",
+        "fax",
         "phone",
     )
-    row = project_comment_attributes("X-1", {"email": "a@example.org", "phone": "555", "city": "Washington"})
-    assert row["city"] == "Washington" and "email" not in row and "phone" not in row
+    stated = {"email": "a@example.org", "phone": "555", "fax": "202-555-0100", "city": "Washington"}
+    row = project_comment_attributes("X-1", stated)
+    assert row["city"] == "Washington" and not {"email", "phone", "fax"} & set(row)
 
 
-def test_the_contact_columns_are_decision_66s_less_email_and_phone():
+def test_the_exclusion_is_by_attribute_not_by_value():
+    """A contact-shaped value typed into a published field is published as stated (owner, 2026-09-28)."""
+    row = project_comment_attributes("X-1", {"city": "someone@example.org", "submitterRep": "202-555-0100"})
+    assert (row["city"], row["submitter_rep"]) == ("someone@example.org", "202-555-0100")
+
+
+def test_the_contact_columns_are_decision_66s_less_email_phone_and_fax():
     documents = set(TABLE_CONTRACTS["document_attributes"].columns)
     comments = set(TABLE_CONTRACTS["comment_attributes"].columns)
-    contact = {"address1", "address2", "city", "state_province_region", "zip", "country", "fax", "submitter_rep"}
+    contact = {"address1", "address2", "city", "state_province_region", "zip", "country", "submitter_rep"}
     assert contact <= comments and contact <= documents
+    assert "fax" in documents and "fax" not in comments
 
 
 def test_retained_comments_project_typed_as_stated():
