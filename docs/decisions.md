@@ -3396,3 +3396,8 @@ here.
   - `tests/test_native_legal_references.py:14` imports `SCHEMAS`;
   - `tests/test_join_delivery_registration.py` iterates `SCHEMAS`;
   - any assertion on the shapers' old partial rows.
+- After the first republish under `/003`, re-qualify the native entry in
+  `docs/research/fork-output-ledger-2026-09-21.md`: its T12/T13 row
+  (`run-rollup-native-legal-references`) and its qualification section both pin
+  `53755e3e…`, as does `table_qualification.json` (`pin` `53755e3e`), which
+  `spicy-regs-dict generate` rebuilds from the ledger.
