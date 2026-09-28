@@ -821,10 +821,15 @@ class GaoListedProduct:
 
 @dataclass(frozen=True, slots=True)
 class GaoListedDecision:
-    """One B-numbered legal decision teaser, its numbers split; outside the product listing."""
+    """One B-numbered legal decision's page, its numbers split; outside the product listing.
+
+    Keyed on its page, not its number: 2019-2021 give one B-number two pages (``b-331093`` and ``b-331093-0``),
+    released months apart, and B-333110's second is an update with its own heading.
+    """
 
     product_number: str
     decision_numbers: tuple[str, ...]
+    link: str
     label: str
     heading: str
     published: str | None
@@ -869,11 +874,15 @@ class GaoListingRun:
 def collect_listing(
     pages: Iterable[GaoListingPage],
 ) -> tuple[tuple[GaoListedProduct, ...], tuple[GaoListedDecision, ...], tuple[GaoListedUnnumbered, ...]]:
-    """Each product, decision and unnumbered teaser once, in first-listed order; one listed with differing fields refuses."""
-    found: dict[str, tuple[GaoListingEntry, list[str], list[str]]] = {}
+    """Each product once by its id, each decision and unnumbered teaser once by its page, in first-listed order.
+
+    One listed twice with differing fields refuses. A product's link is not among them: 2020-2023 link one product
+    by its prerelease path in one place and its page in another.
+    """
+    found: dict[tuple[str, str], tuple[GaoListingEntry, list[str], list[str]]] = {}
     for page in pages:
         for entry in page.entries:
-            key = entry.product_id or entry.product_number or entry.link
+            key = ("product", entry.product_id) if entry.product_id else ("page", unquote(entry.link))
             held = found.setdefault(key, (entry, [], []))
             if _fixed(held[0]) != _fixed(entry):
                 raise GaoListingSourceError(
@@ -891,7 +900,9 @@ def collect_listing(
             )
         elif entry.product_number is not None:
             decisions.append(
-                GaoListedDecision(entry.product_number, entry.decision_numbers, entry.label, entry.heading, *seen)
+                GaoListedDecision(
+                    entry.product_number, entry.decision_numbers, entry.link, entry.label, entry.heading, *seen
+                )
             )
         else:
             unnumbered.append(GaoListedUnnumbered(entry.link, entry.label, entry.heading, *seen))
@@ -899,11 +910,11 @@ def collect_listing(
 
 
 def _fixed(entry: GaoListingEntry) -> tuple:
-    """What must agree wherever GAO lists the same teaser; the topic and position may differ."""
+    """What must agree wherever GAO lists the same teaser; its topic, position and a product's link may differ."""
     return (
         entry.product_id,
         entry.product_number,
-        entry.link,
+        None if entry.product_id else entry.link,
         entry.decision_numbers,
         entry.label,
         entry.heading,

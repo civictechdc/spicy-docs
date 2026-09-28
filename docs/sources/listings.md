@@ -497,7 +497,9 @@ reads it.
   duplicate-path suffix (`/products/gao-16-75sp-0` for `GAO-16-75SP`), and the
   product id is the page the listing links. 2020-2023 link some products by
   their prerelease path (`/prerelease/3mpz` for GAO-21-584, whose page is
-  `/products/gao-21-584`); those key on their number lowercased.
+  `/products/gao-21-584`); those key on their number lowercased. A decision
+  is keyed on its page, not its number: 2019-2021 give one B-number two pages
+  (`b-331093` and `b-331093-0`), released months apart.
 
 ```sh
 export ZYTE_TOKEN

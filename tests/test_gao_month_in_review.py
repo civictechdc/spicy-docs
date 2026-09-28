@@ -287,6 +287,31 @@ def test_a_whole_month_lists_each_product_once_with_every_topic():
     assert receipts.heading.count("\xa0") == 3 and "  " not in receipts.heading
 
 
+def test_a_product_linked_two_ways_is_one_product():
+    """2020-2023 link a product by its prerelease path in one place and its page in another: one product."""
+    first = page(AUGUST_PAGES[0])
+    again = page(AUGUST_PAGES[0].replace(b'href="/products/gao-26-108640"', b'href="/prerelease/3mpz"', 2))
+    products, _, _ = collect_listing([first, again])
+    assert [product.product_id for product in products].count("gao-26-108640") == 1
+
+
+def test_two_decision_pages_sharing_a_b_number_are_two_decisions():
+    """2019-2021 give one B-number two pages (``b-331093`` and ``b-331093-0``), dated apart: two decisions."""
+    first = page(AUGUST_PAGES[3], index=3)
+    second = page(
+        AUGUST_PAGES[3]
+        .replace(b'href="/products/b-424129.2"', b'href="/products/b-424129.2-0"', 2)
+        .replace(b"Publicly Released: Aug 18, 2026.", b"Publicly Released: Sep 01, 2026.", 1),
+        index=3,
+    )
+    _, decisions, _ = collect_listing([first, second])
+    shared = [decision for decision in decisions if decision.product_number == "B-424129.2"]
+    assert sorted((decision.link, decision.released) for decision in shared) == [
+        ("/products/b-424129.2", "2026-08-18"),
+        ("/products/b-424129.2-0", "2026-09-01"),
+    ]
+
+
 def test_one_product_listed_with_differing_fields_refuses():
     """The same product stated twice with different dates is refused rather than either spelling chosen."""
     first = page(AUGUST_PAGES[0])
