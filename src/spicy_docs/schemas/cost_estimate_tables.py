@@ -35,12 +35,12 @@ PUBLICATION_ID_RULE = "cbo_publication_url"
 #: publication in one bill, once on ``http`` and once on ``https``: 4,762
 #: pairs.  CBO's own sitemap lists 4,761 of those ids, every one on ``https``,
 #: and its wall answers both schemes alike, so the ``http`` statement names
-#: the same page and folds with its twin.  Anchored, no query and no trailing
+#: the same page and folds with its twin, which is the row.  Anchored, no query and no trailing
 #: slash, because a locator this repository publishes as a key has to be the
 #: one the publisher stated; a url outside these shapes is refused by name
 #: rather than coerced into an id.  Receipt:
 #: ``~/Work/corpora/fork-execution-2026-09-21/spicy-docs-0501/cbo-shape/``.
-_PUBLICATION_URL = re.compile(r"https?://www\.cbo\.gov/publication/(?P<id>[1-9][0-9]*)")
+_PUBLICATION_URL = re.compile(r"(?P<scheme>https?)://www\.cbo\.gov/publication/(?P<id>[1-9][0-9]*)")
 
 #: The rule ``report_citations_json``'s parsed parts are produced by.
 REPORT_CITATION_RULE = "billstatus_committee_report_citation"
@@ -102,19 +102,23 @@ CBO_COST_ESTIMATES = table_contract(
             "the keyed per-bill route.  Sealed and additions-only."
         ),
         "estimate_index": (
-            "Zero-based position, in the publisher's own list, of the first item naming this publication.  "
-            "Document order is kept because the publisher's order is a fact and nothing here re-sorts it."
+            "Zero-based position, in the publisher's own list, of the item this row states: the first one naming "
+            "this publication on https, else the first one naming it.  Document order is kept because the "
+            "publisher's order is a fact and nothing here re-sorts it."
         ),
         "stated_count": (
-            "How many items in this bill's list name this publication.  Usually 1; the publisher states one "
-            "twice on 37 of 1,468 measured rows, which is one estimate stated twice and not two estimates."
+            "How many items in this bill's list name this publication, which is one estimate stated that many "
+            "times and not that many estimates.  Usually 1 from the 112th on: the 118th states one twice on 37 "
+            "of 1,468 measured rows.  The 108th-111th state every estimate twice, once on http and once on https."
         ),
         "restatements_json": (
-            "Every later item naming this publication whose fields differ from the first, as a JSON array of "
-            "objects carrying `estimate_index` and only the differing fields; `[]` when they agree or there is "
-            "no later item.  Measured 2026-09-20: 9 of the 37 restated rows differ, every one in `title` "
-            "alone -- CBO re-spelling the bill's title ('Human rights' to 'Human Rights', one double-escaped "
-            "ampersand).  The column exists so folding onto the identity drops nothing."
+            "Every other item naming this publication whose fields differ from the row's, in list order, as a "
+            "JSON array of objects carrying `estimate_index` and only the differing fields; `[]` when they "
+            "agree or there is no other item.  In the 118th (measured 2026-09-20) 9 of the 37 restated rows "
+            "differ, every one in `title` alone -- CBO re-spelling the bill's title ('Human rights' to 'Human "
+            "Rights', one double-escaped ampersand).  In the 108th-111th every row carries its http twin, which "
+            "differs in `url` and, on all but 11 of 4,762, in `description`, which it wraps in a p element.  "
+            "The column exists so folding onto the identity drops nothing."
         ),
         "report_citation_count": (
             "How many committee reports this bill's own BILLSTATUS names. Zero means this document names "
@@ -146,6 +150,12 @@ def publication_id(url: object) -> str | None:
     return None if match is None else match["id"]
 
 
+def _on_https(url: object) -> bool:
+    """Whether a url inside the measured shape is stated on ``https``."""
+    match = _PUBLICATION_URL.fullmatch(url.strip()) if isinstance(url, str) else None
+    return match is not None and match["scheme"] == "https"
+
+
 def report_citation_parts(citation: object) -> dict[str, object]:
     """One ``<committeeReports>`` citation with the parts that address a CRPT package.
 
@@ -171,7 +181,8 @@ def report_citation_parts(citation: object) -> dict[str, object]:
 class FoldedEstimate:
     """One publication as one bill's list states it, with every restatement kept.
 
-    ``estimate`` is the first item naming this publication, read by attribute
+    ``estimate`` is the item the row states -- the first naming this
+    publication on ``https``, else the first naming it -- read by attribute
     (``sources.congress.bill_status.CboCostEstimate`` is the shape) so this
     module stays the stdlib-only leaf ``schemas`` is.
     """
@@ -196,6 +207,12 @@ def fold_cbo_cost_estimates(
     caller refuses those by name rather than publishing a row it could not key.  The fold exists because the publisher
     states one publication twice on some bills and ``(bill_id, publication_id)`` is one estimate; ``O(n)`` in the bill's
     own item count.
+
+    The row states the first item naming the publication on ``https``, else the first naming it; every other item that
+    differs from it is a restatement.  Preferring ``https`` is the 108th-111th's case: the ``http`` twin comes first in
+    4,673 of 4,762 pairs, and it wraps the description in markup (and once misspells a title) where the ``https``
+    statement, the page CBO's sitemap lists, is plain.  It also keeps the row the fork published before 0.50.1 read the
+    ``http`` twin at all.
     """
     groups: dict[str, list[tuple[int, object]]] = {}
     refused: list[tuple[int, object]] = []
@@ -207,17 +224,19 @@ def fold_cbo_cost_estimates(
             groups.setdefault(key, []).append((index, estimate))
     folded: list[FoldedEstimate] = []
     for key, items in groups.items():
-        first_index, first = items[0]
+        row_index, row = next(((i, e) for i, e in items if _on_https(getattr(e, "url", None))), items[0])
         restatements: list[dict[str, object]] = []
-        for index, estimate in items[1:]:
+        for index, estimate in items:
+            if index == row_index:
+                continue
             differences = {
                 field: getattr(estimate, field, None)
                 for field in _FOLDED_FIELDS
-                if getattr(estimate, field, None) != getattr(first, field, None)
+                if getattr(estimate, field, None) != getattr(row, field, None)
             }
             if differences:
                 restatements.append({"estimate_index": index, **differences})
-        folded.append(FoldedEstimate(key, first_index, first, len(items), tuple(restatements)))
+        folded.append(FoldedEstimate(key, row_index, row, len(items), tuple(restatements)))
     return tuple(folded), tuple(refused)
 
 

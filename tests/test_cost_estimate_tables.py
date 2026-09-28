@@ -244,31 +244,63 @@ def test_a_restated_title_is_kept_rather_than_folded_away() -> None:
     assert entry.estimate.title == "H.R. 589, Mahsa Amini Human rights and Security Accountability Act"
 
 
-def test_an_estimate_stated_on_http_and_https_is_one_row_that_keeps_both() -> None:
-    """The 108th-111th shape: the http statement is first, its twin a restatement of the url and description.
+def test_an_estimate_stated_on_http_and_https_is_one_row_on_https_that_keeps_both() -> None:
+    """The 108th-111th shape: the https statement is the row, and its http twin, listed first, a restatement.
 
-    Each run of the 108th-111th bill family refused the 4,762 http statements before 0.50.1; the https twin was the
-    row. Now the first-stated item is the row, as for every other restatement, and nothing is dropped.
+    Each run of the 108th-111th bill family refused the 4,762 http statements before 0.50.1, so the https twin was the
+    row the fork published. It still is, with the same fields and index; stated_count and restatements_json now record
+    the twin.
     """
     parsed = status("BILLSTATUS-108hconres96", BillIdentity(108, "hconres", 96))
     (entry,), unkeyable = fold_cbo_cost_estimates(parsed.cbo_cost_estimates)
     assert unkeyable == ()
-    assert (entry.publication_id, entry.estimate_index, entry.stated_count) == ("14390", 0, 2)
-    assert entry.estimate.url == "http://www.cbo.gov/publication/14390"
-    assert entry.estimate.description.startswith("<p>Cost estimate for the bill")
+    assert (entry.publication_id, entry.estimate_index, entry.stated_count) == ("14390", 1, 2)
+    assert entry.estimate.url == "https://www.cbo.gov/publication/14390"
+    assert entry.estimate.description.startswith("Cost estimate for the bill")
     assert entry.restatements == (
         {
-            "estimate_index": 1,
-            "url": "https://www.cbo.gov/publication/14390",
+            "estimate_index": 0,
+            "url": "http://www.cbo.gov/publication/14390",
             "description": (
-                "Cost estimate for the bill as ordered reported by the House Committee on Transportation and "
-                "Infrastructure on April 9, 2003"
+                "<p>Cost estimate for the bill as ordered reported by the House Committee on Transportation and "
+                "Infrastructure on April 9, 2003</p>"
             ),
         },
     )
     family = build_bill_family(BillFamilyCapture(status=parsed, versions=()), engine=ENGINE, diff=False)
-    assert [CBO_COST_ESTIMATES.key(row) for row in family.cbo_cost_estimates] == [("108-hconres-96", "14390")]
+    (row,) = family.cbo_cost_estimates
+    assert CBO_COST_ESTIMATES.key(row) == ("108-hconres-96", "14390")
+    assert (row["url"], row["estimate_index"], row["stated_count"]) == (entry.estimate.url, "1", "2")
     assert not [r for r in family.refusals if r.table == "cbo_cost_estimates"]
+
+
+def test_the_row_is_the_first_https_statement_else_the_first() -> None:
+    """Synthetic orders: http first, https first, http only, and two https statements with an http one between."""
+
+    def item(url: str, title: str) -> CboCostEstimate:
+        return CboCostEstimate(None, title, url, None)
+
+    http, https = "http://www.cbo.gov/publication/", "https://www.cbo.gov/publication/"
+    estimates = (
+        item(http + "1", "a0"),
+        item(https + "1", "a1"),
+        item(https + "2", "b2"),
+        item(http + "2", "b3"),
+        item(http + "3", "c4"),
+        item(http + "4", "d5"),
+        item(https + "4", "d6"),
+        item(http + "4", "d7"),
+        item(https + "4", "d8"),
+    )
+    folded, unkeyable = fold_cbo_cost_estimates(estimates)
+    assert unkeyable == ()
+    assert [(f.publication_id, f.estimate_index, f.estimate.title, f.stated_count) for f in folded] == [
+        ("1", 1, "a1", 2),
+        ("2", 2, "b2", 2),
+        ("3", 4, "c4", 1),
+        ("4", 6, "d6", 4),
+    ]
+    assert [r["estimate_index"] for r in folded[3].restatements] == [5, 7, 8]
 
 
 def test_a_url_outside_the_measured_shape_is_returned_for_refusal_not_dropped() -> None:

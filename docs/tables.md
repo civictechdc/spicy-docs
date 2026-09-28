@@ -898,12 +898,14 @@ is a new table rather than columns appended to `congress_bills`.
 - **The identity folds, and the fold keeps what it folds.** 1,468 items become
   1,431 rows because the publisher states one publication twice on some bills.
   Nine of those 37 restatements *disagree*, every one in `title` alone, so
-  `restatements_json` carries each differing later item with only its differing
-  fields. `[]` on the other 1,459 rows.
+  `restatements_json` carries each other differing item with only its differing
+  fields. `[]` on the other 1,459 rows of the 118th. The row states the first
+  item on `https`, else the first item.
 - **`publication_id` is parsed, never guessed.** The rule takes only the
   `www.cbo.gov/publication/{id}` page all 1,468 measured urls are, on `https`,
   or on `http` as well since 0.50.1: the 108th-111th state every estimate once
-  on each scheme, and the two statements fold into one row
+  on each scheme, so each of their 4,762 rows is the `https` statement with its
+  `http` twin in `restatements_json`
   ([decision](decisions.md#cbo-urls-on-http-fold-with-their-https-twin)). A url
   outside those shapes is a named `FamilyRefusal`, not a row keyed on a coerced
   id.
