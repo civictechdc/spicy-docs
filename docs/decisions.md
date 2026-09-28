@@ -3538,5 +3538,6 @@ Collected from the four entries above.
   (`cbo_cost_estimates`, `bill_cosponsors.source_xml`,
   `house_communications.rin_occurrences_json`, the model tables' hashes,
   `roll_call_votes`, `member_votes.state`).
-- New helpers: `reading.xml.parse_xml_with_spans`, `sources.cbo.title_bills`,
-  `feed_item_pub_date`, `CboFeedBillError`.
+- New helpers: `reading.xml.parse_xml_with_spans`, `sources.cbo.title_citation`
+  (a bill or a `PublicLawCitation`), `title_bills`, `feed_item_pub_date`,
+  `CboFeedBillError`, and `interpretation.bill_family.LawBills`.
