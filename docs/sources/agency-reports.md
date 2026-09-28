@@ -1,9 +1,12 @@
 # Read retained agency reports
 
-SpicyDocs provides two offline readers for agency-report inputs. Prefer native
+SpicyDocs provides offline readers for agency-report inputs. Prefer native
 FOIA XML. Use Oversight.gov HTML for the report fields and recommendations present
-in retained pages. Keep each original beside the returned source digest; parse
-results do not contain the original bytes or establish current collection coverage.
+in retained pages. Historical inspector-general report metadata from the community
+archive has its own reader; see
+[Inspector General archives](inspectors-general-archive.md). Keep each original
+beside the returned source digest; parse results do not contain the original
+bytes or establish current collection coverage.
 
 ```python
 from pathlib import Path
