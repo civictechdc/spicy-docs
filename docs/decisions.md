@@ -2840,6 +2840,8 @@ observations and eCFR `AUTH`/`SOURCE` notes into rows. It has no entry in
 descriptions, and the three shapers return different column sets.
 spicy-regs' `transforms/native_legal_references.py` states the
 `native_legal_references` columns itself, and the fork publishes that table.
+(Both tables have contracts now:
+[below](#the-native-legal-reference-tables-have-contracts-and-an-observation-is-spelled-at-joined1).)
 
 ### Branch builds before 0.50.0 resolve to these commits
 
@@ -3218,3 +3220,85 @@ Replayed over the parsing survey's 60,000 Federal Register texts
   digest is `5609cfaab8bb`.
 - The `yaml` extra (`PyYAML>=6,<7`) exists; the administration-policy reader
   needs it with `acquisition`.
+
+## The native legal-reference tables have contracts, and an observation is spelled `at-joined/1`
+
+2026-09-28. The owner decided that this package owns the table contracts of
+the fork's published native legal-reference tables, item 8 of the
+[0.50.1 follow-ups](#0501-fixes-what-the-pr-4-review-found-and-reads-the-older-cbo-urls).
+spicy-regs' `transforms/native_legal_references.py` stated their columns and
+identities itself, so DocSpec could not admit them and Search could not serve
+them. Behavior and measurements:
+[Table contracts](tables.md#the-native-legal-reference-tables-are-a-scanners-observations-and-its-reads).
+Receipts: `~/Work/corpora/fork-execution-2026-09-21/native-refs-contract/`.
+
+**Nothing published moves.** `native_legal_references` and
+`native_legal_reference_reads` are the published tables as they stand: their
+columns in the fork's footer order, and the identities its host merges on,
+`(scope_id, input_sha256, occurrence_index)` and `scope_id`. The rows are live,
+and moving an identity would re-key every one downstream; nothing here needed
+it. Neither declares a version column. The host's `rule_version` supports
+equality only, and a complete read replacing its whole scope, not a version,
+decides which rows are current.
+
+**Why `at-joined/1`.** The observation identity is composite, and DocSpec
+admits a table only on a declared spelling. Its components are two `sha256:`
+digests and a decimal ordinal, so none can hold `@` by its grammar, and the
+shapers refuse an input digest spelled any other way. None of the 881 live rows
+had an empty or `@`-holding component on 2026-09-28. The read identity is one
+column, spelled `value/1`, and each observation's `scope_id` references it.
+
+**The shapers fill the row; the host interprets it.**
+`shape_uscode_reference`, `shape_uscode_source_credit` and `shape_ecfr_note`
+return whole contract rows, checked and keyed, where they returned partial
+rows the host completed. They set `source_family` and compute `scope_id`
+through `native_reference_scope_id`, which the host computed itself. The
+scope's preimage keeps non-ASCII characters literal, the host's spelling
+rather than `json_column`'s escapes, so a record key or edition outside ASCII
+keeps the scope the host already minted; none published has one.
+`interpretation_status`, `target_candidates_json` and `rule_version` stay the
+host's and are NULL in a shaped row: its interpretation reads hrefs and note
+text under its own rule. That rule is a host restating what this package's
+citation grammar and scanners know, and moving it here is a separate change.
+
+**Digest spelling.** The owner unified digests on `sha256:`. Every published
+digest column here is already spelled that way: `scope_id`, `input_sha256`,
+`manifest_sha256`, and the digests nested in `target_candidates_json`. So the
+spelling changes no value. The shapers now refuse a bare-hex input digest.
+The CFR scanner's `EcfrAuthorityScan.input_sha256` is bare hex, and a caller
+prefixes it; it is never published.
+
+**What was measured.** Over the fork's generation `sha256:53755e3e…` on
+2026-09-28 (881 observations, 2 reads): both footers and the publication index
+list exactly the contracts' columns, all VARCHAR, and every member key spells,
+is distinct and splits back into its components. The two retained inputs,
+re-shaped in the host's callback order, give all 881 rows equal to the
+published rows on every column a shaper fills, `scope_id` and `source_family`
+included.
+
+**What changes for an importer.**
+- The three shapers return every contract column in order: `scope_id` and
+  `source_family` filled, the host's three columns NULL.
+- They refuse with `TableContractError`, still a `ValueError`. They also refuse
+  two inputs they accepted: an input digest not spelled `sha256:` plus 64
+  lowercase hex, and an empty-string edition.
+- `TABLE_CONTRACTS` holds two more contracts.
+
+**What spicy-regs must change to adopt it.** Read at its `fork/main`
+(`03a6724`); nothing there is changed here.
+- Take both tables' columns and identities from `TABLE_CONTRACTS` instead of
+  `REFERENCE_COLUMNS`, `READ_COLUMNS` and its literal identities. Spell each read
+  row's `scope_id` with `native_reference_scope_id`.
+- Fill its three columns into each shaped row, which already carries `scope_id`
+  and `source_family`, and hold every row of both tables to its contract before
+  merging. The scope replacement stays its own.
+- Host both contracts in `CONTRACT_TABLES` and move `ADOPTED_CONTRACT_COUNT` by
+  two. `TABLES` already names both tables before it appends `CONTRACT_TABLES`,
+  so it must drop those two entries or list them twice. Their prose then comes
+  from the contract (`columns_from: spicy_docs`), not `descriptions.yaml`.
+- Declare the join `native_legal_references.scope_id` to
+  `native_legal_reference_reads.scope_id` in `table_joins`, whose test requires
+  a declared join for every contract reference.
+- Its own JSON columns keep non-ASCII characters literal. Leaving them so
+  changes no published value; spelling them with `json_column` would re-spell
+  the 14 `target_candidates_json` values that hold one, with the same JSON.

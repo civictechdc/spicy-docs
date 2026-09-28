@@ -225,12 +225,15 @@ Publisher references: [eCFR API](https://www.ecfr.gov/developers/documentation/a
 ## Project authority and source notes
 
 Pass `scan_ecfr_authority_notes` observations to
-`schemas.native_reference_rows.shape_ecfr_note` with the retained input digest,
-record key, locator and occurrence ordinal. The row keeps AUTH as `authority`
-and SOURCE as `source_note`, their complete decoded text/text runs, attributes,
-XML path and ancestry. Part scope comes from the nearest source part; title
-and edition remain NULL unless separately supplied from checked capture metadata.
-A fragment's filename is not that metadata.
+`schemas.native_reference_rows.shape_ecfr_note` with the retained input digest
+spelled `sha256:` (the scan result's is bare hex), record key, locator and
+occurrence ordinal. It returns a `native_legal_references` row
+([contract](../tables.md#the-native-legal-reference-tables-are-a-scanners-observations-and-its-reads)).
+The row keeps AUTH as `authority` and SOURCE as `source_note`, their complete
+decoded text/text runs, attributes, XML path and ancestry. Part scope comes
+from the nearest source part; title and edition remain NULL unless separately
+supplied from checked capture metadata. A fragment's filename is not that
+metadata.
 
 The part-18 native fixture proves both roles. PARAUTH and SECAUTH remain outside
 this reader's qualified shapes. Citation interpretation stays separate: preserve
