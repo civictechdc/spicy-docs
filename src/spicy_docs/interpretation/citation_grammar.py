@@ -589,7 +589,13 @@ _CFR_UNIT_LABEL = rf"(?:parts?|pts?\.?|{_SECTION_MARKER})"
 # the ancestors' [1-9] guarded against is carried by _LEFT alone.
 _CFR_STANDARD = re.compile(
     rf"{_LEFT}(?P<title>\d+)\s*C\.?\s*F\.?\s*R\.?(?![A-Za-z_])"
-    rf"\s*(?P<label>{_CFR_UNIT_LABEL})?\s*",
+    # The citation fixture from GAO-09-727 writes "5CFR, part 575".
+    # A comma is admitted only before a unit label, so ordinary prose after
+    # a title does not donate its next number as a CFR part. Measured
+    # 2026-09-28 over the parsing survey's 60,000 Federal Register texts: 58
+    # new findings, none lost, each a stated part or section
+    # (receipt ``unitedstates-reuse-20260928/release-0.51.0/citation-replay/``).
+    rf"\s*(?:,\s*(?={_CFR_UNIT_LABEL}))?(?P<label>{_CFR_UNIT_LABEL})?\s*",
     re.IGNORECASE,
 )
 
@@ -1577,12 +1583,24 @@ _INTERNAL_REVENUE_CODE = re.compile(
     rf"(?P<section>{_USC_SECTION_SPAN})",
     re.IGNORECASE,
 )
+#: The section written before its title: "Section 14123(a)(2) of 49 U.S.C."
+#: (unitedstates/citation test/usc.js, "Reverse order"). The written "of ...
+#: U.S.C." states the scope, so the shared section token and the occurrence
+#: pinpoint reader apply unchanged. Measured 2026-09-28 over the parsing
+#: survey's 60,000 Federal Register texts: 3 new findings, none lost
+#: (receipt ``unitedstates-reuse-20260928/release-0.51.0/citation-replay/``).
+_USC_SECTION_FIRST = re.compile(
+    rf"{_LEFT}(?i:section|sec)\.?[ \t]+(?P<section>{_USC_SECTION_SPAN_UNTRUNCATED})"
+    rf"(?:\([0-9A-Za-z]{{1,4}}\))*[ \t]+(?i:of)[ \t]+(?P<title>\d+)[ \t]+"
+    rf"{_USC_CODE_NAME}(?![A-Za-z_])"
+)
 #: The spellings that reach a U.S.C. title and section, with the title a
 #: SELF-NAMING code supplies. A named code's title comes from the expression
 #: that recognized the code — never from a shared "guess which code this is"
 #: rule — which is why the number sits beside its own pattern here.
 _USC_CODE_FORMS: tuple[tuple[re.Pattern[str], int | None], ...] = (
     (_USC_STANDARD, None),
+    (_USC_SECTION_FIRST, None),
     (_INTERNAL_REVENUE_CODE, 26),
 )
 

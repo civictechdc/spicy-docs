@@ -921,7 +921,7 @@ CITATION_RULES: tuple[CitationRule, ...] = (
     ),
     CitationRule(
         name="usc_section",
-        version="003",
+        version="004",
         reader=_usc_section_hits,
         target_table="law_code_sections",
         target_key_shape="{usc_title}-{usc_section}; an appendix title as {title}A; a range as its two endpoints",
@@ -929,7 +929,7 @@ CITATION_RULES: tuple[CitationRule, ...] = (
     ),
     CitationRule(
         name="cfr_section",
-        version="003",
+        version="004",
         reader=_cfr_section_hits,
         target_table="cfr sections (host-side)",
         target_key_shape="{title}-{part}, or {title}-{part}.{section} where a section is cited",

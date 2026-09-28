@@ -193,7 +193,10 @@ def test_the_rules_whose_published_keys_changed_moved_their_version() -> None:
     Congress subheading (``116th Congress``) in that Congress, and 005 a bill
     the print sets its Congress beside (``H.R. 6752, 115th Cong.``) in that
     one. ``committee_name`` 002 reads a
-    chamber the print names before a committee. In every case the procedure
+    chamber the print names before a committee. ``usc_section`` and
+    ``cfr_section`` 004 read a section written before its title (``Section
+    14123(a)(2) of 49 U.S.C.``) and a comma before a CFR unit label (``5CFR,
+    part 575``). In every case the procedure
     applied: move the version, re-pin the digests, re-pin the fixture counts.
     """
     moved = {rule.name: rule.version for rule in CITATION_RULES if rule.version != "001"}
@@ -202,8 +205,8 @@ def test_the_rules_whose_published_keys_changed_moved_their_version() -> None:
         "bill_number": "006",
         "public_law": "003",
         "statutes_at_large": "002",
-        "usc_section": "003",
-        "cfr_section": "003",
+        "usc_section": "004",
+        "cfr_section": "004",
         "federal_register_cite": "002",
         "rin": "004",
         "docket_number": "003",
@@ -223,7 +226,7 @@ def test_the_rule_set_version_is_pinned_to_these_rules() -> None:
     passed the whole suite, since a reject that is no longer asserted cannot
     fail.
     """
-    assert CITATION_RULE_SET_VERSION == "fffaef3303b1"
+    assert CITATION_RULE_SET_VERSION == "5609cfaab8bb"
 
 
 def test_the_stored_kinds_are_every_rule_that_reaches_a_key() -> None:
@@ -440,8 +443,8 @@ def grammar_reading() -> dict[str, tuple[str, str]]:
 PINNED_GRAMMAR_READING = {
     "public_law": ("003", "c88e99a4d7752d5d"),
     "statutes_at_large": ("002", "ec88c4ad033cbbf0"),
-    "usc_section": ("003", "2b33e21e303a3be0"),
-    "cfr_section": ("003", "ad16a44f020d1ed6"),
+    "usc_section": ("004", "2b33e21e303a3be0"),
+    "cfr_section": ("004", "6ae04af9e41fa9dc"),
     "federal_register_cite": ("002", "7c1ec1de2286fb0e"),
     "rin": ("004", "5199b682929eb361"),
     "docket_number": ("003", "71c8b621b8e6e5fe"),
