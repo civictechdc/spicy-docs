@@ -178,6 +178,15 @@ ROLL_CALL_VOTES = table_contract(
             "questions (a passage, a recommittal).  It calls none a Committee of the Whole vote; that is the "
             "inference.  NULL on Senate rows, linkage-only rows and rows captured before this column."
         ),
+        "vote_desc": (
+            "The Clerk's own vote-desc as the House vote file states it, most often the measure's title (\"PRECIP "
+            "Act\"); 13,780 of the Clerk's 22,512 files of 1990-2026 state one.  On the five roll calls the House "
+            "vacated by unanimous consent before recording a position (112-1-484, 112-2-327, 113-2-275, "
+            "114-1-300, 114-2-44) it is the file's statement of what happened (\"This vote was vacated by "
+            'unanimous consent on 4-Jun-2015."), and the row has zero tallies, member_vote_count 0 and no '
+            "member_votes rows.  Empty when a captured Clerk file states none; NULL on Senate rows, linkage-only "
+            "rows and House rows captured before this column."
+        ),
     },
 )
 
@@ -195,10 +204,13 @@ MEMBER_VOTES = table_contract(
         "roll_number": "The roll-call number within that session.",
         "member_key": (
             "The file-stated id: `lis:` plus the LIS id on a Senate record, the bare bioguide id on a House "
-            "one, and `name:` plus the publisher's name where the file states neither. A Senate bioguide "
-            "comes from the crosswalk and does not always resolve, so keying on it would split one member's "
-            "votes across two rows; an identity column also cannot be null, which the design's bioguide key "
-            "would have been."
+            "one, and `name:` plus the publisher's name where the file states neither (every Clerk file of "
+            "1990-2002). A Senate bioguide comes from the crosswalk and does not always resolve, so keying on it "
+            "would split one member's votes across two rows; an identity column also cannot be null, which the "
+            "design's bioguide key would have been. A `name:` key identifies the row within its roll call, not a "
+            "person: across 1990-2002 at least 21 of the Clerk's labels name two different members (Jones (NC), "
+            "Allen, Schiff, Wilson, McHugh, Smith (WA)...), so a person is the host's crosswalk on congress, "
+            "member_name, party and state, never this key."
         ),
         "bioguide_id": "The voting member's bioguide id, where the publisher or the crosswalk supplies one.",
         "lis_id": "The voting member's Senate LIS id, which only the Senate file carries.",
@@ -207,7 +219,8 @@ MEMBER_VOTES = table_contract(
         "state": (
             "The member's state as the roll-call source states it. On a House row `XX` is the Clerk's marking for "
             "the non-voting delegates and the Resident Commissioner, on the roll calls they voted in: 2,169 of the "
-            "Clerk's 22,512 of 1990-2026 (1993-1994, 2007-2010 and from 2019), every one an amendment vote or a "
+            "Clerk's 22,512 of 1990-2026 (1993-1994, 2007-2010, 2019-2020 and from 2022; none in 2021), every one "
+            "an amendment vote or a "
             "motion in committee (to rise, to strike or limit debate, a call in committee, a ruling of the chair), "
             "filed under <committee> "
             "(clerk_body_element on roll_call_votes) from 2007 and under <chamber> in 1993-1994.  Kept as "
@@ -444,6 +457,7 @@ def shape_roll_call_vote(
         "vote_day": getattr(vote, "day", None) if vote_date in (None, getattr(vote, "date", None)) else None,
         "legis_num": (getattr(vote, "legis_num", None) or "") if getattr(vote, "publisher", None) == "clerk" else None,
         "clerk_body_element": _clerk_body_element(vote),
+        "vote_desc": (getattr(vote, "vote_desc", None) or "") if getattr(vote, "publisher", None) == "clerk" else None,
     }
 
 
@@ -464,6 +478,11 @@ def member_key(member: object) -> str:
     The file-stated id wins over the best id available because preferring a crosswalk bioguide would give a member who
     does not resolve (roughly four of ninety-nine voters on any one roll call) ``name:...`` on one run and a bioguide on
     the next, turning one vote into two permanent rows.
+
+    ``name:`` identifies the row within one roll call, which names a member once, and never a person: the Clerk's
+    labels of 1990-2002 are last names disambiguated only within a Congress, and at least 21 name two different
+    members over those years (``Jones (NC)``, ``McHugh`` and ``Smith (WA)`` in one state, ``Allen``, ``Schiff`` and
+    ``Wilson`` across two). A host crosswalks persons on (congress, name, party, state); the key does not move.
     """
     lis = member.lis_id
     if lis:

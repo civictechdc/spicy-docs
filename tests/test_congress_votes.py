@@ -221,10 +221,11 @@ def test_clerk_fixture_matches_the_measured_2026_09_18_shape():
     assert vote.congress_year is None and vote.tie_breaker is None and vote.vote_title is None
 
 
-def test_a_committee_of_the_whole_file_names_its_body_in_committee_and_publishes_which():
-    """From the 114th Congress on the Clerk names the voting body in <committee>, not <chamber>, on Committee of the
-    Whole votes; the text is the same, so the element is what roll_call_votes.clerk_body_element publishes. Reduced
-    fixture: 118th 1-37, eight of its 440 members (tests/fixtures/congress_votes/README.md)."""
+def test_a_file_naming_its_body_in_committee_publishes_which_element():
+    """From 2007 on the Clerk names the voting body in <committee>, not <chamber>, on 3,830 files, amendment votes and
+    motions in committee; the text is the same and the Clerk calls none a Committee of the Whole vote, so the element
+    is what roll_call_votes.clerk_body_element publishes. Reduced fixture: 118th 1-37, eight of its 440 members
+    (tests/fixtures/congress_votes/README.md)."""
     from spicy_docs.schemas import ROLL_CALL_VOTES
     from spicy_docs.schemas.congress_activity_tables import shape_roll_call_vote
 
@@ -265,6 +266,50 @@ def test_a_file_from_before_2003_states_no_name_id_and_keys_its_members_by_name(
     item = body[first : body.index(b"</recorded-vote>", first) + len(b"</recorded-vote>")]
     with pytest.raises(VoteSourceError, match="names one member twice"):
         parse_clerk_vote(body.replace(item, item + item, 1), VoteLocator("house", 101, 2, 1))
+
+
+def test_a_file_from_2003_on_names_every_legislator_by_bioguide_id_once():
+    """Every Clerk file from the 108th Congress (2003) on carries a name-id for each legislator, so one without them
+    refuses rather than reading its members by name, and one naming a bioguide id twice refuses even under two
+    names. Synthetic edits of the reduced 118th 1-37 fixture."""
+    import re
+
+    body = (FIXTURES / "clerk-2023-roll037-committee.excerpt.xml").read_bytes()
+    locator = VoteLocator("house", 118, 1, 37)
+    with pytest.raises(VoteSourceError, match="states no name-id, which every file from the 108th on does"):
+        parse_clerk_vote(re.sub(rb' name-id="[^"]*"', b"", body), locator)
+    first, second = re.findall(rb'name-id="([^"]+)"', body)[:2]
+    with pytest.raises(VoteSourceError, match="names one member twice"):
+        parse_clerk_vote(body.replace(b'name-id="' + second + b'"', b'name-id="' + first + b'"', 1), locator)
+
+
+def test_a_vote_vacated_by_unanimous_consent_is_a_roll_call_with_no_member_rows():
+    """Five Clerk files of 2011-2016 list no recorded vote: the House vacated each by unanimous consent before any
+    position was recorded, and the file says so in vote-desc, with zero totals. Each is a roll_call_votes row stating
+    the Clerk's words, and has no member rows. Any other file listing none still refuses. Whole file: 114th 1-300."""
+    from spicy_docs.schemas import ROLL_CALL_VOTES
+    from spicy_docs.schemas.congress_activity_tables import shape_roll_call_vote
+
+    body = (FIXTURES / "clerk-2015-roll300-vacated.xml").read_bytes()
+    locator = VoteLocator("house", 114, 1, 300)
+    vote = parse_clerk_vote(body, locator)
+    assert vote.member_votes == () and set(vote.tallies.values()) == {0}
+    assert vote.vote_desc == "This vote was vacated by unanimous consent on 4-Jun-2015."
+    row = ROLL_CALL_VOTES.checked(shape_roll_call_vote(vote, tally=vote.tallies, member_vote_count=0))
+    assert (row["vote_desc"], row["member_vote_count"], row["yea"], row["vote_day"]) == (
+        "This vote was vacated by unanimous consent on 4-Jun-2015.",
+        "0",
+        "0",
+        "2015-06-04",
+    )
+    assert shape_roll_call_vote(parse_senate_vote(SENATE_FIXTURE, SENATE_LOCATOR))["vote_desc"] is None
+    stub = b"<total-stub>Totals</total-stub>\r\n<yea-total>"
+    counted = body.replace(stub + b"0", stub + b"1", 1)
+    unstated = body.replace(b"vacated by unanimous consent", b"postponed", 1)
+    for other in (counted, unstated):
+        assert other != body
+        with pytest.raises(VoteSourceError, match="lists no recorded votes"):
+            parse_clerk_vote(other, locator)
 
 
 def test_the_clerk_xx_state_is_kept_and_the_contract_says_what_it_marks():

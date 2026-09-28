@@ -97,10 +97,10 @@ totals blocks, and every `recorded-vote`:
 | `vote-result` | `.../vote-result` | `RollCallVote.result` |
 | `action-date` | `.../action-date` | `RollCallVote.date` (literal), `.day` (ISO day; see "Vote day") |
 | `action-time` (text and `time-etz`) | `.../action-time` | `RollCallVote.action_time`, `.action_time_etz` |
-| `vote-desc` | `.../vote-desc` | `RollCallVote.vote_desc` |
+| `vote-desc` | `.../vote-desc` | `RollCallVote.vote_desc`; published as `roll_call_votes.vote_desc` |
 | Totals by party | `vote-totals/totals-by-party` (repeated) | `RollCallVote.party_totals: tuple[PartyTotal, ...]`, each `{party, counts}` with the publisher's own count names |
 | Overall totals | `vote-totals/totals-by-vote` | `RollCallVote.tallies`, the publisher's own count names (`yea-total`, `nay-total`, `present-total`, `not-voting-total`) |
-| `recorded-vote/legislator/@name-id` | bioguide; absent from every file before 2003 | `MemberVote.bioguide_id`, `None` there, and `member_votes.member_key` is `name:` plus the name |
+| `recorded-vote/legislator/@name-id` | bioguide; absent from every file before 2003, present on every legislator from 2003 on | `MemberVote.bioguide_id`, `None` there, and `member_votes.member_key` is `name:` plus the name |
 | `.../@sort-field`, `@unaccented-name`, `@role` | | `MemberVote.sort_field`, `.unaccented_name`, `.role` |
 | `.../@party`, `@state` | | `MemberVote.party`, `.state` |
 | legislator element text | display name | `MemberVote.name` |
@@ -119,21 +119,36 @@ Whole vote; that is the inference. `roll_call_votes.clerk_body_element`
 publishes which element it was.
 
 **`XX` marks the delegates and the Resident Commissioner.** On 2,169 of those
-roll calls (1993-1994, 2007-2010 and from 2019, the years the House's rules let
-them vote in committee) the file lists them with `@state` `XX`, every one an
+roll calls (1993-1994, 2007-2010, 2019-2020 and from 2022, none in 2021) the
+file lists them with `@state` `XX`, every one an
 amendment vote or a motion in committee, under `<committee>` from 2007 and
 under `<chamber>` in 1993-1994. `MemberVote.state` and `member_votes.state`
 keep it as stated. No other member is ever marked `XX`.
 
 **Files before 2003 carry no `name-id`.** Every one of the 7,327 files of
 1990-2002 names its legislators without a bioguide id, and every file from 2003
-on names each one. Such a file reads with `bioguide_id` `None`, its
-`member_votes` rows keyed `name:` plus the Clerk's name; a file mixing the two
-forms, or naming one member twice, refuses. The archive's other refusals are the
-publisher's own: 2003's Speaker election, whose candidate totals disagree with
-its member choices (Hastert 228 against 227 votes cast for him), and five votes
-the Clerk vacated by unanimous consent, whose files list no recorded vote. A
-byte count, a plain XML walk and `parse_clerk_vote` agree on every file.
+(the 108th Congress) on names each one. Such a file reads with `bioguide_id`
+`None`, its `member_votes` rows keyed `name:` plus the Clerk's name; a file
+mixing the two forms, a file from the 108th on without them, or a file naming
+one member twice (by name, or by bioguide id) refuses. A `name:` key
+identifies the row within its roll call, not a person: the Clerk's labels are
+last names disambiguated within a Congress, and over 1990-2002 at least 21
+name two different members (18 whose state changes, such as `Allen`, `Schiff`
+and `Wilson`, and three in one state, `Jones (NC)`, `McHugh` and `Smith (WA)`;
+independent review, 2026-09-28). A host crosswalks persons on (congress, name,
+party, state).
+
+**Five votes were vacated before any position was recorded.** The House
+vacated 112-1-484, 112-2-327, 113-2-275, 114-1-300 and 114-2-44 by unanimous
+consent; each file lists no recorded vote, totals zero and says so in
+`<vote-desc>` ("This vote was vacated by unanimous consent on 4-Jun-2015.").
+`parse_clerk_vote` reads such a file with no member votes, and it publishes a
+`roll_call_votes` row whose `vote_desc` states the Clerk's words and which has
+no `member_votes` rows (owner decision, 2026-09-28). Any other file listing no
+recorded vote refuses. The archive's one remaining refusal is the publisher's
+own contradiction: 2003's Speaker election, whose candidate totals disagree
+with its member choices (Hastert 228 against 227 votes cast for him). A byte
+count, a plain XML walk and `parse_clerk_vote` agree on every file.
 
 **Senate LIS** (`parse_senate_vote`) -- every top-level field, `count`,
 `tie_breaker`, `document`, `amendment`, and every `member`:
