@@ -32,7 +32,12 @@ from tempfile import TemporaryDirectory
 from types import MappingProxyType
 from typing import Any
 
-from spicy_docs.sources.govinfo.bodies import GovInfoBodySourceError, parse_granule_identity, parse_package_id
+from spicy_docs.sources.govinfo.bodies import (
+    GovInfoBodySourceError,
+    PackageIdentity,
+    parse_granule_identity,
+    parse_package_id,
+)
 from spicy_docs.sources.govinfo.mods import GovInfoModsError, parse_govinfo_mods
 from spicy_docs.transport.source_acquirer import check_payload
 
@@ -219,18 +224,30 @@ def _write_for_upstream(path: Path, text: str, *, label: str) -> None:
         raise RecordSpeechesError(f"{label} does not read back unchanged through the parser's text-mode open")
 
 
-def _crec_package(value: str) -> str:
+def _crec_package(value: str) -> PackageIdentity:
     try:
         identity = parse_package_id(value)
     except GovInfoBodySourceError as error:
         raise RecordSpeechesError(f"{_MODS_LABEL} does not name a package: {error}") from error
     if identity.collection != "CREC":
         raise RecordSpeechesError(f"{_MODS_LABEL} names {identity.package_id}, not a Congressional Record issue")
-    return identity.package_id
+    return identity
 
 
-def _mods_identity(mods: bytes, *, max_bytes: int) -> tuple[str, str | None]:
-    """The package id, and the granule id when this is a granule's own MODS, read as the body routes read them.
+def _granule_prefix(package: PackageIdentity) -> str:
+    """``CREC-{issue date}-``, how every granule id of this issue begins.
+
+    GovInfo spells a granule id without its package's ``-v{N}``/``-i{N}``
+    suffix: package CREC-2025-03-11-i46 holds CREC-2025-03-11-pt1-PgS1677-4, and
+    CREC-2025-03-11-pt1-PgS-FrontMatter is a granule of both CREC-2025-03-11 and
+    CREC-2025-03-11-i46. So the prefix checks only the date; membership is the
+    MODS's to state (its host, or upstream's accessId lookup).
+    """
+    return f"{package.collection}-{package.issue_date}-"
+
+
+def _mods_identity(mods: bytes, *, max_bytes: int) -> tuple[PackageIdentity, str | None]:
+    """The package, and the granule id when this is a granule's own MODS, read as the body routes read them.
 
     Both shapes state their own accessId in the root's ``extension``. A
     granule's MODS also states its host package in a ``relatedItem
@@ -252,8 +269,10 @@ def _mods_identity(mods: bytes, *, max_bytes: int) -> tuple[str, str | None]:
     if len(hosts) != 1:
         raise RecordSpeechesError(f"{_MODS_LABEL} must state exactly one host package; it states {sorted(hosts)}")
     package = _crec_package(hosts.pop())
-    if not own.startswith(f"{package}-"):
-        raise RecordSpeechesError(f"{_MODS_LABEL} describes {own}, which is not a granule of its host {package}")
+    if not own.startswith(_granule_prefix(package)):
+        raise RecordSpeechesError(
+            f"{_MODS_LABEL} describes {own}, which is not a granule of its host {package.package_id}"
+        )
     return package, own
 
 
@@ -331,21 +350,22 @@ class RecordIssue:
     it can read, and ``None`` for a package MODS, which reads any of its issue's.
     """
 
-    __slots__ = ("_directory", "granule_id", "mods_sha256", "package_id")
+    __slots__ = ("_directory", "_package", "granule_id", "mods_sha256", "package_id")
 
-    def __init__(self, package_id: str, granule_id: str | None, mods_sha256: str, directory: Any) -> None:
-        self.package_id = package_id
+    def __init__(self, package: PackageIdentity, granule_id: str | None, mods_sha256: str, directory: Any) -> None:
+        self._package = package
+        self.package_id = package.package_id
         self.granule_id = granule_id
         self.mods_sha256 = mods_sha256
         self._directory = directory
 
     def _granule_id(self, granule_id: object) -> str:
         try:
-            identity = parse_granule_identity(self.package_id, granule_id)
+            identity = parse_granule_identity(self._package, granule_id)
         except GovInfoBodySourceError as error:
             raise RecordSpeechesError(f"granule id is not a GovInfo granule id: {error}") from error
         value = identity.granule_id
-        if not value.startswith(f"{self.package_id}-"):
+        if not value.startswith(_granule_prefix(self._package)):
             raise RecordSpeechesError(f"granule {value} is not a granule of {self.package_id}")
         if self.granule_id is not None and value != self.granule_id:
             raise RecordSpeechesError(f"granule {value} is not the granule this MODS describes, {self.granule_id}")
@@ -438,7 +458,7 @@ def read_record_issue(mods: bytes, *, max_mods_bytes: int) -> RecordIssue:
     """Parse one CREC MODS once: an issue's package MODS, for any of its granules, or one granule's own."""
     exact = check_payload(mods, max_mods_bytes, label=_MODS_LABEL, error_type=RecordSpeechesError, allow_empty=False)
     cr_parser = _parser_module()
-    package_id, granule_id = _mods_identity(exact, max_bytes=max_mods_bytes)
+    package, granule_id = _mods_identity(exact, max_bytes=max_mods_bytes)
     text = _decoded(exact, label=_MODS_LABEL)
     with TemporaryDirectory(prefix="spicy-docs-record-issue-") as directory:
         _write_for_upstream(Path(directory) / "mods.xml", text, label=_MODS_LABEL)
@@ -447,8 +467,10 @@ def read_record_issue(mods: bytes, *, max_mods_bytes: int) -> RecordIssue:
             # the parsed tree, so the directory can go when this block ends.
             parsed = cr_parser.ParseCRDir(directory)
         except _UPSTREAM_FAILURES as error:
-            raise RecordSpeechesError(f"the parser could not read {_MODS_LABEL} {package_id}: {error}") from error
-    return RecordIssue(package_id, granule_id, "sha256:" + hashlib.sha256(exact).hexdigest(), parsed)
+            raise RecordSpeechesError(
+                f"the parser could not read {_MODS_LABEL} {package.package_id}: {error}"
+            ) from error
+    return RecordIssue(package, granule_id, "sha256:" + hashlib.sha256(exact).hexdigest(), parsed)
 
 
 def parse_record_speeches(

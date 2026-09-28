@@ -55,7 +55,10 @@ BOUND = 1024 * 1024
 KIGGANS = "CREC-2026-09-16-pt1-PgH5835-8"
 PLEDGE = "CREC-2026-09-17-pt1-PgH5987-5"
 SENATE = "CREC-2026-09-17-pt1-PgS4765-6"
-GRANULES = (KIGGANS, PLEDGE, SENATE)
+# A granule of CREC-2025-03-11-i46: GovInfo spells its id without the issue's -i46.
+SUFFIXED = "CREC-2025-03-11-pt1-PgS1677-4"
+SUFFIXED_PACKAGE = "CREC-2025-03-11-i46"
+GRANULES = (KIGGANS, PLEDGE, SENATE, SUFFIXED)
 # Kiggans's own MODS: the keyless metadata route, and the keyed route acquire_granule retains.
 GRANULE_MODS = ("CREC-2026-09-16-pt1-PgH5835-8.granule-mods.xml", "CREC-2026-09-16-pt1-PgH5835-8.granule-mods-api.xml")
 
@@ -65,7 +68,9 @@ def _body(granule: str) -> bytes:
 
 
 def _mods(granule: str) -> bytes:
-    """The issue MODS excerpt for a granule; the package id is the granule id's first 15 characters."""
+    """The suffixed granule's own MODS, else its issue's MODS excerpt, named by the id's first 15 characters."""
+    if granule == SUFFIXED:
+        return (FIXTURES / f"{SUFFIXED}.granule-mods-api.xml").read_bytes()
     return (FIXTURES / f"{granule[:15]}.mods.excerpt.xml").read_bytes()
 
 
@@ -161,6 +166,38 @@ def test_the_senate_granule_has_fifty_six_turns_and_no_presiding_officer_id() ->
         {"congress": "119", "context": "OTHER", "number": "4668", "type": "S"}
     ]
     assert document.related_laws == document.related_usc == document.related_statute == ()
+
+
+@needs_parser
+def test_a_granule_of_a_suffixed_issue_reads_under_its_packages_id() -> None:
+    """Its id carries the issue date but not ``-i46``; the host its own MODS names is the package id."""
+    issue = read_record_issue(_mods(SUFFIXED), max_mods_bytes=BOUND)
+    assert (issue.package_id, issue.granule_id) == (SUFFIXED_PACKAGE, SUFFIXED)
+    document = issue.speeches(_body(SUFFIXED), SUFFIXED, max_html_bytes=BOUND)
+    assert (document.package_id, document.parse_status, document.vol, document.num, document.pages) == (
+        SUFFIXED_PACKAGE,
+        "complete",
+        "171",
+        "46",
+        "S1677",
+    )
+    assert [(item.kind, item.speaker, item.speaker_bioguide) for item in document.items] == [
+        ("speech", "Mr. THUNE", "T000250"),
+        ("speech", "The ACTING PRESIDENT pro tempore", None),
+        ("linebreak", "None", None),
+    ]
+
+
+@needs_parser
+def test_a_suffixed_issues_package_mods_admits_its_date_and_leaves_membership_to_the_mods() -> None:
+    """The prefix is ``CREC-{date}-``: another date refuses by name, and this date reaches upstream's lookup."""
+    issue = read_record_issue(_mods_xml(SUFFIXED_PACKAGE), max_mods_bytes=BOUND)
+    assert (issue.package_id, issue.granule_id) == (SUFFIXED_PACKAGE, None)
+    other_day = SUFFIXED.replace("2025-03-11", "2025-03-12")
+    with pytest.raises(RecordSpeechesError, match=f"granule {other_day} is not a granule of {SUFFIXED_PACKAGE}"):
+        issue.speeches(_body(SUFFIXED), other_day, max_html_bytes=BOUND)
+    with pytest.raises(RecordSpeechesError, match=f"granule {SUFFIXED} is not in the {SUFFIXED_PACKAGE} MODS"):
+        issue.speeches(_body(SUFFIXED), SUFFIXED, max_html_bytes=BOUND)
 
 
 @needs_parser
@@ -512,6 +549,10 @@ def _mods_xml(own: str, *hosts: str) -> bytes:
         (
             _mods_xml(KIGGANS, "CREC-2026-09-16", "CREC-2026-09-17"),
             "must state exactly one host package",
+        ),
+        (
+            _mods_xml(SUFFIXED.replace("2025-03-11", "2025-03-12"), SUFFIXED_PACKAGE),
+            f"which is not a granule of its host {SUFFIXED_PACKAGE}",
         ),
     ],
 )

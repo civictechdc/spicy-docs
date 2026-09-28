@@ -1,13 +1,13 @@
 # Congressional Record speech-turn fixtures
 
-Three whole GovInfo CREC granule bodies, one granule's own MODS from two routes,
-and bounded excerpts of the two issue package MODS, all retrieved
-**2026-09-28**. The bodies and package MODS come from the @unitedstates reuse
-review (receipt
+Whole GovInfo CREC granule bodies, granules' own MODS, and bounded excerpts of
+two issue package MODS, all retrieved **2026-09-28**. The September 2026 bodies and
+package MODS come from the @unitedstates reuse review (receipt
 `~/Work/corpora/supply-2026-09-02/receipts/unitedstates-legal-record-2026-09-28/record-inputs/`;
 URLs and full-file digests in the workspace's
 `docs/unitedstates-review-2026-09-28/validation/legal-record/current-record-sources.json`);
-the granule MODS from their own retrieval, below.
+the granule MODS and the suffixed issue's granule from their own retrieval,
+below.
 These U.S. government documents are public domain. `provenance.json` records
 every fixture's source URL, bytes and SHA-256, and each excerpt's method, kept
 byte ranges and their digests; a test re-checks all of it.
@@ -36,6 +36,24 @@ response passes `validate_granule_mods`, and the body `acquire_granule` fetched
 in the same run is byte-identical to `CREC-2026-09-16-pt1-PgH5835-8.htm`. Read
 against either, the Kiggans granule gives the adapter's package-MODS document
 apart from `mods_sha256`.
+
+**A granule of a suffixed issue, whole.** GovInfo addresses the Record's split
+days as separate packages with a `-v{N}` or `-i{N}` suffix, and spells their
+granule ids without it: package `CREC-2025-03-11-i46` holds
+`CREC-2025-03-11-pt1-PgS1677-4`. Both files were retrieved 2026-09-28 by
+`retrieve.py` through `GovInfoBodyAcquirer.acquire_granule` (keyed summary and
+MODS, the key in the `X-Api-Key` header only; keyless body), in
+`~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/review-fixes/suffixed-fixture/`
+beside its `receipt.json`, and are committed unedited:
+
+| Fixture | Route | Bytes | SHA-256 |
+| --- | --- | --- | --- |
+| `CREC-2025-03-11-pt1-PgS1677-4.htm` | keyless `content/pkg/CREC-2025-03-11-i46/html/CREC-2025-03-11-pt1-PgS1677-4.htm` | 632 | `7f068d44…8ab` |
+| `CREC-2025-03-11-pt1-PgS1677-4.granule-mods-api.xml` | keyed `packages/CREC-2025-03-11-i46/granules/CREC-2025-03-11-pt1-PgS1677-4/mods` | 7,440 | `05687877…795` |
+
+It pins Mr. THUNE with the MODS-stated bioguide `T000250`, the Acting
+President pro tempore with none, a closing rule, and `package_id`
+`CREC-2025-03-11-i46`, the id its host `relatedItem` states.
 
 **The package MODS are excerpts, not captures.** The originals are 3,645,061 bytes
 (`CREC-2026-09-16`, SHA-256 `1aea2f0c…c1b`) and 993,858 bytes

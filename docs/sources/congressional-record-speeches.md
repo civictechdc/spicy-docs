@@ -58,10 +58,18 @@ whether it is installed, and every reading refuses with the install command.
     It has no host, and its root states the package.
 
   Either way the stated package must be a CREC issue; it becomes `package_id`,
-  the column `record_issues.package_id` joins on, and the granule id must begin
-  with it. The two routes serialize the same granule MODS differently (for
-  CREC-2026-09-16-pt1-PgH5835-8, 6,432 bytes keyless and 7,833 keyed, equal
-  apart from whitespace and namespace-declaration order), and both read alike.
+  the column `record_issues.package_id` joins on. The granule id must begin
+  `CREC-{issue date}-`, the date `parse_package_id` reads from the package id,
+  and not with the package id itself: GovInfo spells a granule id without its
+  package's `-v{N}`/`-i{N}` suffix (package CREC-2025-03-11-i46 holds
+  CREC-2025-03-11-pt1-PgS1677-4, a fixture), and one granule id can belong to
+  two packages (CREC-2025-03-11-pt1-PgS-FrontMatter is in CREC-2025-03-11 and in
+  CREC-2025-03-11-i46). So the prefix checks only the date, and membership is
+  the MODS's: a granule's own MODS names its host, and upstream finds the
+  granule's accessId in a package MODS or refuses. The two routes serialize the
+  same granule MODS differently (for CREC-2026-09-16-pt1-PgH5835-8, 6,432 bytes
+  keyless and 7,833 keyed, equal apart from whitespace and namespace-declaration
+  order), and both read alike.
 - **Byte bounds** are required keyword arguments, checked with the shared
   `check_payload` rule before either input is parsed.
 - **The MODS is read by [the MODS mapping](govinfo-metadata.md) first**, the
@@ -117,7 +125,7 @@ indexes into it.
 - An item whose lines are not found that way is `unlocated`, with both
   coordinates `None`, and so is every item after it. A span is never guessed.
 
-On all three fixtures every item is located, the spans tile the text after the
+On every fixture every item is located, the spans tile the text after the
 title, and each span's lines less the dropped ones join to the item's text; the
 test checks this with its own line rule, not upstream's patterns.
 
@@ -133,7 +141,7 @@ test checks this with its own line rule, not upstream's patterns.
   short to read.
 - **Granule ids must be this issue's.** The id becomes the file name upstream
   reads the accessId from, up to the first dot, so an id with a dot, a path
-  separator or another package's prefix refuses.
+  separator or another date's prefix refuses.
 
 Parses run one at a time. Upstream keeps its line-kind table on the class and
 writes each document's speaker pattern into it (`cr_parser.py:259`), which its
@@ -220,6 +228,6 @@ Not patched here; file:line is at the pin.
 
 ## Fixtures
 
-Three whole granule bodies and two bounded MODS excerpts are in
-[`tests/fixtures/record_speeches/`](../../tests/fixtures/record_speeches/README.md),
+Whole granule bodies, granules' own MODS and bounded package-MODS excerpts are
+in [`tests/fixtures/record_speeches/`](../../tests/fixtures/record_speeches/README.md),
 with their provenance and the excerpt method.
