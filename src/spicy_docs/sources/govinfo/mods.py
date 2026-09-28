@@ -82,6 +82,21 @@ class ModsRecord:
         return tuple(ModsRecord(element) for element in self.fields("relatedItem"))
 
     @property
+    def access_ids(self) -> tuple[str, ...]:
+        """The accessIds this record states for itself, in its own ``extension`` children, trimmed."""
+        return tuple(element.text.strip() for element in self.fields("extension", "accessId"))
+
+    @property
+    def host_access_ids(self) -> tuple[str, ...]:
+        """The accessIds its ``relatedItem type="host"`` records state: a granule's package, trimmed."""
+        return tuple(
+            value
+            for record in self.related_items
+            if record.element.attribute("type") == "host"
+            for value in record.access_ids
+        )
+
+    @property
     def parent_ids(self) -> tuple[XmlTreeElement, ...]:
         return tuple(element for element in self.identifiers if element.attribute("type") == "Parent Id")
 

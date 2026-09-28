@@ -32,6 +32,26 @@
       "pins": "Senate granule of 66 items: 56 speech turns, five recorder lines, three titles and two rules; presiding-officer turns carry no id, and the spans step over nine [[Page]] markers and three whitespace-only lines."
     },
     {
+      "fixture": "CREC-2026-09-16-pt1-PgH5835-8.granule-mods.xml",
+      "source_url": "https://www.govinfo.gov/metadata/granule/CREC-2026-09-16/CREC-2026-09-16-pt1-PgH5835-8/mods.xml",
+      "retrieved": "2026-09-28T19:08:52.153155Z",
+      "route": "keyless metadata route, through BoundedHttpCapture configured as GovInfoBodyAcquirer's keyless client",
+      "bytes": 6432,
+      "sha256": "45e6c589a83247930c6f44828445c64798165a225ca287efbc757acdf4c3cbee",
+      "transformation": "None; the whole response body.",
+      "pins": "The granule's own MODS: its root names the granule and a host relatedItem names the package; the adapter's reading of the Kiggans granule against it equals the package-MODS reading apart from mods_sha256."
+    },
+    {
+      "fixture": "CREC-2026-09-16-pt1-PgH5835-8.granule-mods-api.xml",
+      "source_url": "https://api.govinfo.gov/packages/CREC-2026-09-16/granules/CREC-2026-09-16-pt1-PgH5835-8/mods",
+      "retrieved": "2026-09-28T19:08:53.435157Z",
+      "route": "GovInfoBodyAcquirer.acquire_granule's keyed MODS route; the credential travelled in the X-Api-Key header only",
+      "bytes": 7833,
+      "sha256": "9a087936f6459c9eb01ab9b2d6e01b61bbef95757a82fa1e04f06f0d1f978323",
+      "transformation": "None; the whole response body.",
+      "pins": "The granule's own MODS: its root names the granule and a host relatedItem names the package; the adapter's reading of the Kiggans granule against it equals the package-MODS reading apart from mods_sha256."
+    },
+    {
       "fixture": "CREC-2026-09-16.mods.excerpt.xml",
       "source_url": "https://www.govinfo.gov/metadata/pkg/CREC-2026-09-16/mods.xml",
       "retrieved": "2026-09-28",
@@ -89,5 +109,7 @@
       ],
       "pins": "The package accessId the adapter reads from the root, and the granule records upstream reads for the bodies above."
     }
-  ]
+  ],
+  "granule_mods_receipt": "~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/granule-mods/",
+  "granule_mods_check": "Retrieved 2026-09-28 by retrieve.py: the keyless response passes validate_granule_mods; the keyed acquire_granule MODS differs from it only in whitespace and namespace-declaration order; the body acquire_granule fetched is byte-identical to CREC-2026-09-16-pt1-PgH5835-8.htm. The adapter's documents from both granule MODS, the full package MODS and the excerpt differ only in mods_sha256 (compare-adapter.txt)."
 }

@@ -16,6 +16,7 @@ import sys
 import tomllib
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -41,8 +42,12 @@ utf8_locale = pytest.mark.skipif(
     record_speeches.locale.getpreferredencoding(False).lower().replace("-", "") != "utf8",
     reason="the encoding cases are stated for a UTF-8 locale, which upstream's text-mode open() then reads",
 )
-# Upstream calls ``find(text=...)`` (cr_parser.py:239), which bs4 4.13+ deprecates.
-pytestmark = pytest.mark.filterwarnings("ignore:The 'text' argument to find:DeprecationWarning")
+# Upstream calls ``find(text=...)`` (cr_parser.py:239), which bs4 4.13+ deprecates, and reads
+# MODS with bs4's HTML parser, which warns on a document with an XML declaration (a granule's own).
+pytestmark = [
+    pytest.mark.filterwarnings("ignore:The 'text' argument to find:DeprecationWarning"),
+    pytest.mark.filterwarnings("ignore:It looks like you're using an HTML parser to parse an XML document"),
+]
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "tests" / "fixtures" / "record_speeches"
@@ -51,6 +56,8 @@ KIGGANS = "CREC-2026-09-16-pt1-PgH5835-8"
 PLEDGE = "CREC-2026-09-17-pt1-PgH5987-5"
 SENATE = "CREC-2026-09-17-pt1-PgS4765-6"
 GRANULES = (KIGGANS, PLEDGE, SENATE)
+# Kiggans's own MODS: the keyless metadata route, and the keyed route acquire_granule retains.
+GRANULE_MODS = ("CREC-2026-09-16-pt1-PgH5835-8.granule-mods.xml", "CREC-2026-09-16-pt1-PgH5835-8.granule-mods-api.xml")
 
 
 def _body(granule: str) -> bytes:
@@ -206,6 +213,30 @@ def test_one_issue_reads_each_of_its_granules() -> None:
     assert issue.package_id == "CREC-2026-09-17"
     for granule in (PLEDGE, SENATE):
         assert issue.speeches(_body(granule), granule, max_html_bytes=BOUND) == _read(granule)
+
+
+@needs_parser
+@pytest.mark.parametrize("name", GRANULE_MODS)
+def test_a_granules_own_mods_reads_as_the_package_mods_does(name: str) -> None:
+    """The granule's own MODS gives the package-MODS reading of that granule, apart from the MODS digest."""
+    import hashlib
+
+    mods = (FIXTURES / name).read_bytes()
+    issue = read_record_issue(mods, max_mods_bytes=BOUND)
+    assert (issue.package_id, issue.granule_id) == ("CREC-2026-09-16", KIGGANS)
+    own = issue.speeches(_body(KIGGANS), KIGGANS, max_html_bytes=BOUND)
+    assert own.mods_sha256 == "sha256:" + hashlib.sha256(mods).hexdigest()
+    assert own == replace(_read(KIGGANS), mods_sha256=own.mods_sha256)
+    assert read_record_issue(_mods(KIGGANS), max_mods_bytes=BOUND).granule_id is None
+
+
+@needs_parser
+def test_a_granules_own_mods_reads_no_other_granule() -> None:
+    """It describes one granule; another of the same issue refuses by name before upstream looks."""
+    issue = read_record_issue((FIXTURES / GRANULE_MODS[0]).read_bytes(), max_mods_bytes=BOUND)
+    other = "CREC-2026-09-16-pt1-PgH5835-7"
+    with pytest.raises(RecordSpeechesError, match=f"{other} is not the granule this MODS describes, {KIGGANS}"):
+        issue.speeches(_body(KIGGANS), other, max_html_bytes=BOUND)
 
 
 @needs_parser
@@ -431,9 +462,9 @@ def test_a_granule_id_the_issue_cannot_hold_refuses(granule: str, message: str) 
         (b"x" * 11, b"<mods/>", 10, BOUND, "CREC granule HTML exceeds its 10-byte bound"),
         (b"", b"<mods/>", BOUND, BOUND, "CREC granule HTML is empty"),
         ("text", b"<mods/>", BOUND, BOUND, "CREC granule HTML must be exact bytes"),
-        (b"<pre/>", b"x" * 11, BOUND, 10, "CREC package MODS exceeds its 10-byte bound"),
-        (b"<pre/>", b"", BOUND, BOUND, "CREC package MODS is empty"),
-        (b"<pre/>", b"<mods/>", BOUND, True, "CREC package MODS byte bound must be a positive integer"),
+        (b"<pre/>", b"x" * 11, BOUND, 10, "CREC MODS exceeds its 10-byte bound"),
+        (b"<pre/>", b"", BOUND, BOUND, "CREC MODS is empty"),
+        (b"<pre/>", b"<mods/>", BOUND, True, "CREC MODS byte bound must be a positive integer"),
     ],
 )
 def test_byte_bounds_refuse_before_anything_is_parsed(
@@ -445,27 +476,47 @@ def test_byte_bounds_refuse_before_anything_is_parsed(
         raise AssertionError("parsed before the bounds were checked")
 
     monkeypatch.setattr(record_speeches, "_parser_module", unreachable)
-    monkeypatch.setattr(record_speeches, "scan_xml", unreachable)
+    monkeypatch.setattr(record_speeches, "parse_govinfo_mods", unreachable)
     with pytest.raises(RecordSpeechesError, match=message):
         parse_record_speeches(html, mods, KIGGANS, max_html_bytes=html_bound, max_mods_bytes=mods_bound)
+
+
+def _mods_xml(own: str, *hosts: str) -> bytes:
+    """A minimal MODS stating ``own`` in its root extension and each of ``hosts`` in a host relatedItem."""
+    related = "".join(
+        f"<relatedItem type='host'><extension><accessId>{host}</accessId></extension></relatedItem>" for host in hosts
+    )
+    return (
+        f"<mods xmlns='http://www.loc.gov/mods/v3'><extension><accessId>{own}</accessId></extension>{related}</mods>"
+    ).encode()
 
 
 @needs_parser
 @pytest.mark.parametrize(
     ("mods", "message"),
     [
-        (b'<!DOCTYPE mods [<!ENTITY x "y">]><mods/>', "permits only an inert external DOCTYPE"),
-        (b"<mods xmlns='http://www.loc.gov/mods/v3'/>", r"must state exactly one package accessId; it states \[\]"),
-        (b"<other/>", "root is not a MODS record"),
         (
-            b"<mods xmlns='http://www.loc.gov/mods/v3'><extension><accessId>CRPT-119hrpt1</accessId></extension></mods>",
-            "names CRPT-119hrpt1, not a Congressional Record issue",
+            b'<!DOCTYPE mods [<!ENTITY x "y">]><mods/>',
+            "unreadable: GovInfo MODS permits only an inert external DOCTYPE",
         ),
-        (b"<mods", "is malformed"),
+        (b"<mods xmlns='http://www.loc.gov/mods/v3'/>", r"must state exactly one accessId; it states \[\]"),
+        (b"<other/>", "unreadable: GovInfo MODS requires root"),
+        (b"<mods", "unreadable: GovInfo MODS is malformed"),
+        (_mods_xml("CRPT-119hrpt1"), "names CRPT-119hrpt1, not a Congressional Record issue"),
+        (_mods_xml(KIGGANS), "does not name a package"),
+        (_mods_xml(KIGGANS, "CRPT-119hrpt1"), "names CRPT-119hrpt1, not a Congressional Record issue"),
+        (
+            _mods_xml(PLEDGE, "CREC-2026-09-16"),
+            f"describes {PLEDGE}, which is not a granule of its host CREC-2026-09-16",
+        ),
+        (
+            _mods_xml(KIGGANS, "CREC-2026-09-16", "CREC-2026-09-17"),
+            "must state exactly one host package",
+        ),
     ],
 )
-def test_the_mods_passes_the_bounded_xml_gate_and_names_a_record_issue(mods: bytes, message: str) -> None:
-    """The MODS is read by this repository's inert XML scan before upstream sees it."""
+def test_the_mods_passes_the_bounded_gate_and_its_shape_is_read_from_the_document(mods: bytes, message: str) -> None:
+    """Read by this repository's MODS mapping first; a host relatedItem makes it a granule's own, else a package's."""
     with pytest.raises(RecordSpeechesError, match=message):
         read_record_issue(mods, max_mods_bytes=BOUND)
 

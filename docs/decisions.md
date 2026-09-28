@@ -3263,6 +3263,7 @@ then the git revision names a commit on a fork branch; move it only with
 `PARSER_PIN` and the lock, which a test holds together.
 
 **Speech turns are parsing, not acquisition.** The adapter reads bytes a caller
-already retained -- the granule body and the issue MODS from the [GovInfo body
-routes](sources/govinfo-bodies.md) -- and makes no request. Which granules to
-read, and where the turns are published, stay with the host.
+already retained -- the granule body and its own MODS or its issue's package
+MODS, from the [GovInfo body routes](sources/govinfo-bodies.md) -- and makes no
+request. Which granules to read, and where the turns are published, stay with
+the host.

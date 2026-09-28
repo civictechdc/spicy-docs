@@ -9,11 +9,14 @@ partial, and a source line span for each item it emits, which it does not
 record. Nothing here imports the parser at module scope, so the rest of
 ``spicy_docs`` imports without it.
 
-The package MODS is parsed once per issue (:func:`read_record_issue`) and each
-granule against it (:meth:`RecordIssue.speeches`). Upstream reads the MODS with
-BeautifulSoup: measured on 2026-09-28, 0.4-0.7 s for the 3.6 MB CREC-2026-09-16
-MODS against 1-9 ms per granule, so a loop that re-read the MODS per granule
-would spend nearly all its time repeating that read.
+The MODS is either the issue's package MODS or the granule's own, which is
+what ``GovInfoBodyAcquirer.acquire_granule`` retains; upstream reads the
+granule's record the same way from both. It is parsed once
+(:func:`read_record_issue`) and granules are read against it
+(:meth:`RecordIssue.speeches`). Upstream reads the MODS with BeautifulSoup:
+measured on 2026-09-28, 0.4-0.7 s for the 3.6 MB CREC-2026-09-16 package MODS
+against 1-9 ms per granule, so a loop over one issue's granules reads its
+package MODS once, and a granule's own MODS (a few kilobytes) avoids that cost.
 """
 
 from __future__ import annotations
@@ -29,9 +32,8 @@ from tempfile import TemporaryDirectory
 from types import MappingProxyType
 from typing import Any
 
-from spicy_docs.reading.xml import scan_xml
 from spicy_docs.sources.govinfo.bodies import GovInfoBodySourceError, parse_granule_identity, parse_package_id
-from spicy_docs.sources.govinfo.mods import MODS_NAMESPACE
+from spicy_docs.sources.govinfo.mods import GovInfoModsError, parse_govinfo_mods
 from spicy_docs.transport.source_acquirer import check_payload
 
 #: The fork commit ``pyproject.toml`` pins and ``uv.lock`` resolves; a test holds the three together.
@@ -42,10 +44,11 @@ EXTRA_REQUIRED = (
 LOCATED = "located"
 UNLOCATED = "unlocated"
 
-_MODS_LABEL = "CREC package MODS"
+_MODS_LABEL = "CREC MODS"
 _HTML_LABEL = "CREC granule HTML"
-_MODS_ROOT = f"{{{MODS_NAMESPACE}}}mods"
-_PACKAGE_ACCESS_ID = (f"{{{MODS_NAMESPACE}}}extension", f"{{{MODS_NAMESPACE}}}accessId")
+# validate_package_mods's element bound; the 3.6 MB CREC-2026-09-16 package
+# MODS holds 35,978 elements (measured 2026-09-28).
+_MAX_MODS_ELEMENTS = 200_000
 # What upstream raises from a document it cannot read: a missing accessId
 # (RuntimeError), a missing <pre>, searchTitle or granuleClass (AttributeError),
 # a body too short for its header (StopIteration), an unmatched date or time
@@ -60,7 +63,7 @@ _PARSE_LOCK = threading.Lock()
 
 
 class RecordSpeechesError(ValueError):
-    """A granule and its package MODS cannot be read into speech turns as given."""
+    """A granule and its MODS cannot be read into speech turns as given."""
 
 
 def _parser_module() -> Any:
@@ -216,50 +219,42 @@ def _write_for_upstream(path: Path, text: str, *, label: str) -> None:
         raise RecordSpeechesError(f"{label} does not read back unchanged through the parser's text-mode open")
 
 
-def _package_id(mods: bytes, *, max_bytes: int) -> str:
-    """The package id the MODS root states for itself, read through the bounded XML gate.
-
-    The scan is also the inert, entity-refusing parse this repository requires
-    before any other parser sees publisher XML. Only the root's own
-    ``extension/accessId`` is read; a constituent's names a granule.
-    """
-    path: list[str] = []
-    stated: list[str] = []
-    text: list[str] | None = None
-
-    def start(tag: str, _attributes: dict[str, str]) -> None:
-        nonlocal text
-        path.append(tag)
-        if len(path) == 1 and tag != _MODS_ROOT:
-            raise RecordSpeechesError(f"{_MODS_LABEL} root is not a MODS record")
-        if tuple(path[1:]) == _PACKAGE_ACCESS_ID:
-            text = []
-
-    def data(chunk: str) -> None:
-        if text is not None:
-            text.append(chunk)
-
-    def end(_tag: str) -> None:
-        nonlocal text
-        if text is not None and tuple(path[1:]) == _PACKAGE_ACCESS_ID:
-            stated.append("".join(text).strip())
-            text = None
-        path.pop()
-
-    scan_xml(
-        mods, start=start, end=end, data=data, max_bytes=max_bytes, error_type=RecordSpeechesError, label=_MODS_LABEL
-    )
-    if len(set(stated)) != 1:
-        raise RecordSpeechesError(
-            f"{_MODS_LABEL} must state exactly one package accessId; it states {sorted(set(stated))}"
-        )
+def _crec_package(value: str) -> str:
     try:
-        identity = parse_package_id(stated[0])
+        identity = parse_package_id(value)
     except GovInfoBodySourceError as error:
-        raise RecordSpeechesError(f"{_MODS_LABEL} accessId is not a package id: {error}") from error
+        raise RecordSpeechesError(f"{_MODS_LABEL} does not name a package: {error}") from error
     if identity.collection != "CREC":
         raise RecordSpeechesError(f"{_MODS_LABEL} names {identity.package_id}, not a Congressional Record issue")
     return identity.package_id
+
+
+def _mods_identity(mods: bytes, *, max_bytes: int) -> tuple[str, str | None]:
+    """The package id, and the granule id when this is a granule's own MODS, read as the body routes read them.
+
+    Both shapes state their own accessId in the root's ``extension``. A
+    granule's MODS also states its host package in a ``relatedItem
+    type="host"``, and that is how the shape is told from the document: with a
+    host, the root names a granule of it; without one, the root names the
+    package. The read goes through this repository's bounded, entity-refusing
+    MODS mapping before upstream's parser sees the bytes.
+    """
+    try:
+        record = parse_govinfo_mods(mods, max_bytes=max_bytes, max_elements=_MAX_MODS_ELEMENTS).package
+    except GovInfoModsError as error:
+        raise RecordSpeechesError(f"{_MODS_LABEL} is unreadable: {error}") from error
+    stated, hosts = set(record.access_ids), set(record.host_access_ids)
+    if len(stated) != 1:
+        raise RecordSpeechesError(f"{_MODS_LABEL} must state exactly one accessId; it states {sorted(stated)}")
+    (own,) = stated
+    if not hosts:
+        return _crec_package(own), None
+    if len(hosts) != 1:
+        raise RecordSpeechesError(f"{_MODS_LABEL} must state exactly one host package; it states {sorted(hosts)}")
+    package = _crec_package(hosts.pop())
+    if not own.startswith(f"{package}-"):
+        raise RecordSpeechesError(f"{_MODS_LABEL} describes {own}, which is not a granule of its host {package}")
+    return package, own
 
 
 def _line_recording(parse_file: Any) -> Any:
@@ -330,12 +325,17 @@ def _locate(
 
 
 class RecordIssue:
-    """One issue's package MODS, parsed once by upstream, against which its granules are read."""
+    """One MODS, parsed once by upstream, against which granules of its issue are read.
 
-    __slots__ = ("_directory", "mods_sha256", "package_id")
+    ``granule_id`` is the granule a granule's own MODS describes, the only one
+    it can read, and ``None`` for a package MODS, which reads any of its issue's.
+    """
 
-    def __init__(self, package_id: str, mods_sha256: str, directory: Any) -> None:
+    __slots__ = ("_directory", "granule_id", "mods_sha256", "package_id")
+
+    def __init__(self, package_id: str, granule_id: str | None, mods_sha256: str, directory: Any) -> None:
         self.package_id = package_id
+        self.granule_id = granule_id
         self.mods_sha256 = mods_sha256
         self._directory = directory
 
@@ -347,6 +347,8 @@ class RecordIssue:
         value = identity.granule_id
         if not value.startswith(f"{self.package_id}-"):
             raise RecordSpeechesError(f"granule {value} is not a granule of {self.package_id}")
+        if self.granule_id is not None and value != self.granule_id:
+            raise RecordSpeechesError(f"granule {value} is not the granule this MODS describes, {self.granule_id}")
         # Upstream takes the accessId it looks up from the file name, up to the
         # first dot (cr_parser.py:525); a dotted id would be looked up truncated.
         if "." in value:
@@ -432,14 +434,12 @@ class RecordIssue:
         )
 
 
-def read_record_issue(issue_mods: bytes, *, max_mods_bytes: int) -> RecordIssue:
-    """Parse one CREC package MODS once, for reading any of its granules."""
-    mods = check_payload(
-        issue_mods, max_mods_bytes, label=_MODS_LABEL, error_type=RecordSpeechesError, allow_empty=False
-    )
+def read_record_issue(mods: bytes, *, max_mods_bytes: int) -> RecordIssue:
+    """Parse one CREC MODS once: an issue's package MODS, for any of its granules, or one granule's own."""
+    exact = check_payload(mods, max_mods_bytes, label=_MODS_LABEL, error_type=RecordSpeechesError, allow_empty=False)
     cr_parser = _parser_module()
-    package_id = _package_id(mods, max_bytes=max_mods_bytes)
-    text = _decoded(mods, label=_MODS_LABEL)
+    package_id, granule_id = _mods_identity(exact, max_bytes=max_mods_bytes)
+    text = _decoded(exact, label=_MODS_LABEL)
     with TemporaryDirectory(prefix="spicy-docs-record-issue-") as directory:
         _write_for_upstream(Path(directory) / "mods.xml", text, label=_MODS_LABEL)
         try:
@@ -448,24 +448,24 @@ def read_record_issue(issue_mods: bytes, *, max_mods_bytes: int) -> RecordIssue:
             parsed = cr_parser.ParseCRDir(directory)
         except _UPSTREAM_FAILURES as error:
             raise RecordSpeechesError(f"the parser could not read {_MODS_LABEL} {package_id}: {error}") from error
-    return RecordIssue(package_id, "sha256:" + hashlib.sha256(mods).hexdigest(), parsed)
+    return RecordIssue(package_id, granule_id, "sha256:" + hashlib.sha256(exact).hexdigest(), parsed)
 
 
 def parse_record_speeches(
     granule_html: bytes,
-    issue_mods: bytes,
+    mods: bytes,
     granule_id: str,
     *,
     max_html_bytes: int,
     max_mods_bytes: int,
 ) -> RecordSpeechDocument:
-    """Read one granule against its package MODS. Both bounds are checked before either input is parsed.
+    """Read one granule against its issue's package MODS or its own MODS; both bounds are checked first.
 
-    Reading many granules of one issue, call :func:`read_record_issue` once
-    and :meth:`RecordIssue.speeches` per granule instead.
+    Reading many granules of one issue against its package MODS, call
+    :func:`read_record_issue` once and :meth:`RecordIssue.speeches` per granule.
     """
     check_payload(granule_html, max_html_bytes, label=_HTML_LABEL, error_type=RecordSpeechesError, allow_empty=False)
-    issue = read_record_issue(issue_mods, max_mods_bytes=max_mods_bytes)
+    issue = read_record_issue(mods, max_mods_bytes=max_mods_bytes)
     return issue.speeches(granule_html, granule_id, max_html_bytes=max_html_bytes)
 
 

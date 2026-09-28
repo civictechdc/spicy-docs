@@ -1,9 +1,10 @@
 # Read speech turns from a Congressional Record granule
 
-Give SpicyDocs one retained GovInfo CREC granule HTML body and its issue's
-package MODS. It returns the granule's items -- speech turns, recorder and clerk
-lines, titles, rules -- each with its speaker, the bioguide id the MODS states
-for that speaker, its exact text and the source lines it came from. It reads
+Give SpicyDocs one retained GovInfo CREC granule HTML body and a MODS that
+describes it: the granule's own, or its issue's package MODS. It returns the
+granule's items -- speech turns, recorder and clerk lines, titles, rules -- each
+with its speaker, the bioguide id the MODS states for that speaker, its exact
+text and the source lines it came from. It reads
 retained bytes offline; acquiring them is the [GovInfo body
 routes'](govinfo-bodies.md) job.
 
@@ -16,21 +17,27 @@ Install the `record-speeches` extra. From this checkout, use
 `uv run --frozen python`:
 
 ```python
-from spicy_docs.sources.congress.record_speeches import read_record_issue
+from spicy_docs.sources.congress.record_speeches import parse_record_speeches
 
-issue = read_record_issue(package_mods_bytes, max_mods_bytes=8 * 1024 * 1024)
-document = issue.speeches(granule_html_bytes, "CREC-2026-09-16-pt1-PgH5835-8", max_html_bytes=1024 * 1024)
+document = parse_record_speeches(
+    granule_html_bytes,
+    granule_mods_bytes,
+    "CREC-2026-09-16-pt1-PgH5835-8",
+    max_html_bytes=1024 * 1024,
+    max_mods_bytes=1024 * 1024,
+)
 
 print(document.package_id, document.parse_status, document.chamber, document.pages)
 for item in document.items:
     print(item.item_index, item.kind, item.turn, item.speaker, item.speaker_bioguide, item.line_start, item.line_end)
 ```
 
-`parse_record_speeches(granule_html, issue_mods, granule_id, max_html_bytes=...,
-max_mods_bytes=...)` does both steps for one granule. Read the MODS once per
-issue when reading several of its granules: upstream parses it with
-BeautifulSoup, measured on 2026-09-28 at 0.4-0.7 s and about 55 MB retained for
-the 3.6 MB CREC-2026-09-16 MODS, against 1-9 ms per granule after that.
+A granule's own MODS is a few kilobytes and is the cheap route. With a
+package MODS, parse it once with `read_record_issue(mods, max_mods_bytes=...)`
+and read each granule with `issue.speeches(granule_html, granule_id,
+max_html_bytes=...)`: upstream parses the MODS with BeautifulSoup, measured on
+2026-09-28 at 0.4-0.7 s and about 55 MB retained for the 3.6 MB CREC-2026-09-16
+package MODS, against 1-9 ms per granule after that.
 
 Without the extra, the module still imports; `parser_available()` answers
 whether it is installed, and every reading refuses with the install command.
@@ -40,17 +47,27 @@ whether it is installed, and every reading refuses with the install command.
 - **The granule body**: the HTML rendition exactly as GovInfo serves it, at
   `content/pkg/{package_id}/html/{granule_id}.htm`;
   `GovInfoBodyAcquirer.acquire_granule(...).body_capture.body` retains it.
-- **The package MODS**: the whole issue's MODS, as
-  `GovInfoBodyAcquirer.acquire(package_id).mods_capture.body` retains it or as
-  GovInfo serves it keyless at `https://www.govinfo.gov/metadata/pkg/{package_id}/mods.xml`
-  (where the fixtures came from). Its root must state a CREC package id, which
-  becomes `package_id` -- the column `record_issues.package_id` joins on. The
-  granule id must begin with it.
+- **The MODS**, in either shape, told apart from the document itself:
+  - *the granule's own*, as `acquire_granule(...).mods_capture.body` retains it
+    (keyed, `packages/{package_id}/granules/{granule_id}/mods`) or as GovInfo
+    serves it keyless at `https://www.govinfo.gov/metadata/granule/{package_id}/{granule_id}/mods.xml`.
+    Its root states the granule and a `relatedItem type="host"` states the
+    package. It reads only that granule; another refuses by name.
+  - *the issue's package MODS*, as `acquire(package_id).mods_capture.body`
+    retains it or keyless at `https://www.govinfo.gov/metadata/pkg/{package_id}/mods.xml`.
+    It has no host, and its root states the package.
+
+  Either way the stated package must be a CREC issue; it becomes `package_id`,
+  the column `record_issues.package_id` joins on, and the granule id must begin
+  with it. The two routes serialize the same granule MODS differently (for
+  CREC-2026-09-16-pt1-PgH5835-8, 6,432 bytes keyless and 7,833 keyed, equal
+  apart from whitespace and namespace-declaration order), and both read alike.
 - **Byte bounds** are required keyword arguments, checked with the shared
   `check_payload` rule before either input is parsed.
-- **The MODS passes through [`reading/xml.py`](../../src/spicy_docs/reading/xml.py)**
-  first, the bounded scan that refuses entity declarations, before upstream's
-  own parser sees it.
+- **The MODS is read by [the MODS mapping](govinfo-metadata.md) first**, the
+  bounded reader that refuses entity declarations, and its accessIds are read
+  the way the [GovInfo body routes](govinfo-bodies.md) read them, before
+  upstream's own parser sees it.
 
 Upstream reads both files from disk, in text mode with the locale's encoding.
 The adapter decodes each input as UTF-8, writes it into a temporary directory in
@@ -59,14 +76,15 @@ upstream's layout in the locale's encoding, and reads it back through the same
 encode, or that would not read back unchanged -- a carriage return, which
 universal newlines fold -- refuses rather than reaching upstream as different
 text. Every CREC body the supply corpus retained on 2026-09-28 (32 distinct,
-1996-2026, this guide's fixtures among them) and the three issue MODS retained
-that day are ASCII with no carriage return, so none of these refusals has been
+1996-2026, this guide's fixtures among them), the three issue MODS retained
+that day and both granule-MODS captures are ASCII with no carriage return, so none of these refusals has been
 seen on publisher bytes.
 
-A granule's own MODS (the `acquire_granule` capture) is not accepted: its root
-states the granule, not the package. Upstream itself read one identically to
-the package MODS (CREC-2026-09-18-pt1-PgS4837-4, measured 2026-09-28), so
-accepting it is a change to the package-id read, not to the parser.
+Upstream looks up the granule's accessId and reads the record around it, so
+the granule's own MODS and the package MODS give it the same record. Measured
+2026-09-28, the adapter's documents from the two are equal apart from
+`mods_sha256` for CREC-2026-09-16-pt1-PgH5835-8 (both granule-MODS routes), and
+upstream's are equal for CREC-2026-09-18-pt1-PgS4837-4.
 
 ## Output
 

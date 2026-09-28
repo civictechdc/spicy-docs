@@ -1321,7 +1321,7 @@ def validate_package_mods(
     except GovInfoModsError as error:
         raise GovInfoBodySourceError(f"GovInfo package MODS is unreadable: {error}") from error
     root = parsed.package
-    access_ids = tuple(element.text.strip() for element in root.fields("extension", "accessId"))
+    access_ids = root.access_ids
     if not access_ids:
         raise GovInfoBodySourceError("GovInfo package MODS states no accessId")
     part_id = _stated_part(parsed, identity)
@@ -1519,7 +1519,7 @@ def validate_granule_mods(
     except GovInfoModsError as error:
         raise GovInfoBodySourceError(f"GovInfo granule MODS is unreadable: {error}") from error
     root = parsed.package
-    access_ids = tuple(element.text.strip() for element in root.fields("extension", "accessId"))
+    access_ids = root.access_ids
     if not access_ids:
         raise GovInfoBodySourceError("GovInfo granule MODS states no accessId")
     if any(value != identity.granule_id for value in access_ids):
@@ -1527,8 +1527,7 @@ def validate_granule_mods(
     codes = {element.text.strip() for element in root.fields("extension", "collectionCode")}
     if codes and codes != {stated_collection_code(identity.package.collection)}:
         raise GovInfoBodySourceError("GovInfo granule MODS collectionCode differs from the requested collection")
-    hosts = [record for record in root.related_items if record.element.attribute("type") == "host"]
-    host_ids = tuple(element.text.strip() for record in hosts for element in record.fields("extension", "accessId"))
+    host_ids = root.host_access_ids
     if not host_ids:
         raise GovInfoBodySourceError("GovInfo granule MODS states no host package")
     if any(value != identity.package.package_id for value in host_ids):
