@@ -15,6 +15,7 @@ zero never establishes absence.
 | GovInfo collection changes | Collection code and `lastModified` start, optional end | `packages` | api.data.gov key |
 | GovInfo package granules | Package identifier | `granules` | api.data.gov key |
 | GAO reports feed | None; about 25 recent products | RSS items | none |
+| GAO Month in Review and Annual Index | A year (the view answers from 2009) or a month; every page of it | Teasers: products once each with their topic headings, B-numbered decisions kept apart | Zyte token (`ZYTE_TOKEN`) |
 | LDA lobbying filings | Optional filing year and posted-date window, ordered by `dt_posted` | `results` | optional LDA token |
 | CourtListener search | `type=r` dockets or `type=o` opinion clusters; optional filed window, court, nature of suit, query | `results` | optional CourtListener token |
 | SAM.gov entities | Optional registration status and registration-date window narrow enough for 10,000 records | `entityData` | SAM.gov-issued key |
@@ -451,6 +452,61 @@ docket never existed. Attachment bytes remain the separate
 The lower-level `filings(url)` iterator keeps its page interface and does not
 acquire these checks merely by using a larger `limit`. The attachment-capture
 backfill tool enumerates each date window through `iter_filings`.
+
+## GAO's own listing: Month in Review and Annual Index
+
+GAO publishes "monthly and annual lists of our reports, grouped by topic" at
+`/reports-testimonies/month-in-review`: a month page such as `.../2026/August`
+and a year page such as `.../2025`. It is the one GAO route that lists
+everything it issued, the RSS feed being a recent-items window.
+[`sources/gao/month_in_review.py`](../../src/spicy_docs/sources/gao/month_in_review.py)
+reads it.
+
+- **Access.** `www.gao.gov` refuses plain clients, so pages come through Zyte
+  (`httpResponseBody`, the publisher's own bytes). `robots.txt` disallows
+  `/reports-testimonies` by prefix and asks every agent for `Crawl-delay: 420`.
+  The owner accepted the disallow for the 2009-2026 backfill on 2026-09-28. The
+  walk therefore makes one request at a time, 420 seconds apart by default,
+  under a hard Zyte budget. The spacing is counted from the last contact its
+  receipts record, so stopping and resuming never shortens it.
+- **Shape.** A scope is one Drupal view of 25 teasers per page, paged with
+  `?page=N`. Every page is checked against the scope's first page: its title,
+  its canonical URL, a pager whose current page is the page requested, the
+  same last page, and the first page's teaser count on every page before the
+  last. Any difference means the listing moved while it was read, so the
+  walk refuses and keeps the refused bytes.
+- **Products.** A product appears once under each topic it carries.
+  `collect_listing` states it once, with its topic headings in listed order.
+  It keeps GAO's `label` and `heading` (the title is `label: heading`, matching
+  the feed's titles on all 60 teasers compared on 2026-09-28), the
+  "Published" and "Publicly Released" dates, and every scope that listed it.
+  The same product stated twice with different fields is refused rather than
+  either spelling chosen. A month can list a product released the month
+  before, so no date is checked against the scope.
+- **Decisions.** B-numbered legal decisions are listed beside products.
+  They have no product-page slug, and one teaser can name several
+  (`B-423916.2,B-423916.3`). They are kept apart as decisions, each number
+  separate.
+
+```sh
+export ZYTE_TOKEN
+uv run --frozen python -m spicy_docs.sources.gao.month_in_review walk \
+  --scope 2026-07 --scope 2025 --store /persistent/gao-listing/blobs \
+  --receipts /persistent/gao-listing/receipts.jsonl --max-zyte-requests 60
+uv run --frozen python -m spicy_docs.sources.gao.month_in_review read \
+  --store /persistent/gao-listing/blobs --receipts /persistent/gao-listing/receipts.jsonl
+```
+
+A walk appends one receipt row per page: requested and final URL, status,
+time, digest, blob path and the Zyte request id. It fetches each retained
+page at most once, stops at the budget, and stops at the first failure,
+recording it. Run it again to resume; failed pages are retried.
+`read_listing_run` re-reads only scopes whose every page is retained. It
+checks each digest, re-parses each page against its scope's first page, and
+returns the pages with their captures beside the products and decisions.
+Offline regressions are in
+[`test_gao_month_in_review.py`](../../tests/test_gao_month_in_review.py), on
+[complete retained pages](../../tests/fixtures/listings/gao-month-in-review/README.md).
 
 ## Use the routes
 
