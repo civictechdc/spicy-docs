@@ -60,10 +60,15 @@ was not examined yields NULL.
 party, state and district. `None` means an absent XML element; `""` means
 present empty. Date-status properties report invalid calendar spellings without
 changing them or losing the record. Other entry fields remain in `source_xml`:
-the item's own markup, reserialized, not the original bytes. Since 0.50.1 it
-stops at `</item>`; 0.50.0 also kept the whitespace that follows the item in
-the list. `BillStatus.input_sha256` pins the original bytes; retain them with
-the acquisition capture.
+the item's own markup, the publisher's bytes from its `<item>` to its
+`</item>`, cut out of the input during the one parse
+(`reading.xml.parse_xml_with_spans`, which refuses a document in any encoding
+but UTF-8) rather than reserialized
+([decision](../decisions.md#a-cosponsors-source_xml-is-the-publishers-bytes)).
+0.50.0 also kept the whitespace that follows the item in the list, and until
+this change a self-closed element was re-spelled with a space.
+`BillStatus.input_sha256` pins the original bytes; retain them with the
+acquisition capture.
 
 `cosponsors_outcome` distinguishes absent, empty and populated source lists;
 NULL means the caller has not read the list. `shape_bill_cosponsor(status,

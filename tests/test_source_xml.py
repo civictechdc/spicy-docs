@@ -86,6 +86,51 @@ def test_spans_slice_the_publisher_bytes_across_a_chunk_boundary_and_quoted_brac
     assert len(spans) == 3 and root.find("other/item") not in spans
 
 
+def test_a_quoted_value_hides_every_bracket_until_its_own_closing_quote():
+    """A ``>`` inside a quoted attribute value is not the tag's end, however far into the value it falls, and a
+    quote of the other kind inside the value does not close it."""
+    body = b"<r><item a=\"x>y\" b='q\">' c=\"'>\">z</item><item d='>'/></r>"
+    root, spans = parse_xml_with_spans(body, path=("r", "item"), max_bytes=len(body), error_type=ValueError, label="t")
+    assert [body[start:end] for start, end in (spans[e] for e in root.findall("item"))] == [
+        b'<item a="x>y" b=\'q">\' c="\'>">z</item>',
+        b"<item d='>'/>",
+    ]
+
+
+def test_a_path_prefix_off_the_path_gets_no_span():
+    """Only elements reached through the whole path from the root are spanned: an item under an amendment's own
+    cosponsors, whose last two tags match, is not, and neither is one at the path's depth under another parent."""
+    body = (
+        b"<billStatus><bill><amendments><amendment><cosponsors><item>off</item></cosponsors></amendment></amendments>"
+        b"<cosponsors><item>on</item></cosponsors><other><item>off</item></other></bill></billStatus>"
+    )
+    path = ("billStatus", "bill", "cosponsors", "item")
+    _, spans = parse_xml_with_spans(body, path=path, max_bytes=len(body), error_type=ValueError, label="t")
+    assert [body[start:end] for start, end in spans.values()] == [b"<item>on</item>"]
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        '<?xml version="1.0" encoding="UTF-16"?><r><a>x</a></r>'.encode("utf-16"),  # a byte-order mark
+        "<r><a>x</a></r>".encode("utf-16-be"),  # none: a NUL among the first bytes
+        b'<?xml version="1.0" encoding="ISO-8859-1"?><r><a>N\xfa\xf1ez</a></r>',  # declared
+    ],
+)
+def test_spans_refuse_input_in_any_encoding_but_utf8_by_name(body):
+    """A span is cut from the input bytes and decoded as UTF-8, so input in another encoding refuses by name: parsed,
+    a UTF-16 document's spans came back full of NULs and a Latin-1 one's would not decode (independent review,
+    2026-09-28)."""
+    with pytest.raises(ValueError, match="is not UTF-8"):
+        parse_xml_with_spans(body, path=("r", "a"), max_bytes=len(body), error_type=ValueError, label="t")
+
+
+def test_utf8_with_a_byte_order_mark_and_multibyte_text_spans_its_bytes():
+    body = b'\xef\xbb\xbf<?xml version="1.0" encoding="utf-8"?><r t="\xc3\xba"><a>N\xc3\xba\xc3\xb1ez</a></r>'
+    _, spans = parse_xml_with_spans(body, path=("r", "a"), max_bytes=len(body), error_type=ValueError, label="t")
+    assert [body[start:end].decode("utf-8") for start, end in spans.values()] == ["<a>Núñez</a>"]
+
+
 def test_spans_refuse_an_empty_path():
     with pytest.raises(ValueError, match="path"):
         parse_xml_with_spans(b"<r/>", path=(), max_bytes=4, error_type=ValueError, label="t")

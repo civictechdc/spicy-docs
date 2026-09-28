@@ -99,6 +99,18 @@ def test_source_xml_is_the_publishers_bytes_even_where_a_serializer_would_respel
     assert all(b" />" not in item for item in items)
 
 
+def test_a_billstatus_in_another_encoding_refuses_by_name_rather_than_slicing_its_bytes() -> None:
+    """The same document re-encoded as UTF-16, declaration and all, would parse, and every cosponsor's source_xml
+    would carry NULs (independent review, 2026-09-28); it refuses as not UTF-8."""
+    from spicy_docs.sources.congress.bill_status import BillSourceError
+
+    text = (FIXTURES / "govinfo_bills/status-113hr4200.xml").read_text(encoding="utf-8")
+    assert 'encoding="utf-8"' in text
+    wide = text.replace('encoding="utf-8"', 'encoding="UTF-16"', 1).encode("utf-16")
+    with pytest.raises(BillSourceError, match="is not UTF-8"):
+        parse_bill_status(wide, identity=BillIdentity(113, "hr", 4200))
+
+
 @pytest.mark.parametrize("container, state", [(None, "absent"), ("", "empty")])
 def test_cosponsor_list_observation_is_separate_from_zero(container: str | None, state: str) -> None:
     root = ET.fromstring(BILL.read_bytes())

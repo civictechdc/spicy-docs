@@ -471,17 +471,15 @@ _COSPONSOR_FIELDS = (
 def _cosponsor(item: Element, body: bytes, spans: dict[Element, tuple[int, int]]) -> BillCosponsor:
     """One ``<cosponsors>`` item, with the item's own markup as ``source_xml``: the publisher's bytes, sliced.
 
-    Through 0.50.1 this was ``tostring(item)``, which re-spelled what it
+    Until this branch it was ``tostring(item)``, which re-spelled what it
     serialized (``<middleName/>`` as ``<middleName />``), carried the item's
     tail until 0.50.1 set it aside, and cost about 11 microseconds an entry.
-    The span comes from the parse itself (``parse_xml_with_spans``).
+    The span comes from the parse itself (``parse_xml_with_spans``), which
+    refuses a document in any encoding but UTF-8 and validates the UTF-8 it
+    reads, so a slice from one tag's ``<`` to another's ``>`` decodes.
     """
     start, end = spans[item]
-    try:
-        source_xml = body[start:end].decode("utf-8")
-    except UnicodeDecodeError as error:
-        raise BillSourceError("BILLSTATUS cosponsor markup is not UTF-8") from error
-    return BillCosponsor(*(_text(item, name) for name in _COSPONSOR_FIELDS), source_xml=source_xml)
+    return BillCosponsor(*(_text(item, name) for name in _COSPONSOR_FIELDS), source_xml=body[start:end].decode("utf-8"))
 
 
 def _cbo_cost_estimate(element: Element) -> CboCostEstimate:

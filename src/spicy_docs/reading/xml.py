@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import codecs
+import re
 from collections.abc import Callable
 from typing import Any, NoReturn
 from xml.etree.ElementTree import Element, TreeBuilder
@@ -154,6 +156,29 @@ def parse_xml(
     return builder.close()
 
 
+#: An XML declaration's encoding, which must be the document's first bytes (after a UTF-8 byte-order mark).
+_DECLARED_ENCODING = re.compile(rb"<\?xml\s[^>]*?\bencoding\s*=\s*([\"'])([A-Za-z][A-Za-z0-9._-]*)\1")
+
+
+def _require_utf8(body: bytes, *, error_type: type[ValueError], label: str) -> None:
+    """Refuse, by name, input expat would read as anything but UTF-8.
+
+    A span is cut from the input bytes at a tag's ``<`` and just past its
+    ``>``, and the caller decodes it as UTF-8, which is only right where the
+    document is UTF-8: a UTF-16 document parses, and its spans come back full
+    of NULs. Expat reads UTF-16 or UTF-32 from a byte-order mark or a NUL among
+    the first bytes, and another encoding from the declaration; with neither,
+    the document is UTF-8, which expat then validates.
+    """
+    declared = _DECLARED_ENCODING.match(body.removeprefix(codecs.BOM_UTF8))
+    if (
+        body.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE))
+        or b"\x00" in body[:4]
+        or (declared is not None and declared[2].lower() != b"utf-8")
+    ):
+        raise error_type(f"{label} is not UTF-8, the only encoding its byte spans are read in")
+
+
 def _tag_end(body: bytes, start: int) -> int:
     """The offset just past the tag that opens at ``start``, a ``>`` inside a quoted attribute value skipped."""
     quote = 0
@@ -185,10 +210,13 @@ def parse_xml_with_spans(
     unreserialized: expat reports each tag's offset during the one parse the
     tree already needs. Only how many leading ``path`` elements are open is
     tracked, two integer comparisons an event, because this runs on every
-    element of the document.
+    element of the document. Input in any encoding but UTF-8 refuses by name
+    (``_require_utf8``), so every span decodes as UTF-8.
     """
     if not path or not all(isinstance(tag, str) and tag for tag in path):
         raise ValueError("path must name at least one element")
+    _validate_xml_input(body, max_bytes=max_bytes, error_type=error_type, label=label)
+    _require_utf8(body, error_type=error_type, label=label)
     builder = TreeBuilder()
     target = len(path)
     depth = matched = 0
