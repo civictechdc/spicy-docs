@@ -346,3 +346,32 @@ def test_invalid_base64_target_bytes_are_refused(monkeypatch) -> None:
     monkeypatch.setattr(firecrawl.urllib.request, "urlopen", lambda *_a, **_k: _Response(provider))
     with pytest.raises(firecrawl.FirecrawlTransportError, match="invalid base64"):
         firecrawl.FirecrawlFetcher(key="test-key").fetch(PRODUCT_URL, timeout_seconds=9, max_bytes=1024)
+
+
+def test_every_http_client_failure_is_the_adapters_own_error(monkeypatch) -> None:
+    """A malformed status line, a cut-short body and a cut-short error body each raise ``FirecrawlTransportError``."""
+    import http.client
+    import urllib.error
+
+    def status_line(*_a, **_k):
+        raise http.client.LineTooLong("x")
+
+    class _CutShort(_Response):
+        def read(self, limit: int) -> bytes:
+            raise http.client.IncompleteRead(b"x")
+
+    class _CutShortBody(io.BytesIO):
+        def read(self, *_args) -> bytes:
+            raise http.client.IncompleteRead(b"x")
+
+    def error_body(*_a, **_k):
+        raise urllib.error.HTTPError("https://api.firecrawl.dev", 502, "bad", {}, _CutShortBody())  # type: ignore[arg-type]
+
+    for opener, message in (
+        (status_line, "before receiving a response"),
+        (lambda *_a, **_k: _CutShort(b""), "while reading the provider response"),
+        (error_body, "failed with HTTP 502"),
+    ):
+        monkeypatch.setattr(firecrawl.urllib.request, "urlopen", opener)
+        with pytest.raises(firecrawl.FirecrawlTransportError, match=message):
+            firecrawl.FirecrawlFetcher(key="test-key").fetch(PRODUCT_URL, timeout_seconds=9.0, max_bytes=1024)

@@ -13,6 +13,7 @@ Standard library only: the clients use ``urllib`` so they need no optional extra
 
 from __future__ import annotations
 
+import http.client
 import json
 import os
 import urllib.parse
@@ -127,9 +128,16 @@ def provider_payload_limit(max_bytes: int) -> int:
 
 
 def read_provider_payload(response: _Readable, *, max_bytes: int, provider: str, error_type: type[Exception]) -> bytes:
-    """Read the whole envelope within its bound; one byte past the bound refuses rather than truncates."""
+    """Read the whole envelope within its bound; one byte past the bound refuses rather than truncates.
+
+    A read that breaks, whether a socket error or an ``http.client`` one (a body cut short, a malformed line), is the
+    caller's own error with nothing chained, so no raw error from one provider ends another's fallback chain.
+    """
     limit = provider_payload_limit(max_bytes)
-    payload = response.read(limit + 1)
+    try:
+        payload = response.read(limit + 1)
+    except (OSError, http.client.HTTPException):
+        raise error_type(f"{provider} acquisition failed while reading the provider response") from None
     if len(payload) > limit:
         raise error_type(f"{provider} response exceeded the bounded provider payload size")
     return payload

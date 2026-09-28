@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+import http.client
 import json
 import math
 import re
@@ -216,13 +217,13 @@ class FirecrawlFetcher:
         except urllib.error.HTTPError as error:
             try:
                 payload = error.read(PROVIDER_ERROR_BYTES)
-            except (OSError, ValueError):
+            except (OSError, ValueError, http.client.HTTPException):
                 payload = b""
             raise FirecrawlTransportError(
                 f"Firecrawl acquisition failed with HTTP {error.code}"
                 f"{_provider_error_slug(_loose_provider_json(payload))}"
             ) from error
-        except (OSError, urllib.error.URLError) as error:
+        except (OSError, urllib.error.URLError, http.client.HTTPException) as error:
             raise FirecrawlTransportError("Firecrawl acquisition failed before receiving a response") from error
         with response:
             provider_payload = read_provider_payload(
