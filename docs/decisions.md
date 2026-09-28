@@ -3327,10 +3327,17 @@ resolver copied unmodified as the lookup:
   types as `str`; its behavior is unchanged.
 
 **What spicy-regs must change to adopt it.** Read at its `fork/main`
-(`63a18d7`); nothing there is changed here.
-- Delete `_interpret`, `RULE`, `REFERENCE_COLUMNS`, `READ_COLUMNS`, the literal
-  identities and the hand-built read row. Keep the manifest, pins, evidence,
-  qualification and scan loop.
+(`c2cd4a5`, whose native files equal `63a18d7`'s); nothing there is changed
+here.
+- Pin the release that carries this: both `spicy-docs[...]` requirements
+  (`pyproject.toml:25` and `:39`, `==0.50.1` today), the vendored wheel path
+  (`pyproject.toml:128`, `vendor/spicy_docs-0.50.1-py3-none-any.whl`), the wheel
+  itself in `vendor/`, and the lock.
+- In `transforms/native_legal_references.py`, delete `_interpret`, `RULE`,
+  `REFERENCE_COLUMNS`, `READ_COLUMNS`, `SCHEMAS`, the literal identities and
+  the hand-built read row. Keep the manifest, pins, evidence, qualification
+  and scan loop. `OUTPUTS` becomes the two contracts' names plus `.parquet`;
+  `pipelines/rollups/native_legal_references.py:10` imports it.
 - Pass the run's rows to `interpret_native_references`, with its lookup as
   `resolve`: `resolve_citations(cursor, candidates, snapshots,
   source_digests=texts)["occurrences"]`, recording its `coverage` as it does
@@ -3344,6 +3351,16 @@ resolver copied unmodified as the lookup:
 - Declare the join `native_legal_references.scope_id` to
   `native_legal_reference_reads.scope_id` in `table_joins`, whose test requires
   a declared join for every contract reference.
-- Update the tests that read its own `SCHEMAS` or the shapers' old partial
-  rows (`test_native_legal_references.py`,
-  `test_join_delivery_registration.py`).
+- Run `spicy-regs-dict generate` and commit what it rebuilds from the new
+  prose, descriptions and join: `src/spicy_regs/table_joins.json`,
+  `table_metadata.json` and `table_qualification.json` beside it,
+  `data_dictionary/catalog.json` with its `.sha256`, and
+  `docs/tables/native_legal_reference*.md`.
+- Rewrite `docs/native-legal-references.md`, which says spicy-regs reads each
+  observation, to point at this reading and its contracts.
+- Update the tests that use the removed names:
+  - `tests/test_native_legal_inputs.py:77` imports `_interpret`; it should call
+    `interpret_native_reference`;
+  - `tests/test_native_legal_references.py:14` imports `SCHEMAS`;
+  - `tests/test_join_delivery_registration.py` iterates `SCHEMAS`;
+  - any assertion on the shapers' old partial rows.
