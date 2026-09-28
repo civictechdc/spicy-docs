@@ -128,10 +128,32 @@
       "sha256": "05687877a608d7bc1c21c84c28959ddbb93bffd005990abcfbf9254602c48795",
       "transformation": "None; the whole response body.",
       "pins": "The granule's own MODS: its root names the granule and its host relatedItem names CREC-2025-03-11-i46, the package id the adapter reports."
+    },
+    {
+      "fixture": "CREC-1994-03-25-pt1-PgH10.htm",
+      "source_url": "https://www.govinfo.gov/content/pkg/CREC-1994-03-25/html/CREC-1994-03-25-pt1-PgH10.htm",
+      "retrieved": "2026-09-28T23:10:22.820110Z",
+      "route": "GovInfoBodyAcquirer.acquire_granule's keyless HTML rendition",
+      "bytes": 36431,
+      "sha256": "5f423341e9deee0be956009dd142b3b9d04d9ce8277759242e54f2b9bbb7d5d3",
+      "transformation": "None; the whole response body.",
+      "pins": "A 1994 granule: its header states [Page H], no page number, and its id's 10 orders the section's granules; Mr. NICKLES (N000102) and Mrs. KASSEBAUM (K000017) with their MODS-stated bioguide ids and a presiding-officer turn with none."
+    },
+    {
+      "fixture": "CREC-1994-03-25-pt1-PgH10.granule-mods-api.xml",
+      "source_url": "https://api.govinfo.gov/packages/CREC-1994-03-25/granules/CREC-1994-03-25-pt1-PgH10/mods",
+      "retrieved": "2026-09-28T23:10:22.645631Z",
+      "route": "GovInfoBodyAcquirer.acquire_granule's keyed MODS route; the credential travelled in the X-Api-Key header only",
+      "bytes": 7688,
+      "sha256": "3f5049b19223827100585b95924f589c0b65515a661773d060197f6358983a46",
+      "transformation": "None; the whole response body.",
+      "pins": "The granule's own MODS for a 1994 granule: <start>H</start> with no page number, and a searchTitle stating Vol. 140, No. 36."
     }
   ],
   "granule_mods_receipt": "~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/granule-mods/",
   "granule_mods_check": "Retrieved 2026-09-28 by retrieve.py: the keyless response passes validate_granule_mods; the keyed acquire_granule MODS differs from it only in whitespace and namespace-declaration order; the body acquire_granule fetched is byte-identical to CREC-2026-09-16-pt1-PgH5835-8.htm. The adapter's documents from both granule MODS, the full package MODS and the excerpt differ only in mods_sha256 (compare-adapter.txt).",
   "suffixed_receipt": "~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/review-fixes/suffixed-fixture/",
-  "suffixed_check": "Retrieved 2026-09-28 by retrieve.py through GovInfoBodyAcquirer.acquire_granule (keyed summary and MODS, keyless body; receipt.json). The body equals a separate keyless GET of the same URL. The adapter reads it complete with nothing unaccounted, and 535 real granules of six issues, twelve of them in CREC-2025-01-03-v171 and CREC-2025-03-11-i46, read complete against both MODS routes (real-replay/)."
+  "suffixed_check": "Retrieved 2026-09-28 by retrieve.py through GovInfoBodyAcquirer.acquire_granule (keyed summary and MODS, keyless body; receipt.json). The body equals a separate keyless GET of the same URL. The adapter reads it complete with nothing unaccounted, and 535 real granules of six issues, twelve of them in CREC-2025-01-03-v171 and CREC-2025-03-11-i46, read complete against both MODS routes (real-replay/).",
+  "era_1994_receipt": "~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/rereview-fixes/fixture-1994/",
+  "era_1994_check": "Retrieved 2026-09-28 by retrieve.py through GovInfoBodyAcquirer.acquire_granule (keyed summary and MODS, keyless body; receipt.json). The body equals a separate keyless GET of the same URL (rereview-fixes/replay-1994/html/), and every granule of CREC-1994-03-25 reads against the package MODS (rereview-fixes/replay/)."
 }

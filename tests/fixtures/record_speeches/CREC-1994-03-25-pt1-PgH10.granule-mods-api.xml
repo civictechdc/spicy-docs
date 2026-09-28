@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?><mods xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.loc.gov/mods/v3" version="3.3" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-3.xsd" ID="id-CREC-1994-03-25-pt1-PgH10">
+    <name type="corporate">
+        <namePart>United States Government Publishing Office</namePart>
+        <role>
+            <roleTerm authority="marcrelator" type="text">publisher</roleTerm>
+            <roleTerm authority="marcrelator" type="code">pbl</roleTerm>
+        </role>
+        <role>
+            <roleTerm authority="marcrelator" type="text">distributor</roleTerm>
+            <roleTerm authority="marcrelator" type="code">dst</roleTerm>
+        </role>
+    </name>
+    <name type="corporate">
+        <namePart>United States</namePart>
+        <namePart>Congress</namePart>
+        <role>
+            <roleTerm authority="marcrelator" type="text">author</roleTerm>
+            <roleTerm authority="marcrelator" type="code">aut</roleTerm>
+        </role>
+        <description>Government Organization</description>
+    </name>
+    <typeOfResource>text</typeOfResource>
+    <genre authority="marcgt">government publication</genre>
+    <language>
+        <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+    </language>
+    <extension>
+        <collectionCode>CREC</collectionCode>
+        <category>Proceedings of Congress and General Congressional Publications</category>
+        <waisDatabaseName>1994_record</waisDatabaseName>
+        <branch>legislative</branch>
+        <dateIngested>2010-08-25</dateIngested>
+    </extension>
+    <titleInfo>
+        <title>WHITEWATER</title>
+        <partName>House</partName>
+    </titleInfo>
+    <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CREC-1994-03-25/html/CREC-1994-03-25-pt1-PgH10.htm">
+        <identifier type="FDsys Unique ID">D09002ee1897ed614</identifier>
+    </relatedItem>
+    <identifier type="congressional record citation">140 Cong. Rec. H</identifier>
+    <identifier type="uri">https://www.govinfo.gov/app/details/CREC-1994-03-25/CREC-1994-03-25-pt1-PgH10</identifier>
+    <identifier type="former granule identifier">cr25mr94-15</identifier>
+    <location>
+        <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CREC-1994-03-25/CREC-1994-03-25-pt1-PgH10</url>
+        <url access="raw object" displayLabel="HTML rendition">https://www.govinfo.gov/content/pkg/CREC-1994-03-25/html/CREC-1994-03-25-pt1-PgH10.htm</url>
+    </location>
+    <part type="article">
+        <extent unit="pages">
+            <start>H</start>
+            <end>H</end>
+        </extent>
+    </part>
+    <name type="personal">
+        <namePart>Don Nickles</namePart>
+        <affiliation>United States Senate</affiliation>
+        <role>
+            <roleTerm type="text">speaking</roleTerm>
+        </role>
+        <description>United States Congress Member</description>
+    </name>
+    <name type="personal">
+        <namePart>Nancy Landon Kassebaum</namePart>
+        <affiliation>United States Senate</affiliation>
+        <role>
+            <roleTerm type="text">speaking</roleTerm>
+        </role>
+        <description>United States Congress Member</description>
+    </name>
+    <identifier type="preferred citation">140 Cong. Rec. H</identifier>
+    <extension>
+        <searchTitle>WHITEWATER; Congressional Record Vol. 140, No. 36</searchTitle>
+        <granuleClass>HOUSE</granuleClass>
+        <accessId>CREC-1994-03-25-pt1-PgH10</accessId>
+        <subGranuleClass>FRONTMATTER</subGranuleClass>
+        <pagePrefix>H</pagePrefix>
+        <bookNumber>1</bookNumber>
+        <chamber>HOUSE</chamber>
+        <granuleDate>1994-03-25</granuleDate>
+        <time from="10:00:00" to="10:00:00"/>
+        <congMember authorityId="1412" bioGuideId="N000102" chamber="S" congress="103" party="R" role="SPEAKING" state="OK">
+                                    
+            <name type="parsed">Mr. NICKLES</name>
+                                    
+            <name type="authority-fnf">Don Nickles</name>
+                                    
+            <name type="authority-lnf">Nickles, Don</name>
+                                    
+            <name type="authority-other">Donald Lee Nickles</name>
+                                
+        </congMember>
+        <congMember authorityId="1375" bioGuideId="K000017" chamber="S" congress="103" party="R" role="SPEAKING" state="KS">
+                                    
+            <name type="parsed">Mrs. KASSEBAUM</name>
+                                    
+            <name type="authority-fnf">Nancy Landon Kassebaum</name>
+                                    
+            <name type="authority-lnf">Kassebaum, Nancy Landon</name>
+                                    
+            <name type="authority-other">Nancy Kassebaum</name>
+                                
+        </congMember>
+    </extension>
+    <relatedItem type="host" ID="P0b002ee18042f691">
+        <titleInfo>
+            <title>Congressional Record</title>
+            <partNumber>Vol. 140, no. 36</partNumber>
+        </titleInfo>
+        <location>
+            <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CREC-1994-03-25</url>
+        </location>
+        <part type="issue">
+            <extent unit="pages">
+                <start>H</start>
+                <end>H</end>
+            </extent>
+            <extent unit="pages">
+                <start>D</start>
+                <end>D</end>
+            </extent>
+        </part>
+        <originInfo>
+            <publisher>U.S. Government Printing Office</publisher>
+            <dateIssued encoding="w3cdtf">1994-03-25</dateIssued>
+            <issuance>continuing</issuance>
+            <frequency authority="marcfrequency">daily</frequency>
+        </originInfo>
+        <physicalDescription>
+            <note type="source content type">deposited</note>
+            <digitalOrigin>born digital</digitalOrigin>
+            <extent>4 digital object pages</extent>
+        </physicalDescription>
+        <classification authority="sudocs">X 1.1/A:</classification>
+        <classification authority="sudocs">X/A.</classification>
+        <identifier type="uri">https://www.govinfo.gov/app/details/CREC-1994-03-25</identifier>
+        <identifier type="local">P0b002ee18042f691</identifier>
+        <identifier type="stock number">752-002-00000-2</identifier>
+        <identifier type="ILS system id">000568013</identifier>
+        <identifier type="former package identifier">cr25mr94</identifier>
+        <recordInfo>
+            <recordContentSource authority="marcorg">DGPO</recordContentSource>
+            <recordCreationDate encoding="w3cdtf">2010-08-25</recordCreationDate>
+            <recordChangeDate encoding="w3cdtf">2014-07-10</recordChangeDate>
+            <recordIdentifier source="DGPO">CREC-1994-03-25</recordIdentifier>
+            <recordOrigin>machine generated</recordOrigin>
+            <languageOfCataloging>
+                <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+            </languageOfCataloging>
+        </recordInfo>
+        <accessCondition type="GPO scope determination">fdlp</accessCondition>
+        <extension>
+            <docClass>CREC</docClass>
+            <accessId>CREC-1994-03-25</accessId>
+            <volume>140</volume>
+            <issue>36</issue>
+            <congress>103</congress>
+            <session>2</session>
+            <bookCount>1</bookCount>
+        </extension>
+    </relatedItem>
+</mods>

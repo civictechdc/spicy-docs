@@ -177,14 +177,20 @@ granules of the replay above, every one is complete and none lists a line.
 - **Granule ids must be this issue's.** The id becomes the file name upstream
   reads the accessId from, up to the first dot, so an id with a dot, a path
   separator or another date's prefix refuses.
-- **The body's header must start on the id's page.** A granule id names its
-  first page (`-PgH5835-8` starts on H5835) or, for front matter, its section
-  (`-PgH-FrontMatter`). Upstream never compares it with the header's `[Page]`
-  line, so a body retained under the wrong id of the same issue would read as
-  that granule; the adapter refuses when the header's first page, or for front
-  matter its section, differs, and refuses an id that names neither. Every
-  granule accessId in the review's retained package MODS names one, and all 535
-  real granules' headers agree with their ids.
+- **The body's header must start on the id's page.** Upstream never compares
+  them, so a body retained under the wrong id would read as that granule.
+  - *Page.* A granule id names its first page (`-PgH5835-8` starts on H5835)
+    or only its section: front matter (`-PgH-FrontMatter`) and, in 1994, a
+    section's first granule (`-PgH`, `-PgD`). The adapter refuses when the
+    header's first page differs, compares the section alone where the id names
+    no page or the header states no page number, and refuses an id that names
+    neither. GovInfo states no page number in 1994 (`[Page H]` in the header,
+    `<start>H</start>` in the MODS), and there an id's number (`-PgH10`) orders
+    the section's granules. Every granule accessId in the 2026-09-28 reviews'
+    retained package MODS, 1994 to 2026, has one of these shapes, and all 129
+    granules of CREC-1994-03-25 read complete held to their section
+    (`rereview-fixes/replay/` under
+    `~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/`).
 
 Parses may run concurrently: upstream copies its line-kind table per document,
 so a parse writes its speaker pattern into its own copy and the class's table
@@ -198,9 +204,9 @@ several threads and gets what it gets one at a time.
   the Speaker pro tempore or a clerk has none, and a name the MODS does not list
   has none. Nothing here resolves a person.
 - **Segmentation accuracy across the corpus.** The fixtures pin a few
-  granules, and the replay reads 535 from 1996 to 2026 complete with every line
-  accounted for. That shows every line landed in some item, not that each
-  item's kind is right. At the pin, the speaker pattern matched 768 of the 772
+  granules, and the replays read 535 from 1996 to 2026 and all 129 of
+  CREC-1994-03-25 complete with every line accounted for. That shows every
+  line landed in some item, not that each item's kind is right. At the pin, the speaker pattern matched 768 of the 772
   hand-labelled speech starts in PR #90's 250 labelled windows (99.5%,
   precision 99.6%; `measurements.txt` in `~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/pin-3715651a/`); upstream's rules are line
   patterns, and other kinds and eras are not measured here.

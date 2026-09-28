@@ -55,6 +55,25 @@ It pins Mr. THUNE with the MODS-stated bioguide `T000250`, the Acting
 President pro tempore with none, a closing rule, and `package_id`
 `CREC-2025-03-11-i46`, the id its host `relatedItem` states.
 
+**A 1994 granule, whole.** In 1994 GovInfo states no page number: the body's
+header reads `[Page H]`, the MODS `<start>H</start>`, and the number in an id
+such as `-PgH10` orders the section's granules. Both files were retrieved
+2026-09-28 by `retrieve.py` through `GovInfoBodyAcquirer.acquire_granule`
+(keyed summary and MODS, the key in the `X-Api-Key` header only; keyless body),
+in
+`~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/rereview-fixes/fixture-1994/`
+beside its `receipt.json`, and are committed unedited:
+
+| Fixture | Route | Bytes | SHA-256 |
+| --- | --- | --- | --- |
+| `CREC-1994-03-25-pt1-PgH10.htm` | keyless `content/pkg/CREC-1994-03-25/html/CREC-1994-03-25-pt1-PgH10.htm` | 36,431 | `5f423341…5d3` |
+| `CREC-1994-03-25-pt1-PgH10.granule-mods-api.xml` | keyed `packages/CREC-1994-03-25/granules/CREC-1994-03-25-pt1-PgH10/mods` | 7,688 | `3f5049b1…a46` |
+
+It pins that a header with no page number is held to its section only, Mr.
+NICKLES and Mrs. KASSEBAUM with their MODS-stated bioguide ids, and a presiding
+officer's turn with none. Its volume 140, No. 36 is also what tells it from a
+body of another issue filed under a 2026 id.
+
 **The package MODS are excerpts, not captures.** The originals are 3,645,061 bytes
 (`CREC-2026-09-16`, SHA-256 `1aea2f0c…c1b`) and 993,858 bytes
 (`CREC-2026-09-17`, `257ff371…ecb`), too large to commit. Each excerpt keeps:

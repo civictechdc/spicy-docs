@@ -58,7 +58,9 @@ SENATE = "CREC-2026-09-17-pt1-PgS4765-6"
 # A granule of CREC-2025-03-11-i46: GovInfo spells its id without the issue's -i46.
 SUFFIXED = "CREC-2025-03-11-pt1-PgS1677-4"
 SUFFIXED_PACKAGE = "CREC-2025-03-11-i46"
-GRANULES = (KIGGANS, PLEDGE, SENATE, SUFFIXED)
+# A 1994 granule: its header states [Page H], no page number, and its id's 10 orders the section's granules.
+ERA_1994 = "CREC-1994-03-25-pt1-PgH10"
+GRANULES = (KIGGANS, PLEDGE, SENATE, SUFFIXED, ERA_1994)
 # Kiggans's own MODS: the keyless metadata route, and the keyed route acquire_granule retains.
 GRANULE_MODS = ("CREC-2026-09-16-pt1-PgH5835-8.granule-mods.xml", "CREC-2026-09-16-pt1-PgH5835-8.granule-mods-api.xml")
 
@@ -68,10 +70,15 @@ def _body(granule: str) -> bytes:
 
 
 def _mods(granule: str) -> bytes:
-    """The suffixed granule's own MODS, else its issue's MODS excerpt, named by the id's first 15 characters."""
-    if granule == SUFFIXED:
-        return (FIXTURES / f"{SUFFIXED}.granule-mods-api.xml").read_bytes()
+    """The suffixed or 1994 granule's own MODS, else its issue's MODS excerpt, named by the id's first 15 characters."""
+    if granule in (SUFFIXED, ERA_1994):
+        return (FIXTURES / f"{granule}.granule-mods-api.xml").read_bytes()
     return (FIXTURES / f"{granule[:15]}.mods.excerpt.xml").read_bytes()
+
+
+def _own_mods_renamed(granule: str, renamed: str) -> bytes:
+    """``granule``'s own keyed MODS with every mention of its id replaced by ``renamed``."""
+    return (FIXTURES / f"{granule}.granule-mods-api.xml").read_bytes().replace(granule.encode(), renamed.encode())
 
 
 def _read(granule: str, body: bytes | None = None) -> RecordSpeechDocument:
@@ -198,6 +205,23 @@ def test_a_suffixed_issues_package_mods_admits_its_date_and_leaves_membership_to
         issue.speeches(_body(SUFFIXED), other_day, max_html_bytes=BOUND)
     with pytest.raises(RecordSpeechesError, match=f"granule {SUFFIXED} is not in the {SUFFIXED_PACKAGE} MODS"):
         issue.speeches(_body(SUFFIXED), SUFFIXED, max_html_bytes=BOUND)
+
+
+@needs_parser
+def test_a_1994_granule_whose_header_states_no_page_reads_under_its_section() -> None:
+    """GovInfo states no page number in 1994: the header's ``H`` is compared with the id's section only."""
+    document = _read(ERA_1994)
+    assert (document.package_id, document.parse_status, document.unaccounted_lines) == (
+        "CREC-1994-03-25",
+        "complete",
+        (),
+    )
+    assert (document.vol, document.num, document.chamber, document.pages) == ("140", "36", "House", "H")
+    assert [(item.speaker, item.speaker_bioguide) for item in document.items if item.kind == "speech"] == [
+        ("Mr. NICKLES", "N000102"),
+        ("The PRESIDING OFFICER", None),
+        ("Mrs. KASSEBAUM", "K000017"),
+    ]
 
 
 @needs_parser
@@ -461,18 +485,34 @@ def test_a_body_whose_header_names_another_page_refuses() -> None:
 
 
 @needs_parser
-@pytest.mark.parametrize(("section", "refused"), [("H", False), ("S", True)])
-def test_a_front_matter_id_is_held_to_its_section(section: str, refused: bool) -> None:
-    """``-PgH-FrontMatter`` names no page, so only the header's section is compared."""
-    front = f"CREC-2026-09-16-pt1-Pg{section}-FrontMatter"
-    issue = read_record_issue(
-        (FIXTURES / GRANULE_MODS[0]).read_bytes().replace(KIGGANS.encode(), front.encode()), max_mods_bytes=BOUND
-    )
+def test_a_header_whose_pages_name_no_section_refuses() -> None:
+    """Upstream reads ``[Page 5835]`` as pages '5835'; with no section there is nothing to hold the id to."""
+    body = _body(KIGGANS).replace(b"[Page H5835]", b"[Page 5835]", 1)
+    with pytest.raises(RecordSpeechesError, match=f"granule {KIGGANS} names page H5835, but .* pages '5835'"):
+        _read(KIGGANS, body)
+
+
+@needs_parser
+@pytest.mark.parametrize(
+    ("granule", "renamed", "refused"),
+    [
+        (KIGGANS, "CREC-2026-09-16-pt1-PgH-FrontMatter", None),
+        (KIGGANS, "CREC-2026-09-16-pt1-PgS-FrontMatter", "names section S, but .* pages 'H5835'"),
+        (ERA_1994, "CREC-1994-03-25-pt1-PgH", None),
+        (ERA_1994, "CREC-1994-03-25-pt1-PgS10", "names page S10, but .* pages 'H'"),
+    ],
+    ids=["front-matter", "front-matter-other-section", "1994-section-id", "1994-other-section"],
+)
+def test_an_id_or_header_without_a_page_number_is_held_to_its_section(
+    granule: str, renamed: str, refused: str | None
+) -> None:
+    """``-PgH-FrontMatter`` and 1994's ``-PgH`` name no page, and 1994's ``[Page H]`` states none: sections only."""
+    issue = read_record_issue(_own_mods_renamed(granule, renamed), max_mods_bytes=BOUND)
     if refused:
-        with pytest.raises(RecordSpeechesError, match=f"granule {front} names section S, but .* pages 'H5835'"):
-            issue.speeches(_body(KIGGANS), front, max_html_bytes=BOUND)
+        with pytest.raises(RecordSpeechesError, match=f"granule {renamed} {refused}"):
+            issue.speeches(_body(granule), renamed, max_html_bytes=BOUND)
     else:
-        assert issue.speeches(_body(KIGGANS), front, max_html_bytes=BOUND).pages == "H5835"
+        assert issue.speeches(_body(granule), renamed, max_html_bytes=BOUND).pages == _read(granule).pages
 
 
 # --- refusals ------------------------------------------------------------------

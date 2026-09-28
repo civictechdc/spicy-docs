@@ -51,13 +51,16 @@ UNLOCATED = "unlocated"
 
 _MODS_LABEL = "CREC MODS"
 _HTML_LABEL = "CREC granule HTML"
-# A granule id names the page it starts on (``-PgH5835-8`` starts on H5835) or,
-# for a chamber's front matter, only its section (``-PgH-FrontMatter-3``). Every
-# granule accessId in the package MODS the 2026-09-28 review retained, 1996 to
-# 2026 and suffixed issues among them, has one of these two shapes.
-_GRANULE_PAGE = re.compile(r"-Pg(?P<section>[A-Z]+)(?:(?P<number>[0-9]+)|-FrontMatter)(?:-[0-9]+)?$")
-# Upstream's header ``pages``: one page (``H5835``) or a range (``S4765-S4774``).
-_HEADER_PAGE = re.compile(r"(?P<section>[A-Z]+)(?P<number>[0-9]+)(?:-[A-Z]*[0-9]+)?")
+# A granule id names the page it starts on (``-PgH5835-8`` starts on H5835) or
+# only its section: a chamber's front matter (``-PgH-FrontMatter-3``), and in
+# 1994 a section's first granule (``-PgH``, ``-PgD``). Every granule accessId in
+# the package MODS the 2026-09-28 reviews retained, 1994 to 2026 and suffixed
+# issues among them, has one of these shapes.
+_GRANULE_PAGE = re.compile(r"-Pg(?P<section>[A-Z]+)(?:(?P<number>[0-9]+)|-FrontMatter)?(?:-[0-9]+)?$")
+# Upstream's header ``pages``: one page (``H5835``), a range (``S4765-S4774``),
+# or only the section (``H``), as throughout the 1994 issues retained: GovInfo
+# states no page number there, and an id's number orders its section's granules.
+_HEADER_PAGE = re.compile(r"(?P<section>[A-Z]+)(?P<number>[0-9]+)?(?:-[A-Z]*[0-9]+)?")
 # A line upstream leaves out of an item's text, read whole: a whitespace-only
 # line, a ``{time}`` stamp or a ``[[Page]]`` marker. Upstream's own skip
 # patterns match only a line's start, so a skipped line carrying more than the
@@ -498,7 +501,8 @@ def _check_page(granule: str, page: re.Match[str], header: object) -> None:
     """Refuse a body whose header starts on another page than the granule id names.
 
     Upstream never compares the two, so a body retained under the wrong id
-    would read as that granule. A front-matter id names only its section.
+    would read as that granule. Where the id names only its section, or the
+    header states no page number (as in 1994), only the section is compared.
     Upstream refuses a header it cannot read, so a build that returns none is
     refused here too.
     """
@@ -509,7 +513,7 @@ def _check_page(granule: str, page: re.Match[str], header: object) -> None:
     if (
         stated is None
         or stated["section"] != page["section"]
-        or (page["number"] is not None and stated["number"] != page["number"])
+        or (None not in (page["number"], stated["number"]) and stated["number"] != page["number"])
     ):
         named = f"page {page['section']}{page['number']}" if page["number"] else f"section {page['section']}"
         raise RecordSpeechesError(f"granule {granule} names {named}, but its body's header states pages {pages!r}")
