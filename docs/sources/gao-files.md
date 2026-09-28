@@ -34,6 +34,13 @@ products rather than merely going unlinked. `acquire_report_pdf` is therefore
 the route that always applies; `acquire_report_file` reads the online report
 first and is only for products that have one.
 
+A retained product page states its report PDF too: the one link its full-reports
+group labels `Full Report`. `sources.gao.product_metadata` reads that link and
+publishes its path on this host, so `GaoTargetMetadata.pdf_url` is fetchable
+without a browser and, for a product with an online report, equals
+`GaoReportIndex.pdf_url`. It keeps the page's path rather than building one from
+the product ID; on all 47 retained pages the two are the same (0.50.1).
+
 ## A 403 from the file host is not absence
 
 `files.gao.gov` is an S3 origin behind CloudFront. It answers the same

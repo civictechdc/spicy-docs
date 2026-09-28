@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from html.parser import HTMLParser
 from io import BytesIO
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit
 from zipfile import ZipFile
 
 #: The label the product page gives its report PDF inside the full-reports group. All 47 product pages retained on
@@ -17,12 +17,18 @@ from zipfile import ZipFile
 FULL_REPORT_LABEL = "Full Report"
 
 
+#: The hosts a Full Report link may name. The page links its own host; the file host serves the same asset paths.
+_REPORT_LINK_HOSTS = frozenset({"www.gao.gov", "files.gao.gov"})
+
+
 @dataclass(frozen=True)
 class GaoTargetMetadata:
-    """``pdf_url`` is the page's own Full Report link, resolved against ``product_url``.
+    """``pdf_url`` is the path of the page's own Full Report link, on ``files.gao.gov``.
 
-    That link is on ``www.gao.gov``, which refuses plain clients; ``sources.gao.files`` fetches the same asset path
-    keyless from ``files.gao.gov`` (``docs/sources/gao-files.md``).
+    The page links ``www.gao.gov/assets/...``, which refuses plain clients; the file host serves the same asset path
+    keyless (``docs/sources/gao-files.md``). So the value is fetchable, and for a product with an online report it
+    equals ``files.GaoReportIndex.pdf_url``. It is the page's path, not one built from the product id: on all 47
+    retained pages the two agree, and a page linking another path keeps its own.
     """
 
     product_id: str
@@ -85,6 +91,7 @@ class _PageMetadata(HTMLParser):
 
 def product_page_metadata(raw: bytes, product_id: str) -> GaoTargetMetadata:
     """Replay the provider-qualified product page, retaining its exact title and explicit date only."""
+    from spicy_docs.sources.gao.files import REPORT_FILE_ROOT
     from spicy_docs.sources.gao.native import parse_gao_product_page_response
 
     if len(raw) > 10 * 1024 * 1024:
@@ -109,4 +116,7 @@ def product_page_metadata(raw: bytes, product_id: str) -> GaoTargetMetadata:
     if len(reports) != 1:
         raise ValueError(f"GAO product page must link exactly one {FULL_REPORT_LABEL} PDF, not {len(reports)}")
     product_url = parsed["results"][0]["canonicalUrl"]
-    return GaoTargetMetadata(product_id, title, product_url, urljoin(product_url, reports.pop()), day)
+    link = urlsplit(urljoin(product_url, reports.pop()))
+    if link.hostname not in _REPORT_LINK_HOSTS or link.query or link.fragment or not link.path.startswith("/assets/"):
+        raise ValueError("GAO Full Report link is not an asset path on gao.gov")
+    return GaoTargetMetadata(product_id, title, product_url, REPORT_FILE_ROOT + link.path, day)

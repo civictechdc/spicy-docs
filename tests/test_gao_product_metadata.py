@@ -5,6 +5,7 @@ from zipfile import ZipFile
 
 import pytest
 
+from spicy_docs.sources.gao.files import gao_report_pdf_locator
 from spicy_docs.sources.gao.native import iter_gao_product_pages
 from spicy_docs.sources.gao.product_metadata import product_page_metadata
 from spicy_docs.sources.zyte import ZyteHttpResponse
@@ -20,8 +21,9 @@ def test_retained_product_page_heading_and_published_date():
         == "High-Risk Series: Progress on Many High-Risk Areas, While Substantial Efforts Needed on Others"
     )
     assert metadata.published_date == "2017-02-15"
-    # The page's own Full Report link, not a locator derived from the product id.
-    assert metadata.pdf_url == "https://www.gao.gov/assets/gao-17-317.pdf"
+    # The page's own Full Report link path, on the file host that serves it keyless.
+    assert metadata.pdf_url == "https://files.gao.gov/assets/gao-17-317.pdf"
+    assert metadata.pdf_url == gao_report_pdf_locator(PRODUCT)
     with pytest.raises(ValueError, match="different product"):
         product_page_metadata(FIXTURE.read_bytes(), "gao-17-999")
 
@@ -56,10 +58,28 @@ def test_missing_heading_and_invalid_evidence_refuse():
         product_page_metadata(b"<h1>Unqualified HTML</h1>", PRODUCT)
 
 
-def test_pdf_url_is_the_link_the_page_labels_full_report():
-    """Synthetic: the Full Report link moved to another asset path is read as the page states it."""
-    raw = changed_page(b'<a href="/assets/gao-17-317.pdf">', b'<a href="/assets/690/683460.pdf">')
-    assert product_page_metadata(raw, PRODUCT).pdf_url == "https://www.gao.gov/assets/690/683460.pdf"
+@pytest.mark.parametrize(
+    "href",
+    [
+        "/assets/690/683460.pdf",
+        "https://www.gao.gov/assets/690/683460.pdf",
+        "https://files.gao.gov/assets/690/683460.pdf",
+    ],
+)
+def test_pdf_url_is_the_path_the_page_labels_full_report(href):
+    """Synthetic: a Full Report link to another asset path keeps the page's path, not one built from the id."""
+    raw = changed_page(b'<a href="/assets/gao-17-317.pdf">', f'<a href="{href}">'.encode())
+    assert product_page_metadata(raw, PRODUCT).pdf_url == "https://files.gao.gov/assets/690/683460.pdf"
+
+
+@pytest.mark.parametrize(
+    "href",
+    ["https://example.com/assets/gao-17-317.pdf", "/products/gao-17-317", "/assets/gao-17-317.pdf?download=1"],
+)
+def test_a_full_report_link_off_the_gao_asset_paths_refuses(href):
+    raw = changed_page(b'<a href="/assets/gao-17-317.pdf">', f'<a href="{href}">'.encode())
+    with pytest.raises(ValueError, match="not an asset path"):
+        product_page_metadata(raw, PRODUCT)
 
 
 @pytest.mark.parametrize(
