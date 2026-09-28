@@ -2,9 +2,17 @@
 
 import hashlib
 import json
+import re
 from pathlib import Path
 
-from spicy_docs.interpretation.communication_rin import rin_from_report_nature, rin_occurrences_from_report_nature
+import pytest
+
+from spicy_docs.interpretation.communication_rin import (
+    REPORT_NATURE_RIN,
+    rin_from_report_nature,
+    rin_occurrences_from_report_nature,
+)
+from spicy_docs.interpretation.identifier_shapes import PUBLISHED_RIN
 from tests.test_record_communications import numbered
 
 
@@ -63,3 +71,41 @@ def test_native_multi_rin_shaper_roundtrip():
     assert json.loads(row["rin_occurrences_json"]) == values
     assert shape_house_communication(detail, None)["rin_occurrences_json"] is None
     assert shape_house_communication(detail, detail, rin_occurrences=[])["rin_occurrences_json"] == "[]"
+
+
+#: Report natures from the fork's ``house_communications`` (read 2026-09-27; receipt
+#: ``fork-execution-2026-09-21/spicy-docs-0501/rin-agreement/``), each cut to the RIN clause, then the scalar's RIN and
+#: the listed RINs. The en-dash row is a constructed control: no retained report nature spells one.
+AGREEMENT = [
+    ("(RIN: 2125-AF80; 2130-AD05; 2132-AB51)", "2125-AF80", ["2125-AF80", "2130-AD05", "2132-AB51"]),  # 119-EC-4554
+    ("(RIN: 3084-AB60) (RIN: 3084-AB72) (RIN: 3084-AB74)", "3084-AB60", ["3084-AB60", "3084-AB72", "3084-AB74"]),
+    ("AD 2025-11-01] (RIN: 2120-Aa64) received June 9, 2025.", None, ["2120-AA64"]),  # 119-EC-1209
+    ("[CMS-1849-F and CMS-0062-F] (RINs: 0938-AV79 and 0938-AV44) received", None, ["0938-AV79", "0938-AV44"]),
+    ("Major final rule - Regulation Identification Number 0910-AJ05 Medical Devices", None, ["0910-AJ05"]),
+    ("AD 2026-01-08] (IRN: 2120-AA64) received January 29, 2026.", None, ["2120-AA64"]),  # 119-EC-2773
+    ("[Docket No.: 241212-0326] (RIN: 0648-XE368) received", None, []),  # 119-EC-1226
+    ("A rule (RIN 2060\u2013AV12).", None, ["2060-AV12"]),
+    ("A damaged RIN (RIN: 1625-AAOO) and a placeholder (RIN 2060-XXXX).", None, []),
+]
+
+
+@pytest.mark.parametrize(("nature", "scalar", "listed"), AGREEMENT, ids=lambda value: str(value)[:24])
+def test_the_list_and_the_scalar_differ_only_in_label_dashes_and_case(nature, scalar, listed):
+    """The scalar is the first RIN a label immediately precedes; the list folds dashes and case and needs no label.
+
+    Where the scalar reads a RIN, an occurrence at the same span holds the same value; every listed RIN is a
+    published key, so a longer token or a damaged RIN is in neither.
+    """
+    finding = rin_from_report_nature(nature)
+    occurrences = rin_occurrences_from_report_nature(nature)
+    assert finding.rin == scalar
+    assert [occurrence.rin for occurrence in occurrences] == listed
+    for occurrence in occurrences:
+        assert re.fullmatch(PUBLISHED_RIN, occurrence.rin)
+        assert nature[occurrence.span_start : occurrence.span_end] == occurrence.matched_text
+    if scalar is not None:
+        match = REPORT_NATURE_RIN.search(nature)
+        assert any(
+            (occurrence.rin, occurrence.span_start, occurrence.span_end) == (scalar, match.start(1), match.end(1))
+            for occurrence in occurrences
+        )

@@ -72,6 +72,13 @@ REPORT_NATURES = [
     ("A rule (RIN:1004-AF39) with no space.", "1004-AF39", "RIN:1004-AF39"),
     ("An EPA notice (FRL No. 13314-01-OCSPP), which is not a RIN.", None, None),
     ("a lowercase label (rin: 1004-af39) is not the publisher's spelling.", None, None),
+    # 119-EC-1226's report nature: NOAA's five-character suffix is outside the published shape, and 0.50.0 read
+    # its first eight characters as the RIN 0648-XE36.
+    (
+        "Adjustment to 2025 Specifications [Docket No.: 241212-0326] (RIN: 0648-XE368) received June 11, 2025.",
+        None,
+        None,
+    ),
 ]
 
 
@@ -91,7 +98,7 @@ def test_a_missing_report_nature_is_unmatched_not_an_error() -> None:
 
 def test_the_rule_is_the_maps_own_pattern() -> None:
     """The measured label over the one published RIN shape; the map tool now reads this same compiled rule."""
-    assert REPORT_NATURE_RIN.pattern == r"RIN:?\s*(\d{4}-[A-Z]{2}\d{2})"
+    assert REPORT_NATURE_RIN.pattern == r"RIN:?\s*(\d{4}-[A-Z]{2}\d{2})(?![A-Za-z0-9_-])"
 
 
 def test_the_captured_communication_carries_the_bridge_on_one_row() -> None:
