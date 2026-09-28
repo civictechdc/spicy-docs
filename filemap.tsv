@@ -27,8 +27,10 @@ docs/source-native-outcomes.md	Understand a collection outcome	doc
 docs/source-ownership.md	Who owns what	doc
 docs/source-reference.md	Source fields and native references	doc
 docs/source-workflows.md	Choose a source workflow	doc
+docs/sources/administration-policy.md	Statements of Administration Policy	doc
 docs/sources/agency-report-blocks.md	Parse agency-report blocks	doc
 docs/sources/agency-reports.md	Read retained agency reports	doc
+docs/sources/bill-stage.md	Read a bill's legislative stage	doc
 docs/sources/billstatus-guide.md	Read BILLSTATUS guide code tables	doc
 docs/sources/cbo.md	CBO cost estimates	doc
 docs/sources/cfr-roster-index.md	Read CFR agency and subject metadata	doc
@@ -58,6 +60,7 @@ docs/sources/gao.md	GAO product pages	doc
 docs/sources/govinfo-bodies.md	GovInfo package bodies and acquisition	doc
 docs/sources/govinfo-metadata.md	Read GovInfo metadata	doc
 docs/sources/govinfo-premis.md	Read GovInfo preservation metadata	doc
+docs/sources/inspectors-general-archive.md	Read archived inspector-general report metadata	doc
 docs/sources/legislators.md	Community legislators crosswalk	doc
 docs/sources/listings.md	Walk publisher list pages	doc
 docs/sources/press-releases.md	Appropriations committee press releases	doc
@@ -113,7 +116,7 @@ src/spicy_docs/interpretation/__init__.py	Shared interpretation of publisher fac
 src/spicy_docs/interpretation/bill_actions.py	What a committee print says *happened to* a bill it names.	src
 src/spicy_docs/interpretation/bill_family.py	One pass over one bill: related tables, in an order where nothing reads another's output.	src
 src/spicy_docs/interpretation/bill_signals.py	Identify which catalog bill a loose document is, from the text alone.	src
-src/spicy_docs/interpretation/bill_stage.py	Legislative stage and signing date from a bill's actions.	src
+src/spicy_docs/interpretation/bill_stage.py	Legislative stage and signing date from a bill's retained actions.	src
 src/spicy_docs/interpretation/bill_summaries.py	Plain-language summaries: one bill version, and one section diff between two versions.	src
 src/spicy_docs/interpretation/cbo_estimates.py	Whether a committee report reprints the CBO cost-estimate letter, where it is, and why it is not.	src
 src/spicy_docs/interpretation/citation_grammar.py	One home for CFR and legal-authority citation grammars.	src
@@ -158,6 +161,7 @@ src/spicy_docs/reading/senate_payment_review.py	Pinned, positional review eviden
 src/spicy_docs/reading/xml.py	Bounded publisher XML parsing with inert external DTDs when explicitly allowed.	src
 src/spicy_docs/reading/xml_observations.py	Bounded XML element positions shared by source observation readers.	src
 src/spicy_docs/reading/xml_tree.py	Bounded source XML trees with ordered decoded text and namespace context.	src
+src/spicy_docs/reading/yaml_input.py	Read bounded, string-keyed source YAML with literal dates and unambiguous fields.	src
 src/spicy_docs/reading/zip_archive.py	One bounded zip reader for the archive routes: a proved shape, bounded entries, checked sizes.	src
 src/spicy_docs/reconstruction/__init__.py	Reconstruct a publisher's structured vocabulary from a rendition that has none.	src
 src/spicy_docs/reconstruction/evidence.py	The evidence-linked document model: what was extracted, where, and how it looked.	src
@@ -234,8 +238,10 @@ src/spicy_docs/source_native/profiles.py	Public profiles for supported source-na
 src/spicy_docs/source_native/regulations_gov.py	Supported Regulations.gov imports; source-owned implementations are in ``spicy_docs.sources.regulations_gov``.…	src
 src/spicy_docs/source_native/store.py	Current source-native blob-store API; storage owns the implementation.	src
 src/spicy_docs/sources/__init__.py	Acquisition readers included in the spicy-docs source-native layer.	src
-src/spicy_docs/sources/agency_reports/__init__.py	Agency accountability report readers: FOIA annual reports and oversight.gov publishes.	src
+src/spicy_docs/sources/administration_policy.py	Read commit-pinned community administration-policy metadata and its archived PDFs.	src
+src/spicy_docs/sources/agency_reports/__init__.py	Agency accountability report readers: FOIA annual reports, Oversight.gov pages and archived IG metadata.	src
 src/spicy_docs/sources/agency_reports/foia.py	Read retained native NIEM FOIA annual reports; no fetching or statistical interpretation.	src
+src/spicy_docs/sources/agency_reports/inspectors_general.py	Read retained unitedstates/inspectors-general report metadata without fetching files.	src
 src/spicy_docs/sources/agency_reports/oversight.py	Read retained Oversight.gov report fields; originals and body text stay separate.	src
 src/spicy_docs/sources/agency_reports/report_blocks.py	Split committee-report text into header-led blocks; a pure, dependency-free port of BillTrax's report-parser.ts.	src
 src/spicy_docs/sources/base.py	Base interface for acquisition readers.	src
@@ -445,6 +451,7 @@ tests/source_native_release_fixtures.py	Hand-built source-native release fixture
 tests/test_acquisition_policy_history.py	Only the selected profile's current acquisition policy version is admissible.	test
 tests/test_activity_events.py	What changed between two runs, built from the contracts' own shaped rows.	test
 tests/test_activity_report_congress.py	An activity report's bills are keyed in the Congress the report says it covers, not the one it was filed in.	test
+tests/test_administration_policy.py	Policy records retain unknowns and source associations through offline/live boundaries.	test
 tests/test_agency_reports.py	Native FOIA and Oversight report boundaries on retained inputs.	test
 tests/test_audit_bill_identify_tool.py	The bill-identify acceptance harness: CSV in, per-type extraction tally out.	test
 tests/test_bill_acquisition.py	Bounded status-to-selected-text acquisition with retained responses.	test
@@ -568,8 +575,9 @@ tests/test_hearing_bill_links.py	The two hearing-to-bill link rules, over the re
 tests/test_hearing_dates_repair.py	Native date conservation and bounded historical package grammar.	test
 tests/test_identifier_shapes.py	Catalog identifier shapes, each rule pinned by the case that bought it.	test
 tests/test_image_header.py	Image-header parsing from the leading bytes: format and dimensions.	test
+tests/test_inspectors_general.py	Retained community IG metadata keeps source fields separate from archive paths.	test
 tests/test_interpretation_bill_signals.py	The thirty-six bill-identify cases from BillTrax, ported to the pure scorer.	test
-tests/test_interpretation_bill_stage.py	Bill-stage inference: the ported stage cases, the ladder, and the two corrections the port makes.	test
+tests/test_interpretation_bill_stage.py	Legislative events, independent source cases, and display-progress boundaries.	test
 tests/test_interpretation_gemini_call.py	The Gemini adapter: the request it builds, the answer it parses, and what it refuses.	test
 tests/test_interpretation_matching.py	Vote, release, member and interest-area matching: the corrected behaviours, measured.	test
 tests/test_interpretation_model_backed.py	Section classification and bill summaries: sealed prompts, injected model, kept provenance.	test
@@ -639,6 +647,7 @@ tests/test_table_json.py	The shared JSON spelling refuses values JSON cannot rep
 tests/test_unified_agenda.py	Unified Agenda editions prove themselves from every record, not from their file name.	test
 tests/test_unified_agenda_projection.py	The one Unified Agenda field-path projection: RefSpec's rules, on publisher excerpts.	test
 tests/test_unified_agenda_records.py	Literal Unified Agenda fields remain separate from receiver interpretation.	test
+tests/test_unitedstates_citation_cases.py	Selected CC0 unitedstates/citation cases, mapped to our occurrence API.	test
 tests/test_uscode.py	OLRC U.S. Code requests and response checks prove native identity and keep publisher spellings.	test
 tests/test_uscode_acquisition.py	OLRC U.S. Code requests preserve exact responses, bounds, and refusal evidence.	test
 tests/test_uscode_annual.py	scan_uscode_annual_sections preserves exact spans and bracketed source stubs.	test
@@ -654,6 +663,7 @@ tests/test_uslm_capture_example.py	The runnable USLM capture example retains exa
 tests/test_vote_file_statements.py	A roll call's link to a bill from its own file: the Clerk's legis-num, the Senate's document or amended document.	test
 tests/test_walled_fetch.py	The walled fetch ladder: rung order, wall escalation, absence short-circuit, and scrubbed exhaustion.	test
 tests/test_xml_observations.py	Current-element capture matches the ancestry snapshot without copying it.	test
+tests/test_yaml_input.py	YAML evidence parsing refuses silent data loss and preserves literal dates.	test
 tests/test_zip_archive.py	Expansion refusals happen before CRC decompression, even for ignored entries.	test
 tests/test_zyte_transport.py	The shared Zyte adapter bounds bytes, captures proxy provenance, and never surfaces its credential.	test
 tools/README.md	Corpus diagnostics	doc
