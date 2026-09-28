@@ -58,7 +58,12 @@ from urllib.parse import urlsplit
 
 from spicy_docs.reading.pdf_bytes import check_pdf_bytes
 from spicy_docs.reading.xml import scan_xml
-from spicy_docs.schemas.cost_estimate_tables import FOUND_BY_BILL_NUMBER, FOUND_BY_TITLE, FOUND_BY_TITLE_LAW
+from spicy_docs.schemas.cost_estimate_tables import (
+    FOUND_BY_BILL_NUMBER,
+    FOUND_BY_BILL_NUMBER_TITLE,
+    FOUND_BY_TITLE,
+    FOUND_BY_TITLE_LAW,
+)
 from spicy_docs.schemas.law_tables import law_id
 from spicy_docs.sources.congress.bill_status import BILL_TYPES, BillIdentity
 from spicy_docs.transport.captured import CapturedBodyResponse
@@ -265,10 +270,11 @@ class _FeedScan:
 class CboFeedBillError(CboSourceError):
     """A feed item names a bill no rule maps: ``field`` is ``bill_number``, ``title`` or ``law_bills``, ``shape`` how.
 
-    A ``Bill_Number``'s shape is its spelling with every digit run as ``N``; a
-    title's is ``two-citations``, ``not-at-start`` or ``unknown-form``; the
-    host's law map's is ``not-a-bill-id`` or ``other-congress``.  None copies
-    more than that of the publisher's text.
+    A ``Bill_Number``'s shape is its spelling with every digit run as ``N``, or
+    ``title-disagrees`` for a bare number whose title leads with another
+    number; a title's is ``two-citations``, ``not-at-start`` or
+    ``unknown-form``; the host's law map's is ``not-a-bill-id`` or
+    ``other-congress``.  None copies more than that of the publisher's text.
     """
 
     def __init__(self, field: str, shape: str) -> None:
@@ -281,9 +287,10 @@ class CboFeedBillError(CboSourceError):
 #: -28) is those words, each ended by a period, a space or both, then the
 #: number: ``H.R. 8``, ``H. J. Res. 48``, ``H.J.Res. 124``, ``H.Con.Res 14``,
 #: ``H.R.681``, ``S.  1591``, ``H.r. 4679``.  One item never names several
-#: bills in any of them.  A bare number (``700``), an amendment (``S.A. 948``),
-#: trailing text (``H.R. 7529,``) and a list refuse: guessing a type or
-#: splitting a list is a rule no measured form needed.
+#: bills in any of them.  An amendment (``S.A. 948``), trailing text
+#: (``H.R. 7529,``) and a list refuse: guessing a type or splitting a list is a
+#: rule no measured form needed.  So does a bare number (``700``) here; a whole
+#: feed reads one through its title where they agree (:func:`bare_number_bill`).
 _BILL_TYPE_WORDS: dict[tuple[str, ...], str] = {
     ("h", "r"): "hr",
     ("s",): "s",
@@ -385,6 +392,32 @@ def title_citation(congress: int, title: str) -> BillIdentity | PublicLawCitatio
     return bills.pop()
 
 
+#: A ``Bill_Number`` that states a number and no type: the 117th's ``700`` and the 118th's ``106``, 2026-09-28.
+_BARE_NUMBER = re.compile(r"[1-9][0-9]*")
+
+
+def bare_number_bill(congress: int, bill_number: str, title: str) -> BillIdentity:
+    """The bill a bare-number ``Bill_Number`` names, its type read from the citation the title leads with.
+
+    Owner decision 2026-09-28: the 117th's ``700`` titled ``H.R. 700, an act to
+    designate ...`` is H.R. 700, and the 118th's ``106`` titled ``S. 106,
+    Commitment to Veteran Support and Outreach Act`` is S. 106.  Both
+    statements must agree: a title leading with another number refuses as
+    ``title-disagrees``, and one leading with no single bill (prose, a law, an
+    ambiguous citation) leaves the number without a type and refuses as the
+    bare number did, ``N``.
+    """
+    try:
+        cited = title_citation(congress, title)
+    except CboFeedBillError:
+        cited = None
+    if not isinstance(cited, BillIdentity):
+        raise CboFeedBillError("bill_number", "N")
+    if cited.number != int(bill_number):
+        raise CboFeedBillError("bill_number", "title-disagrees")
+    return cited
+
+
 #: A host's map from a public law's ``laws.law_id`` (``111-public-322``) to the ``bill_id`` that enacted it
 #: (``111-hr-3082``), read from its ``laws`` table; spicy-docs reads no table itself.
 LawBills = Mapping[str, str]
@@ -417,8 +450,9 @@ class CboFeedBill:
     """One bill a feed names, the publication ids of the items naming it in feed order, and how each named it.
 
     ``found_by`` is each item's way, in the same order: ``bill_number``,
-    ``title`` or ``title_law`` (``schemas.cost_estimate_tables.FOUND_BY``),
-    which the bill's row for that item publishes.
+    ``bill_number_title``, ``title`` or ``title_law``
+    (``schemas.cost_estimate_tables.FOUND_BY``), which the bill's row for that
+    item publishes.
     """
 
     identity: BillIdentity
@@ -450,7 +484,9 @@ def cbo_feed_bills(feed: CboCostEstimatesFeed, congress: int, *, law_bills: LawB
     """Map every item of one Congress's feed to its bills, in one pass; refusals are counted, never dropped.
 
     An item's ``Bill_Number`` is read when it states one and its title only
-    when it does not, so a title never overrides the publisher's own number.
+    when it does not, so a title never overrides the publisher's own number;
+    a bare number, which states no type, reads through the title's leading
+    citation of that same number (``bill_number_title``, :func:`bare_number_bill`).
     A blank item whose title leads with a public law names the bill
     ``law_bills``, the host's laws table, says enacted it (``title_law``: the
     110th's P.L. 110-50, the 112th's P.L. 112-8); without the map, or where it
@@ -462,7 +498,9 @@ def cbo_feed_bills(feed: CboCostEstimatesFeed, congress: int, *, law_bills: LawB
     for item in feed.items:
         way = FOUND_BY_BILL_NUMBER
         try:
-            if item.bill_number is not None:
+            if item.bill_number is not None and _BARE_NUMBER.fullmatch(item.bill_number):
+                bills, way = (bare_number_bill(congress, item.bill_number, item.title),), FOUND_BY_BILL_NUMBER_TITLE
+            elif item.bill_number is not None:
                 bills = feed_item_bills(congress, item.bill_number)
             else:
                 cited = title_citation(congress, item.title)

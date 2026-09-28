@@ -83,15 +83,23 @@ CBO_FEED = "cbo_feed"
 SOURCE_PRECEDENCE: tuple[str, ...] = (BILLSTATUS_BULK, "congress_api", CBO_FEED)
 #: How the source linked an estimate to ``bill_id``, published as ``found_by``.  Sealed and additions-only:
 #: ``billstatus`` on every ``billstatus_bulk`` row, and on a ``cbo_feed`` row the feed item's ``Bill_Number``, the
-#: citation a blank item's title leads with, or the law it leads with through the host's laws table.  The one spelling
-#: of each: ``sources.cbo`` imports these.
-FOUND_BY_BILLSTATUS, FOUND_BY_BILL_NUMBER, FOUND_BY_TITLE, FOUND_BY_TITLE_LAW = (
+#: citation a blank item's title leads with, the law it leads with through the host's laws table, or a bare-number
+#: ``Bill_Number`` whose type the title's leading citation of that number supplies (appended 2026-09-28).  The one
+#: spelling of each: ``sources.cbo`` imports these.
+FOUND_BY_BILLSTATUS, FOUND_BY_BILL_NUMBER, FOUND_BY_TITLE, FOUND_BY_TITLE_LAW, FOUND_BY_BILL_NUMBER_TITLE = (
     "billstatus",
     "bill_number",
     "title",
     "title_law",
+    "bill_number_title",
 )
-FOUND_BY: tuple[str, ...] = (FOUND_BY_BILLSTATUS, FOUND_BY_BILL_NUMBER, FOUND_BY_TITLE, FOUND_BY_TITLE_LAW)
+FOUND_BY: tuple[str, ...] = (
+    FOUND_BY_BILLSTATUS,
+    FOUND_BY_BILL_NUMBER,
+    FOUND_BY_TITLE,
+    FOUND_BY_TITLE_LAW,
+    FOUND_BY_BILL_NUMBER_TITLE,
+)
 #: The rule ``title_bill_id`` is read by, recorded on every row as ``publication_id_rule`` records its own: the
 #: citation an estimate's title leads with (``sources.cbo.title_citation``), a public law through the host's laws
 #: table.  Versioned because the grammar is ours and moves: a host tells rows read under an older one by this.
@@ -111,8 +119,9 @@ CBO_COST_ESTIMATES = table_contract(
         "bill_id": (
             "The bill the source attached this estimate to, as published, keyed the way congress_bills.bill_id is: "
             "the bill whose BILLSTATUS record lists it (`billstatus_bulk`), or the bill CBO's feed item names by "
-            "Bill_Number or, where that is empty, by the citation its title leads with or by the bill the host's "
-            "laws table says enacted the law it leads with (`cbo_feed`; found_by says which).  Where "
+            "Bill_Number, by a bare-number Bill_Number and the title's leading citation of that number, or, where "
+            "Bill_Number is empty, by the citation its title leads with or by the bill the host's laws table says "
+            "enacted the law it leads with (`cbo_feed`; found_by says which).  Where "
             "title_bill_id differs, this number is wrong and title_bill_id names the bill the estimate scores."
         ),
         "congress": "The numbered Congress the bill belongs to.",
@@ -148,7 +157,7 @@ CBO_COST_ESTIMATES = table_contract(
             "for the 112th-113th (none in 12,299 and 10,637 documents), so their rows are `cbo_feed`, and there a "
             "bill without a row is one no feed item names, never established as unscored.  Elsewhere a merge "
             "keeps `billstatus_bulk`, the bill's own record, where both routes state one bill and publication "
-            "(merge_cbo_cost_estimates), so a `cbo_feed` row there is an estimate no BILLSTATUS record lists: 31 "
+            "(merge_cbo_cost_estimates), so a `cbo_feed` row there is an estimate no BILLSTATUS record lists: 33 "
             "over the 108th-111th and 114th-119th (2026-09-28), among them the 111th's H.R. 1, H.R. 3200 and "
             "two of H.R. 3590, and the 110th's P.L. 110-50."
         ),
@@ -211,8 +220,10 @@ CBO_COST_ESTIMATES = table_contract(
         "found_by": (
             "How the source linked this estimate to bill_id: `billstatus` (the bill's own BILLSTATUS record lists "
             "it), or on a `cbo_feed` row `bill_number` (the item's Bill_Number), `title` (the citation a blank "
-            "item's title leads with) or `title_law` (the public law a blank item's title leads with, through the "
-            "host's laws table: the 110th's P.L. 110-50 and the 112th's P.L. 112-8).  Sealed and additions-only."
+            "item's title leads with), `title_law` (the public law a blank item's title leads with, through the "
+            "host's laws table: the 110th's P.L. 110-50 and the 112th's P.L. 112-8) or `bill_number_title` (a "
+            "bare-number Bill_Number, whose type the title's leading citation of the same number supplies: the "
+            "117th's 700 as H.R. 700, the 118th's 106 as S. 106).  Sealed and additions-only."
         ),
         "title_bill_id_rule": (
             "The rule that read title_bill_id, on every row, a NULL title_bill_id included (the rule ran and named "
@@ -412,6 +423,7 @@ __all__ = [
     "FOUND_BY",
     "FOUND_BY_BILLSTATUS",
     "FOUND_BY_BILL_NUMBER",
+    "FOUND_BY_BILL_NUMBER_TITLE",
     "FOUND_BY_TITLE",
     "FOUND_BY_TITLE_LAW",
     "PUBLICATION_ID_RULE",

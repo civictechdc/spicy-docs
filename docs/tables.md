@@ -938,7 +938,7 @@ is a new table rather than columns appended to `congress_bills`.
   112th-113th bill with no row was named by no feed item; it is not
   established as unscored. A host builds feed rows for every Congress and
   merges them: `merge_cbo_cost_estimates` keeps the BILLSTATUS row where both
-  state one bill and publication, so elsewhere the feed adds the 31 estimates
+  state one bill and publication, so elsewhere the feed adds the 33 estimates
   of the 108th-119th no BILLSTATUS record lists, and every BILLSTATUS row stays
   as it was. One publication can stand under two bills, and then both rows
   publish (22065 under the 111th's and the 112th's H.R. 3082).
@@ -953,9 +953,11 @@ is a new table rather than columns appended to `congress_bills`.
   Congress (115 H.R. 1422's BILLSTATUS lists the 113th's estimate 52538).
   `title_bill_id_rule` names the rule that read it, `cbo_title_citation/1`.
 - **`found_by` says how the row reached its bill:** `billstatus` (the bill's
-  own record), or on a feed row `bill_number`, `title` or `title_law`, the
-  last a blank item titled by a law whose bill the host's `laws` map names
-  (the 110th's P.L. 110-50, the 112th's P.L. 112-8).
+  own record), or on a feed row `bill_number`, `title`, `title_law` (a blank
+  item titled by a law whose bill the host's `laws` map names: the 110th's
+  P.L. 110-50, the 112th's P.L. 112-8) or `bill_number_title` (a bare-number
+  `Bill_Number` whose type the title's leading citation of the same number
+  supplies: the 117th's H.R. 700, the 118th's S. 106).
 - **`report_citation_count` is the text route's reachability, per row.** 883 of
   the 1,368 scored bills (64.5%) have a committee report at all; the Senate
   shortfall is structural, since 155 of 395 scored Senate bills were reported

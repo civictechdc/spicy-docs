@@ -48,15 +48,16 @@ decision, 2026-09-28).
 | Congress | 108 | 109 | 110 | 111 | 112 | 113 | 114 | 115 | 116 | 117 | 118 | 119 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | BILLSTATUS rows | 1,200 | 1,031 | 1,453 | 1,078 | 0 | 0 | 1,299 | 1,665 | 1,250 | 1,136 | 1,462 | 1,158 |
-| Feed rows | 1,199 | 1,031 | 1,464 | 1,086 | 914 | 1,101 | 1,299 | 1,663 | 1,251 | 1,138 | 1,463 | 1,161 |
-| Feed rows the merge adds | 0 | 0 | 11 | 9 | 914 | 1,101 | 2 | 1 | 1 | 2 | 1 | 4 |
+| Feed rows | 1,199 | 1,031 | 1,464 | 1,086 | 914 | 1,101 | 1,299 | 1,663 | 1,251 | 1,139 | 1,464 | 1,161 |
+| Feed rows the merge adds | 0 | 0 | 11 | 9 | 914 | 1,101 | 2 | 1 | 1 | 3 | 2 | 4 |
 
 Over the retained zips and feeds (2026-09-28, with a law map built from the
 zips' `<laws>`), every one of the 12,732 BILLSTATUS rows comes out of the merge
-unchanged, and the feed adds 2,046 rows: all of the 112th-113th's, and 31
+unchanged, and the feed adds 2,048 rows: all of the 112th-113th's, and 33
 elsewhere that no BILLSTATUS record lists, among them the 111th's H.R. 1, H.R.
-3200 and two estimates of H.R. 3590, and the 110th's P.L. 110-50 (a row of 110
-S. 966, below). On 8 bills both routes publish rows, and each row's
+3200 and two estimates of H.R. 3590, the 110th's P.L. 110-50 (a row of 110
+S. 966, below), and the 117th's H.R. 700 and the 118th's S. 106, read through
+their bare numbers (below). On 8 bills both routes publish rows, and each row's
 `estimate_index` is its place in its own route's list, so a BILLSTATUS row and
 a feed row of one bill can share one.
 
@@ -73,9 +74,16 @@ space or both, then the number, in the feed's own Congress. Every form in the
 108th-119th feeds is that shape: `H.R. 8`, `S. 2241`, `H. J. Res. 48`,
 `H.J.Res. 124`, `S.J.Res. 44`, `H.Con.Res. 103`, `H. Res. 745`, `H.R.681`,
 `S.  1591`, `H.r. 4679`. No item names more than one bill. Anything else
-refuses with `CboFeedBillError`, field `bill_number` and its shape: a bare
-number (117th `700`), an amendment (116th `S.A. 948`), trailing text (119th
-`H.R. 7529,`) or a list. Where `Bill_Number` is empty,
+refuses with `CboFeedBillError`, field `bill_number` and its shape: an
+amendment (116th `S.A. 948`), trailing text (119th `H.R. 7529,`) or a list. A
+bare number states no type, and a whole feed reads one through its title
+where the two agree (owner decision 2026-09-28): the 117th's `700`, titled
+`H.R. 700, an act to designate ...`, is H.R. 700, and the 118th's `106`,
+titled `S. 106, Commitment to Veteran Support and Outreach Act`, is S. 106,
+each `found_by` `bill_number_title` (`bare_number_bill`). A title leading with
+another number refuses (`title-disagrees`), and one leading with no single
+bill leaves the number without a type and refuses as `N`. Where `Bill_Number`
+is empty,
 `title_citation(congress, title)` reads the citation the title leads with, in
 the same grammar written capitalized (`H.R. 4402, Critical Minerals Policy Act
 of 2012`), or the public law it leads with (below). A title that leads with
@@ -83,8 +91,8 @@ prose names nothing (`Sequester Replacement Reconciliation Act`). Anything
 ambiguous refuses with field `title`: a second citation of another bill
 (`two-citations`), a citation after the start (`not-at-start`, the 119th's
 `... in Title IV of H.R. 1`) or an abbreviation and number that is no bill
-type (`unknown-form`). A title is never read where `Bill_Number` states a
-value. `cbo_feed_bills(feed, congress)` maps a whole feed, records how each
+type (`unknown-form`). A title never overrides a `Bill_Number` that states
+a type. `cbo_feed_bills(feed, congress)` maps a whole feed, records how each
 item named its bill, and counts the items that name none and every refusal.
 
 | Congress | Items | Bills | By `Bill_Number` | By title only | Items named by title | Unnamed | Refused |
@@ -92,12 +100,11 @@ item named its bill, and counts the items that name none and every refusal.
 | 112 | 944 | 813 | 769 | 44 | 61 | 30, and 1 titled by a public law | 0 |
 | 113 | 1,117 | 988 | 851 | 137 | 170 | 16 | 0 |
 
-Over the 108th-119th the feed refuses 11 items by name: seven titles citing a
+Over the 108th-119th the feed refuses 9 items by name: seven titles citing a
 bill after their start (the 109th's `... Reconciliation Recommendations in H.R.
-4241`), the 116th's `S.A. 948`, the bare numbers `700` (117th, titled `H.R.
-700, ...`) and `106` (118th, titled `S. 106, ...`) and the 119th's `H.R.
-7529,`. Only the last is an estimate BILLSTATUS lists (under 119 H.R. 7529), so
-the other ten have no row on either route.
+4241`), the 116th's `S.A. 948` and the 119th's `H.R. 7529,`. Only the last is
+an estimate BILLSTATUS lists (under 119 H.R. 7529), so the other eight have no
+row on either route.
 
 **The rows.** One row per bill and publication, through the same fold and
 shaper as the BILLSTATUS route: 914 for the 112th and 1,101 for the 113th, with
@@ -150,7 +157,7 @@ A blank-`Bill_Number` item titled by a law is found through the map too: the
 112 H.R. 1363, the bills that enacted them. Without the map, `cbo_feed_bills`
 counts such an item as `public_law`, and it has no row. Every row's `found_by`
 says how its bill was reached: `billstatus` on the BILLSTATUS route, and on a
-feed row `bill_number`, `title` or `title_law`.
+feed row `bill_number`, `bill_number_title`, `title` or `title_law`.
 
 Receipts, with the feeds' bytes and every script:
 `~/Work/corpora/fork-execution-2026-09-21/cbo-112-113/` (`feeds/`,

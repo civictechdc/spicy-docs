@@ -21,6 +21,7 @@ from spicy_docs.sources.cbo import (
     CboSourceError,
     CboUnavailableError,
     PublicLawCitation,
+    bare_number_bill,
     cbo_cost_estimates_feed_locator,
     cbo_estimate_document_locator,
     cbo_feed_bills,
@@ -636,3 +637,28 @@ def test_the_hosts_law_map_names_a_bill_of_the_laws_own_congress_or_refuses_by_n
         with pytest.raises(CboFeedBillError) as raised:
             law_bill({"111-public-322": stated}, law)
         assert (raised.value.field, raised.value.shape) == ("law_bills", shape)
+
+
+def test_a_bare_number_reads_only_through_a_title_leading_with_that_same_number():
+    """The 117th's item 58395 states Bill_Number 700 and a title leading with H.R. 700: the two agree, so it names
+    H.R. 700 (found_by bill_number_title). The same item with the title's number changed disagrees and refuses as
+    such; with a title leading with no single bill, the number has no type and refuses as a bare number did."""
+    body = (FIXTURES / "cbo-117congress-cost-estimates.excerpt.xml").read_bytes()
+    named = cbo_feed_bills(parse_cbo_cost_estimates_feed(body), 117)
+    assert [(b.identity, b.publication_ids, b.found_by) for b in named.bills] == [
+        (BillIdentity(117, "hr", 700), ("58395",), ("bill_number_title",))
+    ]
+    assert named.refused == ()
+    for title, shape in (
+        (b"<Title>H.R. 701, an act", "title-disagrees"),
+        (b"<Title>An act", "N"),  # no citation
+        (b"<Title>H.R. 700 and S. 700, acts", "N"),  # two bills: no single type
+        (b"<Title>Public Law 117-700, an act", "N"),  # a law is not a type for the number
+    ):
+        mutant = body.replace(b"<Title>H.R. 700, an act", title, 1)
+        assert mutant != body
+        refused = cbo_feed_bills(parse_cbo_cost_estimates_feed(mutant), 117)
+        assert (refused.bills, refused.refused) == ((), (("58395", "bill_number", shape),))
+    assert bare_number_bill(118, "106", "S. 106, Commitment to Veteran Support and Outreach Act") == BillIdentity(
+        118, "s", 106
+    )

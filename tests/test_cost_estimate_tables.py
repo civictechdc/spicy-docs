@@ -381,7 +381,7 @@ def test_the_contract_names_both_routes_and_what_a_112th_113th_absence_means() -
     and that a missing row there is not an unscored bill."""
     assert ESTIMATE_SOURCES == ("billstatus_bulk", "congress_api", "cbo_feed")
     assert (BILLSTATUS_BULK, CBO_FEED) == ("billstatus_bulk", "cbo_feed")
-    assert FOUND_BY == ("billstatus", "bill_number", "title", "title_law")
+    assert FOUND_BY == ("billstatus", "bill_number", "title", "title_law", "bill_number_title")
     assert "CBO's per-Congress feed, read for every Congress and merged" in CBO_COST_ESTIMATES.grain
     source = CBO_COST_ESTIMATES.descriptions["source"]
     assert "The feed is read for every Congress" in source and "an estimate no BILLSTATUS record lists" in source
@@ -468,6 +468,21 @@ def test_a_blank_item_titled_by_a_public_law_has_a_row_only_through_the_hosts_la
         r["publication_id"]: r["found_by"] for r in build_cbo_feed_cost_estimates(FEED_112, 112).cbo_cost_estimates
     }
     assert (by_way["43626"], by_way["43585"]) == ("bill_number", "title")
+
+
+def test_a_bare_number_is_a_row_where_the_title_leads_with_that_number() -> None:
+    """The 117th feed states Bill_Number 700 for "H.R. 700, an act to designate ..." and the 118th 106 for "S. 106,
+    Commitment to Veteran Support and Outreach Act"; neither BILLSTATUS lists the estimate. Each is a row of the bill
+    the title names with the same number, found_by bill_number_title (owner decision 2026-09-28)."""
+    for congress, key in ((117, ("117-hr-700", "58395")), (118, ("118-s-106", "58967"))):
+        feed = parse_cbo_cost_estimates_feed(
+            (FIXTURES.parent / "cbo" / f"cbo-{congress}congress-cost-estimates.excerpt.xml").read_bytes()
+        )
+        tables = build_cbo_feed_cost_estimates(feed, congress)
+        assert tables.refusals == ()
+        (row,) = (CBO_COST_ESTIMATES.checked(r) for r in tables.cbo_cost_estimates)
+        assert CBO_COST_ESTIMATES.key(row) == key
+        assert (row["found_by"], row["title_bill_id"], row["source"]) == ("bill_number_title", key[0], "cbo_feed")
 
 
 def test_found_by_is_billstatus_on_the_bills_own_record_and_a_feed_way_on_a_feed_row() -> None:

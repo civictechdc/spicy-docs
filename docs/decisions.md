@@ -3263,19 +3263,32 @@ Over the retained zips and feeds, with a law map built from the zips' `<laws>`
 | Congress | 108 | 109 | 110 | 111 | 112 | 113 | 114 | 115 | 116 | 117 | 118 | 119 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | BILLSTATUS rows | 1,200 | 1,031 | 1,453 | 1,078 | 0 | 0 | 1,299 | 1,665 | 1,250 | 1,136 | 1,462 | 1,158 |
-| Feed rows the merge adds | 0 | 0 | 11 | 9 | 914 | 1,101 | 2 | 1 | 1 | 2 | 1 | 4 |
+| Feed rows the merge adds | 0 | 0 | 11 | 9 | 914 | 1,101 | 2 | 1 | 1 | 3 | 2 | 4 |
 
 Every one of the 12,732 BILLSTATUS rows comes out of the merge unchanged, and
-the 31 feed rows added outside the 112th-113th include the 111th's H.R. 1, H.R.
-3200 and two estimates of H.R. 3590, and the 110th's P.L. 110-50, a row of 110
-S. 966 through the law map (`found_by` `title_law`). On 8 bills both routes
-publish rows; `estimate_index` is each row's place in its own route's list, so
-two rows of one bill can share one, and the column says so. Over the
-108th-119th the feed refuses 11 items by name: seven titles citing a bill after
-their start, an amendment (`S.A. 948`), two bare numbers (117th `700`, 118th
-`106`, each titled by the bill of that number) and a trailing comma (119th
-`H.R. 7529,`). Only the last is an estimate BILLSTATUS lists, so ten have no
-row on either route.
+the 33 feed rows added outside the 112th-113th include the 111th's H.R. 1, H.R.
+3200 and two estimates of H.R. 3590, the 110th's P.L. 110-50, a row of 110
+S. 966 through the law map (`found_by` `title_law`), and the two bare numbers
+below. On 8 bills both routes publish rows; `estimate_index` is each row's
+place in its own route's list, so two rows of one bill can share one, and the
+column says so. Over the 108th-119th the feed refuses 9 items by name: seven
+titles citing a bill after their start, an amendment (`S.A. 948`) and a
+trailing comma (119th `H.R. 7529,`). Only the last is an estimate BILLSTATUS
+lists, so eight have no row on either route.
+
+**A bare-number `Bill_Number` reads through the title's citation of that
+number** (owner decision 2026-09-28, after the second review). Two feed items
+state a number and no type, and neither estimate is in any BILLSTATUS record:
+the 117th's `700`, titled `H.R. 700, an act to designate ...` (58395), and the
+118th's `106`, titled `S. 106, Commitment to Veteran Support and Outreach Act`
+(58967). `sources.cbo.bare_number_bill` takes the type from the citation the
+title leads with, only where its number is the same: a title leading with
+another number refuses (`title-disagrees`), and one leading with no single bill
+(prose, a law, two bills) refuses as the bare number did (`N`). The rows are
+117 H.R. 700 and 118 S. 106, `found_by` `bill_number_title`, a value appended
+to the sealed vocabulary; the merge adds one row each to the 117th and 118th.
+`feed_item_bills`, the `Bill_Number` grammar alone, still refuses a bare
+number.
 
 **One publication can stand under two bills, and both rows publish.** The
 identity is `(bill_id, publication_id)`, never the publication alone: the 112th
@@ -3312,9 +3325,9 @@ its deadline.
 **A `Bill_Number` maps by a grammar every measured form fits, and nothing
 else.** Every form in the 108th-119th feeds is a type's abbreviation words,
 each ended by a period, a space or both, then the number. The 112th and 113th
-refuse no item. The rule refuses a bare number, an amendment, trailing text and
-a list rather than guess a type or split a list, because no item in any
-measured feed needed that.
+refuse no item. The rule refuses an amendment, trailing text and a list rather
+than guess a type or split a list, because no item in any measured feed needed
+that; a bare number reads only through its title (below).
 
 **Where `Bill_Number` is empty, the title's leading citation names the bill**
 (owner decision 2026-09-28). 92 and 186 items leave `Bill_Number` empty, and 61
@@ -3381,7 +3394,8 @@ with `bill_id` that bill. Without the map, or for a law it lacks, the item is
 counted as `public_law` and has no row. A map value that is not a `bill_id`
 refuses by name (`law_bills`, `not-a-bill-id`). `cbo_cost_estimates` appends
 `found_by`, so a reader sees how each link was made: `billstatus` on every
-BILLSTATUS row, and on a feed row `bill_number`, `title` or `title_law`. With
+BILLSTATUS row, and on a feed row `bill_number`, `title` or `title_law` (and
+`bill_number_title`, above). With
 the map, the 110th feed gives 1,464 rows (1 `title_law`) and the 112th 914
 (852 `bill_number`, 61 `title`, 1 `title_law`); the 113th's 1,101 have no law
 title. `CboFeedBill.found_by` is each item's way, in the order of its
@@ -3575,7 +3589,7 @@ Collected from the four entries above; this is the one list.
   `cbo_feed`), passing each bill's own BILLSTATUS report citations, and merges
   them with the BILLSTATUS rows through `merge_cbo_cost_estimates`, which keeps
   the BILLSTATUS row where both state one bill and publication. That adds all
-  of the 112th-113th's rows and 31 elsewhere and changes no BILLSTATUS row. A
+  of the 112th-113th's rows and 33 elsewhere and changes no BILLSTATUS row. A
   merge keys on `(bill_id, publication_id)`, never the publication alone: one
   publication can stand under two bills.
 - **Host supplies `law_bills`**, `laws.law_id` to `laws.bill_id` from its
@@ -3585,7 +3599,8 @@ Collected from the four entries above; this is the one list.
   that is no `bill_id`, or a bill of another Congress than the law's, refuses.
 - `cbo_cost_estimates` appends `title_bill_id`, `found_by` and
   `title_bill_id_rule`, in that order. `found_by` is a sealed, additions-only
-  vocabulary (`billstatus`, `bill_number`, `title`, `title_law`);
+  vocabulary (`billstatus`, `bill_number`, `title`, `title_law`,
+  `bill_number_title`);
   `title_bill_id_rule` is `cbo_title_citation/1` on every row. A host rebuilds
   or backfills its prior rows with them (`billstatus` on every
   `billstatus_bulk` row). `report_citation_count` and `report_citations_json`
@@ -3637,7 +3652,8 @@ Collected from the four entries above; this is the one list.
   `roll_call_votes`, `member_votes.state` and `member_key`).
 - New helpers: `reading.xml.parse_xml_with_spans`,
   `sources.cbo.title_citation` (a bill or a `PublicLawCitation`),
-  `feed_item_pub_date`, `CboFeedBillError`, `LawBills`, `law_bill`,
+  `bare_number_bill`, `feed_item_pub_date`, `CboFeedBillError`, `LawBills`,
+  `law_bill`,
   `schemas.tables.bytes_digest`, and `schemas.cost_estimate_tables`'
   `FOUND_BY_*` and `TITLE_BILL_ID_RULE`. `sources.cbo` imports
   `sources.congress.bill_status` for `BillIdentity` and
