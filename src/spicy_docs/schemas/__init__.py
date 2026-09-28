@@ -61,6 +61,7 @@ from spicy_docs.schemas.federal_register import FEDERAL_REGISTER
 from spicy_docs.schemas.hearing_bill_link_tables import HEARING_BILL_LINKS
 from spicy_docs.schemas.law_tables import LAW_CODE_SECTIONS, LAWS, TABLE3_RECORDS
 from spicy_docs.schemas.legislator_tables import MEMBER_PARTY_AFFILIATIONS, MEMBER_TERMS, MEMBERS
+from spicy_docs.schemas.native_reference_rows import NATIVE_LEGAL_REFERENCE_READS, NATIVE_LEGAL_REFERENCES
 from spicy_docs.schemas.regulations import (
     COMMENT,
     COMMENTS,
@@ -143,6 +144,9 @@ _REGISTERED: tuple[TableContract, ...] = (
     FEDERAL_REGISTER,
     # The FEC committee master, one row per committee per cycle, from the bulk files.
     FEC_COMMITTEE_HISTORY,
+    # Literal U.S. Code and eCFR reference observations, and each complete read of an input that produced them.
+    NATIVE_LEGAL_REFERENCES,
+    NATIVE_LEGAL_REFERENCE_READS,
 )
 
 if len({contract.name for contract in _REGISTERED}) != len(_REGISTERED):
@@ -205,6 +209,8 @@ __all__ = [
     "MEMBER_PARTY_AFFILIATIONS",
     "MEMBER_TERMS",
     "MEMBER_VOTES",
+    "NATIVE_LEGAL_REFERENCES",
+    "NATIVE_LEGAL_REFERENCE_READS",
     "NOMINATIONS",
     "PRESS_RELEASES",
     "PUBLIC_ACTIVITY_EVENTS",
