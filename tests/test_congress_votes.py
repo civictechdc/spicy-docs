@@ -221,10 +221,56 @@ def test_clerk_fixture_matches_the_measured_2026_09_18_shape():
     assert vote.congress_year is None and vote.tie_breaker is None and vote.vote_title is None
 
 
+def test_a_committee_of_the_whole_file_names_its_body_in_committee_and_publishes_which():
+    """From the 114th Congress on the Clerk names the voting body in <committee>, not <chamber>, on Committee of the
+    Whole votes; the text is the same, so the element is what roll_call_votes.clerk_body_element publishes. Reduced
+    fixture: 118th 1-37, eight of its 440 members (tests/fixtures/congress_votes/README.md)."""
+    from spicy_docs.schemas import ROLL_CALL_VOTES
+    from spicy_docs.schemas.congress_activity_tables import shape_roll_call_vote
+
+    body = (FIXTURES / "clerk-2023-roll037-committee.excerpt.xml").read_bytes()
+    vote = parse_clerk_vote(body, VoteLocator("house", 118, 1, 37))
+    assert (vote.chamber_raw, vote.committee_raw) == (None, "U.S. House of Representatives")
+    assert [m.state for m in vote.member_votes].count("XX") == 6
+    committee = ROLL_CALL_VOTES.checked(shape_roll_call_vote(vote, tally=vote.tallies, member_vote_count=8))
+    chamber = parse_clerk_vote(CLERK_FIXTURE, CLERK_LOCATOR)
+    assert (chamber.chamber_raw, chamber.committee_raw) == ("U.S. House of Representatives", None)
+    plain = shape_roll_call_vote(chamber, tally=chamber.tallies, member_vote_count=len(chamber.member_votes))
+    senate = parse_senate_vote(SENATE_FIXTURE, SENATE_LOCATOR)
+    other = shape_roll_call_vote(senate, tally=senate.tallies, member_vote_count=len(senate.member_votes))
+    assert (committee["clerk_body_element"], plain["clerk_body_element"], other["clerk_body_element"]) == (
+        "committee",
+        "chamber",
+        None,
+    )
+
+
+def test_a_file_from_before_2003_states_no_name_id_and_keys_its_members_by_name():
+    """No Clerk file before 2003 carries a legislator name-id; such a file reads, each member keyed ``name:`` plus the
+    Clerk's name, which must be unique. A file mixing the two forms refuses. Reduced fixture: 101st 2-1, three of 430."""
+    from spicy_docs.schemas import MEMBER_VOTES
+    from spicy_docs.schemas.congress_activity_tables import shape_member_vote
+
+    body = (FIXTURES / "clerk-1990-roll001-no-name-id.excerpt.xml").read_bytes()
+    vote = parse_clerk_vote(body, VoteLocator("house", 101, 2, 1))
+    first_member = vote.member_votes[0]
+    assert (first_member.bioguide_id, first_member.name, first_member.state) == (None, "Ackerman", "NY")
+    rows = [MEMBER_VOTES.checked(shape_member_vote(m, vote=vote)) for m in vote.member_votes]
+    assert [row["member_key"] for row in rows] == ["name:Ackerman", "name:Akaka", "name:Alexander"]
+    assert all(row["bioguide_id"] is None for row in rows)
+    first = body.index(b"<recorded-vote>")
+    mixed = body.replace(b"<legislator ", b'<legislator name-id="A000022" ', 1)
+    with pytest.raises(VoteSourceError, match="some legislators and not others"):
+        parse_clerk_vote(mixed, VoteLocator("house", 101, 2, 1))
+    item = body[first : body.index(b"</recorded-vote>", first) + len(b"</recorded-vote>")]
+    with pytest.raises(VoteSourceError, match="names one member twice"):
+        parse_clerk_vote(body.replace(item, item + item, 1), VoteLocator("house", 101, 2, 1))
+
+
 def test_the_clerk_xx_state_is_kept_and_the_contract_says_what_it_marks():
-    """The Clerk writes XX for the delegates and the Resident Commissioner on Committee of the Whole amendment
-    votes (538 of the 118th's 1,241 roll calls, receipt ``fork-execution-2026-09-21/cbo-112-113/clerk-xx.json``);
-    the reader keeps it verbatim. Synthetic edit: Adams's ``NC`` in the pinned 119th file becomes ``XX``."""
+    """The Clerk writes XX for the delegates and the Resident Commissioner on the roll calls they voted in (2,169 of
+    22,512 of 1990-2026, receipt ``fork-execution-2026-09-21/cbo-112-113/clerk-all/body-element.json``); the reader
+    keeps it verbatim. Synthetic edit: Adams's ``NC`` in the pinned 119th file becomes ``XX``."""
     from spicy_docs.schemas import MEMBER_VOTES
 
     stated = b'<legislator name-id="A000370" sort-field="Adams" unaccented-name="Adams" party="D" state="NC"'
@@ -232,8 +278,8 @@ def test_the_clerk_xx_state_is_kept_and_the_contract_says_what_it_marks():
     vote = parse_clerk_vote(CLERK_FIXTURE.replace(stated, stated.replace(b'"NC"', b'"XX"')), CLERK_LOCATOR)
     assert {member.bioguide_id: member.state for member in vote.member_votes}["A000370"] == "XX"
     description = MEMBER_VOTES.descriptions["state"]
-    assert "`XX` is the Clerk's marking for the five non-voting delegates and the Resident Commissioner" in description
-    assert "Committee of the Whole amendment votes" in description and "538 of 1,241 roll calls" in description
+    assert "`XX` is the Clerk's marking for the non-voting delegates and the Resident Commissioner" in description
+    assert "2,169 of the Clerk's 22,512 of 1990-2026" in description and "Committee of the Whole" not in description
 
 
 def test_clerk_fixture_members_carry_every_legislator_attribute():
@@ -507,7 +553,16 @@ def test_vote_locator_as_vote_key_matches_vote_matching():
             CLERK_MINIMAL.replace(b"<vote-metadata>", b"<other>").replace(b"</vote-metadata>", b"</other>"),
             "vote-metadata",
         ),
-        (CLERK_MINIMAL.replace(b'name-id="A000001" ', b""), "missing name-id"),
+        (CLERK_MINIMAL.replace(b'party="R" ', b""), "missing party"),
+        (CLERK_MINIMAL.replace(b'name-id="A000001"', b'name-id=""'), "missing party, state"),
+        (CLERK_MINIMAL.replace(b"<chamber>U.S. House of Representatives</chamber>", b""), "voting body"),
+        (
+            CLERK_MINIMAL.replace(
+                b"<chamber>U.S. House of Representatives</chamber>",
+                b"<chamber>U.S. House of Representatives</chamber><committee>U.S. House of Representatives</committee>",
+            ),
+            "voting body",
+        ),
         (CLERK_MINIMAL.replace(b"<vote>Yea</vote>", b"<vote></vote>"), "empty"),
         (CLERK_MINIMAL.replace(b"<congress>119</congress>", b"<congress>abc</congress>"), "integer"),
         (CLERK_MINIMAL.replace(b"<session>1st</session>", b"<session>first</session>"), "ordinal"),

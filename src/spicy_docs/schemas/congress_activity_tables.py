@@ -170,6 +170,14 @@ ROLL_CALL_VOTES = table_contract(
             "captured Clerk file states none; NULL on Senate rows, linkage-only rows and House rows captured before "
             "this column."
         ),
+        "clerk_body_element": (
+            "Which element of the Clerk's file names the voting body, `committee` or `chamber`; both read "
+            "'U.S. House of Representatives', so the element is the fact.  The Clerk files 3,830 of its 22,512 "
+            "roll calls of 1990-2026 under <committee>, all from 2007 on: 3,791 amendment votes, 29 motions for "
+            "the committee to rise or calls in committee, 5 rulings of the chair, 3 vacated votes and 2 House "
+            "questions (a passage, a recommittal).  It calls none a Committee of the Whole vote; that is the "
+            "inference.  NULL on Senate rows, linkage-only rows and rows captured before this column."
+        ),
     },
 )
 
@@ -198,10 +206,12 @@ MEMBER_VOTES = table_contract(
         "party": "The member's party as the roll-call source states it.",
         "state": (
             "The member's state as the roll-call source states it. On a House row `XX` is the Clerk's marking for "
-            "the five non-voting delegates and the Resident Commissioner, seen only on Committee of the Whole "
-            "amendment votes: in the 118th Congress all six carry it on 538 of 1,241 roll calls, each an amendment "
-            "vote whose file names a committee rather than the House as the voting body, and none appears on any "
-            "other. Kept as stated, not mapped to a territory."
+            "the non-voting delegates and the Resident Commissioner, on the roll calls they voted in: 2,169 of the "
+            "Clerk's 22,512 of 1990-2026 (1993-1994, 2007-2010 and from 2019), every one an amendment vote or a "
+            "motion in committee (to rise, to strike or limit debate, a call in committee, a ruling of the chair), "
+            "filed under <committee> "
+            "(clerk_body_element on roll_call_votes) from 2007 and under <chamber> in 1993-1994.  Kept as "
+            "stated, not mapped to a territory."
         ),
         "position": "The member's position exactly as the publisher spelled it (Yea, Aye, Not Voting...).",
         "position_normalized": "That position folded onto yea, nay, present or not_voting; NULL for a named candidate choice.",
@@ -433,7 +443,18 @@ def shape_roll_call_vote(
         "amendments_json": amendments_json,
         "vote_day": getattr(vote, "day", None) if vote_date in (None, getattr(vote, "date", None)) else None,
         "legis_num": (getattr(vote, "legis_num", None) or "") if getattr(vote, "publisher", None) == "clerk" else None,
+        "clerk_body_element": _clerk_body_element(vote),
     }
+
+
+def _clerk_body_element(vote: object) -> str | None:
+    """``committee`` where the Clerk file names its voting body in ``<committee>``, ``chamber`` where in ``<chamber>``.
+
+    Only a Clerk record carries either, so a Senate or linkage-only row reads ``None``.
+    """
+    if getattr(vote, "committee_raw", None) is not None:
+        return "committee"
+    return "chamber" if getattr(vote, "chamber_raw", None) is not None else None
 
 
 def member_key(member: object) -> str:

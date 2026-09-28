@@ -83,6 +83,9 @@ def test_a_senate_record_without_a_vote_date_has_no_day():
         ("house", "30-Sep-2025", "2025-09-30"),
         ("house", "1-Oct-2025", "2025-10-01"),
         ("house", "29-Feb-2024", "2024-02-29"),
+        # Nine Clerk files of 1991-2003 print the month in capitals (the 102nd Congress's Speaker election).
+        ("house", "3-JAN-1991", "1991-01-03"),
+        ("house", "21-JUN-2000", "2000-06-21"),
         ("senate", "February 28, 2025,  11:45 PM", "2025-02-28"),
         ("senate", "March 1, 2025,  12:00 AM", "2025-03-01"),
         # Surrounding whitespace and a single space before the Senate's time read the same.
@@ -120,6 +123,8 @@ def test_an_absent_or_blank_date_is_no_day_not_a_refusal(chamber, literal):
     "chamber,literal",
     [
         ("house", "January 9, 2025,  02:54 PM"),  # the other chamber's spelling
+        ("house", "3-jan-1991"),  # neither measured capitalization
+        ("house", "3-JaN-1991"),
         ("senate", "9-Jan-2025"),
         ("senate", "January 3, 2025"),  # a Senate date with no time is not a measured spelling
         ("house", "2025-01-03"),
