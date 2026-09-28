@@ -59,18 +59,26 @@ was not examined yields NULL.
 `BillCosponsor` preserves literal sponsorship dates, original-status text,
 party, state and district. `None` means an absent XML element; `""` means
 present empty. Date-status properties report invalid calendar spellings without
-changing them or losing the record. Other entry fields remain in `source_xml`,
-which is reserialized XML, not the original bytes. `BillStatus.input_sha256`
-pins those bytes; retain them with the acquisition capture.
+changing them or losing the record. Other entry fields remain in `source_xml`:
+the item's own markup, reserialized, not the original bytes. Since 0.50.1 it
+stops at `</item>`; 0.50.0 also kept the whitespace that follows the item in
+the list. `BillStatus.input_sha256` pins the original bytes; retain them with
+the acquisition capture.
 
 `cosponsors_outcome` distinguishes absent, empty and populated source lists;
 NULL means the caller has not read the list. `shape_bill_cosponsor(status,
 cosponsor_index=...)` produces `bill_cosponsors` occurrences keyed by bill,
 input digest and source ordinal. Repeated members remain repeated observations.
 The native 118 HR 1 fixture replays its complete cosponsor block. The 113 HR 4200
-fixture also proves present-empty `sponsorshipWithdrawnDate`; no retained
-positive withdrawal-date specimen has yet qualified event interpretation.
-Missing or empty dates never prove that no withdrawal occurred. Table registration
+fixture proves a present-empty `sponsorshipWithdrawnDate`, and the retained 119
+S 1224 fixture a positive one (C001047, withdrawn the day after cosponsoring).
+Positive dates are routine: 243 of the 506,301 cosponsor entries in the 113th,
+115th and 117th House and 119th House and Senate bulk zips state a valid one
+(PR #4 review, 2026-09-27, receipt
+`fork-execution-2026-09-21/codex-pr-review-2026-09-27/spicy-docs-pr4/review-work/`
+under `~/Work/corpora`). The date is the publisher's statement and its status is
+a calendar spelling check, not a confirmed withdrawal event. Missing or empty
+dates never prove that no withdrawal occurred. Table registration
 and local shaping do not publish these rows or rebuild an application dataset.
 
 `<cboCostEstimates>` is the keyless route to CBO's cost-estimate index, whose

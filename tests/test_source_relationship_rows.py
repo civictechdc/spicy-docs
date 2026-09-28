@@ -45,6 +45,10 @@ def test_every_native_cosponsor_field_and_occurrence_survives() -> None:
             assert row[column] == (None if node is None else node.text or "")
         retained = ET.fromstring(row["source_xml"])
         assert [(c.tag, c.text, c.attrib) for c in retained] == [(c.tag, c.text, c.attrib) for c in source]
+        # The item's own markup: no whitespace that follows it in the list (0.50.0 kept that tail), and here
+        # byte-identical to the publisher's item.
+        assert row["source_xml"].startswith("<item>") and row["source_xml"].endswith("</item>")
+        assert row["source_xml"] in body.decode("utf-8")
         assert ET.fromstring(body).find(row["source_path"].removeprefix("/billStatus/")) is not None
     assert len(set(keys)) == 49
     first = shape_bill_cosponsor(status, cosponsor_index=0)

@@ -188,8 +188,12 @@ class BillCosponsor:
     """One source occurrence, with literal dates and flags rather than inferred membership.
 
     None is an absent element; an empty element is an empty string. source_xml
-    is reserialized XML, not original bytes; input_sha256 on BillStatus pins
-    those bytes. Positive withdrawal-date source qualification remains open.
+    is the item's own markup reserialized, without the whitespace that follows
+    it in the list, and not the original bytes; input_sha256 on BillStatus pins
+    those bytes. A positive ``sponsorshipWithdrawnDate`` is kept as stated: the
+    retained 119 S 1224 fixture carries one, and 243 of the 506,301 entries in
+    five bulk zips did in the PR #4 review's sweep (2026-09-27). Its status
+    property reports the calendar spelling, not a confirmed withdrawal.
     """
 
     bioguide_id: str | None
@@ -443,6 +447,35 @@ def _title_text(element: Element) -> str | None:
     return _measured_or_documented(element, "title", "latestTitle")
 
 
+#: The ``<cosponsors><item>`` children a :class:`BillCosponsor` reads, in its field order.
+_COSPONSOR_FIELDS = (
+    "bioguideId",
+    "fullName",
+    "sponsorshipDate",
+    "isOriginalCosponsor",
+    "sponsorshipWithdrawnDate",
+    "party",
+    "state",
+    "district",
+)
+
+
+def _cosponsor(item: Element) -> BillCosponsor:
+    """One ``<cosponsors>`` item, with the item's own markup as ``source_xml``.
+
+    ``tostring`` also serializes an element's ``tail``, the whitespace between
+    this item and the next, so 0.50.0 published that whitespace at the end of
+    most rows' ``source_xml``. The tail is not part of the item: it is set
+    aside for the serialization and put back.
+    """
+    tail, item.tail = item.tail, None
+    try:
+        source_xml = tostring(item, encoding="unicode")
+    finally:
+        item.tail = tail
+    return BillCosponsor(*(_text(item, name) for name in _COSPONSOR_FIELDS), source_xml=source_xml)
+
+
 def _cbo_cost_estimate(element: Element) -> CboCostEstimate:
     """One ``<cboCostEstimates>`` item under either spelling; see :class:`CboCostEstimate`."""
     return CboCostEstimate(
@@ -644,6 +677,7 @@ def parse_bill_status(body: bytes, *, identity: BillIdentity, max_bytes: int = D
     if policy_area is not None and subject_policy_area is not None and policy_area != subject_policy_area:
         raise BillSourceError("BILLSTATUS policy area fields disagree")
     estimates, estimates_outcome = _cbo_cost_estimates(bill)
+    cosponsors = _items(bill, "cosponsors")
     return BillStatus(
         identity=identity,
         schema_version=schema_version,
@@ -661,25 +695,7 @@ def parse_bill_status(body: bytes, *, identity: BillIdentity, max_bytes: int = D
         sponsors=tuple(
             BillSponsor(_text(item, "bioguideId"), _text(item, "fullName")) for item in _items(bill, "sponsors")
         ),
-        cosponsors=tuple(
-            BillCosponsor(
-                *(
-                    _text(item, name)
-                    for name in (
-                        "bioguideId",
-                        "fullName",
-                        "sponsorshipDate",
-                        "isOriginalCosponsor",
-                        "sponsorshipWithdrawnDate",
-                        "party",
-                        "state",
-                        "district",
-                    )
-                ),
-                source_xml=tostring(item, encoding="unicode"),
-            )
-            for item in _items(bill, "cosponsors")
-        ),
+        cosponsors=tuple(_cosponsor(item) for item in cosponsors),
         text_versions=tuple(_text_version(item, identity) for item in _items(bill, "textVersions")),
         laws=tuple(BillLaw(_text(item, "number"), _text(item, "type")) for item in _items(bill, "laws")),
         committees=tuple(_committee(item) for item in committees),
@@ -690,9 +706,7 @@ def parse_bill_status(body: bytes, *, identity: BillIdentity, max_bytes: int = D
             _required_text(item, "citation") for item in _items(bill, "committeeReports", "committeeReport")
         ),
         cbo_cost_estimates_outcome=estimates_outcome,
-        cosponsors_outcome=(
-            "absent" if _one(bill, "cosponsors") is None else "populated" if _items(bill, "cosponsors") else "empty"
-        ),
+        cosponsors_outcome="absent" if _one(bill, "cosponsors") is None else "populated" if cosponsors else "empty",
         input_sha256="sha256:" + hashlib.sha256(body).hexdigest(),
     )
 
