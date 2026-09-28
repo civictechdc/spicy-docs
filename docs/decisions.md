@@ -972,7 +972,9 @@ activity reports as the
 asked. Three choices in it are load-bearing.
 
 **The identity is `(document_key, text_sha256, cite_kind, target_key,
-span_start)`, and the span is in it because the span is the yield.** The
+span_start)`, and the span is in it because the span is the yield.** (Since
+0.50.0 `document_kind` leads it; see
+[citations are keyed by source kind](#document_citations-is-keyed-by-source-kind-first).) The
 obvious identity — document, kind, target — would collapse CRPT-118hrpt968's
 267 bill mentions into 179 rows and throw away which page each discussion is
 on. The aggregate shape is derivable from this one (`GROUP BY document_key,
@@ -2714,3 +2716,166 @@ seq)`: an identity naming the new column would re-mint every row downstream,
 and `congress` adds nothing to it. The column is appended, so a prior table
 without it NULL-fills in a host's merge; spicy-regs derives it from `bill_id`
 when it first splits the table instead.
+
+## 0.50.0 keys citations by source kind and names its branch builds
+
+2026-09-27, release of `8844068`: the Codex branch
+`codex/native-relationship-qualification` (PR #4) merged with 0.47.0. The
+branch's commits state no reasons, so this entry records what moved and the
+contract each move leaves. Review receipts:
+`~/Work/corpora/fork-execution-2026-09-21/codex-pr-review-2026-09-27/spicy-docs-pr4/`.
+
+### `document_citations` is keyed by source kind first
+
+The identity is now `(document_kind, document_key, text_sha256, cite_kind,
+target_key, span_start)`. It supersedes the five-column identity in
+[the citation decision](#a-citation-is-keyed-on-where-it-was-read-and-its-rule-carries-a-version).
+
+`document_key` is each family's own spelling, and one table serves every
+family, so two families can hold the same key value. spicy-regs reads a House
+communication's report nature and its legal authority as two kinds keyed by
+the same communication. Under the old identity, one key, text digest, cite
+kind, target and offset read under two kinds was one identity, and a keyed
+merge kept one row and dropped the other without a word.
+`tests/test_citation_context_qualification.py` holds the two rows apart.
+
+The contract declares no key spelling, so no DocSpec member key moves. Every
+row already carried `document_kind`, so only a cross-kind collision becomes two
+rows. On the fork's `print-citations` generation (`sha256:c8e49dbb…`, read
+2026-09-27), two document keys appear under more than one kind, and no
+five-column group spans two kinds.
+
+### A bill citation names where its Congress came from
+
+`target_rule` for `bill_number` is now `bill_number:<basis>`, and it was
+`bill_number`. The basis is one of:
+
+- `inline_congress`: the print sets a Congress beside the bill;
+- `congress_subheading`: a Congress subheading governs the text;
+- `document_fallback`: the caller's document Congress, which is context, not
+  proof that the bill belongs to it;
+- `unstated`: no Congress was supplied, so the key stays the printed form;
+- `document_fallback_refused`: `explicit_only` declined the document Congress.
+
+Under the default policy `target_key` and `target_resolved` are unchanged; only
+`target_rule`'s published value moves. That is why the rule moved from `005` to
+`006`, and `CITATION_RULE_SET_VERSION` from `ef5f36c0a43b` to `fffaef3303b1`.
+spicy-regs' print citations record the rule-set version in their processing
+identity. Committee routes and every other kind keep their values.
+
+`find_citations(bill_congress_policy=...)` takes `document_fallback`, the
+default and the earlier behavior with its basis named, or `explicit_only`. Under
+`explicit_only`, a bill with no inline Congress and no governing subheading
+keeps its printed form with `target_resolved` false, rather than taking the
+document's Congress. Neither policy reads a Congress from the clock, and any
+other value is refused.
+
+### Two occurrence tables carry their input digest and no current marker
+
+- `bill_cosponsors`, keyed `(bill_id, input_sha256, cosponsor_index)`: one row
+  per cosponsor entry of one BILLSTATUS document.
+- `member_party_affiliations`, keyed `(bioguide_id, input_sha256, term_index,
+  affiliation_index)`: one row per nested `party_affiliations` entry of one
+  community-crosswalk capture.
+
+`input_sha256` is the `sha256:` digest of the complete input bytes, so a
+repeated member or interval stays its own occurrence and two captures never
+share an identity. Neither table declares a version column, and neither
+`congress_bills` nor `member_terms` carries the digest, so these tables alone
+cannot say which capture is current. `congress_bills.cosponsors_outcome` and
+`member_terms.party_affiliations_state` say whether the list was read, not
+which capture it came from.
+
+**The host replaces the scope it re-read; that is the contract.** A merge by
+identity alone would keep every capture's list side by side. spicy-regs
+replaces a bill's prior `bill_cosponsors` rows whenever its run read that
+bill's list (`cosponsors_outcome` absent, empty or populated) and refused none
+of them. It rewrites `member_party_affiliations` whole, from both complete
+rosters, on every run.
+
+### Three hosted tables take new columns mid-table
+
+- `comments`: `comment_on_document_id`, `comment_on_object_id`,
+  `original_document_id` and `comment_reference_values_json`, after `docket_id`;
+- `documents`: `attachment_records_json`, after `attachments_json`;
+- `house_communications`: `rin_occurrences_json`, after `rin`.
+
+**The owner kept this inserted order as the contract** (2026-09-27), rather
+than moving the columns to the end. It departs from the append-last convention
+the other contracts follow ([tables](tables.md)); `congress_bills`' frozen
+prefix is untouched.
+
+Read 2026-09-27 over the fork's MCP, the fork's `comments` and `documents`
+serve the contract order. Its `house_communications` generation
+(`sha256:94d28167…`) has the same columns with `rin_occurrences_json` last, so
+its order differs from the contract's until a host rewrites it from the
+contract. A reader selecting these tables' columns by name sees no difference.
+
+The published rows `tests/test_table_contracts.py` retains for `comments` and
+`documents` predate the new columns. The round-trip test projects them onto the
+contract order, so for those two tables it no longer compares the contract with
+a published footer.
+
+### A RIN occurrence's field digest is bare hex
+
+`rin_occurrences_from_report_nature` returns `RinOccurrence` values whose
+`field_sha256` is the bare hexadecimal SHA-256 of the report nature's UTF-8
+bytes. It has no `sha256:` prefix, unlike `tables.digest`,
+`BillStatus.input_sha256` and `LegislatorsFile.input_sha256`. Hosts publish it
+in `house_communications.rin_occurrences_json`, and bare hex is its current
+spelling. The Senate payment review and candidate readers spell
+`input_sha256` the same bare way, and neither is a table.
+
+The occurrences come from the shared `rin` citation rule (version `004`). That
+rule does not require the `RIN` label the scalar `report_nature_rin_label` rule
+does, so the list can name a RIN where `rin` is NULL.
+
+### Native legal-reference rows have no table contract
+
+`schemas.native_reference_rows` shapes U.S. Code reference and source-credit
+observations and eCFR `AUTH`/`SOURCE` notes into rows. It has no entry in
+`TABLE_CONTRACTS`: no declared identity, key spelling, version column or column
+descriptions, and the three shapers return different column sets.
+spicy-regs' `transforms/native_legal_references.py` states the
+`native_legal_references` columns itself, and the fork publishes that table.
+
+### Branch builds before 0.50.0 resolve to these commits
+
+The branch built wheels under plain release numbers, and spicy-regs vendored
+and pinned each; fork generations were built on them. Its first build took
+0.47.0 about an hour before the bills lane released a different 0.47.0 from
+`f549c16`. 0.50.0 takes the next number neither lane had used.
+
+**The owner decided branch builds may take release numbers, with their lineage
+recorded afterwards in release notes** (2026-09-27). This table is that record
+for the branch "0.47.0", 0.48.0, 0.48.1 and 0.49.0. Each wheel below was
+rebuilt from a `git archive` of its commit with `uv build --wheel` (uv 0.11.21)
+and matched the vendored file byte for byte. `SOURCE_DATE_EPOCH` does not
+change the output. The spicy-regs commits in the four branch-build rows are
+on `codex/mcp-research-chaos`.
+
+| Version | SpicyDocs commit | Wheel SHA-256 | Bytes | spicy-regs commits pinning it |
+| --- | --- | --- | --- | --- |
+| 0.47.0, branch build | `7440dd4a3c446962174b5c3048e313d34a3b287b` | `3a614d4aa16b0416e58690e7659037fef3397d3d6ce7ca21c1cc0e2c8ab42d29` | 1,685,325 | `d42c1b5` through `8173f5e` |
+| 0.47.0, release | `f549c16c599e9fbf664b0d672b97be052e85ae87` | `ff3d9bb0ada5e38df4224533b6f41a3c989b25fd4ce7f3a161d9d054150346c5` | 1,677,512 | `0d63173`, main `516e78f` |
+| 0.48.0 | `983463c9eca35fc93913fd798811e148b531516d` | `ee138dd86e62c254058ce9fe5f2f159dc6aa7d82ccc4580ed47edf09d28fd7fb` | 1,690,539 | `8082191`, `38379e7` |
+| 0.48.1 | `8bcfef5e63361e3e780b2b4197afd1ce8ada78bc` | `6f5ca008096fe60765a49183345fc78acde2ffa99c2451720d53c14a5b554a0b` | 1,690,533 | `5afd01f`, `4466d85` |
+| 0.49.0 | `1fda69252209685e12b3a037ed6d2d48e55574e2` | `b6ca1fed2508f42a363d9af35981ce7dabe9cb2252aee646945eb5d6b895d09c` | 1,692,410 | `1a020c9` |
+| 0.50.0 | `8844068b355c41cd5ab7e7310cc5ba51798f741a` | `c739bc6f6bd488ca2afcb37d1bbcff57f14c0abe051638d4679ed17abf9eb64b` | 1,692,745 | `3e423cd` onward |
+
+The bill-family generation `401302170a91…`, published outside the coordinated
+path, names no provider version or digest in its publication receipt or its
+Parquet footers. Its receipt was written at 22:14 UTC on 2026-09-27, before the
+0.48.1 commit existed. The spicy-regs branch head then, `38379e7`, pinned
+0.48.0. The `bill_cosponsors` contract is the same in every build from
+`7440dd4` on.
+
+**A record holding only the version string resolves through the commit that
+wrote it.** SpicyDocs' `sources/fcc_ecfs_capture.py` writes `packageVersion`
+from the installed distribution's version, and spicy-regs'
+`pipelines/repair_regulations.py` records `spicy_docs_version` the same way. A
+"0.47.0" from either names the branch build if a spicy-regs commit from
+`d42c1b5` through `8173f5e` wrote it, and the release if a commit containing
+`0d63173` did. A code digest recorded beside it also settles it: spicy-regs'
+`spicy_docs_code()` digests the installed package and enters some processing
+identities.

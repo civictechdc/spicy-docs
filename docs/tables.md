@@ -42,6 +42,7 @@ table's columns.
 | `bill_actions` | One row per action entry in a bill's BILLSTATUS document, in publisher order. | `bill_id`, `action_index` | `action_date` | `interpretation.bill_family` |
 | `bill_committees` | One row per committee or subcommittee a bill reached, as its BILLSTATUS document names it. | `bill_id`, `system_code` | `snapshot_update_date` | `interpretation.bill_family` |
 | `bill_publisher_summaries` | One row per CRS summary the publisher states on a bill, at the version and action it describes. | `bill_id`, `summary_version_code`, `action_date` | `update_date` | `interpretation.bill_family` |
+| `bill_cosponsors` | One cosponsor occurrence in one retained BILLSTATUS observation. | `bill_id`, `input_sha256`, `cosponsor_index` | none | `interpretation.bill_family` |
 | `cbo_cost_estimates` | One row per bill and CBO publication the bill's BILLSTATUS document names as a cost estimate of it. | `bill_id`, `publication_id` | `pub_date` | `interpretation.bill_family` |
 | `bill_versions` | One row per printing of a bill, per source that supplied it. | `bill_id`, `version_code`, `source` | `version_date` | `interpretation.bill_family` |
 | `bill_sections` | One row per content-bearing node of one bill version, in document order. | `bill_id`, `version_code`, `source`, `seq` | `version_date` | `interpretation.bill_family` |
@@ -58,6 +59,7 @@ table's columns.
 | `member_votes` | One row per member's position on one roll call. | `congress`, `chamber`, `session`, `roll_number`, `member_key` | `vote_date` | `sources.congress.votes` |
 | `members` | One row per legislator in one capture of the community crosswalk. | `bioguide_id` | `observed_at` | `sources.legislators` |
 | `member_terms` | One row per term a legislator served, in the crosswalk's own order. | `bioguide_id`, `term_index` | `observed_at` | `sources.legislators` |
+| `member_party_affiliations` | One nested party affiliation in one retained community-crosswalk observation. | `bioguide_id`, `input_sha256`, `term_index`, `affiliation_index` | none | `sources.legislators` |
 | `committee_reports` | One row per published part of a captured GovInfo committee report package, with the CBO estimate it reprints or refuses. | `package_id`, `part_id` | `last_modified` | `sources.govinfo.body_acquisition`, `interpretation.cbo_estimates` |
 | `report_sections` | One row per heading block parsed out of one committee report part's text. | `package_id`, `part_id`, `seq` | `last_modified` | `sources.agency_reports.report_blocks` |
 | `hearing_transcripts` | One row per captured GovInfo hearing transcript package. | `package_id` | `last_modified` | `sources.govinfo.body_acquisition`, `sources.congress.listing` (`hearing-detail`) |
@@ -71,7 +73,7 @@ table's columns.
 | `table3_records` | One row per classification record of one act in OLRC's Table III, read from its page or the bulk file. | `act_key`, `seq` | `observed_at` | `schemas.law_tables` |
 | `committees` | One row per committee or subcommittee the Congress.gov committee list route states, with its detail record where captured. | `system_code` | `update_date` | `schemas.roster_tables` |
 | `committee_assignments` | One row per member per committee or subcommittee seat a chamber roster file lists today. | `congress`, `system_code`, `bioguide_id` | `observed_at` | `schemas.roster_tables` |
-| `document_citations` | One row per occurrence of one cited key in one document's text: the key, the exact text that named it, and the character span it was read at. | `document_key`, `text_sha256`, `cite_kind`, `target_key`, `span_start` | `rule_version` | `schemas.document_citation_tables`, `interpretation.citations` |
+| `document_citations` | One row per occurrence of one cited key in one document's text: the key, the exact text that named it, and the character span it was read at. | `document_kind`, `document_key`, `text_sha256`, `cite_kind`, `target_key`, `span_start` | `rule_version` | `schemas.document_citation_tables`, `interpretation.citations` |
 | `house_activity_reports` | One row per end-of-Congress committee activity report package, House or Senate, with what its print adds; the table's name predates its Senate rows. | `package_id` | `last_modified` | `schemas.document_citation_tables`, `sources.govinfo.bodies` |
 | `budget_volumes` | One row per published volume of the President's budget, with what its print adds to its own index. | `package_id` | `last_modified` | `schemas.budget_volume_tables`, `sources.govinfo.bodies` |
 | `senate_expenditures` | One row per ruled row of one ruled table on one page of a Report of the Secretary of the Senate, with the cells exactly as the print states them and the roles its own header band names. | `package_id`, `file_name`, `page`, `table_ordinal`, `row_ordinal`, `text_sha256` | `extraction_rule_version` | `schemas.senate_expenditure_tables` |
@@ -176,7 +178,9 @@ records through its copy of the extract in `schemas.regulations`, so they have
 no `shape_*` here. Each contract lists the extract's columns in its order, then,
 on documents and comments, the host's `pdf_extraction_results_json`. The record
 types here, and the `public_tables` and public-comment profiles built on them,
-still lack that column; the contracts state what is published.
+still lack that column; the contracts state what is published. The comment
+reference columns and `documents.attachment_records_json` sit mid-table, not
+appended ([decision](decisions.md#three-hosted-tables-take-new-columns-mid-table)).
 
 Each identity is the publisher's own id, because a document filed under two
 agencies is still one document (DocSpec decision 0004).
@@ -245,7 +249,7 @@ published:
 1. referral signals from the committee system codes;
 2. the stage, signing and money-bill findings;
 3. `congress_bills`, `bill_actions`, `bill_committees`, `bill_publisher_summaries`,
-   and `cbo_cost_estimates` off the same document;
+   `bill_cosponsors` and `cbo_cost_estimates` off the same document;
 4. `bill_versions`, with the version-kind finding;
 5. `bill_sections`, one row per flattened node;
 6. `section_diffs`, `section_diff_items`, `financial_changes`, over consecutive
@@ -255,8 +259,8 @@ published:
    text;
 8. `diff_summaries`, from the comparisons step 6 already has in hand.
 
-Per bill with A actions, C committees, V versions and S sections per version,
-steps 1 to 5 are O(A + C + V + ΣS) with no re-parsing. Step 6 diffs V−1 pairs,
+Per bill with A actions, C committees, K cosponsor entries, V versions and S
+sections per version, steps 1 to 5 are O(A + C + K + V + ΣS) with no re-parsing. Step 6 diffs V−1 pairs,
 not V², each bounded by the engine's own retrieval gate. Consecutive pairs is
 deliberate: the diff is the only superlinear operation in the family.
 
@@ -303,7 +307,10 @@ invented for either.
   `legal_authority`, the matching requirement number, and the RIN as three
   columns (`rin`, `rin_rule`, `rin_matched_text`) from
   `interpretation/communication_rin.py`, whose rule is the data map's own
-  measured `RIN: nnnn-XXnn` pattern. Re-measured 2026-09-19 on 18 of the 25
+  measured `RIN: nnnn-XXnn` pattern. `rin_occurrences_json`, after `rin`,
+  holds every occurrence the shared `rin` citation rule reads in the same field,
+  as the host supplies it
+  ([decision](decisions.md#a-rin-occurrences-field-digest-is-bare-hex)). Re-measured 2026-09-19 on 18 of the 25
   newest communications inside the day's request budget: 18 carry a dated
   referral, 12 are rulemakings and the same 12 carry a RIN under the measured
   rule and under a relaxed one shaped like the Federal Register validator, 15
@@ -457,14 +464,18 @@ one — and narrows the activity-report print contract to what the MODS lacks.
 It is still worth building, and it is an order of magnitude smaller than the
 rollup estimated.
 
-- **`document_citations`** is keyed `(document_key, text_sha256, cite_kind,
-  target_key, span_start)`. `target_key` is the hosted target's own spelling —
-  `118-hr-1093`, `117-public-263`, `hsfa00` — and where nothing settled it (a
-  bill with no stated Congress, a committee name no supplied roster reaches)
+- **`document_citations`** is keyed `(document_kind, document_key, text_sha256,
+  cite_kind, target_key, span_start)`; `document_kind` leads it since 0.50.0
+  ([decision](decisions.md#document_citations-is-keyed-by-source-kind-first)).
+  `target_key` is the hosted target's own spelling — `118-hr-1093`,
+  `117-public-263`, `hsfa00` — and where nothing settled it (a bill with no
+  stated Congress, a committee name no supplied roster reaches)
   the rule's canonical printed form stands and `target_resolved` is `false`.
   An unsettled key is kept rather than dropped: it is evidence only the print
-  holds. `target_rule` says *how* a key was reached, which matters for
-  committees: `exact` and `roster_prefix` are roster lookups, `name_prefix`
+  holds. `target_rule` says *how* a key was reached. For a bill it names
+  the Congress's basis (`bill_number:inline_congress` and the rest,
+  [decision](decisions.md#a-bill-citation-names-where-its-congress-came-from)).
+  For committees: `exact` and `roster_prefix` are roster lookups, `name_prefix`
   and `sibling_prefix` are inferences from this one document's printed text,
   and a consumer wanting only lookups filters on that column.
   **The table is append-only per text digest.** `text_sha256` is in the

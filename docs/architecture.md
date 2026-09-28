@@ -32,11 +32,13 @@ Paths below are relative to `src/spicy_docs/`.
 | Publisher list pages | `reading/paged_json.py` one traversal rule, including each family's reach bounds, and pooled walks of lists that shift while read; `sources/congress/listing.py`, `sources/govinfo/discovery.py`, `sources/lda.py`, `sources/courtlistener/search.py`, `sources/sam.py`, `sources/usaspending.py`, `sources/fcc_ecfs.py` state each publisher's contract; `sources/gao/rss.py` reads the feed; `cli/list_pages.py` walks any family from the command line |
 | Unified Agenda editions | `sources/unified_agenda/` captures and proves an edition; `records.py` reads raw fields; `projection.py` is the one reading of its citations, timetables and continued authorities |
 | U.S. Code, Supreme Court, CBO | `sources/uscode/` (release points, archives, Popular Name Tool, Table III); `sources/supreme_court.py`; `sources/cbo.py` |
-| Document files beside listings | `sources/congress/crs_files.py`; `sources/gao/files.py`; `sources/regulations_gov/api.py` and `attachments.py`; PDF checks in `reading/pdf_bytes.py` |
+| Native U.S. Code and eCFR reference rows | `schemas/native_reference_rows.py` projects `sources/uscode/references.py` and `sources/cfr/authority.py` observations; it declares no table contract |
+| Senate expenditure payment lines (not qualified for publication) | `reading/senate_payment_review.py` is the positional truth-set gate; `reading/senate_payment_candidates.py` reads bounded candidates from the reviewed payment grid |
+| Document files beside listings | `sources/congress/crs_files.py`; `sources/gao/files.py`; `sources/regulations_gov/api.py` and `attachments.py`; `attachment_records.py` checks an attachment relationship before a document row carries it; PDF checks in `reading/pdf_bytes.py` |
 | Explicit bill status and selected text XML | `sources/congress/bill_acquisition.py`; `bill_status.py`; `bill_text.py`; `bulk_status.py` reads one Congress/type BILLSTATUS zip through `reading/zip_archive.py` |
 | One House committee meeting's agenda, keyless by event id | `sources/congress/house_committee_repository.py` reads docs.house.gov's per-event XML and builds its static locator; `interpretation/hearing_bill_links.py` holds the two hearing-to-bill link rules and checks the committee-and-date identity before joining either to a CHRG package |
 | House executive communications the Congressional Record printed | `sources/congress/record_communications.py` reads one CREC `EXECUTIVE COMMUNICATIONS, ETC.` granule's text into one record per printed entry, with the publisher's three normalizations, a versioned rule identity and the per-issue contiguity witness |
-| GAO pages | `sources/gao/native.py` |
+| GAO pages | `sources/gao/native.py`; `product_metadata.py` reads the heading and stated publication date from a retained page |
 | Captured public comments | `sources/public_comments/native.py` |
 | Raw streams | `sources/mirrulations.py`, `sources/courtlistener/bulk.py` |
 | Shared S3 listing grammar | `reading/s3_listing.py`; `sources/courtlistener/listing.py` adds source facts |
@@ -108,7 +110,8 @@ checks integrity with bounded memory; full verification also replays source mean
   `capture.py` retains bounded regulation/bill captures and refused bytes;
   `retry.py` and `credentials.py` hold shared request rules.
 - **Source helpers:** `reading/json_input.py`, `media_types.py` and `evidence_zip.py`
-  share parsing/encoding; `source_domains.py` owns documented-value comparisons.
+  share parsing/encoding; `reading/literal_dates.py` reports a literal date's
+  spelling status without changing it; `source_domains.py` owns documented-value comparisons.
 - **Maintenance tools:** [scripts](../scripts/README.md) check repository inputs;
   [tools](../tools/README.md) investigate retained corpus evidence.
 
