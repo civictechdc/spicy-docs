@@ -657,32 +657,34 @@ def test_an_absent_docket_and_an_invalid_docket_id_are_different_answers():
 
 
 def test_native_attachment_records_preserve_restrictions_and_content():
-    from spicy_docs.schemas.regulations import _extract_document
+    from spicy_docs.schemas.regulations import DOCUMENT as DOCUMENT_RECORD
+    from spicy_docs.sources.regulations_gov.attachment_records import attachment_records_json
 
     native = json.loads(DETAIL)
-    before = _extract_document(native)
+    before = DOCUMENT_RECORD.extract(native)
     with RegulationsGovApiReader(budget=BUDGET, api_key=KEY, transport=Transport(item_response(ATTACHMENTS))) as source:
         relationship = source.attachments(DOCUMENT)
-    after = _extract_document(native, attachment_relationship=relationship)
+    records = attachment_records_json(native, relationship)
+    after = DOCUMENT_RECORD.extract(native, attachment_records_json=records)
     assert after["attachments_json"] == before["attachments_json"]
     assert before["attachment_records_json"] is None
-    assert json.loads(after["attachment_records_json"]) == json.loads(ATTACHMENTS)["data"]
-    assert json.loads(after["attachment_records_json"])[1]["attributes"]["fileFormats"] is None
+    assert after["attachment_records_json"] == records
+    assert json.loads(records) == json.loads(ATTACHMENTS)["data"]
+    assert json.loads(records)[1]["attributes"]["fileFormats"] is None
+    assert attachment_records_json(native, None) is None
     with pytest.raises(ValueError, match="different document"):
-        _extract_document({"data": {"id": "OTHER"}}, attachment_relationship=relationship)
+        attachment_records_json({"data": {"id": "OTHER"}}, relationship)
 
 
 def test_synthetic_explicit_empty_attachment_response_differs_from_unread():
-    from spicy_docs.schemas.regulations import _extract_document
+    from spicy_docs.sources.regulations_gov.attachment_records import attachment_records_json
 
     with RegulationsGovApiReader(
         budget=BUDGET, api_key=KEY, transport=Transport(item_response(b'{"data":[]}'))
     ) as source:
         relationship = source.attachments(DOCUMENT)
-    assert (
-        _extract_document(json.loads(DETAIL), attachment_relationship=relationship)["attachment_records_json"] == "[]"
-    )
-    assert _extract_document(json.loads(DETAIL))["attachment_records_json"] is None
+    assert attachment_records_json(json.loads(DETAIL), relationship) == "[]"
+    assert attachment_records_json(json.loads(DETAIL), None) is None
 
 
 @pytest.mark.parametrize("extra", [{"meta": {"hasNextPage": True}}, {"links": {"next": "https://example.gov/next"}}])
@@ -698,7 +700,7 @@ def test_synthetic_partial_attachment_response_cannot_be_read_empty(extra):
 def test_attachment_capture_cannot_be_relabelled_or_refused():
     from dataclasses import replace
 
-    from spicy_docs.schemas.regulations import _extract_document
+    from spicy_docs.sources.regulations_gov.attachment_records import attachment_records_json
 
     with RegulationsGovApiReader(budget=BUDGET, api_key=KEY, transport=Transport(item_response(ATTACHMENTS))) as source:
         relationship = source.attachments(DOCUMENT)
@@ -707,4 +709,4 @@ def test_attachment_capture_cannot_be_relabelled_or_refused():
         replace(relationship, capture=replace(relationship.capture, status_code=403)),
     ]:
         with pytest.raises(ValueError, match="successful response"):
-            _extract_document({"data": {"id": changed.document_id}}, attachment_relationship=changed)
+            attachment_records_json({"data": {"id": changed.document_id}}, changed)

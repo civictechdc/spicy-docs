@@ -142,3 +142,32 @@ def test_federal_register_replay_imports_no_live_transport(module: str) -> None:
         check=False,
     )
     assert completed.returncode == 0, f"{module} imported live transport: {completed.stdout} {completed.stderr}"
+
+
+def test_schemas_is_a_stdlib_only_leaf() -> None:
+    """Importing every ``spicy_docs.schemas`` module and running each record type's extract loads nothing else.
+
+    ``schemas`` is what spicy-regs imports for a column tuple, so it must not pull in ``sources``,
+    ``interpretation`` or any third-party package (``docs/tables.md``). A finder refuses any other ``spicy_docs``
+    module and any non-stdlib module, so a leak fails at the import that caused it rather than being hidden by
+    what happened to be installed.
+    """
+    probe = """
+import importlib, importlib.abc, pkgutil, sys
+class Leaf(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        top = fullname.split('.')[0]
+        if fullname == 'spicy_docs' or fullname.startswith('spicy_docs.schemas'):
+            return None
+        if top == 'spicy_docs' or top not in sys.stdlib_module_names:
+            raise AssertionError('schemas imported ' + fullname)
+sys.meta_path.insert(0, Leaf())
+import spicy_docs.schemas as schemas
+for module in pkgutil.iter_modules(schemas.__path__):
+    importlib.import_module('spicy_docs.schemas.' + module.name)
+from spicy_docs.schemas.regulations import RECORD_TYPES
+for record_type in RECORD_TYPES.values():
+    record_type.extract({'data': {'id': 'ID-1', 'attributes': {}}})
+"""
+    completed = subprocess.run([sys.executable, "-c", probe], capture_output=True, text=True, check=False)
+    assert completed.returncode == 0, completed.stdout + completed.stderr

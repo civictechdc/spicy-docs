@@ -5,9 +5,10 @@ from __future__ import annotations
 from collections.abc import Mapping
 
 from spicy_docs.schemas.tables import AT_JOINED_KEY, table_contract
-from spicy_docs.sources.fec.committee_master import COMMITTEE_MASTER_FIELDS
 
-#: Each published column after ``committee_id`` and ``cycle``, and the header field it copies.
+#: Each published column after ``committee_id`` and ``cycle``, and the header field it copies. Together with
+#: ``CMTE_ID`` these are every ``sources.fec.committee_master.COMMITTEE_MASTER_FIELDS`` entry once; a test holds the two
+#: lists to that, because this stdlib-only leaf does not import ``sources``.
 _FROM_FIELD: dict[str, str] = {
     "name": "CMTE_NM",
     "treasurer_name": "TRES_NM",
@@ -24,8 +25,6 @@ _FROM_FIELD: dict[str, str] = {
     "connected_organization_name": "CONNECTED_ORG_NM",
     "candidate_id": "CAND_ID",
 }
-if {"CMTE_ID", *_FROM_FIELD.values()} != set(COMMITTEE_MASTER_FIELDS):
-    raise AssertionError("fec_committee_history must map every committee master field once")
 
 
 def project_committee_master_row(row: Mapping) -> dict[str, str | None]:

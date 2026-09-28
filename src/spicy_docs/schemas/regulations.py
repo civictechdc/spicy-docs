@@ -59,11 +59,14 @@ def _extract_comment(d: dict) -> dict:
     }
 
 
-def _extract_document(d: dict, *, attachment_relationship=None) -> dict:
-    attrs = d.get("data", {}).get("attributes", {})
-    from spicy_docs.sources.regulations_gov.attachment_records import attachment_records_json
+def _extract_document(d: dict, *, attachment_records_json: str | None = None) -> dict:
+    """``attachment_records_json`` is the caller's already-validated value, NULL when no relationship was read.
 
-    related = attachment_records_json(d, attachment_relationship)
+    Validation stays in ``sources``: ``sources.regulations_gov.attachment_records.attachment_records_json`` checks a
+    read ``AttachmentRelationship`` against this document and returns the string passed here, so this layer imports
+    nothing from ``sources``.
+    """
+    attrs = d.get("data", {}).get("attributes", {})
 
     # Each fileFormats entry is one downloadable rendition of the document
     # (e.g. content.pdf), carrying its own URL, format, and byte size. Keep the
@@ -86,7 +89,7 @@ def _extract_document(d: dict, *, attachment_relationship=None) -> dict:
         "comment_end_date": attrs.get("commentEndDate"),
         "file_url": attachments[0]["url"] if attachments else None,
         "attachments_json": json_dumps(attachments) if attachments else None,
-        "attachment_records_json": related,
+        "attachment_records_json": attachment_records_json,
         "fr_doc_num": attrs.get("frDocNum"),
         "withdrawn": attrs.get("withdrawn"),
         "reason_withdrawn": attrs.get("reasonWithdrawn"),

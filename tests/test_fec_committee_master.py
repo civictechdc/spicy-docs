@@ -155,3 +155,13 @@ def test_a_blank_committee_id_is_refused_not_published():
     row = {"cycle": 2024, "fields": dict.fromkeys(COMMITTEE_MASTER_FIELDS, "")}
     with pytest.raises(ValueError, match="blank CMTE_ID"):
         project_committee_master_row(row)
+
+
+def test_every_header_field_lands_in_exactly_one_column():
+    """The projection copies each of the header's fields once, so a new or renamed field fails here.
+
+    ``schemas.fec_committee_history`` is a stdlib-only leaf and cannot import the header list to check itself.
+    """
+    fields = {field: f"value of {field}" for field in COMMITTEE_MASTER_FIELDS}
+    projected = project_committee_master_row({"cycle": 2024, "fields": fields})
+    assert sorted(value for column, value in projected.items() if column != "cycle") == sorted(fields.values())

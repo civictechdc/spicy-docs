@@ -150,10 +150,13 @@ tuple for the withheld case, so both stay visible.
 
 Flat document rows keep the main document's `fileFormats` in the compatibility
 field `attachments_json`. Separate attachment resources belong in
-`attachment_records_json`. Supply an explicitly read `AttachmentRelationship`
-to `DOCUMENT.extract(payload, attachment_relationship=relationship)` to retain
-those records. The helper verifies successful response bytes and the document
-identity in both request and resolved URLs; partial responses refuse.
+`attachment_records_json`. Validate an explicitly read `AttachmentRelationship`
+with `attachment_records_json(payload, relationship)` from
+`sources.regulations_gov.attachment_records`, and pass the string it returns to
+`DOCUMENT.extract(payload, attachment_records_json=value)`. The helper verifies
+successful response bytes and the document identity in both request and
+resolved URLs; partial responses refuse. `DOCUMENT.extract` only copies the
+value, so the `schemas` layer imports nothing from `sources` (0.50.1).
 The caller must separately establish that the detail and attachment response
 belong to its selected source edition. Without that relationship read the new
 field stays NULL. A validated empty read yields `[]`; restricted records remain
