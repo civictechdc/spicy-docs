@@ -1,0 +1,1432 @@
+<mods xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.loc.gov/mods/v3" version="3.3" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-3.xsd" ID="P0b002ee1e84b3927">
+    <name type="corporate">
+         <namePart>United States Government Publishing Office</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">publisher</roleTerm>
+              <roleTerm authority="marcrelator" type="code">pbl</roleTerm>
+        </role>
+         <role>
+              <roleTerm authority="marcrelator" type="text">distributor</roleTerm>
+              <roleTerm authority="marcrelator" type="code">dst</roleTerm>
+        </role>
+    </name>
+    <name type="corporate">
+         <namePart>United States</namePart>
+         <namePart>Congress</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">author</roleTerm>
+              <roleTerm authority="marcrelator" type="code">aut</roleTerm>
+        </role>
+         <description>Government Organization</description>
+    </name>
+    <typeOfResource>text</typeOfResource>
+    <genre authority="marcgt">government publication</genre>
+    <language>
+         <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+    </language>
+    <extension>
+         <collectionCode>CREC</collectionCode>
+         <category>Proceedings of Congress and General Congressional Publications</category>
+         <waisDatabaseName>2026_record</waisDatabaseName>
+         <branch>legislative</branch>
+         <dateIngested>2026-09-18</dateIngested>
+    </extension>
+    <titleInfo>
+         <title>Congressional Record</title>
+         <partNumber>Vol. 172, no. 147</partNumber>
+    </titleInfo>
+    <location>
+         <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CREC-2026-09-17</url>
+         <url displayLabel="PDF rendition" access="raw object">https://www.govinfo.gov/content/pkg/CREC-2026-09-17/pdf/CREC-2026-09-17.pdf</url>
+    </location>
+    <part type="issue">
+         <extent unit="pages">
+              <start>H5987</start>
+              <end>H5990</end>
+        </extent>
+         <extent unit="pages">
+              <start>S4765</start>
+              <end>S4836</end>
+        </extent>
+         <extent unit="pages">
+              <start>E953</start>
+              <end>E954</end>
+        </extent>
+         <extent unit="pages">
+              <start>D913</start>
+              <end>D918</end>
+        </extent>
+    </part>
+    <originInfo>
+         <publisher>U.S. Government Publishing Office</publisher>
+         <dateIssued encoding="w3cdtf">2026-09-17</dateIssued>
+         <issuance>continuing</issuance>
+         <frequency authority="marcfrequency">daily</frequency>
+    </originInfo>
+    <physicalDescription>
+         <note type="source content type">deposited</note>
+         <digitalOrigin>born digital</digitalOrigin>
+         <extent>84 digital object pages</extent>
+    </physicalDescription>
+    <classification authority="sudocs">X 1.1/A:</classification>
+    <classification authority="sudocs">X/A.</classification>
+    <identifier type="uri">https://www.govinfo.gov/app/details/CREC-2026-09-17</identifier>
+    <identifier type="local">P0b002ee1e84b3927</identifier>
+    <identifier type="stock number">752-002-00000-2</identifier>
+    <identifier type="ILS system id">000568013</identifier>
+    <identifier type="former package identifier">cr17se26</identifier>
+    <recordInfo>
+         <recordContentSource authority="marcorg">DGPO</recordContentSource>
+         <recordCreationDate encoding="w3cdtf">2026-09-18</recordCreationDate>
+         <recordChangeDate encoding="w3cdtf">2026-09-18</recordChangeDate>
+         <recordIdentifier source="DGPO">CREC-2026-09-17</recordIdentifier>
+         <recordOrigin>machine generated</recordOrigin>
+         <languageOfCataloging>
+              <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+        </languageOfCataloging>
+    </recordInfo>
+    <accessCondition type="GPO scope determination">fdlp</accessCondition>
+    <extension>
+         <docClass>CREC</docClass>
+         <accessId>CREC-2026-09-17</accessId>
+         <volume>172</volume>
+         <issue>147</issue>
+         <congress>119</congress>
+         <session>2</session>
+         <bookCount>1</bookCount>
+    </extension>
+    <relatedItem type="constituent" ID="id-CREC-2026-09-17-pt1-PgH5987-5" xlink:href="https://www.govinfo.gov/metadata/granule/CREC-2026-09-17/CREC-2026-09-17-pt1-PgH5987-5/mods.xml">
+         <titleInfo>
+              <title>PLEDGE OF ALLEGIANCE</title>
+              <partName>House</partName>
+        </titleInfo>
+         <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CREC-2026-09-17/html/CREC-2026-09-17-pt1-PgH5987-5.htm">
+              <identifier type="FDsys Unique ID">D09002ee1e84b649e</identifier>
+        </relatedItem>
+         <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CREC-2026-09-17/pdf/CREC-2026-09-17-pt1-PgH5987-5.pdf">
+              <identifier type="FDsys Unique ID">D09002ee1e84b692e</identifier>
+        </relatedItem>
+         <identifier type="congressional record citation">172 Cong. Rec. H5987</identifier>
+         <identifier type="uri">https://www.govinfo.gov/app/details/CREC-2026-09-17/CREC-2026-09-17-pt1-PgH5987-5</identifier>
+         <identifier type="former granule identifier">cr17se26-25</identifier>
+         <location>
+              <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CREC-2026-09-17/CREC-2026-09-17-pt1-PgH5987-5</url>
+              <url access="raw object" displayLabel="PDF rendition">https://www.govinfo.gov/content/pkg/CREC-2026-09-17/pdf/CREC-2026-09-17-pt1-PgH5987-5.pdf</url>
+              <url access="raw object" displayLabel="HTML rendition">https://www.govinfo.gov/content/pkg/CREC-2026-09-17/html/CREC-2026-09-17-pt1-PgH5987-5.htm</url>
+        </location>
+         <physicalDescription>
+              <extent>1 p.</extent>
+        </physicalDescription>
+         <part type="article">
+              <extent unit="pages">
+                   <start>H5987</start>
+                   <end>H5987</end>
+            </extent>
+        </part>
+         <identifier type="preferred citation">172 Cong. Rec. H5987</identifier>
+         <extension>
+              <searchTitle>PLEDGE OF ALLEGIANCE; Congressional Record Vol. 172, No. 147</searchTitle>
+              <granuleClass>HOUSE</granuleClass>
+              <accessId>CREC-2026-09-17-pt1-PgH5987-5</accessId>
+              <subGranuleClass>PLEDGE</subGranuleClass>
+              <pagePrefix>H</pagePrefix>
+              <bookNumber>1</bookNumber>
+              <chamber>HOUSE</chamber>
+              <granuleDate>2026-09-17</granuleDate>
+              <time from="10:30:00" to="10:30:00"></time>
+        </extension>
+    </relatedItem>
+    <relatedItem type="constituent" ID="id-CREC-2026-09-17-pt1-PgS4765-6" xlink:href="https://www.govinfo.gov/metadata/granule/CREC-2026-09-17/CREC-2026-09-17-pt1-PgS4765-6/mods.xml">
+         <titleInfo>
+              <title>LEGISLATIVE SESSION</title>
+              <partName>Senate</partName>
+        </titleInfo>
+         <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CREC-2026-09-17/html/CREC-2026-09-17-pt1-PgS4765-6.htm">
+              <identifier type="FDsys Unique ID">D09002ee1e84b64cc</identifier>
+        </relatedItem>
+         <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CREC-2026-09-17/pdf/CREC-2026-09-17-pt1-PgS4765-6.pdf">
+              <identifier type="FDsys Unique ID">D09002ee1e84b695c</identifier>
+        </relatedItem>
+         <identifier type="congressional record citation">172 Cong. Rec. S4765</identifier>
+         <identifier type="uri">https://www.govinfo.gov/app/details/CREC-2026-09-17/CREC-2026-09-17-pt1-PgS4765-6</identifier>
+         <identifier type="former granule identifier">cr17se26-72</identifier>
+         <location>
+              <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CREC-2026-09-17/CREC-2026-09-17-pt1-PgS4765-6</url>
+              <url access="raw object" displayLabel="PDF rendition">https://www.govinfo.gov/content/pkg/CREC-2026-09-17/pdf/CREC-2026-09-17-pt1-PgS4765-6.pdf</url>
+              <url access="raw object" displayLabel="HTML rendition">https://www.govinfo.gov/content/pkg/CREC-2026-09-17/html/CREC-2026-09-17-pt1-PgS4765-6.htm</url>
+        </location>
+         <physicalDescription>
+              <extent>10 p.</extent>
+        </physicalDescription>
+         <part type="article">
+              <extent unit="pages">
+                   <start>S4765</start>
+                   <end>S4774</end>
+            </extent>
+        </part>
+         <name type="personal">
+              <namePart>Chuck Grassley</namePart>
+              <affiliation>United States Senate</affiliation>
+              <role>
+                   <roleTerm type="text">speaking</roleTerm>
+            </role>
+              <description>United States Congress Member</description>
+        </name>
+         <name type="personal">
+              <namePart>John Thune</namePart>
+              <affiliation>United States Senate</affiliation>
+              <role>
+                   <roleTerm type="text">speaking</roleTerm>
+            </role>
+              <description>United States Congress Member</description>
+        </name>
+         <name type="personal">
+              <namePart>John Barrasso</namePart>
+              <affiliation>United States Senate</affiliation>
+              <role>
+                   <roleTerm type="text">speaking</roleTerm>
+            </role>
+              <description>United States Congress Member</description>
+        </name>
+         <name type="personal">
+              <namePart>Charles E. Schumer</namePart>
+              <affiliation>United States Senate</affiliation>
+              <role>
+                   <roleTerm type="text">speaking</roleTerm>
+            </role>
+              <description>United States Congress Member</description>
+        </name>
+         <name type="personal">
+              <namePart>Richard J. Durbin</namePart>
+              <affiliation>United States Senate</affiliation>
+              <role>
+                   <roleTerm type="text">speaking</roleTerm>
+            </role>
+              <description>United States Congress Member</description>
+        </name>
+         <name type="personal">
+              <namePart>Maria Cantwell</namePart>
+              <affiliation>United States Senate</affiliation>
+              <role>
+                   <roleTerm type="text">speaking</roleTerm>
+            </role>
+              <description>United States Congress Member</description>
+        </name>
+         <name type="personal">
+              <namePart>Cory A. Booker</namePart>
+              <affiliation>United States Senate</affiliation>
+              <role>
+                   <roleTerm type="text">speaking</roleTerm>
+            </role>
+              <description>United States Congress Member</description>
+        </name>
+         <name type="personal">
+              <namePart>Bernie Moreno</namePart>
+              <affiliation>United States Senate</affiliation>
+              <role>
+                   <roleTerm type="text">speaking</roleTerm>
+            </role>
+              <description>United States Congress Member</description>
+        </name>
+         <identifier type="preferred citation">172 Cong. Rec. S4765</identifier>
+         <identifier type="congressional vote number">SENATE Rollcall Vote No.236(119th Congress)</identifier>
+         <extension>
+              <searchTitle>LEGISLATIVE SESSION; Congressional Record Vol. 172, No. 147</searchTitle>
+              <granuleClass>SENATE</granuleClass>
+              <accessId>CREC-2026-09-17-pt1-PgS4765-6</accessId>
+              <subGranuleClass>SLEGISLATIVE</subGranuleClass>
+              <pagePrefix>S</pagePrefix>
+              <bookNumber>1</bookNumber>
+              <chamber>SENATE</chamber>
+              <granuleDate>2026-09-17</granuleDate>
+              <congVote chamber="SENATE" congress="119" nocount="22" number="236" nvcount="1" yescount="77">
+                                        
+                   <result>The motion was agreed to.</result>
+                                        
+                   <inDailyDigest>false</inDailyDigest>
+                                        
+                   <congMember bioGuideId="A000383" chamber="S" congress="119" party="R" role="VOTED YES" state="OK">
+                                                
+                        <name type="parsed">Armstrong</name>
+                                                
+                        <name type="authority-fnf">Alan Armstrong</name>
+                                                
+                        <name type="authority-lnf">Armstrong, Alan</name>
+                                                
+                        <name type="authority-other">Alan Stuart Armstrong</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="B001230" chamber="S" congress="119" party="D" role="VOTED YES" state="WI">
+                                                
+                        <name type="parsed">Baldwin</name>
+                                                
+                        <name type="authority-fnf">Tammy Baldwin</name>
+                                                
+                        <name type="authority-lnf">Baldwin, Tammy</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="B001299" chamber="S" congress="119" party="R" role="VOTED YES" state="IN">
+                                                
+                        <name type="parsed">Banks</name>
+                                                
+                        <name type="authority-fnf">Jim Banks</name>
+                                                
+                        <name type="authority-lnf">Banks, Jim</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="B001261" chamber="S" congress="119" party="R" role="VOTED YES" state="WY">
+                                                
+                        <name type="parsed">Barrasso</name>
+                                                
+                        <name type="authority-fnf">John Barrasso</name>
+                                                
+                        <name type="authority-lnf">Barrasso, John</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="B001267" chamber="S" congress="119" party="D" role="VOTED YES" state="CO">
+                                                
+                        <name type="parsed">Bennet</name>
+                                                
+                        <name type="authority-fnf">Michael F. Bennet</name>
+                                                
+                        <name type="authority-lnf">Bennet, Michael F.</name>
+                                                
+                        <name type="authority-other">Michael Bennet</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="B001243" chamber="S" congress="119" party="R" role="VOTED YES" state="TN">
+                                                
+                        <name type="parsed">Blackburn</name>
+                                                
+                        <name type="authority-fnf">Marsha Blackburn</name>
+                                                
+                        <name type="authority-lnf">Blackburn, Marsha</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="B001236" chamber="S" congress="119" party="R" role="VOTED YES" state="AR">
+                                                
+                        <name type="parsed">Boozman</name>
+                                                
+                        <name type="authority-fnf">John Boozman</name>
+                                                
+                        <name type="authority-lnf">Boozman, John</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="B001319" chamber="S" congress="119" party="R" role="VOTED YES" state="AL">
+                                                
+                        <name type="parsed">Britt</name>
+                                                
+                        <name type="authority-fnf">Katie Boyd Britt</name>
+                                                
+                        <name type="authority-lnf">Britt, Katie Boyd</name>
+                                                
+                        <name type="authority-other">Katie Britt</name>
+                                                
+                        <name type="authority-other">Katie Elizabeth Britt</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="B001305" chamber="S" congress="119" party="R" role="VOTED YES" state="NC">
+                                                
+                        <name type="parsed">Budd</name>
+                                                
+                        <name type="authority-fnf">Ted Budd</name>
+                                                
+                        <name type="authority-lnf">Budd, Ted</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="C000127" chamber="S" congress="119" party="D" role="VOTED YES" state="WA">
+                                                
+                        <name type="parsed">Cantwell</name>
+                                                
+                        <name type="authority-fnf">Maria Cantwell</name>
+                                                
+                        <name type="authority-lnf">Cantwell, Maria</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="C001047" chamber="S" congress="119" party="R" role="VOTED YES" state="WV">
+                                                
+                        <name type="parsed">Capito</name>
+                                                
+                        <name type="authority-fnf">Shelley Moore Capito</name>
+                                                
+                        <name type="authority-lnf">Capito, Shelley Moore</name>
+                                                
+                        <name type="authority-other">Shelley Capito</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="C001075" chamber="S" congress="119" party="R" role="VOTED YES" state="LA">
+                                                
+                        <name type="parsed">Cassidy</name>
+                                                
+                        <name type="authority-fnf">Bill Cassidy</name>
+                                                
+                        <name type="authority-lnf">Cassidy, Bill</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="C001035" chamber="S" congress="119" party="R" role="VOTED YES" state="ME">
+                                                
+                        <name type="parsed">Collins</name>
+                                                
+                        <name type="authority-fnf">Susan M. Collins</name>
+                                                
+                        <name type="authority-lnf">Collins, Susan M.</name>
+                                                
+                        <name type="authority-other">Susan Collins</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="C001088" chamber="S" congress="119" party="D" role="VOTED YES" state="DE">
+                                                
+                        <name type="parsed">Coons</name>
+                                                
+                        <name type="authority-fnf">Christopher A. Coons</name>
+                                                
+                        <name type="authority-lnf">Coons, Christopher A.</name>
+                                                
+                        <name type="authority-other">Christopher Coons</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="C001056" chamber="S" congress="119" party="R" role="VOTED YES" state="TX">
+                                                
+                        <name type="parsed">Cornyn</name>
+                                                
+                        <name type="authority-fnf">John Cornyn</name>
+                                                
+                        <name type="authority-lnf">Cornyn, John</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="C001113" chamber="S" congress="119" party="D" role="VOTED YES" state="NV">
+                                                
+                        <name type="parsed">Cortez Masto</name>
+                                                
+                        <name type="authority-fnf">Catherine Cortez Masto</name>
+                                                
+                        <name type="authority-lnf">Cortez Masto, Catherine</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="C001095" chamber="S" congress="119" party="R" role="VOTED YES" state="AR">
+                                                
+                        <name type="parsed">Cotton</name>
+                                                
+                        <name type="authority-fnf">Tom Cotton</name>
+                                                
+                        <name type="authority-lnf">Cotton, Tom</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="C001096" chamber="S" congress="119" party="R" role="VOTED YES" state="ND">
+                                                
+                        <name type="parsed">Cramer</name>
+                                                
+                        <name type="authority-fnf">Kevin Cramer</name>
+                                                
+                        <name type="authority-lnf">Cramer, Kevin</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="C000880" chamber="S" congress="119" party="R" role="VOTED YES" state="ID">
+                                                
+                        <name type="parsed">Crapo</name>
+                                                
+                        <name type="authority-fnf">Mike Crapo</name>
+                                                
+                        <name type="authority-lnf">Crapo, Mike</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="C001098" chamber="S" congress="119" party="R" role="VOTED YES" state="TX">
+                                                
+                        <name type="parsed">Cruz</name>
+                                                
+                        <name type="authority-fnf">Ted Cruz</name>
+                                                
+                        <name type="authority-lnf">Cruz, Ted</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="C001114" chamber="S" congress="119" party="R" role="VOTED YES" state="UT">
+                                                
+                        <name type="parsed">Curtis</name>
+                                                
+                        <name type="authority-fnf">John R. Curtis</name>
+                                                
+                        <name type="authority-lnf">Curtis, John R.</name>
+                                                
+                        <name type="authority-other">John Curtis</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="D000618" chamber="S" congress="119" party="R" role="VOTED YES" state="MT">
+                                                
+                        <name type="parsed">Daines</name>
+                                                
+                        <name type="authority-fnf">Steve Daines</name>
+                                                
+                        <name type="authority-lnf">Daines, Steve</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="E000295" chamber="S" congress="119" party="R" role="VOTED YES" state="IA">
+                                                
+                        <name type="parsed">Ernst</name>
+                                                
+                        <name type="authority-fnf">Joni Ernst</name>
+                                                
+                        <name type="authority-lnf">Ernst, Joni</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="F000479" chamber="S" congress="119" party="D" role="VOTED YES" state="PA">
+                                                
+                        <name type="parsed">Fetterman</name>
+                                                
+                        <name type="authority-fnf">John Fetterman</name>
+                                                
+                        <name type="authority-lnf">Fetterman, John</name>
+                                                
+                        <name type="authority-other">John K. Fetterman</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="F000463" chamber="S" congress="119" party="R" role="VOTED YES" state="NE">
+                                                
+                        <name type="parsed">Fischer</name>
+                                                
+                        <name type="authority-fnf">Deb Fischer</name>
+                                                
+                        <name type="authority-lnf">Fischer, Deb</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="G000574" chamber="S" congress="119" party="D" role="VOTED YES" state="AZ">
+                                                
+                        <name type="parsed">Gallego</name>
+                                                
+                        <name type="authority-fnf">Ruben Gallego</name>
+                                                
+                        <name type="authority-lnf">Gallego, Ruben</name>
+                                            
+                </congMember>
+                                        
+                   <congMember chamber="S" congress="119" role="VOTED YES">
+                                                
+                        <name type="parsed">Graham</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="G000386" chamber="S" congress="119" party="R" role="VOTED YES" state="IA">
+                                                
+                        <name type="parsed">Grassley</name>
+                                                
+                        <name type="authority-fnf">Chuck Grassley</name>
+                                                
+                        <name type="authority-lnf">Grassley, Chuck</name>
+                                                
+                        <name type="authority-other">Chuck E. Grassley</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="H000601" chamber="S" congress="119" party="R" role="VOTED YES" state="TN">
+                                                
+                        <name type="parsed">Hagerty</name>
+                                                
+                        <name type="authority-fnf">Bill Hagerty</name>
+                                                
+                        <name type="authority-lnf">Hagerty, Bill</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="H001076" chamber="S" congress="119" party="D" role="VOTED YES" state="NH">
+                                                
+                        <name type="parsed">Hassan</name>
+                                                
+                        <name type="authority-fnf">Margaret Wood Hassan</name>
+                                                
+                        <name type="authority-lnf">Hassan, Margaret Wood</name>
+                                                
+                        <name type="authority-other">Maggie Hassan</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="H001089" chamber="S" congress="119" party="R" role="VOTED YES" state="MO">
+                                                
+                        <name type="parsed">Hawley</name>
+                                                
+                        <name type="authority-fnf">Josh Hawley</name>
+                                                
+                        <name type="authority-lnf">Hawley, Josh</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="H001046" chamber="S" congress="119" party="D" role="VOTED YES" state="NM">
+                                                
+                        <name type="parsed">Heinrich</name>
+                                                
+                        <name type="authority-fnf">Martin Heinrich</name>
+                                                
+                        <name type="authority-lnf">Heinrich, Martin</name>
+                                                
+                        <name type="authority-other">Martin T. Heinrich</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="H000273" chamber="S" congress="119" party="D" role="VOTED YES" state="CO">
+                                                
+                        <name type="parsed">Hickenlooper</name>
+                                                
+                        <name type="authority-fnf">John W. Hickenlooper</name>
+                                                
+                        <name type="authority-lnf">Hickenlooper, John W.</name>
+                                                
+                        <name type="authority-other">John Hickenlooper</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="H001042" chamber="S" congress="119" party="D" role="VOTED YES" state="HI">
+                                                
+                        <name type="parsed">Hirono</name>
+                                                
+                        <name type="authority-fnf">Mazie K. Hirono</name>
+                                                
+                        <name type="authority-lnf">Hirono, Mazie K.</name>
+                                                
+                        <name type="authority-other">Mazie Hirono</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="H001061" chamber="S" congress="119" party="R" role="VOTED YES" state="ND">
+                                                
+                        <name type="parsed">Hoeven</name>
+                                                
+                        <name type="authority-fnf">John Hoeven</name>
+                                                
+                        <name type="authority-lnf">Hoeven, John</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="H001104" chamber="S" congress="119" party="R" role="VOTED YES" state="OH">
+                                                
+                        <name type="parsed">Husted</name>
+                                                
+                        <name type="authority-fnf">Jon Husted</name>
+                                                
+                        <name type="authority-lnf">Husted, Jon</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="H001079" chamber="S" congress="119" party="R" role="VOTED YES" state="MS">
+                                                
+                        <name type="parsed">Hyde-Smith</name>
+                                                
+                        <name type="authority-fnf">Cindy Hyde-Smith</name>
+                                                
+                        <name type="authority-lnf">Hyde-Smith, Cindy</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="J000293" chamber="S" congress="119" party="R" role="VOTED YES" state="WI">
+                                                
+                        <name type="parsed">Johnson</name>
+                                                
+                        <name type="authority-fnf">Ron Johnson</name>
+                                                
+                        <name type="authority-lnf">Johnson, Ron</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="J000312" chamber="S" congress="119" party="R" role="VOTED YES" state="WV">
+                                                
+                        <name type="parsed">Justice</name>
+                                                
+                        <name type="authority-fnf">James C. Justice</name>
+                                                
+                        <name type="authority-lnf">Justice, James C.</name>
+                                                
+                        <name type="authority-other">James Justice</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="K000393" chamber="S" congress="119" party="R" role="VOTED YES" state="LA">
+                                                
+                        <name type="parsed">Kennedy</name>
+                                                
+                        <name type="authority-fnf">John Kennedy</name>
+                                                
+                        <name type="authority-lnf">Kennedy, John</name>
+                                                
+                        <name type="authority-other">John Neely Kennedy</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="K000383" chamber="S" congress="119" party="I" role="VOTED YES" state="ME">
+                                                
+                        <name type="parsed">King</name>
+                                                
+                        <name type="authority-fnf">Angus S. King Jr.</name>
+                                                
+                        <name type="authority-lnf">King, Angus S., Jr.</name>
+                                                
+                        <name type="authority-other">Angus King</name>
+                                                
+                        <name type="authority-other">Angus S. King</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="K000367" chamber="S" congress="119" party="D" role="VOTED YES" state="MN">
+                                                
+                        <name type="parsed">Klobuchar</name>
+                                                
+                        <name type="authority-fnf">Amy Klobuchar</name>
+                                                
+                        <name type="authority-lnf">Klobuchar, Amy</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="L000575" chamber="S" congress="119" party="R" role="VOTED YES" state="OK">
+                                                
+                        <name type="parsed">Lankford</name>
+                                                
+                        <name type="authority-fnf">James Lankford</name>
+                                                
+                        <name type="authority-lnf">Lankford, James</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="L000577" chamber="S" congress="119" party="R" role="VOTED YES" state="UT">
+                                                
+                        <name type="parsed">Lee</name>
+                                                
+                        <name type="authority-fnf">Mike Lee</name>
+                                                
+                        <name type="authority-lnf">Lee, Mike</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="L000570" chamber="S" congress="119" party="D" role="VOTED YES" state="NM">
+                                                
+                        <name type="parsed">Lujan</name>
+                                                
+                        <name type="authority-fnf">Ben Ray Lujan</name>
+                                                
+                        <name type="authority-lnf">Lujan, Ben Ray</name>
+                                                
+                        <name type="authority-other">Ben Lujan</name>
+                                                
+                        <name type="authority-other">Ben R. Lujan</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="L000571" chamber="S" congress="119" party="R" role="VOTED YES" state="WY">
+                                                
+                        <name type="parsed">Lummis</name>
+                                                
+                        <name type="authority-fnf">Cynthia M. Lummis</name>
+                                                
+                        <name type="authority-lnf">Lummis, Cynthia M.</name>
+                                                
+                        <name type="authority-other">Cynthia Lummis</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="M001198" chamber="S" congress="119" party="R" role="VOTED YES" state="KS">
+                                                
+                        <name type="parsed">Marshall</name>
+                                                
+                        <name type="authority-fnf">Roger Marshall</name>
+                                                
+                        <name type="authority-lnf">Marshall, Roger</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="M000355" chamber="S" congress="119" party="R" role="VOTED YES" state="KY">
+                                                
+                        <name type="parsed">McConnell</name>
+                                                
+                        <name type="authority-fnf">Mitch McConnell</name>
+                                                
+                        <name type="authority-lnf">McConnell, Mitch</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="M001243" chamber="S" congress="119" party="R" role="VOTED YES" state="PA">
+                                                
+                        <name type="parsed">McCormick</name>
+                                                
+                        <name type="authority-fnf">David McCormick</name>
+                                                
+                        <name type="authority-lnf">McCormick, David</name>
+                                                
+                        <name type="authority-other">David H. McCormick</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="M001242" chamber="S" congress="119" party="R" role="VOTED YES" state="OH">
+                                                
+                        <name type="parsed">Moreno</name>
+                                                
+                        <name type="authority-fnf">Bernie Moreno</name>
+                                                
+                        <name type="authority-lnf">Moreno, Bernie</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="M001153" chamber="S" congress="119" party="R" role="VOTED YES" state="AK">
+                                                
+                        <name type="parsed">Murkowski</name>
+                                                
+                        <name type="authority-fnf">Lisa Murkowski</name>
+                                                
+                        <name type="authority-lnf">Murkowski, Lisa</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="M001111" chamber="S" congress="119" party="D" role="VOTED YES" state="WA">
+                                                
+                        <name type="parsed">Murray</name>
+                                                
+                        <name type="authority-fnf">Patty Murray</name>
+                                                
+                        <name type="authority-lnf">Murray, Patty</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="O000174" chamber="S" congress="119" party="D" role="VOTED YES" state="GA">
+                                                
+                        <name type="parsed">Ossoff</name>
+                                                
+                        <name type="authority-fnf">Jon Ossoff</name>
+                                                
+                        <name type="authority-lnf">Ossoff, Jon</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="P000145" chamber="S" congress="119" party="D" role="VOTED YES" state="CA">
+                                                
+                        <name type="parsed">Padilla</name>
+                                                
+                        <name type="authority-fnf">Alex Padilla</name>
+                                                
+                        <name type="authority-lnf">Padilla, Alex</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="P000595" chamber="S" congress="119" party="D" role="VOTED YES" state="MI">
+                                                
+                        <name type="parsed">Peters</name>
+                                                
+                        <name type="authority-fnf">Gary C. Peters</name>
+                                                
+                        <name type="authority-lnf">Peters, Gary C.</name>
+                                                
+                        <name type="authority-other">Gary Peters</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="R000122" chamber="S" congress="119" party="D" role="VOTED YES" state="RI">
+                                                
+                        <name type="parsed">Reed</name>
+                                                
+                        <name type="authority-fnf">Jack Reed</name>
+                                                
+                        <name type="authority-lnf">Reed, Jack</name>
+                                                
+                        <name type="authority-other">John Reed</name>
+                                                
+                        <name type="authority-other">John F. Reed</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="R000618" chamber="S" congress="119" party="R" role="VOTED YES" state="NE">
+                                                
+                        <name type="parsed">Ricketts</name>
+                                                
+                        <name type="authority-fnf">Pete Ricketts</name>
+                                                
+                        <name type="authority-lnf">Ricketts, Pete</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="R000584" chamber="S" congress="119" party="R" role="VOTED YES" state="ID">
+                                                
+                        <name type="parsed">Risch</name>
+                                                
+                        <name type="authority-fnf">James E. Risch</name>
+                                                
+                        <name type="authority-lnf">Risch, James E.</name>
+                                                
+                        <name type="authority-other">James Risch</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="R000608" chamber="S" congress="119" party="D" role="VOTED YES" state="NV">
+                                                
+                        <name type="parsed">Rosen</name>
+                                                
+                        <name type="authority-fnf">Jacky Rosen</name>
+                                                
+                        <name type="authority-lnf">Rosen, Jacky</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="R000605" chamber="S" congress="119" party="R" role="VOTED YES" state="SD">
+                                                
+                        <name type="parsed">Rounds</name>
+                                                
+                        <name type="authority-fnf">Mike Rounds</name>
+                                                
+                        <name type="authority-lnf">Rounds, Mike</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="S001194" chamber="S" congress="119" party="D" role="VOTED YES" state="HI">
+                                                
+                        <name type="parsed">Schatz</name>
+                                                
+                        <name type="authority-fnf">Brian Schatz</name>
+                                                
+                        <name type="authority-lnf">Schatz, Brian</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="S001227" chamber="S" congress="119" party="R" role="VOTED YES" state="MO">
+                                                
+                        <name type="parsed">Schmitt</name>
+                                                
+                        <name type="authority-fnf">Eric Schmitt</name>
+                                                
+                        <name type="authority-lnf">Schmitt, Eric</name>
+                                                
+                        <name type="authority-other">Eric S. Schmitt</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="S000148" chamber="S" congress="119" party="D" role="VOTED YES" state="NY">
+                                                
+                        <name type="parsed">Schumer</name>
+                                                
+                        <name type="authority-fnf">Charles E. Schumer</name>
+                                                
+                        <name type="authority-lnf">Schumer, Charles E.</name>
+                                                
+                        <name type="authority-other">Charles Schumer</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="S001184" chamber="S" congress="119" party="R" role="VOTED YES" state="SC">
+                                                
+                        <name type="parsed">Scott (SC)</name>
+                                                
+                        <name type="authority-fnf">Tim Scott</name>
+                                                
+                        <name type="authority-lnf">Scott, Tim</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="S001181" chamber="S" congress="119" party="D" role="VOTED YES" state="NH">
+                                                
+                        <name type="parsed">Shaheen</name>
+                                                
+                        <name type="authority-fnf">Jeanne Shaheen</name>
+                                                
+                        <name type="authority-lnf">Shaheen, Jeanne</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="S001232" chamber="S" congress="119" party="R" role="VOTED YES" state="MT">
+                                                
+                        <name type="parsed">Sheehy</name>
+                                                
+                        <name type="authority-fnf">Tim Sheehy</name>
+                                                
+                        <name type="authority-lnf">Sheehy, Tim</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="S001208" chamber="S" congress="119" party="D" role="VOTED YES" state="MI">
+                                                
+                        <name type="parsed">Slotkin</name>
+                                                
+                        <name type="authority-fnf">Elissa Slotkin</name>
+                                                
+                        <name type="authority-lnf">Slotkin, Elissa</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="S001203" chamber="S" congress="119" party="D" role="VOTED YES" state="MN">
+                                                
+                        <name type="parsed">Smith</name>
+                                                
+                        <name type="authority-fnf">Tina Smith</name>
+                                                
+                        <name type="authority-lnf">Smith, Tina</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="S001198" chamber="S" congress="119" party="R" role="VOTED YES" state="AK">
+                                                
+                        <name type="parsed">Sullivan</name>
+                                                
+                        <name type="authority-fnf">Dan Sullivan</name>
+                                                
+                        <name type="authority-lnf">Sullivan, Dan</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="T000250" chamber="S" congress="119" party="R" role="VOTED YES" state="SD">
+                                                
+                        <name type="parsed">Thune</name>
+                                                
+                        <name type="authority-fnf">John Thune</name>
+                                                
+                        <name type="authority-lnf">Thune, John</name>
+                                                
+                        <name type="authority-other">John R. Thune</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="T000476" chamber="S" congress="119" party="R" role="VOTED YES" state="NC">
+                                                
+                        <name type="parsed">Tillis</name>
+                                                
+                        <name type="authority-fnf">Thom Tillis</name>
+                                                
+                        <name type="authority-lnf">Tillis, Thomas</name>
+                                                
+                        <name type="authority-other">Thomas Tillis</name>
+                                                
+                        <name type="authority-other">Thomas Roland Tillis</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="T000278" chamber="S" congress="119" party="R" role="VOTED YES" state="AL">
+                                                
+                        <name type="parsed">Tuberville</name>
+                                                
+                        <name type="authority-fnf">Tommy Tuberville</name>
+                                                
+                        <name type="authority-lnf">Tuberville, Tommy</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="W000805" chamber="S" congress="119" party="D" role="VOTED YES" state="VA">
+                                                
+                        <name type="parsed">Warner</name>
+                                                
+                        <name type="authority-fnf">Mark R. Warner</name>
+                                                
+                        <name type="authority-lnf">Warner, Mark R.</name>
+                                                
+                        <name type="authority-other">Mark Warner</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="W000800" chamber="S" congress="119" party="D" role="VOTED YES" state="VT">
+                                                
+                        <name type="parsed">Welch</name>
+                                                
+                        <name type="authority-fnf">Peter Welch</name>
+                                                
+                        <name type="authority-lnf">Welch, Peter</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="W000437" chamber="S" congress="119" party="R" role="VOTED YES" state="MS">
+                                                
+                        <name type="parsed">Wicker</name>
+                                                
+                        <name type="authority-fnf">Roger F. Wicker</name>
+                                                
+                        <name type="authority-lnf">Wicker, Roger F.</name>
+                                                
+                        <name type="authority-other">Roger Wicker</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="W000779" chamber="S" congress="119" party="D" role="VOTED YES" state="OR">
+                                                
+                        <name type="parsed">Wyden</name>
+                                                
+                        <name type="authority-fnf">Ron Wyden</name>
+                                                
+                        <name type="authority-lnf">Wyden, Ron</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="Y000064" chamber="S" congress="119" party="R" role="VOTED YES" state="IN">
+                                                
+                        <name type="parsed">Young</name>
+                                                
+                        <name type="authority-fnf">Todd Young</name>
+                                                
+                        <name type="authority-lnf">Young, Todd</name>
+                                                
+                        <name type="authority-other">Todd C. Young</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="A000382" chamber="S" congress="119" party="D" role="VOTED NO" state="MD">
+                                                
+                        <name type="parsed">Alsobrooks</name>
+                                                
+                        <name type="authority-fnf">Angela D. Alsobrooks</name>
+                                                
+                        <name type="authority-lnf">Alsobrooks, Angela D.</name>
+                                                
+                        <name type="authority-other">Angela Alsobrooks</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="B001277" chamber="S" congress="119" party="D" role="VOTED NO" state="CT">
+                                                
+                        <name type="parsed">Blumenthal</name>
+                                                
+                        <name type="authority-fnf">Richard Blumenthal</name>
+                                                
+                        <name type="authority-lnf">Blumenthal, Richard</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="B001303" chamber="S" congress="119" party="D" role="VOTED NO" state="DE">
+                                                
+                        <name type="parsed">Blunt Rochester</name>
+                                                
+                        <name type="authority-fnf">Lisa Blunt Rochester</name>
+                                                
+                        <name type="authority-lnf">Blunt Rochester, Lisa</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="B001288" chamber="S" congress="119" party="D" role="VOTED NO" state="NJ">
+                                                
+                        <name type="parsed">Booker</name>
+                                                
+                        <name type="authority-fnf">Cory A. Booker</name>
+                                                
+                        <name type="authority-lnf">Booker, Cory A.</name>
+                                                
+                        <name type="authority-other">Cory Booker</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="D000622" chamber="S" congress="119" party="D" role="VOTED NO" state="IL">
+                                                
+                        <name type="parsed">Duckworth</name>
+                                                
+                        <name type="authority-fnf">Tammy Duckworth</name>
+                                                
+                        <name type="authority-lnf">Duckworth, Tammy</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="D000563" chamber="S" congress="119" party="D" role="VOTED NO" state="IL">
+                                                
+                        <name type="parsed">Durbin</name>
+                                                
+                        <name type="authority-fnf">Richard J. Durbin</name>
+                                                
+                        <name type="authority-lnf">Durbin, Richard J.</name>
+                                                
+                        <name type="authority-other">Richard Durbin</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="G000555" chamber="S" congress="119" party="D" role="VOTED NO" state="NY">
+                                                
+                        <name type="parsed">Gillibrand</name>
+                                                
+                        <name type="authority-fnf">Kirsten E. Gillibrand</name>
+                                                
+                        <name type="authority-lnf">Gillibrand, Kirsten E.</name>
+                                                
+                        <name type="authority-other">Kirsten Gillibrand</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="K000384" chamber="S" congress="119" party="D" role="VOTED NO" state="VA">
+                                                
+                        <name type="parsed">Kaine</name>
+                                                
+                        <name type="authority-fnf">Tim Kaine</name>
+                                                
+                        <name type="authority-lnf">Kaine, Tim</name>
+                                                
+                        <name type="authority-other">Timothy Kaine</name>
+                                                
+                        <name type="authority-other">Timothy M. Kaine</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="K000377" chamber="S" congress="119" party="D" role="VOTED NO" state="AZ">
+                                                
+                        <name type="parsed">Kelly</name>
+                                                
+                        <name type="authority-fnf">Mark Kelly</name>
+                                                
+                        <name type="authority-lnf">Kelly, Mark</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="K000394" chamber="S" congress="119" party="D" role="VOTED NO" state="NJ">
+                                                
+                        <name type="parsed">Kim</name>
+                                                
+                        <name type="authority-fnf">Andy Kim</name>
+                                                
+                        <name type="authority-lnf">Kim, Andy</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="M000133" chamber="S" congress="119" party="D" role="VOTED NO" state="MA">
+                                                
+                        <name type="parsed">Markey</name>
+                                                
+                        <name type="authority-fnf">Edward J. Markey</name>
+                                                
+                        <name type="authority-lnf">Markey, Edward J.</name>
+                                                
+                        <name type="authority-other">Edward Markey</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="M001176" chamber="S" congress="119" party="D" role="VOTED NO" state="OR">
+                                                
+                        <name type="parsed">Merkley</name>
+                                                
+                        <name type="authority-fnf">Jeff Merkley</name>
+                                                
+                        <name type="authority-lnf">Merkley, Jeff</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="M001244" chamber="S" congress="119" party="R" role="VOTED NO" state="FL">
+                                                
+                        <name type="parsed">Moody</name>
+                                                
+                        <name type="authority-fnf">Ashley Moody</name>
+                                                
+                        <name type="authority-lnf">Moody, Ashley</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="M001169" chamber="S" congress="119" party="D" role="VOTED NO" state="CT">
+                                                
+                        <name type="parsed">Murphy</name>
+                                                
+                        <name type="authority-fnf">Christopher Murphy</name>
+                                                
+                        <name type="authority-lnf">Murphy, Christopher</name>
+                                                
+                        <name type="authority-other">Christopher S. Murphy</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="P000603" chamber="S" congress="119" party="R" role="VOTED NO" state="KY">
+                                                
+                        <name type="parsed">Paul</name>
+                                                
+                        <name type="authority-fnf">Rand Paul</name>
+                                                
+                        <name type="authority-lnf">Paul, Rand</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="S000033" chamber="S" congress="119" party="I" role="VOTED NO" state="VT">
+                                                
+                        <name type="parsed">Sanders</name>
+                                                
+                        <name type="authority-fnf">Bernard Sanders</name>
+                                                
+                        <name type="authority-lnf">Sanders, Bernard</name>
+                                                
+                        <name type="authority-other">Bernie Sanders</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="S001150" chamber="S" congress="119" party="D" role="VOTED NO" state="CA">
+                                                
+                        <name type="parsed">Schiff</name>
+                                                
+                        <name type="authority-fnf">Adam B. Schiff</name>
+                                                
+                        <name type="authority-lnf">Schiff, Adam B.</name>
+                                                
+                        <name type="authority-other">Adam Schiff</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="S001217" chamber="S" congress="119" party="R" role="VOTED NO" state="FL">
+                                                
+                        <name type="parsed">Scott (FL)</name>
+                                                
+                        <name type="authority-fnf">Rick Scott</name>
+                                                
+                        <name type="authority-lnf">Scott, Rick</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="V000128" chamber="S" congress="119" party="D" role="VOTED NO" state="MD">
+                                                
+                        <name type="parsed">Van Hollen</name>
+                                                
+                        <name type="authority-fnf">Chris Van Hollen</name>
+                                                
+                        <name type="authority-lnf">Van Hollen, Chris</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="W000790" chamber="S" congress="119" party="D" role="VOTED NO" state="GA">
+                                                
+                        <name type="parsed">Warnock</name>
+                                                
+                        <name type="authority-fnf">Raphael G. Warnock</name>
+                                                
+                        <name type="authority-lnf">Warnock, Raphael G.</name>
+                                                
+                        <name type="authority-other">Raphael Warnock</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="W000817" chamber="S" congress="119" party="D" role="VOTED NO" state="MA">
+                                                
+                        <name type="parsed">Warren</name>
+                                                
+                        <name type="authority-fnf">Elizabeth Warren</name>
+                                                
+                        <name type="authority-lnf">Warren, Elizabeth</name>
+                                                
+                        <name type="authority-other">Elizabeth A. Warren</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="W000802" chamber="S" congress="119" party="D" role="VOTED NO" state="RI">
+                                                
+                        <name type="parsed">Whitehouse</name>
+                                                
+                        <name type="authority-fnf">Sheldon Whitehouse</name>
+                                                
+                        <name type="authority-lnf">Whitehouse, Sheldon</name>
+                                            
+                </congMember>
+                                        
+                   <congMember bioGuideId="M000934" chamber="S" congress="119" party="R" role="NOT VOTING - NV" state="KS">
+                                                
+                        <name type="parsed">Moran</name>
+                                                
+                        <name type="authority-fnf">Jerry Moran</name>
+                                                
+                        <name type="authority-lnf">Moran, Jerry</name>
+                                            
+                </congMember>
+                                    
+            </congVote>
+              <bill congress="119" context="OTHER" number="4668" type="S"></bill>
+              <congMember bioGuideId="G000386" chamber="S" congress="119" party="R" role="SPEAKING" state="IA">
+                                        
+                   <name type="parsed">Mr. GRASSLEY</name>
+                                        
+                   <name type="authority-fnf">Chuck Grassley</name>
+                                        
+                   <name type="authority-lnf">Grassley, Chuck</name>
+                                        
+                   <name type="authority-other">Chuck E. Grassley</name>
+                                    
+            </congMember>
+              <congMember bioGuideId="T000250" chamber="S" congress="119" party="R" role="SPEAKING" state="SD">
+                                        
+                   <name type="parsed">Mr. THUNE</name>
+                                        
+                   <name type="authority-fnf">John Thune</name>
+                                        
+                   <name type="authority-lnf">Thune, John</name>
+                                        
+                   <name type="authority-other">John R. Thune</name>
+                                    
+            </congMember>
+              <congMember bioGuideId="B001261" chamber="S" congress="119" party="R" role="SPEAKING" state="WY">
+                                        
+                   <name type="parsed">Mr. BARRASSO</name>
+                                        
+                   <name type="authority-fnf">John Barrasso</name>
+                                        
+                   <name type="authority-lnf">Barrasso, John</name>
+                                    
+            </congMember>
+              <congMember bioGuideId="S000148" chamber="S" congress="119" party="D" role="SPEAKING" state="NY">
+                                        
+                   <name type="parsed">Mr. SCHUMER</name>
+                                        
+                   <name type="authority-fnf">Charles E. Schumer</name>
+                                        
+                   <name type="authority-lnf">Schumer, Charles E.</name>
+                                        
+                   <name type="authority-other">Charles Schumer</name>
+                                    
+            </congMember>
+              <congMember bioGuideId="D000563" chamber="S" congress="119" party="D" role="SPEAKING" state="IL">
+                                        
+                   <name type="parsed">Mr. DURBIN</name>
+                                        
+                   <name type="authority-fnf">Richard J. Durbin</name>
+                                        
+                   <name type="authority-lnf">Durbin, Richard J.</name>
+                                        
+                   <name type="authority-other">Richard Durbin</name>
+                                    
+            </congMember>
+              <congMember bioGuideId="C000127" chamber="S" congress="119" party="D" role="SPEAKING" state="WA">
+                                        
+                   <name type="parsed">Ms. CANTWELL</name>
+                                        
+                   <name type="authority-fnf">Maria Cantwell</name>
+                                        
+                   <name type="authority-lnf">Cantwell, Maria</name>
+                                    
+            </congMember>
+              <congMember bioGuideId="B001288" chamber="S" congress="119" party="D" role="SPEAKING" state="NJ">
+                                        
+                   <name type="parsed">Mr. BOOKER</name>
+                                        
+                   <name type="authority-fnf">Cory A. Booker</name>
+                                        
+                   <name type="authority-lnf">Booker, Cory A.</name>
+                                        
+                   <name type="authority-other">Cory Booker</name>
+                                    
+            </congMember>
+              <congMember bioGuideId="M001242" chamber="S" congress="119" party="R" role="SPEAKING" state="OH">
+                                        
+                   <name type="parsed">Mr. MORENO</name>
+                                        
+                   <name type="authority-fnf">Bernie Moreno</name>
+                                        
+                   <name type="authority-lnf">Moreno, Bernie</name>
+                                    
+            </congMember>
+        </extension>
+         <relatedItem type="isReferencedBy">
+              <titleInfo>
+                   <title>United States Senate Bill 4668 (119th Congress)</title>
+            </titleInfo>
+              <identifier type="Congressional Bill citation">S. 4668</identifier>
+              <extension>
+                   <congress>119</congress>
+                   <context>OTHER</context>
+            </extension>
+        </relatedItem>
+    </relatedItem>
+</mods>

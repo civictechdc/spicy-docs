@@ -30,13 +30,14 @@ _IMPLEMENTATION = "git+https://example.test/spicy-docs@" + "a" * 40
 _EXAMPLE = Path(__file__).resolve().parents[1] / "examples" / "offline_release.py"
 
 
-def _without_optional(code: str) -> None:
+def _without_optional(code: str, blocked: tuple[str, ...] = _OPTIONAL) -> None:
+    """Run ``code`` in a fresh interpreter where every top-level package in ``blocked`` fails to import."""
     setup = f"""
 import importlib.abc
 import sys
 class UnavailableOptional(importlib.abc.MetaPathFinder):
     def find_spec(self, fullname, path=None, target=None):
-        if fullname.split('.')[0] in {_OPTIONAL!r}:
+        if fullname.split('.')[0] in {blocked!r}:
             raise ModuleNotFoundError(f"No module named '{{fullname}}'", name=fullname)
 sys.meta_path.insert(0, UnavailableOptional())
 """
@@ -233,15 +234,8 @@ def test_reconstruction_parses_serializes_and_reports_four_of_five_findings_with
     has every extra installed.
     """
     code = f"""
-import importlib.abc, json, sys
+import json, sys
 from pathlib import Path
-
-class Unavailable(importlib.abc.MetaPathFinder):
-    def find_spec(self, fullname, path=None, target=None):
-        if fullname.split('.')[0] in {_RECONSTRUCT!r}:
-            raise ModuleNotFoundError(f"No module named {{fullname!r}}", name=fullname)
-
-sys.meta_path.insert(0, Unavailable())
 
 from spicy_docs.reconstruction import EXTRA_REQUIRED, extra_available
 from spicy_docs.reconstruction.evidence import EvidenceDocument
@@ -278,4 +272,35 @@ else:
 
 assert "lxml" not in sys.modules
 """
-    _without_optional(code)
+    _without_optional(code, (*_OPTIONAL, *_RECONSTRUCT))
+
+
+def test_record_speeches_imports_and_refuses_by_name_without_its_extra() -> None:
+    """The speech-turn adapter imports with the parser unavailable, says so, and refuses naming the extra."""
+    fixtures = Path(__file__).parent / "fixtures" / "record_speeches"
+    _without_optional(
+        f"""
+import sys
+from pathlib import Path
+from spicy_docs.sources.congress.record_speeches import (
+    EXTRA_REQUIRED, RecordSpeechesError, parse_record_speeches, parser_available,
+)
+assert not parser_available()
+fixtures = Path({str(fixtures)!r})
+granule = 'CREC-2026-09-16-pt1-PgH5835-8'
+try:
+    parse_record_speeches(
+        (fixtures / f'{{granule}}.htm').read_bytes(),
+        (fixtures / 'CREC-2026-09-16.mods.excerpt.xml').read_bytes(),
+        granule,
+        max_html_bytes=1 << 20,
+        max_mods_bytes=1 << 20,
+    )
+except RecordSpeechesError as error:
+    assert str(error) == EXTRA_REQUIRED and 'record-speeches' in EXTRA_REQUIRED, error
+else:
+    raise AssertionError('reading must refuse by name without the extra')
+assert not [name for name in sys.modules if name.split('.')[0] in ('congressionalrecord', 'bs4')]
+""",
+        (*_OPTIONAL, "congressionalrecord"),
+    )
