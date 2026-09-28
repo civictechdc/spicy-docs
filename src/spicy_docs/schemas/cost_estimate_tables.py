@@ -28,12 +28,19 @@ from spicy_docs.schemas.tables import (
 #: ``bill_committees.referral_rule`` records its lookup.
 PUBLICATION_ID_RULE = "cbo_publication_url"
 
-#: The only ``url`` shape measured: 1,468 of 1,468 items in the 118th's ``hr``
-#: and ``s`` bulk zips are a bare ``/publication/{id}`` page and **none** is a
-#: PDF.  Anchored, no query and no trailing slash, because a locator this
-#: repository publishes as a key has to be the one the publisher stated; a url
-#: outside this shape is refused by name rather than coerced into an id.
-_PUBLICATION_URL = re.compile(r"https://www\.cbo\.gov/publication/(?P<id>[1-9][0-9]*)")
+#: The ``url`` shapes measured: a bare ``/publication/{id}`` page on
+#: ``www.cbo.gov``, never a PDF.  1,468 of 1,468 items in the 118th's ``hr``
+#: and ``s`` bulk zips are on ``https``.  Every item of the 108th-111th (9,524 in
+#: all 40 zips, 2026-09-28; the 112th states none) is one of a pair naming one
+#: publication in one bill, once on ``http`` and once on ``https``: 4,762
+#: pairs.  CBO's own sitemap lists 4,761 of those ids, every one on ``https``,
+#: and its wall answers both schemes alike, so the ``http`` statement names
+#: the same page and folds with its twin.  Anchored, no query and no trailing
+#: slash, because a locator this repository publishes as a key has to be the
+#: one the publisher stated; a url outside these shapes is refused by name
+#: rather than coerced into an id.  Receipt:
+#: ``~/Work/corpora/fork-execution-2026-09-21/spicy-docs-0501/cbo-shape/``.
+_PUBLICATION_URL = re.compile(r"https?://www\.cbo\.gov/publication/(?P<id>[1-9][0-9]*)")
 
 #: The rule ``report_citations_json``'s parsed parts are produced by.
 REPORT_CITATION_RULE = "billstatus_committee_report_citation"

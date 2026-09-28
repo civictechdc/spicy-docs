@@ -1,8 +1,7 @@
 """The CBO cost-estimate index: the element the reader now reads, the fold, and the two parse rules.
 
-Every fixture is a bounded excerpt of a real BILLSTATUS record from the two
-bulk zips the routes measurement retained; see
-``tests/fixtures/cbo_cost_estimates/README.md``.
+Every fixture is a bounded excerpt of a real BILLSTATUS record from a retained
+bulk zip; see ``tests/fixtures/cbo_cost_estimates/README.md``.
 """
 
 from __future__ import annotations
@@ -158,8 +157,10 @@ def test_reader_falls_back_to_the_guide_spelling() -> None:
     [
         "https://www.cbo.gov/publication/59139/",
         "https://www.cbo.gov/publication/59139?utm=1",
-        "http://www.cbo.gov/publication/59139",
+        "http://www.cbo.gov/publication/59139/",
+        "ftp://www.cbo.gov/publication/59139",
         "https://cbo.gov/publication/59139",
+        "http://cbo.gov/publication/59139",
         "https://www.cbo.gov/publication/59139/html",
         "https://www.cbo.gov/system/files/2020-07/HR1957directspending.pdf",
         "https://www.cbo.gov/publication/0",
@@ -174,9 +175,13 @@ def test_publication_id_refuses_every_url_outside_the_measured_shape(url: object
 
 
 def test_publication_id_reads_the_measured_shape() -> None:
-    """Publication ids are read from the measured URL shape, trimming surrounding whitespace."""
+    """Publication ids are read from the measured URL shapes, trimming surrounding whitespace.
+
+    The 108th-111th state every estimate on ``http`` as well as ``https``; nothing else about the shape widened.
+    """
     assert publication_id("https://www.cbo.gov/publication/59139") == "59139"
     assert publication_id("  https://www.cbo.gov/publication/59139  ") == "59139"
+    assert publication_id("http://www.cbo.gov/publication/14390") == "14390"
 
 
 # --- the report-citation rule -------------------------------------------------------
@@ -237,6 +242,33 @@ def test_a_restated_title_is_kept_rather_than_folded_away() -> None:
         {"estimate_index": 1, "title": "H.R. 589, Mahsa Amini Human Rights and Security Accountability Act"},
     )
     assert entry.estimate.title == "H.R. 589, Mahsa Amini Human rights and Security Accountability Act"
+
+
+def test_an_estimate_stated_on_http_and_https_is_one_row_that_keeps_both() -> None:
+    """The 108th-111th shape: the http statement is first, its twin a restatement of the url and description.
+
+    Each run of the 108th-111th bill family refused the 4,762 http statements before 0.50.1; the https twin was the
+    row. Now the first-stated item is the row, as for every other restatement, and nothing is dropped.
+    """
+    parsed = status("BILLSTATUS-108hconres96", BillIdentity(108, "hconres", 96))
+    (entry,), unkeyable = fold_cbo_cost_estimates(parsed.cbo_cost_estimates)
+    assert unkeyable == ()
+    assert (entry.publication_id, entry.estimate_index, entry.stated_count) == ("14390", 0, 2)
+    assert entry.estimate.url == "http://www.cbo.gov/publication/14390"
+    assert entry.estimate.description.startswith("<p>Cost estimate for the bill")
+    assert entry.restatements == (
+        {
+            "estimate_index": 1,
+            "url": "https://www.cbo.gov/publication/14390",
+            "description": (
+                "Cost estimate for the bill as ordered reported by the House Committee on Transportation and "
+                "Infrastructure on April 9, 2003"
+            ),
+        },
+    )
+    family = build_bill_family(BillFamilyCapture(status=parsed, versions=()), engine=ENGINE, diff=False)
+    assert [CBO_COST_ESTIMATES.key(row) for row in family.cbo_cost_estimates] == [("108-hconres-96", "14390")]
+    assert not [r for r in family.refusals if r.table == "cbo_cost_estimates"]
 
 
 def test_a_url_outside_the_measured_shape_is_returned_for_refusal_not_dropped() -> None:

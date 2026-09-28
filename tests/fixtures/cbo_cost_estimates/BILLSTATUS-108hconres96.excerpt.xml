@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  BILLSTATUS-108hconres96.xml, a bounded excerpt.
+  Source: https://www.govinfo.gov/bulkdata/BILLSTATUS/108/hconres/BILLSTATUS-108-hconres.zip
+  (1,783,250 bytes, sha256 4d002c576616a4eb2175866a9621e741e56ad864a55b8017871ae8b1e2c129c1,
+  Last-Modified 2024-01-20), fetched 2026-09-28; receipt
+  ~/Work/corpora/fork-execution-2026-09-21/spicy-docs-0501/cbo-shape/.
+  Whole record: 19741 bytes, sha256 b5625e4ed5a57dd03c23730046a83c5a95e59f40b4270929fd394695db539c40.
+  Kept: the identity block parse_bill_status validates, <committeeReports>
+  and <cboCostEstimates>, each element whole and verbatim. Dropped:
+  actions, committees, cosponsors, latestAction, policyArea, sponsors,
+  subjects, summaries, textVersions and titles; none of which this table
+  reads.
+  The 108th-111th state every estimate twice: once on http:// with an
+  HTML-wrapped description, then on https:// with the plain one. Two items,
+  one publication: 14390.
+-->
+<billStatus>
+  <version>3.0.0</version>
+  <bill>
+    <number>96</number>
+    <updateDate>2023-01-15T23:47:51Z</updateDate>
+    <updateDateIncludingText>2023-01-15T23:47:51Z</updateDateIncludingText>
+    <originChamber>House</originChamber>
+    <originChamberCode>H</originChamberCode>
+    <type>HCONRES</type>
+    <introducedDate>2003-03-18</introducedDate>
+    <congress>108</congress>
+    <committeeReports>
+      <committeeReport>
+        <citation>H. Rept. 108-87</citation>
+      </committeeReport>
+    </committeeReports>
+    <cboCostEstimates>
+      <item>
+        <pubDate>2003-04-10T04:00:00Z</pubDate>
+        <title>H. Con. Res. 96, Authorizing the use of the Capitol grounds for the National Peace Officer's Memorial Service</title>
+        <url>http://www.cbo.gov/publication/14390</url>
+        <description>&lt;p&gt;Cost estimate for the bill as ordered reported by the House Committee on Transportation and Infrastructure on April 9, 2003&lt;/p&gt;</description>
+      </item>
+      <item>
+        <pubDate>2003-04-10T04:00:00Z</pubDate>
+        <title>H. Con. Res. 96, Authorizing the use of the Capitol grounds for the National Peace Officer's Memorial Service</title>
+        <url>https://www.cbo.gov/publication/14390</url>
+        <description>Cost estimate for the bill as ordered reported by the House Committee on Transportation and Infrastructure on April 9, 2003</description>
+      </item>
+    </cboCostEstimates>
+    <title>Authorizing the use of the Capitol Grounds for the National Peace Officers' Memorial Service.</title>
+  </bill>
+</billStatus>

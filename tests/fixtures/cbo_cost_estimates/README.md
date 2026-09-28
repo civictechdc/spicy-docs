@@ -1,6 +1,6 @@
 # CBO cost-estimate index fixtures
 
-Four bounded excerpts of real BILLSTATUS records, cut from the two bulk zips
+Bounded excerpts of real BILLSTATUS records. The first four were cut from the two bulk zips
 the [CBO routes measurement](../../../docs/research/cbo-cost-estimate-routes-2026-09-20.md)
 retained on 2026-09-20 (receipt
 `~/Work/corpora/supply-2026-09-02/receipts/cbo-routes-2026-09-20/`, blobs
@@ -15,6 +15,7 @@ government documents in the public domain.
 | `BILLSTATUS-118hr3091.excerpt.xml` | The publisher states one publication twice, field for field — two items, one estimate. |
 | `BILLSTATUS-118hr589.excerpt.xml` | One publication stated twice with a re-spelled title, which is the only field that ever differed across the 37 restated rows measured. |
 | `BILLSTATUS-118s3139.excerpt.xml` | The Senate shape, whose report `CRPT-118srpt289` ends its letter at the `Estimate approved by` attribution. |
+| `BILLSTATUS-108hconres96.excerpt.xml` | The 108th-111th shape: each estimate stated on `http` with an HTML-wrapped description, then on `https` with the plain one. Cut from the 108th `hconres` zip fetched 2026-09-28 (receipt `~/Work/corpora/fork-execution-2026-09-21/spicy-docs-0501/cbo-shape/`). |
 
 Only the identity block `parse_bill_status` validates, `<committeeReports>` and
 `<cboCostEstimates>` are kept; every kept element is whole and verbatim.
