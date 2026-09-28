@@ -1209,33 +1209,16 @@ def _published_regulations_rows() -> dict[str, list[dict[str, str | None]]]:
 
 
 def _regulations_cases() -> list[ShapedCase]:
-    """Retained published rows, with explicitly unread fields for older comment/document schemas.
+    """Retained published rows, each exactly as the host's Parquet footer ordered it.
 
     The host shapes these rows, not a ``shape_*`` here, so the published row is the one under test: the round-trip
-    loop retains the selected identity. New comment fields were not retained
-    in that historical publication: their values stay NULL, not invented from
-    the comment ID. The original fixture remains unchanged.
+    loop compares its column order with the contract's and retains the selected identity. Nothing here reorders or
+    fills a row, so a column the contract moves, adds or drops and the host does not fails there.
     """
     published = _published_regulations_rows()
     assert set(published) == set(_PUBLISHED_REGULATIONS_IDS)
-    for row in published["comments"]:
-        new_fields = {
-            "comment_on_document_id",
-            "comment_on_object_id",
-            "original_document_id",
-            "comment_reference_values_json",
-        }
-        assert set(TABLE_CONTRACTS["comments"].columns) - set(row) == new_fields
-    for row in published["documents"]:
-        assert set(TABLE_CONTRACTS["documents"].columns) - set(row) == {"attachment_records_json"}
     return [
-        _case(
-            table,
-            {column: row.get(column) for column in TABLE_CONTRACTS[table].columns}
-            if table in {"comments", "documents"}
-            else row,
-            (identity,),
-        )
+        _case(table, row, (identity,))
         for table, identities in _PUBLISHED_REGULATIONS_IDS.items()
         for row, identity in zip(published[table], identities, strict=True)
     ]
@@ -1566,22 +1549,28 @@ def test_each_regulations_gov_table_publishes_its_extract_columns_first() -> Non
 
 
 def test_the_published_document_row_is_the_extract_of_its_captured_record() -> None:
-    """The keyed API detail of FAA-2016-6907-0001 (2026-09-14) and the host's published row (2026-09-25) agree on every
-    column ``DOCUMENT.extract`` fills, each spelled through ``text``; the host's appended column is NULL.
+    """The keyed API detail of FAA-2016-6907-0001 (2026-09-14) and the host's published row (2026-09-28) agree on every
+    column ``DOCUMENT.extract`` fills from the detail, each spelled through ``text``; the host's appended column is NULL.
 
     Two acquisitions of one record by different routes, the API and the host's Mirrulations ETL, so agreement shows the
-    host publishes the extract's values unreformatted, not a row agreeing with itself.
+    host publishes the extract's values unreformatted, not a row agreeing with itself. ``attachment_records_json`` is
+    not from the detail: the host read the document's attachment relationship, which this capture lacks, so its
+    published value is the records list, one of them withheld with no file formats.
     """
     record = json.loads((FIXTURES / "listings" / "regulations-gov-document-detail.json").read_text(encoding="utf-8"))
     extracted = {column: text(value) for column, value in DOCUMENT.extract(record).items()}
     (published,) = (
         row for row in _published_regulations_rows()["documents"] if row["document_id"] == "FAA-2016-6907-0001"
     )
-    assert extracted.keys() - published.keys() == {"attachment_records_json"}
-    assert extracted["attachment_records_json"] is None  # No related response was read.
-    retained_columns = extracted.keys() & published.keys()
-    assert {column: published[column] for column in retained_columns} == {
-        column: extracted[column] for column in retained_columns
+    assert extracted["attachment_records_json"] is None  # No related response was read here.
+    records = json.loads(published["attachment_records_json"])
+    assert [(r["type"], r["attributes"]["restrictReasonType"]) for r in records] == [
+        ("attachments", None),
+        ("attachments", "Confidential Business Information"),
+    ]
+    from_detail = extracted.keys() - {"attachment_records_json"}
+    assert {column: published[column] for column in from_detail} == {
+        column: extracted[column] for column in from_detail
     }
     assert published.keys() - extracted.keys() == {"pdf_extraction_results_json"}
     assert published["pdf_extraction_results_json"] is None

@@ -1,22 +1,32 @@
 # Regulations.gov published-table rows
 
 `published-rows.json` holds twelve rows read back from the SpicyRegs fork host's
-public `dockets`, `documents` and `comments` objects on 2026-09-25
+public `dockets`, `documents` and `comments` objects
 (`https://pub-72e95c0c20a84508b42b03a6ff6d55f8.r2.dev/<object>`). Each row is
 complete and unchanged: every column, in the Parquet footer's order, with the
 publisher's spelling, including the trailing space in one `reason_withdrawn`.
-The tests hold the `dockets`, `documents` and `comments` contracts to these rows.
+The tests hold the `dockets`, `documents` and `comments` contracts to these rows,
+column order included.
+
+The rows were selected on 2026-09-25 by the predicates below and re-read by id
+on 2026-09-28, after the host rewrote `comments` and `documents` with the
+0.50.0 columns in the contract's order. Every value the 2026-09-25 rows held
+is unchanged; the re-read adds `attachment_records_json` to each document and
+the four comment-reference columns to each comment. Only FAA-2016-6907-0001's
+`attachment_records_json` is non-NULL: the host read that document's attachment
+relationship.
 
 | Object | Last-Modified | ETag | SHA-256 |
 | --- | --- | --- | --- |
-| `dockets.parquet` | 2026-09-25 20:51:53 GMT | `50d8cfba5aa312c5fe19d67418f41c5d-2` | `308b35c66f8f3694c8048f166dcdf4e3282256c6aeed4974d21e799c3c4580df` |
-| `documents.parquet` | 2026-09-25 20:51:57 GMT | `f3324286311a483b463f92a16b6f3baf-10` | `d7487819971c84ba184853ed09be6bb1df7490eaecc3054487dcd467a4303801` |
-| `comments.parquet` | 2026-09-25 18:15:38 GMT | `731e88e8d2ee0be0532e7461a355494a-508` | `bf81f764598eaab75eb1667b40e5a9dd5b384d35b6bc8cbad58a10d44fd9c15e` |
+| `dockets.parquet` | 2026-09-28 07:40:25 GMT | `9f13d49e9b953c212b7841301c2afea3-2` | `3a31edc95c735f96ac84d6bd1a2a06344beff54d7568063f44fc6533ea0924e9` |
+| `documents.parquet` | 2026-09-28 07:34:24 GMT | `17b61f496f3812be6ff94178026f7fb6-10` | `fe9eb3628f22c97aabbe1eed7626727ef13f0416bd5f9de69fdc9eabca3f6fe5` |
+| `comments.parquet` | 2026-09-28 08:19:12 GMT | `3f0770d0d4e0f4bb929c5958fd145f44-510` | `d876bc8dea207e406110b11dc34fd8b380059bc685ab3c81db4211204404a05a` |
 
 The local copies were bound to the public objects by recomputing each
-multipart ETag over 8 MiB parts. The first five rows below were first read from
-the 19:54 `dockets` and `documents` objects and are byte-identical in the 20:51
-ones.
+multipart ETag over 8 MiB parts (receipt
+`fork-execution-2026-09-21/spicy-docs-0501/published-rows/` under
+`~/Work/corpora`). The 2026-09-25 objects were `308b35c6…`, `d7487819…` and
+`bf81f764…`.
 
 ## Selection
 
@@ -46,7 +56,8 @@ a company's filing. Comments are public records.
   that table or in the extract that fills it;
 - one cross-check: the captured detail of `FAA-2016-6907-0001` (2026-09-14),
   through `DOCUMENT.extract`, equals the published row on every column the
-  extract fills.
+  extract fills from the detail (`attachment_records_json` comes from the
+  separately read attachment relationship).
 
 They do not establish coverage, and they do not establish that a key is unique.
 The keys were checked over whole objects; see
