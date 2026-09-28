@@ -3218,3 +3218,35 @@ Replayed over the parsing survey's 60,000 Federal Register texts
   digest is `5609cfaab8bb`.
 - The `yaml` extra (`PyYAML>=6,<7`) exists; the administration-policy reader
   needs it with `acquisition`.
+
+## Comments carry the agency's submitter class and campaign count
+
+Unreleased, 2026-09-28; the owner approved carrying both fields in the fork's
+`comments` table. `schemas.regulations` extracts Regulations.gov `subtype` and
+`duplicateComments` into `comments.subtype` and `comments.duplicate_comments`,
+as stated, after `category`. The `comments` contract types
+`duplicate_comments` `INTEGER`; every other column stays VARCHAR. NULL means the
+record did not state the field or the host has not read it; a stated 0 stays 0.
+
+Why: `comments` counts posted records. An agency posts one record for a
+mass-mail campaign, and some classify submitters only in `subtype`. EPA's PFAS
+drinking-water docket (EPA-HQ-OW-2022-0114) has 1,629 posted records; their
+`duplicateComments` sum to 53,707, 52,086 of them on 23 `Mass Mail Campaign`
+records. EPA's response to comments counts about 122,200 received, so the sum
+is the agency's posted accounting, not its total. A stratified sample of 5,945
+Mirrulations comment objects (179 agencies, 2026-09-28) stated
+`duplicateComments` on every record: 0 on 5,281, 1 on 660, more on 4. Only EPA
+and a few others use it as a count; 0 is the default elsewhere. `subtype` was
+stated on 2,041 and NULL on 3,904; most agencies state a generic label, and
+only EPA classified submitters. The receipt is the spicy-regs lane's
+`comments-subtype-duplicates` report.
+
+The columns sit after `category`, mid-table, as the owner's 0.50.0 ruling kept
+for the comment reference columns
+([above](#three-hosted-tables-take-new-columns-mid-table)).
+`tests/test_table_contracts.py` inserts both as NULL into the retained
+published comment rows, which predate them (`_UNPUBLISHED_REGULATIONS_COLUMNS`);
+empty that entry when the host has republished and the rows are re-read. The
+`public_tables` comment profile takes its columns from `COMMENT.schema`, as it
+did for the reference columns, so it gains both; its schema id stays
+`public-comments:1.0`, as it did then.

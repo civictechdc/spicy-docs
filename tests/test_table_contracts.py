@@ -1208,20 +1208,31 @@ def _published_regulations_rows() -> dict[str, list[dict[str, str | None]]]:
     return json.loads((FIXTURES / "regulations_gov_tables" / "published-rows.json").read_text(encoding="utf-8"))
 
 
+#: Contract columns the host has not published yet, per table: until it rewrites the table and the rows are re-read,
+#: they are inserted as NULL (unread) at the contract's position, and nothing else is reordered or filled. Empty the
+#: entry when the fixture is re-read, so the round-trip holds the published footer again.
+_UNPUBLISHED_REGULATIONS_COLUMNS: dict[str, frozenset[str]] = {"comments": frozenset({"subtype", "duplicate_comments"})}
+
+
 def _regulations_cases() -> list[ShapedCase]:
-    """Retained published rows, each exactly as the host's Parquet footer ordered it.
+    """Retained published rows, each as the host's Parquet footer ordered it.
 
     The host shapes these rows, not a ``shape_*`` here, so the published row is the one under test: the round-trip
-    loop compares its column order with the contract's and retains the selected identity. Nothing here reorders or
-    fills a row, so a column the contract moves, adds or drops and the host does not fails there.
+    loop compares its column order with the contract's and retains the selected identity. Only the columns named in
+    ``_UNPUBLISHED_REGULATIONS_COLUMNS`` are inserted, as NULL; any other column the contract moves, adds or drops and
+    the host does not fails there.
     """
     published = _published_regulations_rows()
     assert set(published) == set(_PUBLISHED_REGULATIONS_IDS)
-    return [
-        _case(table, row, (identity,))
-        for table, identities in _PUBLISHED_REGULATIONS_IDS.items()
-        for row, identity in zip(published[table], identities, strict=True)
-    ]
+    cases = []
+    for table, identities in _PUBLISHED_REGULATIONS_IDS.items():
+        pending = _UNPUBLISHED_REGULATIONS_COLUMNS.get(table, frozenset())
+        columns = TABLE_CONTRACTS[table].columns
+        for row, identity in zip(published[table], identities, strict=True):
+            assert set(columns) - set(row) == pending and set(row) <= set(columns)
+            assert [c for c in columns if c not in pending] == list(row), f"{table}: published order moved"
+            cases.append(_case(table, {c: row.get(c) for c in columns} if pending else row, (identity,)))
+    return cases
 
 
 def _federal_register_cases() -> list[ShapedCase]:

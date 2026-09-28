@@ -9,7 +9,7 @@ comments the host's ``pdf_extraction_results_json``, each keyed on its dedup key
 from json import dumps as json_dumps
 
 from spicy_docs.schemas.base import RecordType
-from spicy_docs.schemas.tables import VALUE_KEY, Reference, table_contract
+from spicy_docs.schemas.tables import INTEGER, VALUE_KEY, Reference, table_contract
 
 
 def _extract_comment(d: dict) -> dict:
@@ -42,6 +42,9 @@ def _extract_comment(d: dict) -> dict:
         "last_name": attrs.get("lastName"),
         "organization": attrs.get("organization"),
         "category": attrs.get("category"),
+        # As stated, so NULL means the record did not state it and 0 a stated zero.
+        "subtype": attrs.get("subtype"),
+        "duplicate_comments": attrs.get("duplicateComments"),
         "title": attrs.get("title"),
         "comment": attrs.get("comment"),
         "document_type": attrs.get("documentType"),
@@ -172,6 +175,8 @@ COMMENT = RecordType(
         "last_name": str,
         "organization": str,
         "category": str,
+        "subtype": str,
+        "duplicate_comments": int,
         "title": str,
         "comment": str,
         "document_type": str,
@@ -268,6 +273,7 @@ COMMENTS = table_contract(
     identity=(COMMENT.dedup_key,),
     version_column="modify_date",
     key_spelling=VALUE_KEY,
+    types={"duplicate_comments": INTEGER},
     columns={
         "comment_id": "The publisher's comment id, usually its docket id and a sequence (`APHIS-2004-0018-0031`).",
         "docket_id": "The docket the publisher files the comment under (`docketId`); NULL when it names none.",
@@ -285,6 +291,16 @@ COMMENTS = table_contract(
         "last_name": "The submitter's last name, when given.",
         "organization": "The organization the submitter names, when given.",
         "category": "The submitter category the publisher assigns, often NULL.",
+        "subtype": (
+            "The agency's own class for the submission (`subtype`), spelled as stated. It is agency-specific: a "
+            "submitter class such as a mass-mail campaign or an organization at EPA, a generic label at many agencies. "
+            "NULL when the record states none or the host has not read it."
+        ),
+        "duplicate_comments": (
+            "How many received submissions the agency says this posted record stands for (`duplicateComments`), as "
+            "stated. Agencies that do not count state 0; EPA states 1 for a single comment and the campaign's size on "
+            "a mass-mail record. NULL when the host has not read it."
+        ),
         "title": "The comment's title as the publisher states it.",
         "comment": "The comment's body as the publisher states it, markup included.",
         "document_type": "The publisher's category, `Public Submission` for almost every comment.",
