@@ -1412,26 +1412,18 @@ def test_the_identifier_detection_runs_once_per_document(monkeypatch: pytest.Mon
 
 
 def test_doubling_a_document_does_not_quadruple_the_reading_of_every_grammar_kind() -> None:
-    """All seven grammar kinds through ``find_citations``, identifier kinds included; best of three.
+    """All seven grammar kinds through ``find_citations``, identifier kinds included, in counted work.
 
-    The grammar's own guard (``tests/test_citation_grammar.py``) times its
-    readers; this one times the rules as the table reads them.
+    The grammar's own guard (``tests/test_citation_grammar.py``) measures its
+    readers; this one measures the rules as the table reads them. A linear
+    reading doubles, a quadratic one quadruples; three lies between. Measured
+    by ``tests.scaling``, because wall-clock time failed a full run under load
+    on an unrelated head.
     """
-    import time
+    from tests.scaling import assert_scales
 
     block = (
         "The Clean Air Act (42 U.S.C. 7401, 7402 and 7403), Pub. L. 92-463, 86 Stat. 770, 89 FR 12345, 40 CFR "
         "parts 60 and 61; Docket No. EPA-HQ-OAR-2004-0015, RINs 2060-AU12 and 2060-AU13. "
     )
-
-    def best(copies: int) -> float:
-        text = block * copies
-        times = []
-        for _ in range(3):
-            started = time.perf_counter()
-            find_citations(text, kinds=GRAMMAR_KINDS)
-            times.append(time.perf_counter() - started)
-        return min(times)
-
-    small, large = best(300), best(600)
-    assert large < 3 * small, (small, large)
+    assert_scales(lambda text: find_citations(text, kinds=GRAMMAR_KINDS), block * 300, block * 600, bound=3)

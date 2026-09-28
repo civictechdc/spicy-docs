@@ -16,11 +16,9 @@ which is new here, are at the end.
 
 from __future__ import annotations
 
-import gc
 import itertools
 import random
 import re
-import time
 
 import pytest
 
@@ -46,6 +44,7 @@ from spicy_docs.interpretation.identifier_shapes import (
     published_rin,
     unpadded_federal_register_document_number,
 )
+from tests.scaling import assert_scales
 
 #: The dash spellings the module folds, restated here so the property tests
 #: check the rule against an independent copy rather than against the
@@ -1894,29 +1893,6 @@ def test_a_counter_word_ends_at_a_word_boundary_or_its_period() -> None:
     assert numbering_system("File No. SR-Amex-2003-102") is NumberingSystem.FILE_NUMBER
 
 
-def _least_cpu_seconds(read, texts: tuple[str, str], runs: int = 5) -> tuple[float, float]:
-    """The least CPU time of ``runs`` reads of each text, the two interleaved.
-
-    CPU time (``process_time``), not wall-clock time: a machine busy with
-    other work delays this process without charging it, and a wall-clock
-    ratio failed this test under load. Interleaving puts any burst on both
-    sizes, and the least of five drops one that lands on one.
-    """
-    best = [float("inf"), float("inf")]
-    enabled = gc.isenabled()
-    gc.disable()
-    try:
-        for _ in range(runs):
-            for index, text in enumerate(texts):
-                started = time.process_time()
-                read(text)
-                best[index] = min(best[index], time.process_time() - started)
-    finally:
-        if enabled:
-            gc.enable()
-    return best[0], best[1]
-
-
 @pytest.mark.parametrize(
     "make",
     [
@@ -1932,21 +1908,16 @@ def _least_cpu_seconds(read, texts: tuple[str, str], runs: int = 5) -> tuple[flo
     ],
 )
 def test_the_reader_is_linear_in_its_value(make) -> None:
-    """Quadrupling a pathological value does not multiply the reader's CPU time by more than eight.
+    """Quadrupling a pathological value does not multiply the reader's work by more than eight.
 
-    A linear reader takes about four times as long (3.96-4.33 measured over
-    these nine values, 2026-09-28), a quadratic one sixteen, a cubic one
-    sixty-four; eight leaves a factor of two on each side. The superlinear
-    work these values once caused was backtracking inside the regular
-    expression engine, which no Python-level counter sees: a profiler counted
-    114 calls for the reader and for a mutant whose 1,000-space label took
-    2.4 s. So time is the measure, but CPU time, never held to less than
-    1 ms, which timer noise can reach. Mutants restoring the cubic label
-    whitespace and the quadratic list joint each fail it (receipt
-    ``fork-execution-2026-09-21/cbo-112-113/linearity/``).
+    A linear reader does about four times the work (3.53-4.13 times in retired instructions over these nine values,
+    2026-09-28), a quadratic one sixteen, a cubic one sixty-four; eight leaves a factor of two on each side. The
+    superlinear work these values once caused was backtracking inside the regular expression engine, which no
+    Python-level counter sees, so the measure is the CPU's own count, or CPU time where there is none
+    (``tests/scaling.py``). Mutants restoring the cubic label whitespace and the quadratic list joint each fail it
+    (receipt ``fork-execution-2026-09-21/cbo-112-113/linearity/``).
     """
-    small, large = _least_cpu_seconds(normalize_docket_references, (make(1000), make(4000)))
-    assert large < 8 * max(small, 1e-3), (small, large)
+    assert_scales(normalize_docket_references, make(1000), make(4000), bound=8)
 
 
 #: The docket shape as one regular expression, until 2026-09-26: the oracle

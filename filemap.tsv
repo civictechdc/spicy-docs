@@ -445,6 +445,7 @@ tests/releases/test_reading.py	Reader contract: an explicit verifier allowlist, 
 tests/releases/test_refused_responses.py	A refused acquisition leaves exact diagnostic bytes, never a partial release: the failure report retains the…	test
 tests/releases/test_selection.py	Selection contract: observations collapse by grouped maximum on the observation version, records with identical…	test
 tests/releases/test_storage.py	Blob-store contract: digest-addressed writes reuse verified bytes without consuming input, refuse corrupt or symlinked…	test
+tests/scaling.py	Whether a reader's cost grows linearly with its input, measured as counted work rather than wall-clock time.	test
 tests/source_fixtures.py	Routine fixture encoding and inspection shared across source tests.	test
 tests/source_json_input_oracle.py	Parse source JSON without accepting ambiguous keys or unsupported numbers.	test
 tests/source_native_release_fixtures.py	Hand-built source-native release fixtures for the receipt-helper tools.	test

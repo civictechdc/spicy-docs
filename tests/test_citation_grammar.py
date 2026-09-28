@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import random
 import re
-import time
 from dataclasses import replace
 
 import pytest
@@ -40,6 +39,7 @@ from spicy_docs.interpretation.citation_grammar import (
     usc_token_is_chapter_qualified,
 )
 from spicy_docs.schemas.tables import DASH_SPELLINGS, usc_section_key
+from tests.scaling import assert_scales
 
 
 def _parts(text: str, **kwargs) -> list[str | None]:
@@ -4252,24 +4252,14 @@ def test_doubling_the_text_does_not_quadruple_the_time() -> None:
 
     Measured 2026-09-23, best of three: before the fixes this took 0.37 s at
     300 copies and 1.53 s at 600 (4.2 times), after them 0.085 s and 0.17 s
-    (2.0 times). Best of three, so a scheduler hiccup does not fail it.
+    (2.0 times). Measured now in counted work (``tests.scaling``), which load
+    on the machine does not move.
     """
     block = (
         "The Clean Air Act (42 U.S.C. 7401, 7402 and 7403), Pub. L. 92-463, 86 Stat. 770, 89 FR 12345, "
         "and 40 CFR parts 60 and 61 as amended by Pub. L. 101-549, 104 Stat. 2399. "
     )
-
-    def best(copies: int) -> float:
-        text = block * copies
-        times = []
-        for _ in range(3):
-            started = time.perf_counter()
-            _read_all(text)
-            times.append(time.perf_counter() - started)
-        return min(times)
-
-    small, large = best(300), best(600)
-    assert large < 3 * small, (small, large)
+    assert_scales(_read_all, block * 300, block * 600, bound=3)
 
 
 def test_dash_folding_is_the_translation_table() -> None:
