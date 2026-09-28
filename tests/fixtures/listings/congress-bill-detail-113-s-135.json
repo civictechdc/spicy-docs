@@ -1,0 +1,79 @@
+{
+    "bill": {
+        "actions": {
+            "count": 2,
+            "url": "https://api.congress.gov/v3/bill/113/s/135/actions?format=json"
+        },
+        "committeeReports": [
+            {
+                "citation": "S. Rept. 113-270",
+                "url": "https://api.congress.gov/v3/committee-report/113/SRPT/270?format=json"
+            }
+        ],
+        "committees": {
+            "count": 1,
+            "url": "https://api.congress.gov/v3/bill/113/s/135/committees?format=json"
+        },
+        "congress": 113,
+        "cosponsors": {
+            "count": 12,
+            "countIncludingWithdrawnCosponsors": 12,
+            "url": "https://api.congress.gov/v3/bill/113/s/135/cosponsors?format=json"
+        },
+        "introducedDate": "2013-01-24",
+        "latestAction": {
+            "actionDate": "2013-01-24",
+            "text": "Read twice and referred to the Committee on Health, Education, Labor, and Pensions."
+        },
+        "legislationUrl": "https://www.congress.gov/bill/113th-congress/senate-bill/135",
+        "number": "135",
+        "originChamber": "Senate",
+        "originChamberCode": "S",
+        "policyArea": {
+            "name": "Health"
+        },
+        "relatedBills": {
+            "count": 2,
+            "url": "https://api.congress.gov/v3/bill/113/s/135/relatedbills?format=json"
+        },
+        "sponsors": [
+            {
+                "bioguideId": "V000127",
+                "firstName": "David",
+                "fullName": "Sen. Vitter, David [R-LA]",
+                "isByRequest": "N",
+                "lastName": "Vitter",
+                "party": "R",
+                "state": "LA",
+                "url": "https://api.congress.gov/v3/member/V000127?format=json"
+            }
+        ],
+        "subjects": {
+            "count": 5,
+            "url": "https://api.congress.gov/v3/bill/113/s/135/subjects?format=json"
+        },
+        "summaries": {
+            "count": 1,
+            "url": "https://api.congress.gov/v3/bill/113/s/135/summaries?format=json"
+        },
+        "textVersions": {
+            "count": 1,
+            "url": "https://api.congress.gov/v3/bill/113/s/135/text?format=json"
+        },
+        "title": "Title X Abortion Provider Prohibition Act",
+        "titles": {
+            "count": 3,
+            "url": "https://api.congress.gov/v3/bill/113/s/135/titles?format=json"
+        },
+        "type": "S",
+        "updateDate": "2025-12-05T14:49:13Z",
+        "updateDateIncludingText": "2025-12-05T14:49:13Z"
+    },
+    "request": {
+        "billNumber": "135",
+        "billType": "s",
+        "congress": "113",
+        "contentType": "application/json",
+        "format": "json"
+    }
+}

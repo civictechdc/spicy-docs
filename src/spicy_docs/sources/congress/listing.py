@@ -268,6 +268,18 @@ LIST_ROUTES: dict[str, CongressListRoute] = {
         sort_honored=False,
         window_honored=False,
     ),
+    # One bill by its number, answered as a bare object under "bill" with no
+    # pagination (measured 2026-09-28 on 46 112th-113th bills; fixtures
+    # README). sources.congress.bill_cbo_estimates reads its cboCostEstimates,
+    # which GovInfo's BILLSTATUS omits for the 112th and 113th Congresses.
+    "bill-detail": CongressListRoute(
+        "bill-detail",
+        "bill/{congress}/{type}/{number}",
+        "bill",
+        sort_honored=False,
+        window_honored=False,
+        single_record=True,
+    ),
     "nomination": CongressListRoute(
         "nomination", "nomination/{congress}", "nominations", optional_params=frozenset({"congress"})
     ),

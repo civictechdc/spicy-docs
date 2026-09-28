@@ -17,6 +17,8 @@ from spicy_docs.interpretation.bill_family import BillFamilyCapture, EngineStamp
 from spicy_docs.schemas import CBO_COST_ESTIMATES, CONGRESS_BILLS
 from spicy_docs.schemas.cost_estimate_tables import (
     BILLSTATUS_BULK,
+    CONGRESS_API,
+    ESTIMATE_SOURCES,
     PUBLICATION_ID_RULE,
     fold_cbo_cost_estimates,
     publication_id,
@@ -361,6 +363,21 @@ def test_an_unsealed_source_is_refused() -> None:
     (entry,), _ = fold_cbo_cost_estimates(parsed.cbo_cost_estimates)
     with pytest.raises(TableContractError, match="source must be one of"):
         shape_cbo_cost_estimate(S3139, entry, source="scraped")
+
+
+def test_the_contract_names_both_routes_and_what_a_112th_113th_absence_means() -> None:
+    """The sealed vocabulary keeps its two values, and the text says which document each row came from and that
+    BILLSTATUS names no estimate in the 112th-113th, so a missing row there is not an unscored bill."""
+    assert ESTIMATE_SOURCES == (BILLSTATUS_BULK, CONGRESS_API) == ("billstatus_bulk", "congress_api")
+    assert "BILLSTATUS document, or its Congress.gov bill record," in CBO_COST_ESTIMATES.grain
+    source = CBO_COST_ESTIMATES.descriptions["source"]
+    assert "BILLSTATUS states no estimate for the 112th-113th" in source
+    assert "never that CBO did not score it" in source
+    stated_count = CBO_COST_ESTIMATES.descriptions["stated_count"]
+    assert "from the 112th on" not in stated_count
+    assert "the 112th-113th's state none" in stated_count
+    for column in ("report_citation_count", "report_citations_json"):
+        assert "`congress_api` row" in CBO_COST_ESTIMATES.descriptions[column]
 
 
 # --- the family pass ----------------------------------------------------------------

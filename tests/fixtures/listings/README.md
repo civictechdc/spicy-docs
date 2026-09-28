@@ -353,3 +353,16 @@ detail status and its measurement script are in
 | --- | --- | --- | --- | --- |
 | `congress-committee-codes-2026-09-26.json` | (derived, no request) | 16,232 | `4d434a10e7c0281110701c2fed4b0e288b671d3005cf61f1f0b76bb72c0710f9` | Each distinct `systemCode` of the four pages mapped to its record's `chamber`, lowercased, sorted by code. |
 | `congress-committee-detail-n79043125.json` | GET https://api.congress.gov/v3/committee/senate/n79043125 | 1,027 | `7a9cdbaf2133376310068194e0e43599a886663803a6843f1085a40d9458af32` | Complete, unchanged response; the Senate Committee on Indian Affairs (1820-1946), keyed on its Library of Congress name-authority id. |
+
+Tenth round, 2026-09-28, for the 112th-113th CBO estimates
+(`sources/congress/bill_cbo_estimates.py`). 46 keyed `bill-detail` requests,
+the key only as `X-Api-Key`, answered one bare `bill` object each with no
+`pagination`; two are kept whole here and all 46 are in
+`~/Work/corpora/fork-execution-2026-09-21/cbo-112-113/api-sample.jsonl`. Each
+recorded locator is the keyless request below, and neither body carries the
+key: the response's `request` block echoes only the path parameters.
+
+| Fixture | Request | Bytes | SHA-256 | Transformation |
+| --- | --- | --- | --- | --- |
+| `congress-bill-detail-113-hr-2810.json` | GET https://api.congress.gov/v3/bill/113/hr/2810?format=json&limit=250 | 7,884 | `76b272416dc2034f995df045f73e1d46ac0022830bfee776a9f7e56f2d158037` | Complete, unchanged response; two `cboCostEstimates` items whose descriptions end in a newline, and two `committeeReports` parts (`H. Rept. 113-257,Part 1`, `,Part 2`). |
+| `congress-bill-detail-113-s-135.json` | GET https://api.congress.gov/v3/bill/113/s/135?format=json&limit=250 | 2,705 | `647fc8bfd830025eb0d6d48ae9b87a04f40ca0f18887d4a76b3fa8c382b322ed` | Complete, unchanged response; a reported bill no CBO feed item names, whose record has no `cboCostEstimates` key at all. |

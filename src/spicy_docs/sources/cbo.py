@@ -32,6 +32,11 @@ is that Congress to date, newest first, and an observation, never a catalog; a
 Congress with no file answers 404 with a Drupal HTML page, which is
 requested-empty, not absence.
 
+``Bill_Number`` is also how the 112th-113th estimates are found at all: their
+BILLSTATUS states none, so ``cbo_feed_bills`` maps each item to the bill it
+names and ``sources.congress.bill_cbo_estimates`` asks Congress.gov's bill
+record about exactly those bills.
+
 Byte counts, digests and the measurements behind every claim:
 ``docs/sources/cbo.md`` and the receipts named above.
 """

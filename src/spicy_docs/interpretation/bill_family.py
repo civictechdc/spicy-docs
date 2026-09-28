@@ -68,13 +68,16 @@ from spicy_docs.schemas.bill_version_tables import (
     shape_bill_version,
 )
 from spicy_docs.schemas.cost_estimate_tables import (
+    BILLSTATUS_BULK,
     CBO_COST_ESTIMATES,
+    CONGRESS_API,
     PUBLICATION_ID_RULE,
     fold_cbo_cost_estimates,
     publication_id,
     shape_cbo_cost_estimate,
 )
 from spicy_docs.schemas.tables import Row, TableContract, TableContractError, bill_id, joined
+from spicy_docs.sources.congress.bill_cbo_estimates import CongressBillEstimates
 from spicy_docs.sources.congress.bill_versions import (
     VersionCodeError,
     consecutive_pairs,
@@ -603,31 +606,10 @@ def build_bill_family(
             partial(shape_bill_cosponsor, status, cosponsor_index=index),
         )
 
-    # 3b. The CBO cost-estimate table from the same document: the cost-estimate
-    # index.  Folded onto (bill, publication) first, because the publisher
-    # states one publication twice on some bills and that is one estimate;
-    # a url outside the measured /publication/{id} shape cannot be keyed and
-    # is refused by name rather than published unidentified.
-    estimates: list[Row] = []
-    folded, unkeyable = fold_cbo_cost_estimates(status.cbo_cost_estimates)
-    for index, url in unkeyable:
-        admit.refuse(
-            CBO_COST_ESTIMATES.name,
-            (key, str(index)),
-            _cost_estimate_refusal(url),
-        )
-    for entry in folded:
-        admit(
-            CBO_COST_ESTIMATES,
-            estimates,
-            (key, entry.publication_id),
-            partial(
-                shape_cbo_cost_estimate,
-                identity,
-                entry,
-                report_citations=status.report_citations,
-            ),
-        )
+    # 3b. The CBO cost-estimate table from the same document: the cost-estimate index.
+    estimates = _cost_estimate_rows(
+        identity, status.cbo_cost_estimates, report_citations=status.report_citations, admit=admit
+    )
 
     # 4-9. The printing tables, from the captures alone.
     summarize_version = (
@@ -665,6 +647,57 @@ def build_bill_family(
         cbo_cost_estimates=tuple(estimates),
         refusals=tuple(admit.refusals),
     )
+
+
+def _cost_estimate_rows(
+    identity: Any,
+    estimates: Sequence[Any],
+    *,
+    report_citations: Iterable[object],
+    admit: _Admitter,
+    source: str = BILLSTATUS_BULK,
+) -> list[Row]:
+    """One bill's ``cbo_cost_estimates`` rows from one document's estimate list, whichever route stated it.
+
+    Folded onto (bill, publication) first, because the publisher states one
+    publication twice on some bills and that is one estimate; a url outside the
+    measured /publication/{id} shape cannot be keyed and is refused by name
+    rather than published unidentified.
+    """
+    key = bill_id(identity)
+    rows: list[Row] = []
+    folded, unkeyable = fold_cbo_cost_estimates(estimates)
+    for index, url in unkeyable:
+        admit.refuse(CBO_COST_ESTIMATES.name, (key, str(index)), _cost_estimate_refusal(url))
+    citations = tuple(report_citations)
+    for entry in folded:
+        admit(
+            CBO_COST_ESTIMATES,
+            rows,
+            (key, entry.publication_id),
+            partial(shape_cbo_cost_estimate, identity, entry, report_citations=citations, source=source),
+        )
+    return rows
+
+
+def build_congress_api_cost_estimates(reading: CongressBillEstimates) -> BillFamilyTables:
+    """``cbo_cost_estimates`` rows, and their refusals, from one Congress.gov bill record's reading.
+
+    The route BILLSTATUS cannot serve for the 112th-113th: the same fold,
+    refusals and shaper as :func:`build_bill_family`'s, with ``source``
+    ``congress_api`` and the record's own ``committeeReports``.
+    """
+    if not isinstance(reading, CongressBillEstimates):
+        raise TypeError("build_congress_api_cost_estimates takes a CongressBillEstimates reading")
+    admit = _Admitter()
+    rows = _cost_estimate_rows(
+        reading.identity,
+        reading.estimates,
+        report_citations=reading.report_citations,
+        admit=admit,
+        source=CONGRESS_API,
+    )
+    return BillFamilyTables(cbo_cost_estimates=tuple(rows), refusals=tuple(admit.refusals))
 
 
 def build_bill_printings(

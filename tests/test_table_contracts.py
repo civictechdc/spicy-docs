@@ -1701,8 +1701,13 @@ FILLED_BY: dict[str, tuple[str, ...]] = {
         "interpretation/hearing_bill_links.py",
         "sources/congress/house_committee_repository.py",
     ),
-    # B4: the index CBO's own wall denies, read keyless out of BILLSTATUS.
-    "cbo_cost_estimates": ("schemas/cost_estimate_tables.py", "sources/congress/bill_status.py"),
+    # B4: the index CBO's own wall denies, read keyless out of BILLSTATUS, and for the 112th-113th out of
+    # Congress.gov's bill record.
+    "cbo_cost_estimates": (
+        "schemas/cost_estimate_tables.py",
+        "sources/congress/bill_status.py",
+        "sources/congress/bill_cbo_estimates.py",
+    ),
     # The host shapes these through its copy of the extract here and fills its text columns itself; ``_evidence`` adds
     # the rows it published and removes the contracts' own sentences.
     "dockets": ("schemas/regulations.py",),
