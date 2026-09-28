@@ -3281,7 +3281,8 @@ title-found bills, and with the first six none of the 16 lists an estimate, so
 these 181 requests are expected to add few rows or none. The contract says a
 112th-113th bill without a row is not established as unscored.
 
-**The report citations come from the same record.** A `congress_api` row's
+**The report citations come from the same record (owner confirmed
+2026-09-28).** A `congress_api` row's
 `report_citation_count` and `report_citations_json` read the record's
 `committeeReports`. That is the same document the estimates came from, as on
 the BILLSTATUS route, and its citations take the BILLSTATUS spelling
