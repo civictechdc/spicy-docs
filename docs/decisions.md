@@ -3269,6 +3269,15 @@ no refusal.
   `congress_api`, `cbo_feed`) before the larger `pub_date`, and a test holds
   it. A host merge must apply it.
 
+**The CBO `bill-detail` route is removed, and why** (owner decision
+2026-09-28). The branch had added `bill-detail` (`bill/{congress}/{type}/{number}`)
+to `LIST_ROUTES` for the Congress.gov CBO reader. Congress.gov's 112th-113th
+CBO list is CBO's feed regrouped, so the reader and its route went together;
+nothing else used the route. A later subjects route for spicy-regs'
+`bill_subjects` (the consolidation plan's B10, which waits on a run deadline
+in spicy-docs) is unrelated to this removal and is designed when it comes, with
+its deadline.
+
 **A `Bill_Number` maps by a grammar every measured form fits, and nothing
 else.** Every form in the 108th-119th feeds is a type's abbreviation words,
 each ended by a period, a space or both, then the number. The 112th and 113th
@@ -3292,20 +3301,39 @@ NULL. Where it differs from `bill_id`, `bill_id` is a numbering error as
 published and `title_bill_id` is the bill scored. Over the 108th-119th
 (`title-bill/title-bill.json`):
 
-| Route | Rows | `title_bill_id` differs | NULL: cites after the start | NULL: no citation | NULL: other form |
-| --- | --- | --- | --- | --- | --- |
-| BILLSTATUS, 108th-111th and 114th-119th | 12,732 | 5 | 277 | 49 | 1 |
-| Feed, 108th-119th | 14,768 | 5 | 298 | 69 | 4 |
+| Route | Rows | Differs by a bill title | Title names a public law | Differs with a law map | NULL: cites after the start | NULL: no citation | NULL: other form |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| BILLSTATUS, 108th-111th and 114th-119th | 12,732 | 5 | 6 | 2 | 275 | 46 | 0 |
+| Feed, 108th-119th | 14,768 | 5 | 7 | 3 | 296 | 67 | 1 |
 
 The feed's five are CBO's own numbers: 112 H.R. 1707 for S. 1707, 115 S. 2416
 for S. 2461, 117 S. 2671 for S. 2761, 119 H.R. 648 for H.R. 658 and 119 H.R.
 5201 for H.R. 5021. BILLSTATUS repeats the last four and adds 114 H.R. 3347,
 whose record lists CBO's estimate of H.R. 3447 although the feed item states
-3447, so there the bill record is wrong, not CBO. A wrong Congress is not seen:
-the 112th feed files P.L. 111-322 under H.R. 3082, which is the 111th
-Congress's number, and a public law is no bill form. `bill_id` keeps what the
+3447, so there the bill record is wrong, not CBO. `bill_id` keeps what the
 source published, because the identity is the source's statement and a
 corrected key would be a guess the column beside it already states.
+
+**A title leading with a public law names its bill through the host's `laws`
+table** (owner decision 2026-09-28). The 112th feed files CBO's estimate of
+P.L. 111-322 under Bill_Number H.R. 3082, which was that law's bill in the
+111th Congress, so the 112th's H.R. 3082 is the wrong Congress, and no bill
+title shows it. `title_citation` reads a leading `P.L. 111-322` or `Public Law
+112-8` as that law, in the Congress the citation states, with the same
+discipline: a second law refuses; a bill cited after it is its subject (P.L.
+119-21's two estimates cite H. Con. Res. 14, the resolution it followed), as a
+law cited after a leading bill is (a bill "to amend Public Law 97-435").
+spicy-docs reads no table, so the host supplies the map: `law_bills` on
+`build_bill_family` and `build_cbo_feed_cost_estimates`, from `laws.law_id` to
+`laws.bill_id`. With it `title_bill_id` is the law's bill; without it, or for a
+law it does not map, NULL, and such rows are counted apart as "title names a
+public law" (6 BILLSTATUS and 7 feed rows over the 108th-119th). With a map
+built from the retained BILLSTATUS `<laws>`, all 13 resolve and three more
+rows differ: the 112th feed's P.L. 111-322, and P.L. 119-21's two estimates,
+which both routes file under H. Con. Res. 14. A blank-`Bill_Number` item titled
+by a law names no bill, since its only bill would come from the host's table:
+the 110th's P.L. 110-50 and the 112th's P.L. 112-8 are counted as `public_law`
+and have no row.
 
 **The report citations are the bill's own.** A `cbo_feed` row's
 `report_citation_count` and `report_citations_json` are those of the bill's
@@ -3376,6 +3404,7 @@ digest. Four published values were bare hex, and each now carries the prefix:
 | `section_classifications` | `prompt_hash` | none: see below |
 | `bill_summaries`, `diff_summaries` | `content_hash` | none: see below |
 | Senate payment review and candidates (`reading.senate_payment_*`) | `input_sha256` | the candidate rule moves to `senate-b-payment-candidates/3`; the retained truth set's digest is re-spelled |
+| `comments` | `pdf_extraction_results_json`, each attachment's `sha256` (`sources.mirrulations.DerivedAttachment`) | none: the derived-text selection has no versioned identity |
 
 The prompt versions do not move: they name the prompt text, which did not
 change, and a bump would regenerate every summary and classification for a
@@ -3400,8 +3429,10 @@ Left bare on purpose, each for a reason:
   prefix here would double it.
 - `schemas/native_reference_rows.py`, whose contract the native-references
   branch owns.
-- `documents`/`comments.pdf_extraction_results_json`, which spicy-regs writes
-  (`enrich_pdf.py`); the prefix belongs there.
+- `documents.pdf_extraction_results_json`'s `source_sha256`, which spicy-regs'
+  `enrich_pdf.py` computes and writes; the prefix belongs there (a host change
+  below). `comments.pdf_extraction_results_json` is different: spicy-regs
+  serializes spicy-docs' `DerivedAttachment`, so its digest is prefixed here.
 
 ## The Clerk's archive reads whole: the voting-body element, files before 2003, capital months
 
@@ -3465,9 +3496,12 @@ Collected from the four entries above.
 
 - `cbo_cost_estimates`: build the 112th-113th rows with
   `interpretation.bill_family.build_cbo_feed_cost_estimates(feed, congress,
-  report_citations=...)` (the new `source` value `cbo_feed`), apply
-  `merge_cbo_cost_estimates`' precedence where routes meet, and read the
-  appended `title_bill_id`. `report_citation_count` and
+  report_citations=..., law_bills=...)` (the new `source` value `cbo_feed`),
+  apply `merge_cbo_cost_estimates`' precedence where routes meet, and read the
+  appended `title_bill_id`. **Host supplies `law_bills`**, `laws.law_id` to
+  `laws.bill_id` from its `laws` table, to both `build_cbo_feed_cost_estimates`
+  and `build_bill_family`; without it a title leading with a public law leaves
+  `title_bill_id` NULL. `report_citation_count` and
   `report_citations_json` are NULL on a `cbo_feed` row shaped without the
   bill's BILLSTATUS record. The Congress.gov reader of the unreleased branch is
   gone; nothing released used it.
@@ -3484,11 +3518,22 @@ Collected from the four entries above.
   payment-candidate or review `input_sha256`, before the summary cache or the
   activity events read them; re-read stored RIN occurrences under the new rule
   rather than re-spelling them.
+- `pdf_extraction_results_json`: **host change**, `enrich_pdf.py` writes each
+  attempt's `source_sha256` as `sha256:` plus the hex digest, and the host
+  prefixes the prior `documents.pdf_extraction_results_json[].source_sha256`
+  values once, at merge. `comments.pdf_extraction_results_json[].attachments[].sha256`
+  arrives prefixed from spicy-docs' `DerivedAttachment`; the host prefixes its
+  prior rows' values the same once.
 - `roll_call_votes.clerk_body_element` is appended; `RollCallVote.committee_raw`
   is a new last field; a Clerk file naming neither or both body elements
   refuses.
-- House roll calls of 1990-2002 now read: their `member_votes` rows key
-  `name:` plus the Clerk's name with `bioguide_id` NULL.
+- House roll calls of 1990-2002 now read. **Host backfill:** fetch and shape
+  the 101st-107th Congresses' 7,327 Clerk files into `roll_call_votes` and
+  `member_votes`; their member rows key `name:` plus the Clerk's name
+  (`Ackerman`) with `bioguide_id` NULL, as the contract's `member_key` already
+  allows, and a later crosswalk to bioguide ids is the host's own step, never a
+  change of key. The same backfill re-reads the nine capital-month files for
+  `vote_day`.
 - A host's data dictionary regenerates from the changed descriptions
   (`cbo_cost_estimates`, `bill_cosponsors.source_xml`,
   `house_communications.rin_occurrences_json`, the model tables' hashes,
