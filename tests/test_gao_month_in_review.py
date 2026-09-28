@@ -192,6 +192,10 @@ OLDER_DECISIONS = [
         ("B-404896", "B-404896.2"),
     ),
     ("/products/b-235577.2-o.m.", "B-235577.2-O.M.", ("B-235577.2-O.M.",)),
+    # 2010: GAO cut a long list mid-number, in the field and in the link alike.
+    ("/products/b-403647%2Cb-403648%2Cb", "B-403647,B-403648,B", ("B-403647", "B-403648")),
+    # 2020: Drupal's duplicate-path suffix on a decision's page.
+    ("/products/b-331094-0", "B-331094", ("B-331094",)),
     (
         "/products/b-414056%2Cb-414056.2%2Cb-414056.",
         "B-414056,B-414056.2,B-414056.",

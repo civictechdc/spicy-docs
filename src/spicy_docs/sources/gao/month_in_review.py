@@ -86,6 +86,7 @@ _NOT_ALPHANUMERIC = re.compile(r"[^a-z0-9]")
 _PRERELEASE = re.compile(r"/prerelease/[a-z0-9]+")
 #: Drupal's suffix for a path alias already taken: 2015 links GAO-16-75SP as ``/products/gao-16-75sp-0``.
 _DUPLICATE_PATH = re.compile(r"-\d+")
+_TRAILING_DUPLICATE_PATH = re.compile(r"-\d+\Z")
 _FIELD_CLASSES: Final = {
     "field--name-field-product-number": "number",
     "field--name-field-issue-date": "published",
@@ -311,6 +312,15 @@ def _date(parts: list[str] | None, name: str) -> str | None:
         raise GaoListingSourceError(f"{_LABEL} {name} date is not GAO's 'Mon DD, YYYY'") from error
 
 
+def _same_letters(slug: str, number: str) -> bool:
+    """A decision's link names its number when their letters and digits agree, less any duplicate-path suffix."""
+    wanted = _NOT_ALPHANUMERIC.sub("", number.lower())
+    if _NOT_ALPHANUMERIC.sub("", slug) == wanted:
+        return True
+    suffix = _TRAILING_DUPLICATE_PATH.search(slug)
+    return suffix is not None and _NOT_ALPHANUMERIC.sub("", slug[: suffix.start()]) == wanted
+
+
 def _entry(position: int, teaser: dict) -> GaoListingEntry:
     fields, links = teaser["fields"], teaser["links"]
     label, heading = _spelled(fields.get("label"), "label"), _spelled(fields.get("heading"), "heading")
@@ -331,7 +341,7 @@ def _entry(position: int, teaser: dict) -> GaoListingEntry:
     # page the listing links. A decision's link spells its number GAO's older ways (``b-402003-b-402003.2`` for
     # ``B-402003; B-402003.2``), so only its letters and digits must agree.
     if number is not None and (
-        _NOT_ALPHANUMERIC.sub("", slug) != _NOT_ALPHANUMERIC.sub("", number.lower())
+        not _same_letters(slug, number)
         if decision
         else not (
             slug == number.lower()
@@ -349,9 +359,12 @@ def _entry(position: int, teaser: dict) -> GaoListingEntry:
                 f"{_LABEL} teaser {position} states no number and links no product page"
             ) from error
     elif decision:
-        decisions = tuple(part.strip() for part in _DECISION_SEPARATOR.split(number) if part.strip())
-        if not decisions or not all(_DECISION_NUMBER.fullmatch(item) for item in decisions):
-            raise GaoListingSourceError(f"{_LABEL} teaser {position} names a malformed B-number")
+        # The whole stated number keys a decision. Its parts are what of it reads as B-numbers: GAO cut one long
+        # 2010 list mid-number ("...,B-403648,B"), and a fragment is not a number.
+        parts = (part.strip() for part in _DECISION_SEPARATOR.split(number))
+        decisions = tuple(part for part in parts if _DECISION_NUMBER.fullmatch(part))
+        if not decisions:
+            raise GaoListingSourceError(f"{_LABEL} teaser {position} names no B-number")
     else:
         try:
             gao_product_url(slug)
