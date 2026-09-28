@@ -3,7 +3,9 @@
 GovInfo's BILLSTATUS states no ``<cboCostEstimates>`` for the 112th and 113th Congresses: none in 12,299 and
 10,637 documents of every bill type, where the 111th's state 2,156 items (2026-09-28). Congress.gov's bill record
 lists them, one keyed request per bill, so CBO's keyless per-Congress feed names which bills to ask about
-(``sources.cbo.cbo_feed_bills``): 769 and 851 bills rather than every bill. Each record's ``cboCostEstimates``
+(``sources.cbo.cbo_feed_bills``): 813 and 988 bills rather than every bill, named by an item's ``Bill_Number`` or,
+where that is empty, by the citation its title leads with. The record stays authoritative: a bill it lists no
+estimate for yields no row, however the feed named it. Each record's ``cboCostEstimates``
 reads into the same :class:`~spicy_docs.sources.congress.bill_status.CboCostEstimate` the BILLSTATUS route yields,
 so both routes share the fold and the shaper and differ only in ``source``.
 
@@ -181,7 +183,8 @@ def harvest_bill_cbo_estimates(
     A resume skips only ``ok`` rows, so a ``failed`` (transport) or ``refused``
     (shape) row is asked again. An ``ok`` row keeps the exact response body,
     its SHA-256, keyless locator and observation time, the feed publications
-    that named the bill and ``provenance`` (the feed's own locator and digest);
+    that named the bill and how (``found_by``), and ``provenance`` (the feed's
+    own locator and digest);
     a ``refused`` row keeps the body it could not read. A 401/403 raises
     ``CredentialRefusedError`` and ends the run. ``budget.max_requests`` bounds
     one bill's attempts, retries included, and ``limit`` the bills asked.
@@ -201,6 +204,7 @@ def harvest_bill_cbo_estimates(
                 "bill_id": _bill_id(bill.identity),
                 "locator": url,
                 "feed_publication_ids": list(bill.publication_ids),
+                "found_by": bill.found_by,
                 **dict(provenance or {}),
             }
             try:
@@ -261,9 +265,10 @@ def main(argv: list[str] | None = None) -> int:
     api_key = read_api_key(args.env_file, args.env_var)
     for congress in args.congress:
         named, written = harvest_congress(congress, args.output, api_key=api_key, limit=args.limit)
-        refused = Counter(shape for _, shape in named.refused)
+        found = Counter(bill.found_by for bill in named.bills)
+        refused = Counter(f"{field}:{shape}" for _, field, shape in named.refused)
         print(
-            f"{congress}th: {len(named.bills):,} bills named, {named.blank:,} items name none, "
+            f"{congress}th: {len(named.bills):,} bills named {dict(found)}, {named.unnamed:,} items name none, "
             f"refused {dict(refused)}; wrote {dict(written)}",
             file=sys.stderr,
         )

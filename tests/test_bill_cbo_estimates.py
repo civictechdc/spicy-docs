@@ -196,7 +196,7 @@ def rows(path: Path) -> list[dict]:
 
 def test_the_harvest_keys_by_header_retains_bytes_and_resumes_only_what_failed(tmp_path: Path) -> None:
     """One row per bill: the ok row keeps the exact body and keyless locator; a rerun asks only the failed bill."""
-    hr, s = CboFeedBill(HR2810, ("44578", "45040")), CboFeedBill(S135, ())
+    hr, s = CboFeedBill(HR2810, ("44578", "45040"), "bill_number"), CboFeedBill(S135, (), "title")
     output = tmp_path / "harvest.jsonl"
     first = Transport({bill_detail_url(HR2810): [(200, HR2810_BODY)], bill_detail_url(S135): [(502, b"")] * 3})
     written = harvest_bill_cbo_estimates([hr, s], output, api_key=KEY, budget=BUDGET, transport=first)
@@ -205,6 +205,7 @@ def test_the_harvest_keys_by_header_retains_bytes_and_resumes_only_what_failed(t
     ok, failed = rows(output)
     assert ok["locator"] == "https://api.congress.gov/v3/bill/113/hr/2810?format=json&limit=250"
     assert ok["body"].encode() == HR2810_BODY and ok["feed_publication_ids"] == ["44578", "45040"]
+    assert (ok["found_by"], failed["found_by"]) == ("bill_number", "title")
     assert (ok["status"], ok["outcome"], ok["estimate_count"]) == ("ok", "populated", 2)
     assert read_bill_detail(ok["body"].encode(), HR2810) == read_bill_detail(HR2810_BODY, HR2810)
     assert failed["status"] == "failed" and "body" not in failed
@@ -219,7 +220,7 @@ def test_the_harvest_keys_by_header_retains_bytes_and_resumes_only_what_failed(t
 def test_the_harvest_keeps_a_refused_shape_and_asks_again_on_resume(tmp_path: Path) -> None:
     """A record for another bill is refused with its bytes kept, and it is not a success a resume skips."""
     output = tmp_path / "harvest.jsonl"
-    bill = CboFeedBill(S135, ())
+    bill = CboFeedBill(S135, (), "title")
     transport = Transport({bill_detail_url(S135): [(200, HR2810_BODY), (200, S135_BODY)]})
     assert harvest_bill_cbo_estimates([bill], output, api_key=KEY, budget=BUDGET, transport=transport) == {"refused": 1}
     (refused,) = rows(output)
@@ -234,7 +235,11 @@ def test_a_credential_refusal_ends_the_harvest_without_a_row(tmp_path: Path) -> 
     transport = Transport({bill_detail_url(HR2810): [(403, b'{"error": "API_KEY_INVALID"}')]})
     with pytest.raises(CredentialRefusedError):
         harvest_bill_cbo_estimates(
-            [CboFeedBill(HR2810, ()), CboFeedBill(S135, ())], output, api_key=KEY, budget=BUDGET, transport=transport
+            [CboFeedBill(HR2810, (), "bill_number"), CboFeedBill(S135, (), "title")],
+            output,
+            api_key=KEY,
+            budget=BUDGET,
+            transport=transport,
         )
     assert output.read_text() == ""
     assert len(transport.calls) == 1
@@ -258,7 +263,7 @@ def test_a_congress_harvest_asks_only_the_bills_its_feed_names_and_records_the_f
         119, tmp_path / "h.jsonl", api_key=KEY, budget=BUDGET, feed_transport=feed_transport, transport=api
     )
     assert [(bill.identity, bill.publication_ids) for bill in named.bills] == [(s4429, ("62720",))]
-    assert (named.blank, named.refused, written) == (1, (), {"ok": 1})
+    assert (named.unnamed, named.refused, written) == (1, (), {"ok": 1})
     assert api.calls[0].headers["x-api-key"] == KEY and len(api.calls) == 1
     (row,) = rows(tmp_path / "h.jsonl")
     assert (row["feed_url"], row["feed_sha256"]) == (feed_url, "sha256:" + hashlib.sha256(feed).hexdigest())

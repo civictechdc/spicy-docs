@@ -3223,7 +3223,7 @@ Replayed over the parsing survey's 60,000 Federal Register texts
 
 2026-09-28, for the next release. Receipt:
 `~/Work/corpora/fork-execution-2026-09-21/cbo-112-113/`, with every script,
-the fetched feeds and zips, and the 46 keyed Congress.gov responses.
+the fetched feeds and zips, and the 56 keyed Congress.gov responses.
 
 **BILLSTATUS states no CBO estimate for the 112th and 113th.** Over every bill
 type's zip (fetched keyless 2026-09-28; GovInfo's Last-Modified is January
@@ -3237,7 +3237,7 @@ absence the way it reads any other.
 
 **The owner chose the feed-then-API route.** Asking Congress.gov's bill record
 about every bill would take 22,936 keyed requests, one per document. CBO's keyless
-per-Congress feed instead names the bills it scored, 769 and 851 of them
+per-Congress feed instead names the bills it scored, 813 and 988 of them
 from 944 and 1,117 items, so the route asks only about those, under the
 `source` value `congress_api` the contract already reserved. The bill record's
 `cboCostEstimates` states the same four fields as BILLSTATUS under the same
@@ -3262,12 +3262,23 @@ description (the API ends ten descriptions in a newline the feed trims, kept
 verbatim as BILLSTATUS keeps its text). No list repeats a publication, and
 every url is `https://www.cbo.gov/publication/{n}`.
 
-**An empty `Bill_Number` is not read for a bill, and the owner may reverse
-that.** 92 and 186 items leave it empty. Of those, 61 and 170 have a title
-that leads with a bill citation, which is 44 and 137 bills no `Bill_Number`
-names. Congress.gov lists no estimate for any of the six sampled, nor for four
-reported 113th bills no item names at all, so parsing titles would buy
-requests that the sample says return nothing. The contract therefore says a
+**Where `Bill_Number` is empty, the title's leading citation names the bill,
+and each bill says how it was found.** 92 and 186 items leave `Bill_Number`
+empty, and 61 and 170 of them have a title that leads with a bill citation:
+44 and 137 bills no `Bill_Number` names. The first pass left them out, because
+none of six sampled had an estimate on Congress.gov. The owner chose
+(2026-09-28) to include them, so a host asks about every bill CBO's feed
+names. `title_bills` reads the leading citation in the `Bill_Number` grammar,
+written capitalized so prose ("Obama's 2013") cannot read as one. It refuses
+anything ambiguous by shape: a second citation of another bill, a citation
+after the start, and an abbreviation and number that is no bill type. No
+112th-113th title refuses. The 119th's `... in Title IV of H.R. 1` is the only
+measured refusal, and the ambiguous shapes are tested on synthetic titles.
+`CboFeedBill.found_by` is `bill_number` when any item's `Bill_Number` names
+the bill, else `title`, and every harvest row carries it. **The record stays
+authoritative: no listed estimate, no row.** Ten more keyed requests sampled
+title-found bills, and with the first six none of the 16 lists an estimate, so
+these 181 requests are expected to add few rows or none. The contract says a
 112th-113th bill without a row is not established as unscored.
 
 **The report citations come from the same record.** A `congress_api` row's

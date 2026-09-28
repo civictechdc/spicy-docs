@@ -928,9 +928,11 @@ is a new table rather than columns appended to `congress_bills`.
   BILLSTATUS states no estimate for those Congresses — no item in 12,299 and
   10,637 documents of every bill type, where the 111th's state 2,156 — while
   Congress.gov's bill record lists them. CBO's keyless per-Congress feed names
-  the bills to ask about (769 and 851, from 944 and 1,117 items), one keyed
-  request each, and each record's list goes through the same fold and shaper
-  with its own `committeeReports` as the citations
+  the bills to ask about, one keyed request each: 813 and 988, from 944 and
+  1,117 items, 44 and 137 of them named only by the citation a blank
+  `Bill_Number` item's title leads with. Each record's list goes through the
+  same fold and shaper with its own `committeeReports` as the citations, and a
+  record that lists no estimate yields no row
   ([decision](decisions.md#the-112th-113th-cbo-index-comes-from-congressgov-for-the-bills-cbos-feed-names)).
   A 112th-113th bill with no row was not named by that feed or had nothing
   listed; it is not established as unscored.

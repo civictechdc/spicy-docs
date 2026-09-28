@@ -255,12 +255,17 @@ class _FeedScan:
         )
 
 
-class CboBillNumberError(CboSourceError):
-    """A ``Bill_Number`` no rule maps to a bill; ``shape`` is its spelling with every digit run as ``N``."""
+class CboFeedBillError(CboSourceError):
+    """A feed item names a bill no rule maps: ``field`` is ``bill_number`` or ``title``, ``shape`` how it failed.
 
-    def __init__(self, bill_number: str) -> None:
-        self.shape = re.sub(r"[0-9]+", "N", bill_number)
-        super().__init__(f"CBO feed Bill_Number {self.shape!r} names no bill this rule maps")
+    A ``Bill_Number``'s shape is its spelling with every digit run as ``N``; a
+    title's is ``two-citations``, ``not-at-start`` or ``unknown-form``.  Neither
+    copies more than that of the publisher's text.
+    """
+
+    def __init__(self, field: str, shape: str) -> None:
+        self.field, self.shape = field, shape
+        super().__init__(f"CBO feed {field} {shape!r} names no bill this rule maps")
 
 
 #: How CBO spells each measure type in ``Bill_Number``, as its abbreviation
@@ -281,7 +286,28 @@ _BILL_TYPE_WORDS: dict[tuple[str, ...], str] = {
     ("h", "res"): "hres",
     ("s", "res"): "sres",
 }
-_BILL_NUMBER = re.compile(r"(?P<words>(?:[A-Za-z]+(?:\.\s*|\s+))+)(?P<number>[1-9][0-9]*)")
+_SEPARATOR = r"(?:\.\s*|\s+)"
+_BILL_NUMBER = re.compile(rf"(?P<words>(?:[A-Za-z]+{_SEPARATOR})+)(?P<number>[1-9][0-9]*)")
+
+
+def _capitalized(word: str) -> str:
+    """``res`` as ``R[eE][sS]``: a title capitalizes an abbreviation, which is what keeps prose from reading as one."""
+    return word[0].upper() + "".join(f"[{letter}{letter.upper()}]" for letter in word[1:])
+
+
+#: The same grammar, found anywhere in a title: capitalized, so prose cannot
+#: read as one (``Obama's 2013`` is not ``S. 2013``), starting a token (not
+#: after a letter, digit or period, so ``U.S. 1`` is not ``S. 1``), and
+#: ending at the number (``S. 2nd Session`` is not ``S. 2``, and refuses).
+_TITLE_CITATION = re.compile(
+    r"(?<![A-Za-z0-9.])(?:"
+    + "|".join(_SEPARATOR.join(map(_capitalized, words)) for words in _BILL_TYPE_WORDS)
+    + rf"){_SEPARATOR}[1-9][0-9]*(?![0-9A-Za-z])"
+)
+#: A title leading with an abbreviation and a number that is no bill type
+#: (``S.A. 948``, ``H. Amdt. 5``): short words, at least one period, then a
+#: digit.  ``Public Law 112-8`` and ``Act of 2012`` are prose, not this.
+_ABBREVIATED_LEAD = re.compile(r"(?=[^0-9]*\.)(?:[A-Za-z]{1,5}(?:\.\s*|\s+)){1,4}[0-9]")
 
 
 def feed_item_bills(congress: int, bill_number: str | None) -> tuple[BillIdentity, ...]:
@@ -289,7 +315,7 @@ def feed_item_bills(congress: int, bill_number: str | None) -> tuple[BillIdentit
 
     An empty ``Bill_Number`` is CBO's own value (a suspension-calendar notice,
     a reconciliation title), so it names no bill rather than refusing; a
-    nonempty one outside the measured forms raises :class:`CboBillNumberError`.
+    nonempty one outside the measured forms raises :class:`CboFeedBillError`.
     """
     if bill_number is None:
         return ()
@@ -297,52 +323,97 @@ def feed_item_bills(congress: int, bill_number: str | None) -> tuple[BillIdentit
     words = None if match is None else tuple(word.casefold() for word in re.findall(r"[A-Za-z]+", match["words"]))
     bill_type = None if words is None else _BILL_TYPE_WORDS.get(words)
     if match is None or bill_type is None:
-        raise CboBillNumberError(bill_number)
+        raise CboFeedBillError("bill_number", re.sub(r"[0-9]+", "N", bill_number))
     return (BillIdentity(congress, bill_type, int(match["number"])),)
+
+
+def title_bills(congress: int, title: str) -> tuple[BillIdentity, ...]:
+    """The bill a title names by leading with its citation, for an item whose ``Bill_Number`` is empty.
+
+    61 of the 112th's 92 such items and 170 of the 113th's 186 lead with one
+    (``H.R. 4402, Critical Minerals Policy Act of 2012``); the rest name no
+    bill (``Sequester Replacement Reconciliation Act``, ``Public Law 112-8,
+    ...``) and read ``()``.  Anything ambiguous refuses: a second citation of
+    another bill (``two-citations``), a citation after the start
+    (``not-at-start``: the 119th's ``... in Title IV of H.R. 1``), or an
+    abbreviation and number that is no bill type (``unknown-form``).
+    """
+    citations = list(_TITLE_CITATION.finditer(title))
+    if not citations:
+        if _ABBREVIATED_LEAD.match(title):
+            raise CboFeedBillError("title", "unknown-form")
+        return ()
+    if citations[0].start() != 0:
+        raise CboFeedBillError("title", "not-at-start")
+    bills = {bill for citation in citations for bill in feed_item_bills(congress, citation.group(0))}
+    if len(bills) != 1:
+        raise CboFeedBillError("title", "two-citations")
+    return tuple(bills)
 
 
 @dataclass(frozen=True, slots=True)
 class CboFeedBill:
-    """One bill a feed names, and the publication ids of the items naming it, in feed order."""
+    """One bill a feed names, the publication ids of the items naming it in feed order, and how it was found.
+
+    ``found_by`` is ``bill_number`` when any item's ``Bill_Number`` names the
+    bill, else ``title``: the bill is named only by an item whose
+    ``Bill_Number`` is empty and whose title leads with its citation.
+    """
 
     identity: BillIdentity
     publication_ids: tuple[str, ...]
+    found_by: str
 
 
 @dataclass(frozen=True, slots=True)
 class CboFeedBills:
     """The bill set a feed names, sorted by type and number, and every item that named none.
 
-    ``blank`` counts the items whose ``Bill_Number`` is empty; ``refused``
-    holds ``(publication_id, shape)`` for every item whose ``Bill_Number``
-    :func:`feed_item_bills` refused.  Sorted, because a feed's order within one
-    ``Date`` changes between captures of identical bytes-per-item.
+    ``unnamed`` counts the items whose ``Bill_Number`` is empty and whose title
+    leads with no citation; ``refused`` holds ``(publication_id, field,
+    shape)`` for every item :class:`CboFeedBillError` refused.  Sorted, because
+    a feed's order within one ``Date`` differs between captures whose items are
+    identical.
     """
 
     congress: int
     bills: tuple[CboFeedBill, ...]
-    blank: int
-    refused: tuple[tuple[str, str], ...]
+    unnamed: int
+    refused: tuple[tuple[str, str, str], ...]
 
 
 def cbo_feed_bills(feed: CboCostEstimatesFeed, congress: int) -> CboFeedBills:
-    """Map every item of one Congress's feed to its bills, in one pass; refusals are counted, never dropped."""
+    """Map every item of one Congress's feed to its bills, in one pass; refusals are counted, never dropped.
+
+    An item's ``Bill_Number`` is read when it states one and its title only
+    when it does not, so a title never overrides the publisher's own number.
+    """
     named: dict[BillIdentity, list[str]] = {}
-    blank = 0
-    refused: list[tuple[str, str]] = []
+    by_number: set[BillIdentity] = set()
+    unnamed = 0
+    refused: list[tuple[str, str, str]] = []
     for item in feed.items:
         try:
-            bills = feed_item_bills(congress, item.bill_number)
-        except CboBillNumberError as error:
-            refused.append((item.publication_id, error.shape))
+            if item.bill_number is not None:
+                bills = feed_item_bills(congress, item.bill_number)
+                by_number.update(bills)
+            else:
+                bills = title_bills(congress, item.title)
+        except CboFeedBillError as error:
+            refused.append((item.publication_id, error.field, error.shape))
             continue
         if not bills:
-            blank += 1
+            unnamed += 1
         for bill in bills:
             named.setdefault(bill, []).append(item.publication_id)
     ordered = sorted(named, key=lambda bill: (bill.bill_type, bill.number))
     return CboFeedBills(
-        congress, tuple(CboFeedBill(bill, tuple(named[bill])) for bill in ordered), blank, tuple(refused)
+        congress,
+        tuple(
+            CboFeedBill(bill, tuple(named[bill]), "bill_number" if bill in by_number else "title") for bill in ordered
+        ),
+        unnamed,
+        tuple(refused),
     )
 
 

@@ -37,36 +37,52 @@ GovInfo's BILLSTATUS states no `<cboCostEstimates>` item for the 112th or
 113th Congress: none in 12,299 and 10,637 documents of every bill type (one
 113th document, H.R. 4200, has an empty element), where the 111th's state
 2,156 items in 902 documents. Congress.gov's bill record lists them, one keyed
-request per bill. So, as the owner decided on 2026-09-28, this feed's
-`Bill_Number` names the bills, and only those are asked about, under
-`cbo_cost_estimates.source` `congress_api`.
+request per bill. So, as the owner decided on 2026-09-28, this feed names the
+bills, and only those are asked about, under `cbo_cost_estimates.source`
+`congress_api`.
 
 `feed_item_bills(congress, bill_number)` reads a `Bill_Number` as a measure
 type's abbreviation words, each ended by a period, a space or both, then the
 number, in the feed's own Congress. Every form in the 112th-113th and
 116th-119th feeds is that shape: `H.R. 8`, `S. 2241`, `H. J. Res. 48`,
 `H.J.Res. 124`, `S.J.Res. 44`, `H.Con.Res. 103`, `H.R.681`, `S.  1591`,
-`H.r. 4679`. No item names more than one bill. An empty `Bill_Number` names no
-bill, and anything else refuses with `CboBillNumberError` and its shape: a bare
-number (117th `700`), an amendment (116th `S.A. 948`), trailing text (119th
-`H.R. 7529,`) or a list. `cbo_feed_bills(feed, congress)` maps a whole feed,
-sorted, keeping each bill's publication ids and counting the items that name
-none.
+`H.r. 4679`. No item names more than one bill. Anything else refuses with
+`CboFeedBillError`, field `bill_number` and its shape: a bare number (117th
+`700`), an amendment (116th `S.A. 948`), trailing text (119th `H.R. 7529,`) or
+a list.
 
-| Congress | Items | Bills | Items naming a bill | Empty `Bill_Number` | Refused |
-| --- | --- | --- | --- | --- | --- |
-| 112 | 944 | 769 | 852 | 92 | 0 |
-| 113 | 1,117 | 851 | 931 | 186 | 0 |
+**Where `Bill_Number` is empty, the title is read** (owner decision
+2026-09-28). `title_bills(congress, title)` takes the citation a title leads
+with, in the same grammar written capitalized (`H.R. 4402, Critical Minerals
+Policy Act of 2012`). A title that leads with prose names no bill
+(`Sequester Replacement Reconciliation Act`, `Public Law 112-8, ...`).
+Anything ambiguous refuses with field `title`: a second citation of another
+bill (`two-citations`), a citation after the start (`not-at-start`, the 119th's
+`... in Title IV of H.R. 1`) or an abbreviation and number that is no bill type
+(`unknown-form`). A title is never read where `Bill_Number` states a value.
 
-The two agree. Of 36 feed bills sampled on Congress.gov, stratified by type and
-spelling, all 43 feed items are in the record's list, every listed estimate is
-a feed item naming that bill, and titles and descriptions are equal (the API
-ends ten descriptions in a newline the feed trims). An empty `Bill_Number` can
-still title a bill: 61 and 170 such items lead with one, and 44 and 137 of
-those bills no `Bill_Number` names. They are not asked about. None of the six
-sampled lists an estimate on Congress.gov, and neither do four reported 113th
-bills no item names. Receipt, with the 46 keyed requests and every script:
-`~/Work/corpora/fork-execution-2026-09-21/cbo-112-113/`.
+`cbo_feed_bills(feed, congress)` maps a whole feed, sorted, keeping each bill's
+publication ids and marking how it was found: `found_by` is `bill_number` when
+any item's `Bill_Number` names it, else `title`. It counts the items that name
+no bill (`unnamed`) and every refusal by field and shape.
+
+| Congress | Items | Bills | By `Bill_Number` | By title only | Items named by title | Unnamed | Refused |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 112 | 944 | 813 | 769 | 44 | 61 | 31 | 0 |
+| 113 | 1,117 | 988 | 851 | 137 | 170 | 16 | 0 |
+
+No 112th-113th item refuses either way. The 116th-119th feeds refuse four
+`Bill_Number` forms and two titles, both `not-at-start`.
+
+The two sources agree on the bills `Bill_Number` names. Of 36 sampled on
+Congress.gov, stratified by type and spelling, all 43 feed items are in the
+record's list, every listed estimate is a feed item naming that bill, and
+titles and descriptions are equal (the API ends ten descriptions in a newline
+the feed trims). **The record stays authoritative: a bill it lists no estimate
+for yields no row.** None of 16 sampled title-found bills lists one, nor do four
+reported 113th bills no item names, so the title route costs 181 requests that
+the sample expects to yield few rows or none. Receipt, with the 56 keyed
+requests and every script: `~/Work/corpora/fork-execution-2026-09-21/cbo-112-113/`.
 
 Harvest with the listing client's key, budget and resume rules
 (`sources/congress/bill_cbo_estimates.py`); the feed requests are keyless:
@@ -76,9 +92,9 @@ uv run --frozen python -m spicy_docs.sources.congress.bill_cbo_estimates \
   --congress 112 --congress 113 --output cbo-112-113.jsonl --env-file .env
 ```
 
-Each JSONL row keeps the record's exact bytes, keyless locator, digest and the
-feed publications that named the bill; a rerun asks only bills without an `ok`
-row. `build_congress_api_cost_estimates(read_bill_detail(body, identity))`
+Each JSONL row keeps the record's exact bytes, keyless locator, digest, the
+feed publications that named the bill and `found_by`; a rerun asks only bills
+without an `ok` row. `build_congress_api_cost_estimates(read_bill_detail(body, identity))`
 shapes a row's estimates.
 
 ## What answers, and what does not
