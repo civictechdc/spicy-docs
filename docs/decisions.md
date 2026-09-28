@@ -3328,3 +3328,163 @@ What an importer must change: call `build_cbo_feed_cost_estimates` for the
 the appended `title_bill_id`. `sources.cbo` now imports
 `sources.congress.bill_status` for `BillIdentity`, and `interpretation.bill_family`
 imports `sources.cbo`.
+
+## A cosponsor's `source_xml` is the publisher's bytes
+
+2026-09-28, for the next release. The 0.50.1 review's suggestion. Receipt:
+`~/Work/corpora/fork-execution-2026-09-21/cbo-112-113/source-xml/`.
+
+`BillCosponsor.source_xml` was `tostring(item)`, a reserialization. It
+re-spelled a self-closed element with a space and cost about 11 microseconds
+an entry, the main cost of BILLSTATUS parsing since 0.50.0.
+`reading.xml.parse_xml_with_spans` now records, during the one expat parse the
+tree already needs, the byte span of every element at a given path, and
+`parse_bill_status` slices `billStatus/bill/cosponsors/item` out of the input
+bytes `input_sha256` pins.
+
+- A span runs from the element's `<` to just past its own end tag. A
+  self-closed element ends with its own tag, because expat reports its end at
+  the next token; a `>` inside a quoted attribute is skipped.
+- The parser's offset function is released after the parse. It held the
+  parser, whose handlers held the tree, and that cycle kept every document
+  alive until the cyclic collector ran: 31 s against 25 s over the corpus
+  while a caller kept its results, before the fix.
+
+Over the retained corpus (the 113th, 115th and 117th `hr` and 119th `hr` and
+`s` zips: 39,147 documents, 506,301 entries), every `source_xml` equals the
+item bytes an independent regex tokenizer cuts from the raw document. Nine
+entries change value, all in 113 H.R. 4200, where `<middleName/>`,
+`<sponsorshipWithdrawnDate/>` and `<gpoId/>` had been re-spelled with a space;
+every other entry is byte-identical to before. Parsing takes 21.7 and 20.8 s
+against 24.6 and 23.5 s, two interleaved rounds.
+
+| Table | Column | Rows | Change |
+| --- | --- | --- | --- |
+| `bill_cosponsors` | `source_xml` | 9 of the corpus's 506,301 (113 H.R. 4200) | a self-closed element loses the space before `/>` |
+
+The row's identity is keyed on the input digest, so nothing else moves.
+
+## Every published digest is spelled `sha256:`
+
+2026-09-28, for the next release (owner decision). `tables.digest`, every
+capture and every other published digest already use `sha256:` plus the hex
+digest. Four published values were bare hex, and each now carries the prefix:
+
+| Table or output | Column | Rule or version |
+| --- | --- | --- |
+| `house_communications` | `rin_occurrences_json`, each occurrence's `field_sha256` | the occurrence rule moves to `report_nature/shared_rin/2` |
+| `section_classifications` | `prompt_hash` | none: see below |
+| `bill_summaries`, `diff_summaries` | `content_hash` | none: see below |
+| Senate payment review and candidates (`reading.senate_payment_*`) | `input_sha256` | the candidate rule moves to `senate-b-payment-candidates/3`; the retained truth set's digest is re-spelled |
+
+The prompt versions do not move: they name the prompt text, which did not
+change, and a bump would regenerate every summary and classification for a
+spelling. `tables.same_digest` compares the two spellings instead, so the
+summary cache (`needs_regeneration`) and the `summary_generated` activity event
+read a stored bare hash as the same digest and do nothing for the spelling
+alone. `rin_from_report_nature(occurrences=...)` refuses occurrences stored
+under the old spelling: they are re-read, which is cheap, not reused.
+
+Left bare on purpose, each for a reason:
+
+- The 12-character rule-version tokens (`rule_set_version`,
+  `link_rule_version`, `estimate_rule_version` and the like). They are
+  versions compared for equality, truncated, and name rules rather than bytes;
+  re-spelling one would read as a changed rule.
+- Readers' own `input_sha256` fields (Federal Register reference data and
+  topics, the eCFR authority scan, Unified Agenda scans, the BILLSTATUS codes
+  guide, Zyte and Mirrulations records). They are an API, not a published
+  column, and RefSpec and the native references prefix them themselves, so a
+  prefix here would double it.
+- `schemas/native_reference_rows.py`, whose contract the native-references
+  branch owns.
+- `documents`/`comments.pdf_extraction_results_json`, which spicy-regs writes
+  (`enrich_pdf.py`); the prefix belongs there.
+
+## The Clerk's archive reads whole: the voting-body element, files before 2003, capital months
+
+2026-09-28, for the next release. Receipt:
+`~/Work/corpora/fork-execution-2026-09-21/cbo-112-113/clerk-all/`: every House
+roll call the Clerk's EVS archive serves, 1990-2026 (22,512 files, each fetched
+keyless once and kept gzip-compressed, with `receipt.jsonl`), and the survey
+script, which a regex over the raw bytes and `parse_clerk_vote` both run.
+
+**The Committee of the Whole is visible only as an element name.** A Clerk
+file names its voting body in `<chamber>` or, on 3,830 files from 2007 on, in
+`<committee>`, and both read `U.S. House of Representatives`. The reader kept
+`<chamber>` alone, so those votes read `chamber_raw` `None` and nothing
+published could tell them apart. Putting the `<committee>` text in
+`chamber_raw` would not have helped, because the text is the same; the element
+is the fact. `RollCallVote.committee_raw` now keeps `<committee>` verbatim, a
+file naming neither element or both refuses (none of the 22,512 does), and
+`roll_call_votes` appends `clerk_body_element`: `committee` or `chamber`, NULL
+off the Clerk. Of the 3,830, 3,791 are amendment votes, 29 motions for the
+committee to rise or calls in committee, 5 rulings of the chair, 3 vacated votes
+and 2 House questions. The Clerk calls none of them a Committee of the Whole
+vote, so the column states the element, and "Committee of the Whole" stays the
+inference it is.
+
+**`member_votes.state` says what `XX` marks, in the file's own terms.** The
+Clerk marks the non-voting delegates and the Resident Commissioner `XX` on
+2,169 roll calls, in 1993-1994, 2007-2010 and from 2019, every one an amendment
+vote or a motion in committee, filed under `<committee>` from 2007 and under
+`<chamber>` in 1993-1994. The earlier text, from the 118th alone, said
+"Committee of the Whole amendment votes": the review found that an inference,
+and the archive shows `XX` on `<chamber>` files too.
+
+**Files before 2003 read, keyed by name.** No file of 1990-2002 (7,327) carries
+a legislator `name-id`, and every file from 2003 on carries one for each
+legislator. The reader refused every file without it, so the archive's first 13
+years never read at all. A file with no `name-id` now reads with
+`bioguide_id` `None`, and each `member_votes` row keys on `name:` plus the
+Clerk's name, the spelling the contract already gave a member a file does not
+identify. A file mixing the two forms, or naming one member twice, refuses.
+
+**Nine files print the month in capitals.** `3-JAN-1991` on seven Speaker
+elections and two other votes of 1991-2003 refused as "not the chamber's own
+spelling", though it is the Clerk's. `vote_day` reads a capital month too, and
+no other spelling.
+
+**What still refuses is the publisher's own contradiction.** Six of the 22,512:
+2003's Speaker election, whose candidate totals (Hastert 228) disagree with its
+member choices (227), and five votes the Clerk vacated by unanimous consent,
+whose files list no recorded vote.
+
+| Table | Column | Rows | Change |
+| --- | --- | --- | --- |
+| `roll_call_votes` | `clerk_body_element` (appended) | every House row read again | `committee` or `chamber`; NULL on Senate, linkage-only and earlier rows |
+| `roll_call_votes`, `member_votes` | every column | the 101st-107th Congresses, 7,327 roll calls and their members | newly readable; members key `name:` with `bioguide_id` NULL |
+| `roll_call_votes` | `vote_day` | the nine capital-month files | newly read |
+| `member_votes` | `state` | none | the description only |
+
+## What an importer must change for the next release
+
+Collected from the four entries above.
+
+- `cbo_cost_estimates`: build the 112th-113th rows with
+  `interpretation.bill_family.build_cbo_feed_cost_estimates(feed, congress,
+  report_citations=...)` (the new `source` value `cbo_feed`), apply
+  `merge_cbo_cost_estimates`' precedence where routes meet, and read the
+  appended `title_bill_id`. `report_citation_count` and
+  `report_citations_json` are NULL on a `cbo_feed` row shaped without the
+  bill's BILLSTATUS record. The Congress.gov reader of the unreleased branch is
+  gone; nothing released used it.
+- `bill_cosponsors.source_xml`: nine rows of 113 H.R. 4200 change on the next
+  read.
+- Digests: `house_communications.rin_occurrences_json` (`field_sha256`, rule
+  `report_nature/shared_rin/2`), `section_classifications.prompt_hash`,
+  `bill_summaries.content_hash`, `diff_summaries.content_hash` and the Senate
+  payment review's and candidates' `input_sha256` (rule
+  `senate-b-payment-candidates/3`) are spelled `sha256:`. Compare stored values
+  with `schemas.tables.same_digest`; re-read stored RIN occurrences.
+- `roll_call_votes.clerk_body_element` is appended; `RollCallVote.committee_raw`
+  is a new last field; a Clerk file naming neither or both body elements
+  refuses.
+- House roll calls of 1990-2002 now read: their `member_votes` rows key
+  `name:` plus the Clerk's name with `bioguide_id` NULL.
+- A host's data dictionary regenerates from the changed descriptions
+  (`cbo_cost_estimates`, `bill_cosponsors.source_xml`,
+  `house_communications.rin_occurrences_json`, the model tables' hashes,
+  `roll_call_votes`, `member_votes.state`).
+- New helpers: `reading.xml.parse_xml_with_spans`, `schemas.tables.same_digest`,
+  `sources.cbo.title_bills`, `feed_item_pub_date`, `CboFeedBillError`.
