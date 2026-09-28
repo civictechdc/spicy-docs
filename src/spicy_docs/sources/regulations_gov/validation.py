@@ -9,6 +9,7 @@ from rulespec_artifacts import (
     canonical_json_bytes,
 )
 
+from spicy_docs.schemas.regulations import is_count
 from spicy_docs.sources.regulations_gov.definitions import (
     _ASCII_ID,
     _ATTACHMENT_ATTRIBUTE_FIELDS,
@@ -281,7 +282,7 @@ def _validate_comment_attributes(attributes: Mapping[str, Any]) -> None:
     # does for duplicateComments. No such string appears in 6.98M read comments (2026-09-28).
     for name in _COMMENT_INTEGER_FIELDS | _COMMENT_INTEGER_OR_TEXT_FIELDS:
         value = attributes.get(name)
-        if value is not None and (isinstance(value, bool) or not isinstance(value, int) or not 0 <= value < 2**31):
+        if value is not None and not is_count(value):
             raise RegulationsGovSourceError(f"comment attribute {name} must be an integer from 0 to 2**31 - 1, or null")
     for name in COMMENT_ATTRIBUTE_FIELDS - (
         _COMMENT_BOOLEAN_FIELDS

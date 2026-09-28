@@ -91,3 +91,15 @@ def test_the_contract_types_the_count_and_appends_both():
     assert contract.column_type("subtype") == "VARCHAR"
     assert contract.columns[-2:] == ("subtype", "duplicate_comments")
     assert tuple(COMMENT.schema)[-2:] == ("subtype", "duplicate_comments")
+
+
+def test_the_extract_and_the_validator_share_one_count_rule():
+    """One predicate, so the extract and the validator cannot drift apart on the published range."""
+    from spicy_docs.schemas import regulations
+    from spicy_docs.sources.regulations_gov import validation
+
+    assert validation.is_count is regulations.is_count
+    for value in (0, 1, 2**31 - 1):
+        assert regulations.is_count(value)
+    for value in (-1, 2**31, True, 1.5, "5", None):
+        assert not regulations.is_count(value)

@@ -16,15 +16,23 @@ from spicy_docs.schemas.tables import INTEGER, VALUE_KEY, Reference, table_contr
 _COUNT_BOUND = 2**31
 
 
+def is_count(value: object) -> bool:
+    """Whether ``value`` is a count a 32-bit INTEGER column publishes: an int that is not a bool, 0 <= n < 2**31.
+
+    The one spelling of the rule, for the extract and for the Regulations.gov comment validator.
+    """
+    return isinstance(value, int) and not isinstance(value, bool) and 0 <= value < _COUNT_BOUND
+
+
 def _stated_count(value: object) -> int | None:
-    """A stated ``duplicateComments`` as published: NULL, or an int that is not a bool, 0 <= n < 2**31.
+    """A stated ``duplicateComments`` as published: NULL, or a count (:func:`is_count`).
 
     Anything else raises rather than reaching a host's integer column, which would coerce "5" to 5, True to 1 and 1.5
     to 1; a reader turns the raise into an unreadable record.
     """
     if value is None:
         return None
-    if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value < _COUNT_BOUND:
+    if not is_count(value):
         raise ValueError(f"duplicateComments must be an integer from 0 to 2**31 - 1, not {value!r}")
     return value
 
