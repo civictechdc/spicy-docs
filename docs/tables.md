@@ -8,7 +8,9 @@ The build brief is
 is what landed.
 
 Everything under `schemas/` is a stdlib-only leaf: no pyarrow, no DeltaTrack, no
-`sources.*` or `interpretation.*` imports. A host can therefore import a column
+`sources.*` or `interpretation.*` imports, which `tests/test_reader_closure.py`
+holds it to ([0.50.1](decisions.md#schemas-is-a-stdlib-only-leaf-again)). A
+host can therefore import a column
 tuple without pulling an HTTP client, a model client or a git dependency. The
 one piece that cannot be a leaf — `build_bill_family`, which composes parsed
 documents with interpretation findings — lives at
@@ -307,10 +309,12 @@ invented for either.
   `legal_authority`, the matching requirement number, and the RIN as three
   columns (`rin`, `rin_rule`, `rin_matched_text`) from
   `interpretation/communication_rin.py`, whose rule is the data map's own
-  measured `RIN: nnnn-XXnn` pattern. `rin_occurrences_json`, after `rin`,
-  holds every occurrence the shared `rin` citation rule reads in the same field,
-  as the host supplies it
-  ([decision](decisions.md#a-rin-occurrences-field-digest-is-bare-hex)). Re-measured 2026-09-19 on 18 of the 25
+  measured `RIN: nnnn-XXnn` pattern, ending where that shape ends since 0.50.1.
+  `rin_occurrences_json`, after `rin`, holds every occurrence the shared `rin`
+  citation rule reads in the same field, as the host supplies it
+  ([decision](decisions.md#a-rin-occurrences-field-digest-is-bare-hex)). It can
+  list a RIN the scalar does not read, never the reverse
+  ([how they differ](decisions.md#the-scalar-rin-ends-where-the-shape-does-and-the-list-differs-from-it-by-design)). Re-measured 2026-09-19 on 18 of the 25
   newest communications inside the day's request budget: 18 carry a dated
   referral, 12 are rulemakings and the same 12 carry a RIN under the measured
   rule and under a relaxed one shaped like the Federal Register validator, 15
@@ -897,9 +901,12 @@ is a new table rather than columns appended to `congress_bills`.
   `restatements_json` carries each differing later item with only its differing
   fields. `[]` on the other 1,459 rows.
 - **`publication_id` is parsed, never guessed.** The rule takes only the
-  `https://www.cbo.gov/publication/{id}` page all 1,468 measured urls are; a
-  url outside that shape is a named `FamilyRefusal`, not a row keyed on a
-  coerced id.
+  `www.cbo.gov/publication/{id}` page all 1,468 measured urls are, on `https`,
+  or on `http` as well since 0.50.1: the 108th-111th state every estimate once
+  on each scheme, and the two statements fold into one row
+  ([decision](decisions.md#cbo-urls-on-http-fold-with-their-https-twin)). A url
+  outside those shapes is a named `FamilyRefusal`, not a row keyed on a coerced
+  id.
 - **`congress_bills.cbo_cost_estimates_outcome` records every bill's answer.**
   The appended, nullable column is NULL for unread data, `populated` for read
   items, `requested-empty:absent` for a missing element,

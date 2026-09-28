@@ -2814,7 +2814,8 @@ contract. A reader selecting these tables' columns by name sees no difference.
 The published rows `tests/test_table_contracts.py` retains for `comments` and
 `documents` predate the new columns. The round-trip test projects them onto the
 contract order, so for those two tables it no longer compares the contract with
-a published footer.
+a published footer. (0.50.1 re-read them from the rewritten objects and
+compares again: [below](#the-published-row-fixture-holds-the-column-order-again).)
 
 ### A RIN occurrence's field digest is bare hex
 
@@ -2879,3 +2880,139 @@ from the installed distribution's version, and spicy-regs'
 `0d63173` did. A code digest recorded beside it also settles it: spicy-regs'
 `spicy_docs_code()` digests the installed package and enters some processing
 identities.
+
+## 0.50.1 fixes what the PR #4 review found and reads the older CBO urls
+
+2026-09-28. The fixes the independent review of PR #4 listed for 0.50.1, and
+one from the 108th-112th bill-text backfill. Receipts, under `~/Work/corpora`:
+the review in `fork-execution-2026-09-21/codex-pr-review-2026-09-27/spicy-docs-pr4/`
+(its `FOLLOWUPS-0.50.1.md` numbers the items), the measurements here in
+`fork-execution-2026-09-21/spicy-docs-0501/`. The owner's two 0.50.0 rulings
+stand: the inserted column order is the contract, and branch builds may take
+release numbers. Items 8-10 (a native legal-reference contract, a
+current-observation column, one digest spelling) are not in this release.
+
+### Published values that change
+
+| Table | Columns | Rows | Change |
+| --- | --- | --- | --- |
+| `bill_cosponsors` | `source_xml` | every row | loses the whitespace that followed `</item>` in the list |
+| `house_communications` | `rin`, `rin_rule`, `rin_matched_text` | a RIN longer than the shape; 3 of the 5,006 retained rows | a cut-short RIN becomes `unmatched` with NULLs |
+| `cbo_cost_estimates` | `url`, `description`, `estimate_index`, `stated_count`, `restatements_json`; `pub_date`, `title` where the twins differ | 108th-111th rows | the http statement joins its https twin's row |
+
+No identity, key spelling, row digest or rule version depends on a changed value:
+`bill_cosponsors` is keyed on the input document's digest, not `source_xml`,
+and `cbo_cost_estimates` keeps `(bill_id, publication_id)` and
+`publication_id_rule`. `document_citations.target_rule` does not move.
+
+### The bill family refuses an unshapeable cosponsor instead of aborting
+
+`shape_bill_cosponsor` raised `ValueError` without an input digest, and let
+`AttributeError` escape for an entry that is not a `BillCosponsor` (0.47.0
+typed the list as `BillSponsor`). Neither is in `SHAPER_REFUSALS`, so either
+lost every table of the bill's pass. Every refusal is now a
+`TableContractError`, including an index outside the list, and the family
+files one refusal per occurrence.
+
+### `schemas` is a stdlib-only leaf again
+
+`DOCUMENT.extract` imported `sources.regulations_gov.attachment_records` on
+every call, and `schemas.fec_committee_history` imported the committee master's
+header for an import-time check. `DOCUMENT.extract` now takes the
+already-validated `attachment_records_json` string as a keyword, and
+`sources.regulations_gov.attachment_records.attachment_records_json(document,
+relationship)` stays the one validator. The FEC check is a test. A test imports
+every `schemas` module and runs each record type's extract under a finder that
+refuses any other `spicy_docs` module and any non-stdlib module.
+
+### `source_xml` stops at `</item>`
+
+`tostring` serializes an element's tail, so every `BillCosponsor.source_xml`
+ended in the whitespace before the next item or `</cosponsors>`: all 506,301
+entries in the review's 39,147 documents, where its sample of first and last
+rows had counted 55,723. The tail is set aside for the serialization.
+
+Parse time does not move with it (`billstatus-timing/`): `parse_bill_status`
+over those documents takes 15.5 s at 0.47.0, 22.0-23.2 s at 0.50.0 and 22.4 s
+at 0.50.1 on 2026-09-28's machine, where the review measured 18.9 s and
+32.5 s. The reserialization is about 5.6 s of it, 11 microseconds an entry and
+linear in entries; the six more fields and the input digest are about 1.3 s.
+
+### The scalar RIN ends where the shape does, and the list differs from it by design
+
+`REPORT_NATURE_RIN` had no right edge, so it published the first eight
+characters of NOAA's five-character-suffix RINs: `RIN: 0648-XE368` gave `rin`
+`0648-XE36`. It now requires the edge the shared identifier reader requires.
+The occurrence reader's `target_resolved` filter removed nothing, because the
+`rin` rule keys every hit through `published_rin`, and is gone.
+
+The two still differ, and the docstring states how. The scalar reads the first
+RIN that the exact label `RIN` (optional colon) immediately precedes, spelled
+with an ASCII hyphen and capitals, which is the rule the data map measured. The
+list reads every RIN the shared `rin` rule reads: later members of a labelled
+list, later labelled RINs, RINs under a plural, spelled-out or misspelled
+label, and the Unicode dashes and letter case folded to the key. Over the
+fork's `house_communications` retained 2026-09-27 (5,006 rows,
+`rin-agreement/`), every scalar RIN has an occurrence at the same span with the
+same value (2,040 of 2,040, always the first), and the list holds 36
+occurrences the scalar does not read: 8 on the 6 rows whose `rin` is NULL, 28
+on 20 rows that have one. Making the scalar fold dashes and case too would
+change `rin` on the two rows spelled `2120-Aa64`; that is left to the owner.
+
+### CBO urls on http fold with their https twin
+
+Every 108th-112th bill-family run refused 4,762 `cbo_cost_estimates` rows as
+outside the publication-page shape. Over all 40 BILLSTATUS zips of those
+Congresses (`cbo-shape/`): the 112th states no estimate, and each of the
+108th-111th's 9,524 items is one of a pair naming one publication in one bill,
+`http://www.cbo.gov/publication/{id}` and `https://www.cbo.gov/publication/{id}`.
+There are 4,762 pairs and no other shape. The http statement is first in
+4,673 pairs and carries the description wrapped in `<p>`. CBO's sitemap lists
+4,761 of the ids, every one on https and none on http, and a plain GET of
+either scheme for six sampled ids gets the same 403 challenge. So the http url
+names the page CBO serves on https.
+
+`publication_id` now accepts exactly `http` or `https`, `www.cbo.gov` and
+`/publication/{positive integer}`. The two statements fold onto one row like
+any restatement: the first-stated item is the row and `restatements_json` keeps
+the other's differing fields. Every refused statement had its twin published,
+so no publication is added; the rows the fork holds from the twin change as the
+table above says.
+
+### The published-row fixture holds the column order again
+
+The retained `comments` and `documents` rows are re-read by id from the fork's
+2026-09-28 objects, which carry the 0.50.0 columns in the contract's order;
+every value the 2026-09-25 rows held is unchanged. The round-trip test takes
+them as published, so moving a column in either contract fails it.
+
+### Smaller fixes
+
+- `GaoTargetMetadata.pdf_url` is the page's own `Full Report` link resolved
+  against the product page, `https://www.gao.gov/assets/{id}.pdf`, rather than
+  a `files.gao.gov` locator derived from the id. All 47 product pages retained
+  on 2026-08-22 label exactly one link so; a page with none or two different
+  refuses.
+- `CitationContext.congress_basis` left unset follows `congress`:
+  `document_fallback` with one, `unstated` without. A basis that contradicts
+  `congress` refuses. Fields keep their order.
+- The withdrawal-date claim in `BillCosponsor` and the bills guide is corrected:
+  positive dates are retained as stated; the 119 S 1224 fixture carries one and
+  the review's sweep found 243.
+- `sources/public_comments/native.py` states its scope: upstream's tree at
+  `data.spicy-regs.dev`, 15 columns per partition file. The fork's mirror (20
+  columns) is refused by design; the `comments` contract describes it (S4).
+
+### What an importer must change
+
+- `DOCUMENT.extract(payload, attachment_relationship=...)` is now
+  `DOCUMENT.extract(payload, attachment_records_json=attachment_records_json(payload, relationship))`.
+  No repository in the stack calls the old form; spicy-regs has its own extract.
+- `CitationContext` refuses a basis that contradicts its Congress, and
+  `CitationContext()` names `unstated`.
+- `product_page_metadata` refuses a page without exactly one `Full Report`
+  link, and `pdf_url` is on `www.gao.gov`.
+- `schemas.fec_committee_history` no longer imports `COMMITTEE_MASTER_FIELDS`;
+  import it from `sources.fec.committee_master`.
+- `REPORT_NATURE_RIN.pattern` gains a lookahead, and `publication_id` accepts
+  http.

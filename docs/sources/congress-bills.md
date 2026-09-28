@@ -89,7 +89,11 @@ a bill without it is either never scored or not yet linked and nothing in this
 route tells the two apart. The publisher's own user guide is stale on this
 element, documenting `rptPubDate`/`rptTitle`/`rptUrl` and no description; the
 live files state `pubDate`/`title`/`url`/`description`, which is what the
-Congress.gov API serves. Both spellings are read, the live one first.
+Congress.gov API serves. Both spellings are read, the live one first. The
+108th-111th state every estimate twice, on `http://www.cbo.gov/publication/{id}`
+and then `https://`, and the 112th states none; since 0.50.1 both schemes key
+one publication and fold into one `cbo_cost_estimates` row
+([decision](../decisions.md#cbo-urls-on-http-fold-with-their-https-twin)).
 
 ## Supported input and visible failures
 
