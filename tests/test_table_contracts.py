@@ -1725,16 +1725,6 @@ FILLED_BY: dict[str, tuple[str, ...]] = {
 _BACKTICKED = re.compile(r"`([^`]+)`")
 
 
-def test_a_digest_matches_across_its_two_published_spellings_and_nothing_else() -> None:
-    from spicy_docs.schemas.tables import digest, same_digest
-
-    prefixed = digest("text")
-    assert prefixed is not None and prefixed.startswith("sha256:")
-    assert same_digest(prefixed, prefixed.removeprefix("sha256:")) and same_digest(prefixed, prefixed)
-    assert not same_digest(prefixed, digest("other")) and not same_digest(prefixed, None)
-    assert not same_digest(None, None)
-
-
 def test_every_contract_declares_where_its_values_come_from() -> None:
     assert set(FILLED_BY) == set(TABLE_CONTRACTS)
 

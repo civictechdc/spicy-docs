@@ -228,12 +228,11 @@ def test_regeneration_is_decided_by_content_hash_and_prompt_version() -> None:
     # A summary stored under the prompt that never named its keys is regenerated.
     assert needs_regeneration(cached_content_hash=digest, cached_prompt_version="v1", digest=digest)
     assert needs_regeneration(cached_content_hash=None, cached_prompt_version=current, digest=digest)
-    # The digest is spelled sha256:; a hash cached as bare hex before that is the same digest, not a changed text.
+    # The digest is spelled sha256: and compared strictly; a host re-spells a bare cached hash at merge first.
     assert digest.startswith("sha256:")
-    assert not needs_regeneration(
+    assert needs_regeneration(
         cached_content_hash=digest.removeprefix("sha256:"), cached_prompt_version=current, digest=digest
     )
-    assert needs_regeneration(cached_content_hash="0" * 64, cached_prompt_version=current, digest=digest)
 
 
 def test_a_summary_outside_the_declared_length_is_refused() -> None:

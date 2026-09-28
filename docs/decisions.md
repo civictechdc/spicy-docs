@@ -3379,11 +3379,13 @@ digest. Four published values were bare hex, and each now carries the prefix:
 
 The prompt versions do not move: they name the prompt text, which did not
 change, and a bump would regenerate every summary and classification for a
-spelling. `tables.same_digest` compares the two spellings instead, so the
+spelling. spicy-docs stays strict and reads no bare hex (owner decision): the
 summary cache (`needs_regeneration`) and the `summary_generated` activity event
-read a stored bare hash as the same digest and do nothing for the spelling
-alone. `rin_from_report_nature(occurrences=...)` refuses occurrences stored
-under the old spelling: they are re-read, which is cheap, not reused.
+compare the values as stored. So a host re-spells its prior rows once, at
+merge, before it asks either (the importer list below names the columns); a
+compatibility layer that read both spellings forever was built and dropped.
+`rin_from_report_nature(occurrences=...)` refuses occurrences stored under the
+old spelling: they are re-read, which is cheap, not reused.
 
 Left bare on purpose, each for a reason:
 
@@ -3475,8 +3477,13 @@ Collected from the four entries above.
   `report_nature/shared_rin/2`), `section_classifications.prompt_hash`,
   `bill_summaries.content_hash`, `diff_summaries.content_hash` and the Senate
   payment review's and candidates' `input_sha256` (rule
-  `senate-b-payment-candidates/3`) are spelled `sha256:`. Compare stored values
-  with `schemas.tables.same_digest`; re-read stored RIN occurrences.
+  `senate-b-payment-candidates/3`) are spelled `sha256:`, and spicy-docs
+  compares them strictly. **Host step, once, at merge:** prefix `sha256:` to
+  every prior bare value of `section_classifications.prompt_hash`,
+  `bill_summaries.content_hash`, `diff_summaries.content_hash` and any retained
+  payment-candidate or review `input_sha256`, before the summary cache or the
+  activity events read them; re-read stored RIN occurrences under the new rule
+  rather than re-spelling them.
 - `roll_call_votes.clerk_body_element` is appended; `RollCallVote.committee_raw`
   is a new last field; a Clerk file naming neither or both body elements
   refuses.
@@ -3486,5 +3493,5 @@ Collected from the four entries above.
   (`cbo_cost_estimates`, `bill_cosponsors.source_xml`,
   `house_communications.rin_occurrences_json`, the model tables' hashes,
   `roll_call_votes`, `member_votes.state`).
-- New helpers: `reading.xml.parse_xml_with_spans`, `schemas.tables.same_digest`,
-  `sources.cbo.title_bills`, `feed_item_pub_date`, `CboFeedBillError`.
+- New helpers: `reading.xml.parse_xml_with_spans`, `sources.cbo.title_bills`,
+  `feed_item_pub_date`, `CboFeedBillError`.

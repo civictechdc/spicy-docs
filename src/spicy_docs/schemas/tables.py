@@ -134,18 +134,6 @@ def digest(value: str | None) -> str | None:
     return "sha256:" + hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
-def same_digest(first: str | None, second: str | None) -> bool:
-    """Whether two digests name the same bytes, in either spelling a published row may hold.
-
-    Every published digest is :func:`digest`'s ``sha256:`` spelling; ``prompt_hash``, ``content_hash``, a RIN
-    occurrence's ``field_sha256`` and the Senate review's ``input_sha256`` were bare hex before, so a row written
-    then compares equal to one written now. A missing digest matches nothing.
-    """
-    if first is None or second is None:
-        return False
-    return first.removeprefix("sha256:") == second.removeprefix("sha256:")
-
-
 #: The member-key spelling of a one-column identity: the value itself.
 VALUE_KEY = "value/1"
 

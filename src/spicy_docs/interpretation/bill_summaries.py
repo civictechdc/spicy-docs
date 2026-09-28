@@ -33,7 +33,6 @@ from spicy_docs.interpretation.model_call import (
     answer_shape_block,
     require_fields,
 )
-from spicy_docs.schemas.tables import same_digest
 from spicy_docs.sources.congress.bill_status import BillIdentity
 
 #: v2 (2026-09-19): the prompt names the keys the reader requires. See the
@@ -289,10 +288,10 @@ def build_prompt(version: BillVersionText) -> str:
 def needs_regeneration(*, cached_content_hash: str | None, cached_prompt_version: str | None, digest: str) -> bool:
     """A cached summary stands only when both its content hash and its prompt version still hold.
 
-    A hash cached before it was spelled ``sha256:`` (bare hex) is the same digest, so the spelling change alone
-    regenerates nothing.
+    Both hashes are spelled ``sha256:``; a host re-spells its summaries cached as bare hex once, at merge, before
+    asking (``docs/decisions.md``), so a bare hash here is a different value and regenerates.
     """
-    return not same_digest(cached_content_hash, digest) or cached_prompt_version != PROMPT_VERSION
+    return cached_content_hash != digest or cached_prompt_version != PROMPT_VERSION
 
 
 def _read_answer(data: object) -> tuple[str, str, tuple[str, ...]]:
