@@ -118,3 +118,21 @@ def test_the_scalar_is_the_first_listed_rin_the_label_directly_precedes(nature, 
         assert finding.rin == first.rin
         assert finding.matched_text.startswith("RIN") and finding.matched_text.endswith(first.matched_text)
         assert nature[first.span_end - len(finding.matched_text) : first.span_end] == finding.matched_text
+
+
+def test_a_host_passes_the_list_it_read_and_gets_the_same_scalar():
+    """``occurrences=`` reuses the list a host already read, and the answer is the one the field alone gives."""
+    fixture = json.loads(
+        (Path(__file__).parent / "fixtures/record_communications/house-119-ec-1278-report-nature.json").read_text()
+    )
+    natures = [nature for nature, _, _ in AGREEMENT] + [fixture["reportNature"], "", None]
+    for nature in natures:
+        occurrences = rin_occurrences_from_report_nature(nature)
+        assert rin_from_report_nature(nature, occurrences=occurrences) == rin_from_report_nature(nature)
+    other = rin_occurrences_from_report_nature("(RIN: 1004-AF40)")
+    with pytest.raises(ValueError, match="another report nature"):
+        rin_from_report_nature("(RIN: 1004-AF39)", occurrences=other)
+    with pytest.raises(ValueError, match="another report nature"):
+        rin_from_report_nature(None, occurrences=other)
+    with pytest.raises(TypeError):
+        rin_from_report_nature(3133, occurrences=())  # type: ignore[arg-type]

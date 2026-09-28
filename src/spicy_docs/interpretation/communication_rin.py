@@ -19,7 +19,9 @@ it cannot disagree with it.
 
 from __future__ import annotations
 
+import hashlib
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 #: The label the scalar requires directly before a listed RIN, searched with its end at the RIN's first character.
@@ -63,8 +65,6 @@ def rin_occurrences_from_report_nature(report_nature: str | None) -> tuple[RinOc
     separate from its neighbour (``RIN2060-AV12``, ``2060-AV12/2060-AV13``).
     Offsets index the supplied field, not a whole communication.
     """
-    import hashlib
-
     from spicy_docs.interpretation.citations import find_citations
 
     if report_nature is None:
@@ -96,7 +96,9 @@ class RinFinding:
     matched_text: str | None
 
 
-def rin_from_report_nature(report_nature: str | None) -> RinFinding:
+def rin_from_report_nature(
+    report_nature: str | None, *, occurrences: Sequence[RinOccurrence] | None = None
+) -> RinFinding:
     """The first listed RIN the ``RIN`` label directly precedes, or an ``unmatched`` finding.
 
     ``rin`` is that occurrence's folded key and ``matched_text`` the label and
@@ -106,8 +108,21 @@ def rin_from_report_nature(report_nature: str | None) -> RinFinding:
     ``unmatched`` rather than an error: the rule ran and found nothing, and the
     row should say so. Raises ``TypeError`` for a non-string, non-``None``
     input.
+
+    A host that publishes both columns passes the list it already read as
+    ``occurrences``, so the shared reader runs once per field rather than
+    twice. Each occurrence must carry this field's digest, or the call refuses
+    with ``ValueError``: a list read from another field would name a RIN this
+    one does not state.
     """
-    occurrences = rin_occurrences_from_report_nature(report_nature)  # refuses a non-string first
+    if occurrences is None:
+        occurrences = rin_occurrences_from_report_nature(report_nature)  # refuses a non-string first
+    elif report_nature is not None and not isinstance(report_nature, str):
+        raise TypeError(f"report_nature must be a string or None, not {type(report_nature).__name__}")
+    elif occurrences:
+        digest = None if report_nature is None else hashlib.sha256(report_nature.encode()).hexdigest()
+        if any(occurrence.field_sha256 != digest for occurrence in occurrences):
+            raise ValueError("RIN occurrences were read from another report nature")
     text = report_nature or ""
     for occurrence in occurrences:
         label = RIN_LABEL.search(text, 0, occurrence.span_start)
