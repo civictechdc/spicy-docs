@@ -97,8 +97,8 @@ one publication and fold into one `cbo_cost_estimates` row
 ([decision](../decisions.md#cbo-urls-on-http-fold-with-their-https-twin)).
 The 113th states none either: no estimate item in any of its 10,637
 documents, and one empty element (H.R. 4200). Those two Congresses'
-estimates come from Congress.gov's bill record instead, `source`
-`congress_api` ([decision](../decisions.md#the-112th-113th-cbo-index-comes-from-congressgov-for-the-bills-cbos-feed-names)).
+estimates come from CBO's own per-Congress feed instead, `source` `cbo_feed`
+([decision](../decisions.md#the-112th-113th-cbo-index-comes-from-cbos-own-feed)).
 
 ## Supported input and visible failures
 

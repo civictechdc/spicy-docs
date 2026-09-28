@@ -13,19 +13,27 @@ from pathlib import Path
 
 import pytest
 
-from spicy_docs.interpretation.bill_family import BillFamilyCapture, EngineStamp, build_bill_family
+from spicy_docs.interpretation.bill_family import (
+    BillFamilyCapture,
+    EngineStamp,
+    build_bill_family,
+    build_cbo_feed_cost_estimates,
+)
 from spicy_docs.schemas import CBO_COST_ESTIMATES, CONGRESS_BILLS
 from spicy_docs.schemas.cost_estimate_tables import (
     BILLSTATUS_BULK,
-    CONGRESS_API,
+    CBO_FEED,
     ESTIMATE_SOURCES,
     PUBLICATION_ID_RULE,
+    SOURCE_PRECEDENCE,
     fold_cbo_cost_estimates,
+    merge_cbo_cost_estimates,
     publication_id,
     report_citation_parts,
     shape_cbo_cost_estimate,
 )
 from spicy_docs.schemas.tables import TableContractError, read_json_column
+from spicy_docs.sources.cbo import CboEstimateItem, CboSourceError, feed_item_pub_date, parse_cbo_cost_estimates_feed
 from spicy_docs.sources.congress.bill_status import BillIdentity, CboCostEstimate, parse_bill_status
 
 FIXTURES = Path(__file__).parent / "fixtures" / "cbo_cost_estimates"
@@ -366,18 +374,135 @@ def test_an_unsealed_source_is_refused() -> None:
 
 
 def test_the_contract_names_both_routes_and_what_a_112th_113th_absence_means() -> None:
-    """The sealed vocabulary keeps its two values, and the text says which document each row came from and that
-    BILLSTATUS names no estimate in the 112th-113th, so a missing row there is not an unscored bill."""
-    assert ESTIMATE_SOURCES == (BILLSTATUS_BULK, CONGRESS_API) == ("billstatus_bulk", "congress_api")
-    assert "BILLSTATUS document, or its Congress.gov bill record," in CBO_COST_ESTIMATES.grain
+    """The sealed vocabulary only grows, and the text says which source each row came from, that BILLSTATUS names no
+    estimate in the 112th-113th, and that a missing row there is not an unscored bill."""
+    assert ESTIMATE_SOURCES == ("billstatus_bulk", "congress_api", "cbo_feed")
+    assert (BILLSTATUS_BULK, CBO_FEED) == ("billstatus_bulk", "cbo_feed")
+    assert "or for the 112th-113th, whose BILLSTATUS names none, CBO's per-Congress feed" in CBO_COST_ESTIMATES.grain
     source = CBO_COST_ESTIMATES.descriptions["source"]
     assert "BILLSTATUS states no estimate for the 112th-113th" in source
-    assert "never that CBO did not score it" in source
+    assert "never established as unscored" in source and "`congress_api` is reserved" in source
     stated_count = CBO_COST_ESTIMATES.descriptions["stated_count"]
-    assert "from the 112th on" not in stated_count
-    assert "the 112th-113th's state none" in stated_count
-    for column in ("report_citation_count", "report_citations_json"):
-        assert "`congress_api` row" in CBO_COST_ESTIMATES.descriptions[column]
+    assert "from the 112th on" not in stated_count and "the 112th-113th's state none" in stated_count
+    assert "title_bill_id names the bill the estimate scores" in CBO_COST_ESTIMATES.descriptions["bill_id"]
+    assert CBO_COST_ESTIMATES.columns[-1] == "title_bill_id"
+    assert "Congress.gov" not in " ".join((CBO_COST_ESTIMATES.grain, *CBO_COST_ESTIMATES.descriptions.values()))
+
+
+# --- the 112th-113th feed route -----------------------------------------------------
+
+#: Seven real items of the 112th feed, re-keyed; ``tests/fixtures/cbo/README.md``.
+FEED_112 = parse_cbo_cost_estimates_feed(
+    (Path(__file__).parent / "fixtures" / "cbo" / "cbo-112congress-cost-estimates.excerpt.xml").read_bytes()
+)
+S3240 = BillIdentity(112, "s", 3240)
+
+
+def test_the_feed_route_shapes_rows_through_the_fold_with_feed_dates_and_billstatus_citations() -> None:
+    """Every bill the feed names by Bill_Number or by the title of a blank item gets one row per publication, oldest
+    first; report citations come from the BILLSTATUS record the host supplies, and NULL where it supplies none."""
+    tables = build_cbo_feed_cost_estimates(FEED_112, 112, report_citations={S3240: ("S. Rept. 112-203",)})
+    assert tables.refusals == ()
+    rows = {CBO_COST_ESTIMATES.key(row): CBO_COST_ESTIMATES.checked(row) for row in tables.cbo_cost_estimates}
+    assert sorted(rows) == [
+        ("112-hr-1707", "43626"),
+        ("112-hr-3082", "22065"),
+        ("112-hr-4402", "43585"),
+        ("112-s-3240", "43273"),
+        ("112-s-3240", "43280"),
+        ("112-s-3240", "43405"),
+    ]
+    first = rows[("112-s-3240", "43273")]
+    assert (first["source"], first["pub_date"], first["estimate_index"], first["stated_count"]) == (
+        CBO_FEED,
+        "2012-05-25T14:01:12Z",
+        "0",
+        "1",
+    )
+    assert [rows[("112-s-3240", p)]["estimate_index"] for p in ("43273", "43280", "43405")] == ["0", "1", "2"]
+    assert (first["report_citation_count"], json.loads(first["report_citations_json"])[0]["number"]) == ("1", "203")
+    assert first["description"] == "As introduced in the United States Senate on May 24, 2012"
+    by_title = rows[("112-hr-4402", "43585")]
+    assert (by_title["report_citation_count"], by_title["report_citations_json"]) == (None, None)
+
+
+def test_title_bill_id_names_the_bill_a_title_leads_with_and_exposes_a_wrong_number() -> None:
+    """CBO filed its estimate of S. 1707 under Bill_Number H.R. 1707: bill_id keeps the published number and
+    title_bill_id the bill the title names. A title citing the bill after its start, or a public law, names none."""
+    rows = {row["publication_id"]: row for row in build_cbo_feed_cost_estimates(FEED_112, 112).cbo_cost_estimates}
+    assert (rows["43626"]["bill_id"], rows["43626"]["title_bill_id"]) == ("112-hr-1707", "112-s-1707")
+    assert rows["43273"]["title_bill_id"] == rows["43273"]["bill_id"] == "112-s-3240"
+    assert rows["43280"]["title_bill_id"] is None  # "... Under Title I of S. 3240"
+    assert rows["43585"]["title_bill_id"] == "112-hr-4402"  # found by its title, so equal by construction
+    assert rows["22065"]["title_bill_id"] is None  # "P.L. 111-322, ...": the wrong Congress is not seen
+
+
+def test_title_bill_id_is_filled_on_billstatus_rows_too() -> None:
+    """The BILLSTATUS route reads the same title rule; a title naming another bill shows as a differing id."""
+    parsed = status("BILLSTATUS-118hr801", HR801)
+    family = build_bill_family(BillFamilyCapture(status=parsed, versions=()), engine=ENGINE, diff=False)
+    assert family.cbo_cost_estimates[0]["title_bill_id"] == "118-hr-801"
+    (estimate,) = parsed.cbo_cost_estimates
+    renamed = replace(parsed, cbo_cost_estimates=(replace(estimate, title="H.R. 810, a misnumbered estimate"),))
+    family = build_bill_family(BillFamilyCapture(status=renamed, versions=()), engine=ENGINE, diff=False)
+    assert (family.cbo_cost_estimates[0]["bill_id"], family.cbo_cost_estimates[0]["title_bill_id"]) == (
+        "118-hr-801",
+        "118-hr-810",
+    )
+
+
+def test_an_unmappable_item_or_an_undated_one_is_a_named_refusal() -> None:
+    """A Bill_Number no rule maps and a Date that names no instant each file a refusal, never a row or silence."""
+    body = (
+        b'<?xml version="1.0"?>\n<response><item key="0"><Title>T</Title><Date>Tue, 18 Sep 2012 23:59:00 -0400</Date>'
+        b"<Link>https://www.cbo.gov/publication/1</Link><Description></Description><Bill_Number>S.A. 948</Bill_Number>"
+        b'</item><item key="1"><Title>T</Title><Date>18 September 2012</Date><Link>https://www.cbo.gov/publication/2'
+        b"</Link><Description></Description><Bill_Number>S. 2</Bill_Number></item></response>"
+    )
+    tables = build_cbo_feed_cost_estimates(parse_cbo_cost_estimates_feed(body), 112)
+    assert tables.cbo_cost_estimates == ()
+    assert [(r.identity, r.reason.split(":")[0]) for r in tables.refusals] == [
+        (("112", "1"), "cbo_feed_bill"),
+        (("112", "2"), "cbo_feed_date"),
+    ]
+    assert "bill_number 'S.A. N'" in tables.refusals[0].reason
+
+
+@pytest.mark.parametrize(
+    ("stated", "instant"),
+    [
+        ("Fri, 25 May 2012 10:01:12 -0400", "2012-05-25T14:01:12Z"),
+        ("Mon, 07 Mar 2011 01:00:00 -0500", "2011-03-07T06:00:00Z"),
+        ("Wed, 31 Dec 2014 23:30:00 -0500", "2015-01-01T04:30:00Z"),
+    ],
+)
+def test_a_feed_date_is_its_utc_instant_in_the_billstatus_spelling(stated: str, instant: str) -> None:
+    item = CboEstimateItem(0, "1", "T", stated, "https://www.cbo.gov/publication/1", None, None)
+    assert feed_item_pub_date(item) == instant
+
+
+@pytest.mark.parametrize("stated", ["Fri, 25 May 2012 10:01:12", "18 September 2012", "yesterday"])
+def test_a_feed_date_without_an_instant_refuses(stated: str) -> None:
+    with pytest.raises(CboSourceError):
+        feed_item_pub_date(CboEstimateItem(0, "1", "T", stated, "https://www.cbo.gov/publication/1", None, None))
+
+
+def test_a_merge_keeps_billstatus_over_the_feed_then_the_larger_pub_date() -> None:
+    """Two routes stating one bill and publication keep the bill's own BILLSTATUS record, whatever the dates say;
+    within one route the larger pub_date wins; first-seen order holds and an unknown source refuses."""
+    assert SOURCE_PRECEDENCE == ("billstatus_bulk", "congress_api", "cbo_feed")
+
+    def row(source: str, pub_date: str | None, publication: str = "1") -> dict:
+        return {"bill_id": "112-hr-1", "publication_id": publication, "source": source, "pub_date": pub_date}
+
+    feed_later, bulk = row("cbo_feed", "2012-06-01T00:00:00Z"), row("billstatus_bulk", "2012-05-01T00:00:00Z")
+    other = row("cbo_feed", None, "2")
+    assert merge_cbo_cost_estimates([feed_later, other, bulk]) == (bulk, other)
+    assert merge_cbo_cost_estimates([bulk, feed_later]) == (bulk,)
+    newer = row("cbo_feed", "2012-07-01T00:00:00Z")
+    assert merge_cbo_cost_estimates([feed_later, newer, row("cbo_feed", None)]) == (newer,)
+    with pytest.raises(TableContractError, match="source must be one of"):
+        merge_cbo_cost_estimates([row("scraped", None)])
 
 
 # --- the family pass ----------------------------------------------------------------

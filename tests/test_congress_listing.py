@@ -52,7 +52,6 @@ ROUTE_PARAMS: dict[str, dict[str, object]] = {
     "amendment": {"congress": 119},
     "committee-bills": {"chamber": "house", "committee_code": "hsju00"},
     "bill-actions": {"congress": 119, "bill_type": "hr", "number": 1},
-    "bill-detail": {"congress": 113, "bill_type": "hr", "number": 2810},
     "nomination": {"congress": 119},
     "hearing": {"congress": 119},
     "hearing-detail": {"congress": 119, "chamber": "house", "number": 64431},
@@ -113,7 +112,6 @@ ROUTE_FIXTURE_BYTES: dict[str, bytes] = {
 # detail and committee-print-detail nest a one-element array instead, which the reader's
 # ordinary list path already reads, so both keep single_record's False default.
 DETAIL_FIXTURE_BYTES: dict[str, bytes] = {
-    "bill-detail": (FIXTURES / "congress-bill-detail-113-hr-2810.json").read_bytes(),
     "law-detail": (FIXTURES / "congress-law-detail.json").read_bytes(),
     "committee-detail": (FIXTURES / "congress-committee-detail.json").read_bytes(),
     "member-detail": (FIXTURES / "congress-member-detail.json").read_bytes(),
@@ -226,7 +224,6 @@ TREATY_FIXTURE_BYTES = (FIXTURES / "congress-treaty-list.json").read_bytes()
 # unchanged, for this branch's six A5/A6/A7/A10 detail routes specifically (a subset of
 # DETAIL_FIXTURE_BYTES above; the other four detail routes get their own dedicated tests below).
 DETAIL_ROUTE_EXPECTATIONS: dict[str, tuple[str, object]] = {
-    "bill-detail": ("number", "2810"),
     "committee-meeting-detail": ("title", "Various Measures"),
     "treaty-detail": ("topic", "Taxation"),
     "daily-congressional-record-detail": ("issueNumber", "148"),
@@ -398,7 +395,6 @@ def test_route_table_states_records_keys_and_measured_sort_support():
         "amendment": True,
         "committee-bills": False,
         "bill-actions": False,
-        "bill-detail": False,
         "nomination": False,
         "hearing": False,
         "hearing-detail": False,
@@ -449,7 +445,6 @@ def test_route_table_states_records_keys_and_measured_sort_support():
         "amendment": True,
         "committee-bills": True,
         "bill-actions": False,
-        "bill-detail": False,
         "nomination": True,
         "hearing": True,
         "hearing-detail": False,
@@ -499,7 +494,6 @@ def test_route_table_states_records_keys_and_measured_sort_support():
         "amendment": False,
         "committee-bills": False,
         "bill-actions": False,
-        "bill-detail": True,
         "nomination": False,
         "hearing": False,
         "hearing-detail": True,
@@ -537,7 +531,6 @@ def test_route_table_states_records_keys_and_measured_sort_support():
     assert LIST_ROUTES["committee-report"].records_key == "reports"
     assert LIST_ROUTES["house-communication"].records_key == "houseCommunications"
     assert LIST_ROUTES["bill-actions"].records_key == "actions"
-    assert LIST_ROUTES["bill-detail"].records_key == "bill"
     assert LIST_ROUTES["house-vote"].records_key == "houseRollCallVotes"
     # Confirmed live 2026-09-19: this route alone nests its rows under a wrapper
     # object instead of a top-level array; see tests/fixtures/listings/README.md.
@@ -574,7 +567,6 @@ def test_route_table_states_records_keys_and_measured_sort_support():
         ("amendment", "https://api.congress.gov/v3/amendment/119?format=json&limit=3"),
         ("committee-bills", "https://api.congress.gov/v3/committee/house/hsju00/bills?format=json&limit=3"),
         ("bill-actions", "https://api.congress.gov/v3/bill/119/hr/1/actions?format=json&limit=3"),
-        ("bill-detail", "https://api.congress.gov/v3/bill/113/hr/2810?format=json&limit=3"),
         ("nomination", "https://api.congress.gov/v3/nomination/119?format=json&limit=3"),
         ("hearing", "https://api.congress.gov/v3/hearing/119?format=json&limit=3"),
         ("hearing-detail", "https://api.congress.gov/v3/hearing/119/house/64431?format=json&limit=3"),

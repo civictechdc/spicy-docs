@@ -32,10 +32,12 @@ is that Congress to date, newest first, and an observation, never a catalog; a
 Congress with no file answers 404 with a Drupal HTML page, which is
 requested-empty, not absence.
 
-``Bill_Number`` is also how the 112th-113th estimates are found at all: their
-BILLSTATUS states none, so ``cbo_feed_bills`` maps each item to the bill it
-names and ``sources.congress.bill_cbo_estimates`` asks Congress.gov's bill
-record about exactly those bills.
+The feed is also the only route to the 112th-113th estimates, whose
+BILLSTATUS states none: ``cbo_feed_bills`` maps each item to the bill its
+``Bill_Number`` (or, where that is empty, its title) names, and
+``interpretation.bill_family.build_cbo_feed_cost_estimates`` shapes the rows,
+``source`` ``cbo_feed``. Congress.gov's bill record lists the same items,
+regrouped by the same ``Bill_Number``, so it is not a second route.
 
 Byte counts, digests and the measurements behind every claim:
 ``docs/sources/cbo.md`` and the receipts named above.
@@ -47,7 +49,8 @@ import re
 from collections.abc import Callable
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
 from typing import TYPE_CHECKING
 from urllib.parse import urlsplit
 
@@ -415,6 +418,23 @@ def cbo_feed_bills(feed: CboCostEstimatesFeed, congress: int) -> CboFeedBills:
         unnamed,
         tuple(refused),
     )
+
+
+def feed_item_pub_date(item: CboEstimateItem) -> str:
+    """The item's ``Date`` as the UTC instant BILLSTATUS spells a ``pubDate`` in (``2013-06-20T02:27:22Z``).
+
+    The feed states RFC 2822 local time (``Wed, 19 Jun 2013 22:27:22 -0400``);
+    Congress.gov lists the same instant in this spelling for all 43 feed items
+    sampled on 2026-09-28, and a version column has to sort as text.  A date
+    without an offset refuses: it names no instant.
+    """
+    try:
+        moment = parsedate_to_datetime(item.date)
+    except (TypeError, ValueError) as error:
+        raise CboSourceError("CBO feed item Date is not an RFC 2822 date") from error
+    if moment.tzinfo is None:
+        raise CboSourceError("CBO feed item Date states no UTC offset")
+    return moment.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def parse_cbo_cost_estimates_feed(body: bytes, *, max_bytes: int = DEFAULT_MAX_BYTES) -> CboCostEstimatesFeed:

@@ -70,14 +70,22 @@ from spicy_docs.schemas.bill_version_tables import (
 from spicy_docs.schemas.cost_estimate_tables import (
     BILLSTATUS_BULK,
     CBO_COST_ESTIMATES,
-    CONGRESS_API,
+    CBO_FEED,
     PUBLICATION_ID_RULE,
     fold_cbo_cost_estimates,
     publication_id,
     shape_cbo_cost_estimate,
 )
 from spicy_docs.schemas.tables import Row, TableContract, TableContractError, bill_id, joined
-from spicy_docs.sources.congress.bill_cbo_estimates import CongressBillEstimates
+from spicy_docs.sources.cbo import (
+    CboCostEstimatesFeed,
+    CboFeedBillError,
+    CboSourceError,
+    cbo_feed_bills,
+    feed_item_pub_date,
+    title_bills,
+)
+from spicy_docs.sources.congress.bill_status import BillIdentity, CboCostEstimate
 from spicy_docs.sources.congress.bill_versions import (
     VersionCodeError,
     consecutive_pairs,
@@ -649,11 +657,22 @@ def build_bill_family(
     )
 
 
+def _title_bill(congress: int, title: object) -> BillIdentity | None:
+    """The bill an estimate's title leads with, or ``None`` where it leads with none or an ambiguous one."""
+    if not isinstance(title, str):
+        return None
+    try:
+        bills = title_bills(congress, title)
+    except CboFeedBillError:
+        return None
+    return bills[0] if bills else None
+
+
 def _cost_estimate_rows(
     identity: Any,
     estimates: Sequence[Any],
     *,
-    report_citations: Iterable[object],
+    report_citations: Iterable[object] | None,
     admit: _Admitter,
     source: str = BILLSTATUS_BULK,
 ) -> list[Row]:
@@ -662,41 +681,70 @@ def _cost_estimate_rows(
     Folded onto (bill, publication) first, because the publisher states one
     publication twice on some bills and that is one estimate; a url outside the
     measured /publication/{id} shape cannot be keyed and is refused by name
-    rather than published unidentified.
+    rather than published unidentified.  Each row also names the bill its
+    title leads with, which is how a CBO numbering error shows.
     """
     key = bill_id(identity)
     rows: list[Row] = []
     folded, unkeyable = fold_cbo_cost_estimates(estimates)
     for index, url in unkeyable:
         admit.refuse(CBO_COST_ESTIMATES.name, (key, str(index)), _cost_estimate_refusal(url))
-    citations = tuple(report_citations)
+    citations = None if report_citations is None else tuple(report_citations)
     for entry in folded:
         admit(
             CBO_COST_ESTIMATES,
             rows,
             (key, entry.publication_id),
-            partial(shape_cbo_cost_estimate, identity, entry, report_citations=citations, source=source),
+            partial(
+                shape_cbo_cost_estimate,
+                identity,
+                entry,
+                report_citations=citations,
+                source=source,
+                title_bill=_title_bill(identity.congress, getattr(entry.estimate, "title", None)),
+            ),
         )
     return rows
 
 
-def build_congress_api_cost_estimates(reading: CongressBillEstimates) -> BillFamilyTables:
-    """``cbo_cost_estimates`` rows, and their refusals, from one Congress.gov bill record's reading.
+def build_cbo_feed_cost_estimates(
+    feed: CboCostEstimatesFeed,
+    congress: int,
+    *,
+    report_citations: Mapping[BillIdentity, Sequence[str]] | None = None,
+) -> BillFamilyTables:
+    """``cbo_cost_estimates`` rows for every bill one Congress's CBO feed names, and what it refused.
 
-    The route BILLSTATUS cannot serve for the 112th-113th: the same fold,
-    refusals and shaper as :func:`build_bill_family`'s, with ``source``
-    ``congress_api`` and the record's own ``committeeReports``.
+    The 112th-113th route (their BILLSTATUS states no estimate), ``source``
+    ``cbo_feed``, through the same fold, refusals and shaper as
+    :func:`build_bill_family`'s.  ``report_citations`` maps a bill to its own
+    BILLSTATUS ``<committeeReports>`` citations; a bill it does not name
+    publishes NULL there.  A bill's items are ordered oldest first, then by
+    publication id, because the feed is newest first and its order within one
+    ``Date`` changes between captures.  An item no rule maps to a bill, or
+    whose ``Date`` names no instant, is a named refusal.  Linear in the items.
     """
-    if not isinstance(reading, CongressBillEstimates):
-        raise TypeError("build_congress_api_cost_estimates takes a CongressBillEstimates reading")
+    named = cbo_feed_bills(feed, congress)
     admit = _Admitter()
-    rows = _cost_estimate_rows(
-        reading.identity,
-        reading.estimates,
-        report_citations=reading.report_citations,
-        admit=admit,
-        source=CONGRESS_API,
-    )
+    for publication, field, shape in named.refused:
+        admit.refuse(
+            CBO_COST_ESTIMATES.name,
+            (str(congress), publication),
+            f"cbo_feed_bill: feed {field} {shape!r} names no bill this rule maps",
+        )
+    items = {item.publication_id: item for item in feed.items}
+    dates: dict[str, str] = {}
+    for item in feed.items:
+        try:
+            dates[item.publication_id] = feed_item_pub_date(item)
+        except CboSourceError as error:
+            admit.refuse(CBO_COST_ESTIMATES.name, (str(congress), item.publication_id), f"cbo_feed_date: {error}")
+    rows: list[Row] = []
+    for bill in named.bills:
+        dated = sorted((dates[p], int(p), items[p]) for p in bill.publication_ids if p in dates)
+        estimates = [CboCostEstimate(date, item.title, item.link, item.description) for date, _, item in dated]
+        citations = None if report_citations is None else report_citations.get(bill.identity)
+        rows += _cost_estimate_rows(bill.identity, estimates, report_citations=citations, admit=admit, source=CBO_FEED)
     return BillFamilyTables(cbo_cost_estimates=tuple(rows), refusals=tuple(admit.refusals))
 
 

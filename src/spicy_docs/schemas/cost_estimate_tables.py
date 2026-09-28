@@ -1,12 +1,13 @@
-"""``cbo_cost_estimates``: CBO's cost-estimate index as the bill's own record states it, because CBO's own site is
-behind a bot wall ([routes](../../../docs/research/cbo-cost-estimate-routes-2026-09-20.md)).
+"""``cbo_cost_estimates``: CBO's cost-estimate index as a bill's record or CBO's own feed states it, because CBO's own
+site is behind a bot wall ([routes](../../../docs/research/cbo-cost-estimate-routes-2026-09-20.md)).
 
-Two routes state it, named in ``source``: the same BILLSTATUS document the bill family reads, and Congress.gov's bill
-record (``sources.congress.bill_cbo_estimates``) for the 112th-113th, whose BILLSTATUS states none, asked only about
-the bills CBO's own per-Congress feed names.  A bill absent here is never scored, not yet linked or, in the
-112th-113th, not named by that feed -- no count taken from this table is a CBO production rate -- and the sibling
+Two routes state it, named in ``source``: the same BILLSTATUS document the bill family reads, and, for the 112th-113th,
+whose BILLSTATUS states none, CBO's keyless per-Congress feed (``interpretation.bill_family.
+build_cbo_feed_cost_estimates``).  A bill absent here is never scored, not yet linked or, in the 112th-113th, named by
+no feed item -- no count taken from this table is a CBO production rate -- and the sibling
 ``congress_bills.cbo_cost_estimates_outcome`` preserves the BILLSTATUS route's unread, populated and requested-empty
-observations.  The letter's text is not here: it is reprinted in the bill's committee report, and its span lands on
+observations.  ``title_bill_id`` names the bill each estimate's own title leads with, which is how a wrong number shows.
+The letter's text is not here: it is reprinted in the bill's committee report, and its span lands on
 ``committee_reports`` keyed by package because the report states no publication id at all.
 """
 
@@ -63,30 +64,38 @@ _REPORT_CITATION = re.compile(
 _REPORT_TYPE_BY_CHAMBER = {"H": "hrpt", "S": "srpt"}
 
 #: Which route stated the element.  Sealed and additions-only: the value is
-#: published.  ``billstatus_bulk`` is the recommended harvest (two keyless
-#: requests per Congress and type).  ``congress_api`` is the same four fields
-#: from ``api.congress.gov``'s bill record, one keyed request per bill: the
-#: harvest for the 112th-113th, whose BILLSTATUS states none (owner decision
-#: 2026-09-28), asked only about the bills CBO's per-Congress feed names.  On
-#: 36 sampled feed bills the two agree both ways: all 43 feed publications
-#: are in the record's list and every listed one is a feed item naming that
-#: bill, with equal titles and, but for a trailing newline the API keeps,
-#: equal descriptions (``~/Work/corpora/fork-execution-2026-09-21/cbo-112-113/``).
-ESTIMATE_SOURCES: tuple[str, ...] = ("billstatus_bulk", "congress_api")
+#: published.  ``billstatus_bulk`` is GovInfo's BILLSTATUS bulk zip, two
+#: keyless requests per Congress and type.  ``congress_api`` was reserved for
+#: Congress.gov's bill record and no route produces it: that record's
+#: 112th-113th lists are CBO's feed regrouped by ``Bill_Number``, CBO's wrong
+#: numbers included, so it states nothing the feed does not (independent
+#: review, 2026-09-28).  ``cbo_feed`` is CBO's own keyless per-Congress feed,
+#: the route for the 112th-113th, whose BILLSTATUS states no estimate.
+ESTIMATE_SOURCES: tuple[str, ...] = ("billstatus_bulk", "congress_api", "cbo_feed")
 BILLSTATUS_BULK = "billstatus_bulk"
-CONGRESS_API = "congress_api"
+CBO_FEED = "cbo_feed"
+#: Which row a merge keeps when two routes state one ``(bill_id,
+#: publication_id)``, best first: the bill's own BILLSTATUS record is the
+#: publisher's statement about that bill, and the feed is CBO's list of its
+#: work, so BILLSTATUS wins whatever either's ``pub_date`` says.
+SOURCE_PRECEDENCE: tuple[str, ...] = (BILLSTATUS_BULK, "congress_api", CBO_FEED)
 
 CBO_COST_ESTIMATES = table_contract(
     "cbo_cost_estimates",
     references=(Reference(("bill_id",), "congress_bills", ("bill_id",)),),
     grain=(
-        "One row per bill and CBO publication the bill's BILLSTATUS document, or its Congress.gov bill record, "
-        "names as a cost estimate of it."
+        "One row per bill and CBO publication a source names as a cost estimate of it: the bill's own BILLSTATUS "
+        "document, or for the 112th-113th, whose BILLSTATUS names none, CBO's per-Congress feed."
     ),
     identity=("bill_id", "publication_id"),
     version_column="pub_date",
     columns={
-        "bill_id": "The bill this estimate scores, keyed the way congress_bills.bill_id is.",
+        "bill_id": (
+            "The bill the source attached this estimate to, as published, keyed the way congress_bills.bill_id is: "
+            "the bill whose BILLSTATUS record lists it (`billstatus_bulk`), or the bill CBO's feed item names by "
+            "Bill_Number or, where that is empty, by the citation its title leads with (`cbo_feed`).  Where "
+            "title_bill_id differs, this number is wrong and title_bill_id names the bill the estimate scores."
+        ),
         "congress": "The numbered Congress the bill belongs to.",
         "bill_type": "Lowercase publisher bill or resolution type (hr, s, hjres...).",
         "bill_number": "The measure's number within its Congress and type.",
@@ -97,7 +106,8 @@ CBO_COST_ESTIMATES = table_contract(
         ),
         "pub_date": (
             "The publisher's pubDate for this estimate; the merge prefers the larger value.  It is when CBO "
-            "published the estimate, not when the bill acted."
+            "published the estimate, not when the bill acted.  A `cbo_feed` row states the feed's Date as the "
+            "same instant in UTC, spelled as BILLSTATUS spells pubDate."
         ),
         "title": "The estimate's title as the publisher states it, which is usually the bill's own title.",
         "description": (
@@ -105,28 +115,31 @@ CBO_COST_ESTIMATES = table_contract(
             'on Energy and Commerce on March 24, 2023").  The only field that distinguishes two estimates of '
             "one bill, and the field that states the stage: 826 of the 118th House's 1,062 rows begin \"As "
             'ordered reported by the House C", and the tail includes Rules Committee prints, which have no '
-            "committee report at all."
+            "committee report at all.  A `cbo_feed` row's is the feed's Description with the surrounding "
+            "whitespace this package's feed parser trims, a trailing newline on many."
         ),
         "url": "The publication page the publisher linked, exactly as stated; every measured one is walled.",
         "source": (
-            "Which route stated the element: `billstatus_bulk` for the keyless bulk zip, `congress_api` for "
-            "the keyed per-bill route.  Sealed and additions-only.  BILLSTATUS states no estimate for the "
-            "112th-113th (none in 12,299 and 10,637 documents), so their rows are `congress_api`, read from the "
-            "Congress.gov bill record of each bill CBO's own per-Congress feed names; there a bill without a row "
-            "means only that BILLSTATUS carries no CBO estimate and that route filled none, never that CBO did "
-            "not score it."
+            "Which route stated the element: `billstatus_bulk` for GovInfo's keyless BILLSTATUS bulk zip, "
+            "`cbo_feed` for CBO's keyless per-Congress feed; `congress_api` is reserved and no route produces "
+            "it.  Sealed and additions-only.  BILLSTATUS states no estimate for the 112th-113th (none in 12,299 "
+            "and 10,637 documents), so their rows are `cbo_feed`; there a bill without a row is one no feed item "
+            "names, never established as unscored.  Where two routes state one bill and publication, a merge "
+            "keeps `billstatus_bulk`, the bill's own record (merge_cbo_cost_estimates)."
         ),
         "estimate_index": (
-            "Zero-based position, in the publisher's own list, of the item this row states: the first one naming "
-            "this publication on https, else the first one naming it.  Document order is kept because the "
-            "publisher's order is a fact and nothing here re-sorts it."
+            "Zero-based position, in the list the row was read from, of the item this row states: the first one "
+            "naming this publication on https, else the first one naming it.  A BILLSTATUS list keeps the "
+            "publisher's order, which is a fact nothing here re-sorts.  A `cbo_feed` row's list is the feed items "
+            "naming the bill, oldest first and then by publication id, because the feed runs newest first and "
+            "its order within one Date changes between captures."
         ),
         "stated_count": (
             "How many items in this bill's list name this publication, which is one estimate stated that many "
             "times and not that many estimates.  The 108th-111th BILLSTATUS lists state every estimate twice, "
             "once on http and once on https, and the 112th-113th's state none.  Elsewhere it is usually 1: the "
-            "118th states one twice on 37 of 1,468 measured rows, and each of the 43 `congress_api` rows "
-            "sampled from the 112th-113th is stated once."
+            "118th states one twice on 37 of 1,468 measured rows.  A `cbo_feed` row's is 1, because the feed "
+            "lists a publication once."
         ),
         "restatements_json": (
             "Every other item naming this publication whose fields differ from the row's, in list order, as a "
@@ -138,21 +151,31 @@ CBO_COST_ESTIMATES = table_contract(
             "The column exists so folding onto the identity drops nothing."
         ),
         "report_citation_count": (
-            "How many committee reports this bill's own BILLSTATUS names, or on a `congress_api` row its "
-            "Congress.gov bill record's `committeeReports`. Zero means this document names "
+            "How many committee reports this bill's own BILLSTATUS names, on a `cbo_feed` row too, where the "
+            "host supplies that record; NULL on a `cbo_feed` row shaped without it. Zero means this document names "
             "no report citation; it does not establish that no CRPT package exists. 883 of the 1,368 scored bills of the "
             "118th are nonzero (64.5%), and the Senate shortfall is structural -- 155 of 395 scored Senate "
             "bills were reported without a written report."
         ),
         "report_citations_json": (
-            "Every citation that bill's `<committeeReports>` states (its bill record's `committeeReports` on a "
-            "`congress_api` row), as a JSON array in publisher order, each "
+            "Every citation that bill's `<committeeReports>` states, as a JSON array in publisher order (NULL "
+            "where report_citation_count is), each "
             "carrying the `citation` verbatim and its parsed `congress`, `report_type` and `number` -- the "
             "three columns `committee_reports` publishes -- plus `part` where the citation names one.  A part "
             "citation has no package id under GovInfo's sealed CRPT grammar, so none is invented; the parsed "
             "parts are NULL on any citation outside the measured shape."
         ),
         "publication_id_rule": "The rule that produced publication_id; a url shape, never a guess at an id.",
+        "title_bill_id": (
+            'The bill this estimate\'s own title leads with ("H.R. 3447, a bill to extend ..."), keyed as bill_id '
+            "is and read by the feed's title rule; NULL where the title leads with no citation, cites the bill "
+            'only after its start ("Senate Amendment 1183 to S. 744") or leads with an abbreviation that is '
+            "no bill type.  Where it differs from bill_id the row is a numbering error and this is the bill the "
+            "estimate scores: over the 108th-119th (2026-09-28), 5 BILLSTATUS rows -- four carrying CBO's own "
+            "wrong number, and 114 H.R. 3347, whose record lists CBO's estimate of H.R. 3447 though the feed "
+            "states 3447 -- and 5 feed rows, 112 H.R. 1707 for S. 1707 among them.  A wrong Congress is not "
+            "seen: the 112th feed files P.L. 111-322 under H.R. 3082, a 111th-Congress number."
+        ),
     },
 )
 
@@ -263,23 +286,26 @@ def shape_cbo_cost_estimate(
     identity: object,
     folded: FoldedEstimate,
     *,
-    report_citations: Iterable[object] = (),
+    report_citations: Iterable[object] | None = (),
     source: str = BILLSTATUS_BULK,
+    title_bill: object | None = None,
 ) -> Row:
     """One ``cbo_cost_estimates`` row from one folded estimate of one bill.
 
-    ``report_citations`` is the committee-report list of the same document
-    the estimates were read from (BILLSTATUS ``<committeeReports>``, or the
-    Congress.gov bill record's ``committeeReports`` when ``source`` is
-    ``congress_api``), repeated on each of the bill's estimate rows:
-    it is the text route's reachability, and a consumer asking "can I read this
-    estimate's letter?" reads one row rather than joining to find out.  A bill
-    carries at most a handful of estimates, so the repetition is bounded.
+    ``report_citations`` is the bill's own BILLSTATUS ``<committeeReports>``
+    list, repeated on each of the bill's estimate rows: it is the text route's
+    reachability, and a consumer asking "can I read this estimate's letter?"
+    reads one row rather than joining to find out.  A bill carries at most a
+    handful of estimates, so the repetition is bounded.  ``None`` means no
+    BILLSTATUS record was read for the bill (a ``cbo_feed`` row a host shaped
+    without one) and publishes NULL rather than a zero no document stated.
+    ``title_bill`` is the bill the estimate's own title leads with
+    (``sources.cbo.title_bills``), or ``None``.
     """
     if source not in ESTIMATE_SOURCES:
         raise TableContractError(f"cbo_cost_estimates source must be one of {', '.join(ESTIMATE_SOURCES)}")
     estimate = folded.estimate
-    citations = [report_citation_parts(citation) for citation in report_citations]
+    citations = None if report_citations is None else [report_citation_parts(c) for c in report_citations]
     return {
         "bill_id": bill_id(identity),
         "congress": text(identity.congress),
@@ -294,21 +320,48 @@ def shape_cbo_cost_estimate(
         "estimate_index": text(folded.estimate_index),
         "stated_count": text(folded.stated_count),
         "restatements_json": json_column(list(folded.restatements)),
-        "report_citation_count": text(len(citations)),
-        "report_citations_json": json_column(citations),
+        "report_citation_count": None if citations is None else text(len(citations)),
+        "report_citations_json": None if citations is None else json_column(citations),
         "publication_id_rule": PUBLICATION_ID_RULE,
+        "title_bill_id": None if title_bill is None else bill_id(title_bill),
     }
+
+
+def merge_cbo_cost_estimates(rows: Iterable[Row]) -> tuple[Row, ...]:
+    """One row per ``(bill_id, publication_id)``, in first-seen order: the route ``SOURCE_PRECEDENCE`` ranks first, then
+    the larger ``pub_date`` (the contract's version column), a missing one losing.
+
+    What a host merge applies across routes; linear in the rows.  A source
+    outside the vocabulary refuses rather than ranks last.
+    """
+    rank = {source: position for position, source in enumerate(SOURCE_PRECEDENCE)}
+    kept: dict[tuple[str, ...], Row] = {}
+    for row in rows:
+        if row.get("source") not in rank:
+            raise TableContractError(f"cbo_cost_estimates source must be one of {', '.join(ESTIMATE_SOURCES)}")
+        key = CBO_COST_ESTIMATES.key(row)
+        held = kept.get(key)
+        if held is None:
+            kept[key] = row
+        elif rank[row["source"]] != rank[held["source"]]:
+            if rank[row["source"]] < rank[held["source"]]:
+                kept[key] = row
+        elif (row.get("pub_date") or "") > (held.get("pub_date") or ""):
+            kept[key] = row
+    return tuple(kept.values())
 
 
 __all__ = [
     "BILLSTATUS_BULK",
     "CBO_COST_ESTIMATES",
-    "CONGRESS_API",
+    "CBO_FEED",
     "ESTIMATE_SOURCES",
     "PUBLICATION_ID_RULE",
     "REPORT_CITATION_RULE",
+    "SOURCE_PRECEDENCE",
     "FoldedEstimate",
     "fold_cbo_cost_estimates",
+    "merge_cbo_cost_estimates",
     "publication_id",
     "report_citation_parts",
     "shape_cbo_cost_estimate",

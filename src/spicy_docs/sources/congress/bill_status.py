@@ -131,8 +131,9 @@ class CboCostEstimate:
     the only field that distinguishes two estimates of one bill. The element
     is almost never emitted empty (113 H.R. 4200's is the one measured), so a
     bill without it is either never scored or not yet linked -- or, in the
-    112th-113th, whose files state no estimate at all, listed only by
-    Congress.gov (``sources.congress.bill_cbo_estimates``): a caller records
+    112th-113th, whose files state no estimate at all, listed only in CBO's
+    own feed (``interpretation.bill_family.build_cbo_feed_cost_estimates``,
+    which builds this same value from each feed item): a caller records
     requested-empty, never absence.
     """
 

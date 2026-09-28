@@ -3219,11 +3219,12 @@ Replayed over the parsing survey's 60,000 Federal Register texts
 - The `yaml` extra (`PyYAML>=6,<7`) exists; the administration-policy reader
   needs it with `acquisition`.
 
-## The 112th-113th CBO index comes from Congress.gov, for the bills CBO's feed names
+## The 112th-113th CBO index comes from CBO's own feed
 
 2026-09-28, for the next release. Receipt:
-`~/Work/corpora/fork-execution-2026-09-21/cbo-112-113/`, with every script,
-the fetched feeds and zips, and the 56 keyed Congress.gov responses.
+`~/Work/corpora/fork-execution-2026-09-21/cbo-112-113/`, with every script, the
+fetched feeds (`feeds/`, 108th-119th) and zips, and the independent review's
+work in `review/`.
 
 **BILLSTATUS states no CBO estimate for the 112th and 113th.** Over every bill
 type's zip (fetched keyless 2026-09-28; GovInfo's Last-Modified is January
@@ -3231,84 +3232,99 @@ type's zip (fetched keyless 2026-09-28; GovInfo's Last-Modified is January
 `<cboCostEstimates>` item, where the 111th's carry 2,156 items in 902
 documents. A regex over the raw bytes and `parse_bill_status` agree: the one
 113th element is empty (H.R. 4200, `requested-empty:present-and-empty`), and
-every other document is `requested-empty:absent`. No re-read can fill these
-Congresses from BILLSTATUS, and before this route the table's text read their
-absence the way it reads any other.
+every other document is `requested-empty:absent`.
 
-**The owner chose the feed-then-API route.** Asking Congress.gov's bill record
-about every bill would take 22,936 keyed requests, one per document. CBO's keyless
-per-Congress feed instead names the bills it scored, 813 and 988 of them
-from 944 and 1,117 items, so the route asks only about those, under the
-`source` value `congress_api` the contract already reserved. The bill record's
-`cboCostEstimates` states the same four fields as BILLSTATUS under the same
-names, so each item becomes the same `CboCostEstimate` and goes through the
-same fold, publication-url rule and shaper. The identity
-`(bill_id, publication_id)` and `publication_id_rule` do not move.
+**The rows come from CBO's keyless per-Congress feed, `source` `cbo_feed`.**
+The first route built for this asked Congress.gov's bill record, keyed, about
+each bill the feed names (`congress_api`, 56 requests sampled). The
+independent review of that branch showed the record's 112th-113th lists are
+the feed regrouped by `Bill_Number`: the same instants and bytes, CBO's wrong
+numbers followed (112 H.R. 1707 lists CBO's estimate of S. 1707) and nothing
+for an item whose `Bill_Number` is empty. The keyed route added nothing, so
+the owner chose (2026-09-28) to build the rows from the feed itself and to
+remove the Congress.gov reader, its `bill-detail` listing route, tests and
+fixtures; the branch history keeps them. `congress_api` stays in the sealed
+vocabulary, reserved, and `cbo_feed` is added.
+
+`build_cbo_feed_cost_estimates(feed, congress, report_citations=...)` maps
+each item to a bill by its `Bill_Number` or, where that is empty, by the
+citation its title leads with (below), and shapes the items through the same
+fold, publication-url rule, refusals and shaper as the BILLSTATUS route. The
+identity `(bill_id, publication_id)` and `publication_id_rule` do not move.
+The 112th feed gives 913 rows for 813 bills and the 113th 1,101 for 988, with
+no refusal.
+
+- `pub_date` is the item's RFC 2822 `Date` as the same instant in UTC, spelled
+  as BILLSTATUS spells a `pubDate`, because a version column has to sort as
+  text; Congress.gov lists that spelling for all 43 items sampled.
+- A bill's items are ordered oldest first, then by publication id, for
+  `estimate_index`: the feed runs newest first and its order within one `Date`
+  changes between captures of the same items.
+- The report citations are the bill's own BILLSTATUS `<committeeReports>`,
+  which the host passes in; a bill it passes none for publishes NULL in both
+  citation columns rather than a zero no document stated.
+- If BILLSTATUS and the feed ever state one `(bill_id, publication_id)`,
+  BILLSTATUS wins: it is the publisher's own record of that bill.
+  `merge_cbo_cost_estimates` applies `SOURCE_PRECEDENCE` (`billstatus_bulk`,
+  `congress_api`, `cbo_feed`) before the larger `pub_date`, and a test holds
+  it. A host merge must apply it.
 
 **A `Bill_Number` maps by a grammar every measured form fits, and nothing
-else.** Every form in the 112th-113th and 116th-119th feeds is a type's
-abbreviation words, each ended by a period, a space or both, then the number.
-The 112th and 113th refuse no item. Nine spellings occur, from `H.R. 8` to
-`H.Con.Res. 103`, and every nonempty value names one bill. The rule refuses a
-bare number, an amendment, trailing text and a list rather than guess a type
-or split a list, because no item in any measured feed needed that. A
-lowercase or unspaced spelling is the same fact and is read.
+else.** Every form in the 108th-119th feeds is a type's abbreviation words,
+each ended by a period, a space or both, then the number. The 112th and 113th
+refuse no item. The rule refuses a bare number, an amendment, trailing text and
+a list rather than guess a type or split a list, because no item in any
+measured feed needed that.
 
-**The sample agrees in both directions.** 46 keyed requests covered 36 feed
-bills, stratified by Congress, type and every rarer spelling, plus the ten
-bills below. All 43 of the feed bills' items are in the record's list. Every
-listed publication is a feed item naming that bill, with equal title and
-description (the API ends ten descriptions in a newline the feed trims, kept
-verbatim as BILLSTATUS keeps its text). No list repeats a publication, and
-every url is `https://www.cbo.gov/publication/{n}`.
+**Where `Bill_Number` is empty, the title's leading citation names the bill**
+(owner decision 2026-09-28). 92 and 186 items leave `Bill_Number` empty, and 61
+and 170 of them have a title that leads with a bill citation: 44 and 137 bills
+no `Bill_Number` names, which now have rows. `title_bills` reads the leading
+citation in the `Bill_Number` grammar, written capitalized so prose ("Obama's
+2013") cannot read as one, and refuses by shape a second citation of another
+bill, a citation after the start and an abbreviation and number that is no
+bill type. `CboFeedBill.found_by` says which way a bill was found.
 
-**Where `Bill_Number` is empty, the title's leading citation names the bill,
-and each bill says how it was found.** 92 and 186 items leave `Bill_Number`
-empty, and 61 and 170 of them have a title that leads with a bill citation:
-44 and 137 bills no `Bill_Number` names. The first pass left them out, because
-none of six sampled had an estimate on Congress.gov. The owner chose
-(2026-09-28) to include them, so a host asks about every bill CBO's feed
-names. `title_bills` reads the leading citation in the `Bill_Number` grammar,
-written capitalized so prose ("Obama's 2013") cannot read as one. It refuses
-anything ambiguous by shape: a second citation of another bill, a citation
-after the start, and an abbreviation and number that is no bill type. No
-112th-113th title refuses. The 119th's `... in Title IV of H.R. 1` is the only
-measured refusal, and the ambiguous shapes are tested on synthetic titles.
-`CboFeedBill.found_by` is `bill_number` when any item's `Bill_Number` names
-the bill, else `title`, and every harvest row carries it. **The record stays
-authoritative: no listed estimate, no row.** Ten more keyed requests sampled
-title-found bills, and with the first six none of the 16 lists an estimate, so
-these 181 requests are expected to add few rows or none. The contract says a
-112th-113th bill without a row is not established as unscored.
+**`title_bill_id` publishes the bill an estimate's title names, on every
+route** (owner decision 2026-09-28). The new, nullable last column of
+`cbo_cost_estimates` is the bill the title leads with, by the same rule, or
+NULL. Where it differs from `bill_id`, `bill_id` is a numbering error as
+published and `title_bill_id` is the bill scored. Over the 108th-119th
+(`title-bill/title-bill.json`):
 
-**The report citations come from the same record (owner confirmed
-2026-09-28).** A `congress_api` row's
-`report_citation_count` and `report_citations_json` read the record's
-`committeeReports`. That is the same document the estimates came from, as on
-the BILLSTATUS route, and its citations take the BILLSTATUS spelling
-(`H. Rept. 113-257,Part 2`). Leaving them empty would publish a zero the
-record contradicts.
+| Route | Rows | `title_bill_id` differs | NULL: cites after the start | NULL: no citation | NULL: other form |
+| --- | --- | --- | --- | --- | --- |
+| BILLSTATUS, 108th-111th and 114th-119th | 12,732 | 5 | 277 | 49 | 1 |
+| Feed, 108th-119th | 14,768 | 5 | 298 | 69 | 4 |
 
-**The contract changes text only, and only by adding.** The grain names the
-Congress.gov bill record beside the BILLSTATUS document. `source` states that
-BILLSTATUS carries no estimate for the 112th-113th and what a missing row
-means there. `stated_count` drops "usually 1 from the 112th on", which
-BILLSTATUS contradicts, and says each sampled `congress_api` row is stated
-once. `report_citation_count` and `report_citations_json` name the record's
-list. No column, identity, type or vocabulary value moves. A host's dictionary
-regenerates from the new text.
+The feed's five are CBO's own numbers: 112 H.R. 1707 for S. 1707, 115 S. 2416
+for S. 2461, 117 S. 2671 for S. 2761, 119 H.R. 648 for H.R. 658 and 119 H.R.
+5201 for H.R. 5021. BILLSTATUS repeats the last four and adds 114 H.R. 3347,
+whose record lists CBO's estimate of H.R. 3447 although the feed item states
+3447, so there the bill record is wrong, not CBO. A wrong Congress is not seen:
+the 112th feed files P.L. 111-322 under H.R. 3082, which is the 111th
+Congress's number, and a public law is no bill form. `bill_id` keeps what the
+source published, because the identity is the source's statement and a
+corrected key would be a guess the column beside it already states.
 
-**The route is keyed, budgeted and resumable through the listing client.**
-`LIST_ROUTES` gains `bill-detail` (`bill/{congress}/{type}/{number}`, a bare
-object under `bill`), so the key travels as `X-Api-Key` and every recorded
-locator is keyless. `harvest_bill_cbo_estimates` appends one JSONL row per
-bill with the exact body, and a resume asks again every bill without an `ok`
-row. A 429 or 5xx is retried with backoff inside the per-bill budget, and a
-401/403 ends the run. An unknown shape in either list refuses the bill by
-name, with its bytes kept. `build_congress_api_cost_estimates` shapes a
-reading into rows and refusals.
+**The report citations are the bill's own.** A `cbo_feed` row's
+`report_citation_count` and `report_citations_json` are those of the bill's
+BILLSTATUS record: the Congress.gov route filled them from its record's
+`committeeReports`, which the owner confirmed and the feed route keeps as the
+BILLSTATUS list.
 
-What an importer must change: code that enumerates `LIST_ROUTES` sees one more
-route. `sources.cbo` now imports `sources.congress.bill_status` for
-`BillIdentity`. The `congress_api` rows exist only where a host harvests and
-publishes them, and filling the 112th-113th is the adopting host's own step.
+**The contract changes only by adding.** The grain names CBO's feed beside the
+BILLSTATUS document. `source` adds `cbo_feed`, reserves `congress_api` and
+states what a missing 112th-113th row means and which route a merge keeps.
+`bill_id`, `pub_date`, `description`, `estimate_index`, `stated_count` and the
+two citation columns say how a `cbo_feed` row fills them, `stated_count` drops
+"usually 1 from the 112th on", which BILLSTATUS contradicts, and
+`title_bill_id` is appended. No identity, type or existing vocabulary value
+moves. A host's dictionary regenerates from the new text.
+
+What an importer must change: call `build_cbo_feed_cost_estimates` for the
+112th and 113th with each bill's BILLSTATUS report citations, apply
+`merge_cbo_cost_estimates` (or its precedence) wherever routes meet, and read
+the appended `title_bill_id`. `sources.cbo` now imports
+`sources.congress.bill_status` for `BillIdentity`, and `interpretation.bill_family`
+imports `sources.cbo`.

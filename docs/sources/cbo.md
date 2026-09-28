@@ -18,8 +18,8 @@ longer depend on it:
   `cbo_cost_estimates` hosts it ([tables](../tables.md#the-cbo-cost-estimate-is-an-index-here-and-a-span-there)),
   and the `publication_id` it parses out of each url is the same key this
   feed's own `<Link>` states, so the two join. **Except the 112th and 113th**,
-  whose BILLSTATUS states no estimate; there this feed names the bills and
-  Congress.gov's bill record supplies the estimates ([below](#the-feed-names-the-112th-113th-bills-to-ask-congressgov-about)).
+  whose BILLSTATUS states no estimate; their rows come from this feed
+  ([below](#the-112th-113th-estimates-come-from-this-feed)).
 - **The letter text is reprinted verbatim in the bill's committee report**, for
   the 883 of 1,368 scored bills of the 118th (64.5%) that have one;
   `committee_reports` carries its span.
@@ -31,71 +31,73 @@ and [what landed](../research/cbo-cost-estimates-build-2026-09-20.md). This
 feed remains the route to CBO's *own* spelling of the measure, which no GovInfo
 route states.
 
-## The feed names the 112th-113th bills to ask Congress.gov about
+## The 112th-113th estimates come from this feed
 
 GovInfo's BILLSTATUS states no `<cboCostEstimates>` item for the 112th or
 113th Congress: none in 12,299 and 10,637 documents of every bill type (one
 113th document, H.R. 4200, has an empty element), where the 111th's state
-2,156 items in 902 documents. Congress.gov's bill record lists them, one keyed
-request per bill. So, as the owner decided on 2026-09-28, this feed names the
-bills, and only those are asked about, under `cbo_cost_estimates.source`
-`congress_api`.
+2,156 items in 902 documents. So those Congresses' `cbo_cost_estimates` rows
+are built from this feed, `source` `cbo_feed`
+(`interpretation.bill_family.build_cbo_feed_cost_estimates`).
 
-`feed_item_bills(congress, bill_number)` reads a `Bill_Number` as a measure
-type's abbreviation words, each ended by a period, a space or both, then the
-number, in the feed's own Congress. Every form in the 112th-113th and
-116th-119th feeds is that shape: `H.R. 8`, `S. 2241`, `H. J. Res. 48`,
+Congress.gov's bill record is not a second route. Its 112th-113th lists are
+this feed regrouped by `Bill_Number`: the same instants, titles and texts, the
+feed's wrong numbers followed (112 H.R. 1707 lists CBO's estimate of S. 1707),
+and nothing for an item whose `Bill_Number` is empty. A keyed reader for it
+was built and sampled (56 requests, 2026-09-28) and removed when the
+independent review showed this; the branch history keeps it.
+
+**Which bill an item names.** `feed_item_bills(congress, bill_number)` reads a
+`Bill_Number` as a measure type's abbreviation words, each ended by a period, a
+space or both, then the number, in the feed's own Congress. Every form in the
+108th-119th feeds is that shape: `H.R. 8`, `S. 2241`, `H. J. Res. 48`,
 `H.J.Res. 124`, `S.J.Res. 44`, `H.Con.Res. 103`, `H.R.681`, `S.  1591`,
 `H.r. 4679`. No item names more than one bill. Anything else refuses with
 `CboFeedBillError`, field `bill_number` and its shape: a bare number (117th
 `700`), an amendment (116th `S.A. 948`), trailing text (119th `H.R. 7529,`) or
-a list.
-
-**Where `Bill_Number` is empty, the title is read** (owner decision
-2026-09-28). `title_bills(congress, title)` takes the citation a title leads
-with, in the same grammar written capitalized (`H.R. 4402, Critical Minerals
-Policy Act of 2012`). A title that leads with prose names no bill
-(`Sequester Replacement Reconciliation Act`, `Public Law 112-8, ...`).
-Anything ambiguous refuses with field `title`: a second citation of another
-bill (`two-citations`), a citation after the start (`not-at-start`, the 119th's
-`... in Title IV of H.R. 1`) or an abbreviation and number that is no bill type
-(`unknown-form`). A title is never read where `Bill_Number` states a value.
-
-`cbo_feed_bills(feed, congress)` maps a whole feed, sorted, keeping each bill's
-publication ids and marking how it was found: `found_by` is `bill_number` when
-any item's `Bill_Number` names it, else `title`. It counts the items that name
-no bill (`unnamed`) and every refusal by field and shape.
+a list. Where `Bill_Number` is empty, `title_bills(congress, title)` takes the
+citation the title leads with, in the same grammar written capitalized
+(`H.R. 4402, Critical Minerals Policy Act of 2012`). A title that leads with
+prose names no bill (`Sequester Replacement Reconciliation Act`,
+`Public Law 112-8, ...`). Anything ambiguous refuses with field `title`: a
+second citation of another bill (`two-citations`), a citation after the start
+(`not-at-start`, the 119th's `... in Title IV of H.R. 1`) or an abbreviation and
+number that is no bill type (`unknown-form`). A title is never read where
+`Bill_Number` states a value. `cbo_feed_bills(feed, congress)` maps a whole
+feed, marks each bill `found_by` `bill_number` or `title`, and counts the items
+that name none and every refusal.
 
 | Congress | Items | Bills | By `Bill_Number` | By title only | Items named by title | Unnamed | Refused |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 112 | 944 | 813 | 769 | 44 | 61 | 31 | 0 |
 | 113 | 1,117 | 988 | 851 | 137 | 170 | 16 | 0 |
 
-No 112th-113th item refuses either way. The 116th-119th feeds refuse four
-`Bill_Number` forms and two titles, both `not-at-start`.
+**The rows.** One row per bill and publication, through the same fold and
+shaper as the BILLSTATUS route: 913 for the 112th and 1,101 for the 113th, with
+no refusal. `pub_date` is the item's `Date` as the same instant in UTC, spelled
+as BILLSTATUS spells it (`feed_item_pub_date`; Congress.gov lists that spelling
+for all 43 sampled items). `description` is the item's text with the
+surrounding whitespace this package's parser trims; the feed itself ends many
+descriptions with a newline. A bill's items are ordered oldest first, because
+the feed runs newest first and its order within one `Date` changes between
+captures. The report citations are the bill's own BILLSTATUS
+`<committeeReports>`, which the host passes in; a bill it passes none for
+publishes NULL there. If BILLSTATUS and the feed ever state one bill and
+publication, `merge_cbo_cost_estimates` keeps the BILLSTATUS row.
 
-The two sources agree on the bills `Bill_Number` names. Of 36 sampled on
-Congress.gov, stratified by type and spelling, all 43 feed items are in the
-record's list, every listed estimate is a feed item naming that bill, and
-titles and descriptions are equal (the API ends ten descriptions in a newline
-the feed trims). **The record stays authoritative: a bill it lists no estimate
-for yields no row.** None of 16 sampled title-found bills lists one, nor do four
-reported 113th bills no item names, so the title route costs 181 requests that
-the sample expects to yield few rows or none. Receipt, with the 56 keyed
-requests and every script: `~/Work/corpora/fork-execution-2026-09-21/cbo-112-113/`.
+**A wrong number stays visible.** Every row, on either route, carries
+`title_bill_id`: the bill its own title leads with. Over the 108th-119th
+(2026-09-28) it differs from `bill_id` on 5 BILLSTATUS rows and 5 feed rows,
+and there `bill_id` is wrong: 112 H.R. 1707 for S. 1707, 115 S. 2416 for S.
+2461, 117 S. 2671 for S. 2761, 119 H.R. 648 for H.R. 658 and 119 H.R. 5201 for
+H.R. 5021 on the feed, the last four on BILLSTATUS too, and 114 H.R. 3347 for
+H.R. 3447 on BILLSTATUS alone, whose feed item states 3447. A wrong Congress is
+not seen: the 112th feed files P.L. 111-322 under H.R. 3082, the 111th
+Congress's number.
 
-Harvest with the listing client's key, budget and resume rules
-(`sources/congress/bill_cbo_estimates.py`); the feed requests are keyless:
-
-```sh
-uv run --frozen python -m spicy_docs.sources.congress.bill_cbo_estimates \
-  --congress 112 --congress 113 --output cbo-112-113.jsonl --env-file .env
-```
-
-Each JSONL row keeps the record's exact bytes, keyless locator, digest, the
-feed publications that named the bill and `found_by`; a rerun asks only bills
-without an `ok` row. `build_congress_api_cost_estimates(read_bill_detail(body, identity))`
-shapes a row's estimates.
+Receipts, with the feeds' bytes and every script:
+`~/Work/corpora/fork-execution-2026-09-21/cbo-112-113/` (`feeds/`,
+`title-bill/title-bill.json`).
 
 ## What answers, and what does not
 
@@ -283,10 +285,11 @@ keeps the vocabulary reading of this publisher; this module is the acquisition.
 
 ## Change and check
 
-Owners: [`cbo.py`](../../src/spicy_docs/sources/cbo.py) and, for the Congress.gov route, [`bill_cbo_estimates.py`](../../src/spicy_docs/sources/congress/bill_cbo_estimates.py).
+Owner: [`cbo.py`](../../src/spicy_docs/sources/cbo.py); the rows are shaped in
+[`bill_family.py`](../../src/spicy_docs/interpretation/bill_family.py).
 
 ```sh
-uv run --frozen pytest -q tests/test_cbo.py tests/test_bill_cbo_estimates.py
+uv run --frozen pytest -q tests/test_cbo.py tests/test_cost_estimate_tables.py
 ```
 
 The qualification tests read the receipt directory outside this repository and
