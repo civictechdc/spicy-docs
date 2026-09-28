@@ -37,7 +37,7 @@ from spicy_docs.sources.govinfo.mods import GovInfoModsError, parse_govinfo_mods
 from spicy_docs.transport.source_acquirer import check_payload
 
 #: The fork commit ``pyproject.toml`` pins and ``uv.lock`` resolves; a test holds the three together.
-PARSER_PIN = "7949151e91d2a33bcde572864952789f741be2c7"
+PARSER_PIN = "6bb521b11b498f2e8dbac614a4394c703c6773ac"
 EXTRA_REQUIRED = (
     "Congressional Record speech turns need the 'record-speeches' extra: uv sync --frozen --extra record-speeches"
 )

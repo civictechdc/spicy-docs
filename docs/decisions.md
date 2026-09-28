@@ -3229,7 +3229,8 @@ here, open the upstream pull request, and write the adapter.
 SpicyDocs depends on [`congressionalrecord`](https://github.com/unitedstates/congressional-record)
 behind the optional `record-speeches` extra, installed from
 [mikewolfd/congressional-record](https://github.com/mikewolfd/congressional-record)
-at commit `7949151e91d2a33bcde572864952789f741be2c7` through `[tool.uv.sources]`.
+at commit `6bb521b11b498f2e8dbac614a4394c703c6773ac` on its `spicy-docs-pin`
+branch through `[tool.uv.sources]`.
 `sources/congress/record_speeches.py` is an adapter over it; nothing here
 reimplements its segmentation.
 
@@ -3237,30 +3238,36 @@ reimplements its segmentation.
 library at `84a5af4`: nothing is published under the name on PyPI, and a wheel
 built from its main branch ships only the top-level package, without the
 `govinfo` subpackage the parser lives in. It also returned a partial parse as
-if it were complete. The fork's three commits fix the packaging, admit a speaker
-line indented up to three spaces, and add `parse_status`/`parse_error`; they are
-offered upstream as
-[unitedstates/congressional-record#92](https://github.com/unitedstates/congressional-record/pull/92).
+if it were complete, and it declared dependencies the parser never imports,
+the PostgreSQL stack and `numpy` among them. The pinned branch carries
+[unitedstates/congressional-record#92](https://github.com/unitedstates/congressional-record/pull/92),
+which fixes the packaging, admits a speaker line indented up to three spaces
+and adds `parse_status`/`parse_error`, and
+[#93](https://github.com/unitedstates/congressional-record/pull/93), which
+declares what the parser imports and moves the PostgreSQL writer's dependencies
+behind a `postgres` extra this repository does not install; a fork-only commit
+pins the build backend so a vendored wheel is reproducible.
 The adapter refuses a build that does not report completion, so the pin cannot
 silently regress to one that hides a partial parse.
 
 **Why not a port.** The segmentation rules -- speaker, recorder, clerk, title
 and rule lines, the MODS speaker table -- are upstream's accumulated knowledge
 of how the Record prints, and a copy would stop receiving its fixes. The adapter
-adds only what a library consumer here needs: bounded inputs, the XML gate on
-the MODS, refusals in this package's terms, completion status, and line spans.
+adds only what a library consumer here needs: bounded inputs, the bounded MODS
+read before upstream's, refusals in this package's terms, completion status,
+and line spans.
 
 **Consequence for the gate.** `./scripts/check` syncs every extra, so a cold
 environment clones the fork the first time it resolves; uv caches the checkout
-and `--frozen` runs after that are offline. The extra also installs upstream's
-declared dependencies the parser never imports (`numpy`, `psycopg2-binary`,
-`SQLAlchemy` and others, listed on the source page); they are upstream's to
-trim, not patched around here.
+and `--frozen` runs after that are offline. With #93 on the pin, the extra
+installs only what the parser imports; the source page lists the clean-install
+set.
 
-**When to drop the source.** When upstream merges #92 and publishes a release,
-delete the `[tool.uv.sources]` entry and pin that release in the extra. Until
-then the git revision names a commit on a fork branch; move it only with
-`PARSER_PIN` and the lock, which a test holds together.
+**When to drop the source.** When upstream merges #92 and #93 and publishes a
+release, delete the `[tool.uv.sources]` entry and pin that release in the
+extra. Until then the git revision names a commit on a fork branch; move it
+only with `PARSER_PIN` and the lock, which a test holds together, and rebuild
+the vendored wheel by the rule on the source page.
 
 **Speech turns are parsing, not acquisition.** The adapter reads bytes a caller
 already retained -- the granule body and its own MODS or its issue's package

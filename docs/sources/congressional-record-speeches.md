@@ -157,27 +157,47 @@ item builder reads mid-parse, so two threads would read each other's speakers.
 
 The extra installs `congressionalrecord==2.3.0` from
 [mikewolfd/congressional-record](https://github.com/mikewolfd/congressional-record),
-branch `packaging-and-parse-completion`, pinned to commit
-`7949151e91d2a33bcde572864952789f741be2c7`. Its three commits over upstream
-`84a5af4` ship the `govinfo` subpackage and SQL files in the wheel, admit a
-speaker line indented up to three spaces, and add `parse_status`/`parse_error`.
-They are offered upstream as
-[unitedstates/congressional-record#92](https://github.com/unitedstates/congressional-record/pull/92).
+branch `spicy-docs-pin`, pinned to commit
+`6bb521b11b498f2e8dbac614a4394c703c6773ac`. Over upstream `84a5af4` it carries
+two changes offered upstream and one that stays on the fork:
+
+- [unitedstates/congressional-record#92](https://github.com/unitedstates/congressional-record/pull/92)
+  ships the `govinfo` subpackage and SQL files in the wheel, admits a speaker
+  line indented up to three spaces, and adds `parse_status`/`parse_error`.
+- [unitedstates/congressional-record#93](https://github.com/unitedstates/congressional-record/pull/93)
+  declares what the parser imports -- `beautifulsoup4`, `lxml`, `urllib3`,
+  `certifi`, `pydantic>=2` -- moves the PostgreSQL writer's `psycopg2-binary`,
+  `SQLAlchemy`, `PyYAML` and `unicodecsv` behind a `postgres` extra, and drops
+  `numpy`, `requests`, `future` and `soupsieve`, which nothing imports. The
+  `record-speeches` extra does not ask for `postgres`: a clean
+  `uv sync --frozen --no-dev --extra record-speeches` on 2026-09-28 added
+  `congressionalrecord`, `beautifulsoup4`, `soupsieve`, `lxml`, `urllib3`,
+  `certifi` and `pydantic` with its three dependencies, and none of the
+  PostgreSQL stack, `numpy` or `requests`.
+- A fork-only commit pins the build backend to `setuptools==84.0.0`, so the
+  wheel a host vendors is reproducible.
+
 The reasons for a fork are recorded under
 ["congressionalrecord is a pinned fork dependency, not a port"](../decisions.md#congressionalrecord-is-a-pinned-fork-dependency-not-a-port).
 
 `PARSER_PIN` in the module, the `[tool.uv.sources]` revision and the commit
-`uv.lock` resolves are held equal by a test. For a host that vendors wheels: a
-clean clone at the pin built with `SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)
-uv build --wheel` gave the same 24,626-byte wheel from two clones, sha256
-`5e66c5365fa175bab22e23eb5e63fe0672b7e9e51a23fcc902dd23fb5d448e20` (setuptools
-84.0.0, 2026-09-28; receipt
-`~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/`).
-Without the variable the zip timestamps, and so the digest, change per clone.
+`uv.lock` resolves are held equal by a test.
+
+**A vendored wheel is built from the pinned commit with `SOURCE_DATE_EPOCH` set
+to that commit's time** (`git log -1 --format=%ct`), from a `git archive` of it
+in an empty directory, with `uv build --wheel`; the branch pins the build
+backend, so the digest depends on nothing else. At the pin that is
+`SOURCE_DATE_EPOCH=1790623777`, giving a 24,814-byte, 23-file wheel with sha256
+`b5fd928072ec1fc38d5a82842b622fb55ab14bcc18b9ca576bee1731855fc897`, identical
+from two separate archives (2026-09-28; receipt
+`~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/`,
+with `SHA256SUMS`). Without the variable the zip timestamps, and so the digest,
+change per checkout.
 
 **Move the pin** by changing the revision in `pyproject.toml` and `PARSER_PIN`
-together, running `uv lock`, and running this guide's tests.
-**When upstream merges #92 and publishes a release**, delete the
+together, running `uv lock`, rebuilding the wheel by the rule above, and
+running this guide's tests.
+**When upstream merges #92 and #93 and publishes a release**, delete the
 `congressionalrecord` entry from `[tool.uv.sources]`, pin the release in the
 extra, and replace `PARSER_PIN` and its lockstep test with the release version.
 
@@ -191,19 +211,12 @@ Not patched here; file:line is at the pin.
 - **Shared class state.** `gen_file_metadata` writes the document's speaker
   pattern into the class-level `item_types` (`cr_parser.py:259`), so parses are
   not thread-safe. The adapter serializes them.
-- **Dependencies the parser never imports.** The parser path imports only
-  BeautifulSoup (with lxml). `numpy`, `requests` and `future` are imported
-  nowhere; `psycopg2-binary`, `SQLAlchemy`, `PyYAML` and `unicodecsv` serve only
-  the Postgres table setup and writer. Every consumer of the extra installs
-  them. Conversely `schema.py` imports `pydantic`, which is not declared, and
-  `downloader.py` imports `certifi`, which arrives only through the unused
-  `requests`.
 - **Sentinel strings.** A missing bioguide id, member attribute or search
   title is the string `"None"` (`cr_parser.py:143-154`, `:250`), not `None`.
 - **A short body raises `StopIteration`** out of `get_header`
   (`cr_parser.py:295-322`) rather than a parse error.
 - **The `Issues` project URL** misspells the organization (`unitestates`,
-  `pyproject.toml:39`).
+  `pyproject.toml:35`).
 
 ## Fixtures
 

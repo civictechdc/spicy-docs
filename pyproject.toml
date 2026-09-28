@@ -80,15 +80,17 @@ deltatrack = { git = "https://github.com/civictechdc/DeltaTrack", rev = "c636448
 # 404), so a version specifier alone would resolve to nothing at best and to
 # somebody else's package at worst. And a wheel built from upstream main
 # (`84a5af4`) ships only the top-level package: `congressionalrecord.govinfo`,
-# the parser the adapter imports, is not in it. The fork's branch
-# `packaging-and-parse-completion` adds package discovery, a speaker line
-# indented up to three spaces, and `parse_status`/`parse_error` so a partial
-# parse is not reported as complete; it is offered upstream as
-# unitedstates/congressional-record#92. The revision is a full commit sha so
-# the resolved tree is the one tested. When upstream merges #92 and publishes a
-# release, drop this source and pin that release;
+# the parser the adapter imports, is not in it. The fork's `spicy-docs-pin`
+# branch carries two changes offered upstream: unitedstates/congressional-record#92
+# (package discovery, a speaker line indented up to three spaces, and
+# `parse_status`/`parse_error` so a partial parse is not reported as complete)
+# and #93 (the dependencies the parser imports, with the PostgreSQL writer's
+# behind a `postgres` extra this repository does not install), plus a fork-only
+# commit pinning the build backend so a vendored wheel is reproducible. The
+# revision is a full commit sha so the resolved tree is the one tested. When
+# upstream merges both and publishes a release, drop this source and pin it;
 # `docs/sources/congressional-record-speeches.md` says how.
-congressionalrecord = { git = "https://github.com/mikewolfd/congressional-record", rev = "7949151e91d2a33bcde572864952789f741be2c7" }
+congressionalrecord = { git = "https://github.com/mikewolfd/congressional-record", rev = "6bb521b11b498f2e8dbac614a4394c703c6773ac" }
 
 [tool.pytest.ini_options]
 # Default checks stay offline. Opt in to live services or httpfs explicitly.
