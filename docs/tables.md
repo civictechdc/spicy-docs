@@ -36,7 +36,9 @@ the column name alone does not establish freshness.
 
 This page states no counts, which went stale here before: ask
 `len(TABLE_CONTRACTS)` for the tables and `len(contract.columns)` for a
-table's columns.
+table's columns. `tests/test_table_contracts.py` holds the list below to
+the registry: every contract has one row, whose grain, identity and version
+column are the contract's.
 
 | Table | Grain | Identity | Version column | Supplier |
 | --- | --- | --- | --- | --- |
@@ -86,6 +88,8 @@ table's columns.
 | `comments` | One row per public comment posted on Regulations.gov. | `comment_id` | `modify_date` | the host, through its copy of `schemas.regulations`' extract |
 | `document_attributes` | One row per Regulations.gov document: the attributes the thin documents table does not carry. | `document_id` | none | `schemas.regulations_attribute_tables` (`project_document_attributes`) |
 | `docket_attributes` | One row per Regulations.gov docket: the attributes the thin dockets table does not carry. | `docket_id` | none | `schemas.regulations_attribute_tables` (`project_docket_attributes`) |
+| `federal_register` | One row per dated Federal Register document: a rule, proposed rule, notice or presidential document. | `document_number`, `publication_date` | none | `schemas.federal_register` (`project_federal_register_document`), plus the host's `rin` |
+| `fec_committee_history` | One row per FEC committee per two-year cycle, as that cycle's bulk committee master states it. | `committee_id`, `cycle` | none | `schemas.fec_committee_history` (`project_committee_master_row`) over `sources.fec.committee_master` |
 | `native_legal_references` | One scanner observation in one pinned U.S. Code or eCFR XML input: a native href or source credit, or an AUTH or SOURCE note, with every target read from it nested rather than multiplied. | `scope_id`, `input_sha256`, `occurrence_index` | none | `schemas.native_reference_rows`, `interpretation.native_legal_references`, with the host's target lookup |
 | `native_legal_reference_reads` | One row per input scope: its latest complete read of the selected shapes, including a read that found none. | `scope_id` | none | `schemas.native_reference_rows` (`shape_native_reference_read`) |
 

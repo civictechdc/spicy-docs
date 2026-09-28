@@ -1707,6 +1707,35 @@ def test_every_column_is_described_in_one_sentence(contract: TableContract) -> N
         assert sentence.rstrip().endswith("."), column
 
 
+#: The page that lists every contract: one table row each, stating its grain, identity and version column.
+TABLES_PAGE = Path(__file__).parent.parent / "docs" / "tables.md"
+
+
+def _tables_page_rows() -> dict[str, list[str]]:
+    """Each row of the page's ``## The tables`` list, by the table it names, as its stripped cells."""
+    section = TABLES_PAGE.read_text(encoding="utf-8").split("\n## The tables\n", 1)[1].split("\n## ", 1)[0]
+    rows: dict[str, list[str]] = {}
+    for line in section.splitlines():
+        if line.startswith("| `"):
+            cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+            name = cells[0].strip("`")
+            assert name not in rows, f"docs/tables.md lists {name} twice"
+            rows[name] = cells
+    return rows
+
+
+def test_every_contract_has_its_row_on_the_tables_page() -> None:
+    """A registered table missing from the page, or a row whose grain, identity or version column is not its
+    contract's, fails here instead of going stale (``federal_register`` and ``fec_committee_history`` did)."""
+    rows = _tables_page_rows()
+    assert set(rows) == set(TABLE_CONTRACTS)
+    for name, cells in rows.items():
+        contract = TABLE_CONTRACTS[name]
+        identity = ", ".join(f"`{column}`" for column in contract.identity)
+        version = "none" if contract.version_column is None else f"`{contract.version_column}`"
+        assert cells[1:4] == [contract.grain, identity, version], name
+
+
 #: Where each table's values are produced, so a description naming one can be
 #: held to it.  Every registered contract needs an entry: a new table has to say
 #: which code fills it before its prose can be checked at all.
