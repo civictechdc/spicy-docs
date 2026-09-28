@@ -3229,8 +3229,8 @@ here, open the upstream pull request, and write the adapter.
 SpicyDocs depends on [`congressionalrecord`](https://github.com/unitedstates/congressional-record)
 behind the optional `record-speeches` extra, installed from
 [mikewolfd/congressional-record](https://github.com/mikewolfd/congressional-record)
-at commit `6bb521b11b498f2e8dbac614a4394c703c6773ac` on its `spicy-docs-pin`
-branch through `[tool.uv.sources]`.
+at the commit `PARSER_PIN` names, on its `spicy-docs-pin` branch, through
+`[tool.uv.sources]`.
 `sources/congress/record_speeches.py` is an adapter over it; nothing here
 reimplements its segmentation.
 
@@ -3238,13 +3238,14 @@ reimplements its segmentation.
 library at `84a5af4`: nothing is published under the name on PyPI, and a wheel
 built from its main branch ships only the top-level package, without the
 `govinfo` subpackage the parser lives in. It also returned a partial parse as
-if it were complete, and it declared dependencies the parser never imports,
-the PostgreSQL stack and `numpy` among them. The pinned branch carries
+if it were complete, and it required dependencies the parser never imports:
+its PostgreSQL writer's stack, and `numpy` and others nothing imports. The pinned branch carries
 [unitedstates/congressional-record#92](https://github.com/unitedstates/congressional-record/pull/92),
 which fixes the packaging, admits a speaker line indented up to three spaces
 and adds `parse_status`/`parse_error`, and
 [#93](https://github.com/unitedstates/congressional-record/pull/93), which
-declares what the parser imports and moves the PostgreSQL writer's dependencies
+declares what the package's non-PostgreSQL modules import (the parser, the
+downloader and the schema) and moves the PostgreSQL writer's dependencies
 behind a `postgres` extra this repository does not install; a fork-only commit
 pins the build backend so a vendored wheel is reproducible.
 The adapter refuses a build that does not report completion, so the pin cannot
@@ -3260,8 +3261,9 @@ and line spans.
 **Consequence for the gate.** `./scripts/check` syncs every extra, so a cold
 environment clones the fork the first time it resolves; uv caches the checkout
 and `--frozen` runs after that are offline. With #93 on the pin, the extra
-installs only what the parser imports; the source page lists the clean-install
-set.
+installs only what those modules import, with `beautifulsoup4` held at the
+version the `html` extra pins; the source page lists the clean-install set and
+what a host that vendors the wheels declares.
 
 **When to drop the source.** When upstream merges #92 and #93 and publishes a
 release, delete the `[tool.uv.sources]` entry and pin that release in the

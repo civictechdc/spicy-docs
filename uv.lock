@@ -1231,6 +1231,7 @@ reconstruct = [
     { name = "lxml" },
 ]
 record-speeches = [
+    { name = "beautifulsoup4" },
     { name = "congressionalrecord" },
 ]
 yaml = [
@@ -1249,6 +1250,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "beautifulsoup4", marker = "extra == 'html'", specifier = "==4.14.3" },
+    { name = "beautifulsoup4", marker = "extra == 'record-speeches'", specifier = "==4.14.3" },
     { name = "boto3", marker = "extra == 'acquisition'" },
     { name = "congressionalrecord", marker = "extra == 'record-speeches'", git = "https://github.com/mikewolfd/congressional-record?rev=6bb521b11b498f2e8dbac614a4394c703c6773ac" },
     { name = "deltatrack", marker = "extra == 'bill-diff'", git = "https://github.com/civictechdc/DeltaTrack?rev=c636448ba08d55bba7cb8c884aad0f5ac1ccf2f6" },

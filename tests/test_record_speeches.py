@@ -207,6 +207,7 @@ def test_every_item_is_located_on_the_lines_its_text_came_from(granule: str) -> 
     document = _read(granule)
     lines = document.source_lines
     assert document.items
+    assert document.unaccounted_lines == ()
     previous = None
     for item in document.items:
         assert item.coordinates_status == LOCATED
@@ -333,6 +334,8 @@ def test_an_item_failing_before_any_item_is_partial_and_empty(monkeypatch: pytes
         "message": "bad item",
         "line": document.source_lines[-1],
     }
+    # The line it failed on belongs to no item.
+    assert document.unaccounted_lines == (len(document.source_lines) - 1,)
 
 
 @needs_parser
@@ -357,6 +360,8 @@ def test_an_item_failing_after_one_item_keeps_that_item_located(monkeypatch: pyt
     assert document.parse_error is not None and document.parse_error["type"] == "ValueError"
     assert document.items == complete.items[:1]
     assert document.items[0].coordinates_status == LOCATED
+    assert document.unaccounted_lines == (len(document.source_lines) - 1,)
+    assert complete.unaccounted_lines == ()
 
 
 def _altered(monkeypatch: pytest.MonkeyPatch, call: int, text: str) -> None:
@@ -389,6 +394,10 @@ def test_an_item_whose_text_is_printed_only_further_on_is_unlocated_and_so_is_ev
     assert statuses[:2] == [LOCATED, LOCATED]
     assert set(statuses[2:]) == {UNLOCATED}
     assert all(item.line_start is None and item.line_end is None for item in document.items[2:])
+    # The unlocated items' lines are reported, apart from whole dropped lines.
+    after = range(document.items[1].line_end + 1, len(document.source_lines))
+    assert document.unaccounted_lines == tuple(i for i in after if not _dropped(document.source_lines[i]))
+    assert document.unaccounted_lines
 
 
 def _blank_before_first_item() -> bytes:
@@ -447,6 +456,53 @@ def test_a_parser_without_parse_status_refuses(monkeypatch: pytest.MonkeyPatch) 
         _read(KIGGANS)
 
 
+# --- lines nothing accounts for, and the page the header states -------------
+
+
+@needs_parser
+def test_a_skipped_line_that_carries_text_is_reported() -> None:
+    """Upstream skips any line that starts like a page marker; the text after the marker is not in any item."""
+    marker = next(line for line in _read(SENATE).source_lines if line.startswith("[[Page "))
+    document = _read(SENATE, _body(SENATE).replace(marker.encode(), marker.encode() + b" and a sentence", 1))
+    assert document.parse_status == "complete"
+    assert {item.coordinates_status for item in document.items} == {LOCATED}
+    (index,) = document.unaccounted_lines
+    assert document.source_lines[index] == f"{marker} and a sentence"
+    assert all("and a sentence" not in item.text for item in document.items)
+
+
+@needs_parser
+def test_a_header_upstream_does_not_match_is_reported_and_holds_no_page() -> None:
+    """With no header read, the volume line belongs to nothing, and there is no page to compare."""
+    body = _body(KIGGANS).replace(b"Number 146 (", b"No. 146 (", 1)
+    document = _read(KIGGANS, body)
+    assert (document.header, document.parse_status) == (None, "complete")
+    assert document.unaccounted_lines == (1,)
+    assert document.source_lines[1].startswith("[Congressional Record Volume 172, No. 146")
+
+
+@needs_parser
+def test_a_body_whose_header_names_another_page_refuses() -> None:
+    """The 09-17 MODS holds both granules, so only the header shows the House body is not the Senate granule."""
+    with pytest.raises(RecordSpeechesError, match=f"granule {SENATE} names page S4765, but .* pages 'H5987'"):
+        parse_record_speeches(_body(PLEDGE), _mods(SENATE), SENATE, max_html_bytes=BOUND, max_mods_bytes=BOUND)
+
+
+@needs_parser
+@pytest.mark.parametrize(("section", "refused"), [("H", False), ("S", True)])
+def test_a_front_matter_id_is_held_to_its_section(section: str, refused: bool) -> None:
+    """``-PgH-FrontMatter`` names no page, so only the header's section is compared."""
+    front = f"CREC-2026-09-16-pt1-Pg{section}-FrontMatter"
+    issue = read_record_issue(
+        (FIXTURES / GRANULE_MODS[0]).read_bytes().replace(KIGGANS.encode(), front.encode()), max_mods_bytes=BOUND
+    )
+    if refused:
+        with pytest.raises(RecordSpeechesError, match=f"granule {front} names section S, but .* pages 'H5835'"):
+            issue.speeches(_body(KIGGANS), front, max_html_bytes=BOUND)
+    else:
+        assert issue.speeches(_body(KIGGANS), front, max_html_bytes=BOUND).pages == "H5835"
+
+
 # --- refusals ------------------------------------------------------------------
 
 
@@ -482,6 +538,7 @@ def test_a_body_upstream_cannot_read_refuses_rather_than_raising_upstreams_error
     [
         (SENATE, "not a granule of CREC-2026-09-16"),
         ("CREC-2026-09-16-pt1-PgH5835.8", "contains a dot"),
+        ("CREC-2026-09-16-pt1-H5835-8", "names no page"),
         ("../CREC-2026-09-16-pt1-PgH5835-8", "not a GovInfo granule id"),
         ("", "not a GovInfo granule id"),
     ],
@@ -621,7 +678,10 @@ def test_the_pin_constant_is_the_revision_pyproject_pins_and_the_lock_resolves()
     project = tomllib.loads((ROOT / "pyproject.toml").read_text())
     source = project["tool"]["uv"]["sources"]["congressionalrecord"]
     assert (source["git"], source["rev"]) == ("https://github.com/mikewolfd/congressional-record", PARSER_PIN)
-    assert project["project"]["optional-dependencies"]["record-speeches"] == ["congressionalrecord==2.3.0"]
+    extras = project["project"]["optional-dependencies"]
+    assert extras["record-speeches"] == ["congressionalrecord==2.3.0", "beautifulsoup4==4.14.3"]
+    # The parser's reader is held at the version the html extra pins, so a host resolves the one tested.
+    assert set(extras["record-speeches"]) & set(extras["html"]) == {"beautifulsoup4==4.14.3"}
     lock = tomllib.loads((ROOT / "uv.lock").read_text())
     (package,) = [package for package in lock["package"] if package["name"] == "congressionalrecord"]
     assert package["source"]["git"].endswith(f"?rev={PARSER_PIN}#{PARSER_PIN}")

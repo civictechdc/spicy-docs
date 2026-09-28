@@ -32,12 +32,17 @@ for item in document.items:
     print(item.item_index, item.kind, item.turn, item.speaker, item.speaker_bioguide, item.line_start, item.line_end)
 ```
 
-A granule's own MODS is a few kilobytes and is the cheap route. With a
-package MODS, parse it once with `read_record_issue(mods, max_mods_bytes=...)`
-and read each granule with `issue.speeches(granule_html, granule_id,
-max_html_bytes=...)`: upstream parses the MODS with BeautifulSoup, measured on
-2026-09-28 at 0.4-0.7 s and about 55 MB retained for the 3.6 MB CREC-2026-09-16
-package MODS, against 1-9 ms per granule after that.
+**Each granule's own MODS is the cheap path**: one small document per granule
+(a few kilobytes), the one `acquire_granule` retains, read as above.
+**The issue's package MODS is the batch path**: parse it once with
+`read_record_issue(mods, max_mods_bytes=...)` and read each granule with
+`issue.speeches(granule_html, granule_id, max_html_bytes=...)`. Upstream parses
+a MODS with BeautifulSoup, measured on 2026-09-28 at 0.4-0.7 s and about 55 MB
+retained for the 3.6 MB CREC-2026-09-16 package MODS, and finds each granule's
+record by scanning the whole parsed MODS for its accessId, so on the package
+path every granule pays a scan of every element and a whole issue costs
+O(granules x elements). That lookup cost is upstream's until its accessId index
+lands; a fork fix is in progress.
 
 Without the extra, the module still imports; `parser_available()` answers
 whether it is installed, and every reading refuses with the install command.
@@ -83,16 +88,23 @@ upstream's layout in the locale's encoding, and reads it back through the same
 `open()` call upstream makes. Input that is not UTF-8, that the locale cannot
 encode, or that would not read back unchanged -- a carriage return, which
 universal newlines fold -- refuses rather than reaching upstream as different
-text. Every CREC body the supply corpus retained on 2026-09-28 (32 distinct,
-1996-2026, this guide's fixtures among them), the three issue MODS retained
-that day and both granule-MODS captures are ASCII with no carriage return, so none of these refusals has been
-seen on publisher bytes.
+text. So what upstream reads is the retained bytes decoded as UTF-8, exactly;
+the check does not require ASCII. The review's retained real Record on
+2026-09-28 -- 1,076 files, the bodies, granule MODS and package MODS of 535
+granules from six issues, 1996-2026 -- all decode as UTF-8 and none holds a
+carriage return, so none of these refusals has been seen on publisher bytes.
+Four hold U+FFFD, the replacement character, as published (the body of
+CREC-1996-03-28-pt1-PgD293-3, a granule MODS and two package MODS); under a
+UTF-8 locale all four read back unchanged, and every granule read against them
+parses complete (receipt `review-fixes/real-replay/` under
+`~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/`).
 
 Upstream looks up the granule's accessId and reads the record around it, so
 the granule's own MODS and the package MODS give it the same record. Measured
 2026-09-28, the adapter's documents from the two are equal apart from
-`mods_sha256` for CREC-2026-09-16-pt1-PgH5835-8 (both granule-MODS routes), and
-upstream's are equal for CREC-2026-09-18-pt1-PgS4837-4.
+`mods_sha256` on every one of those 535 granules (`real-replay/`) and for
+CREC-2026-09-16-pt1-PgH5835-8 on both granule-MODS routes, and upstream's are
+equal for CREC-2026-09-18-pt1-PgS4837-4.
 
 ## Output
 
@@ -100,8 +112,8 @@ upstream's are equal for CREC-2026-09-18-pt1-PgS4837-4.
 `parse_error`, `lines_exhausted`, upstream's `header` (read through `vol`, `num`,
 `chamber`, `pages` and `extension`), `title`, `doc_title`, the related bills,
 laws, U.S. Code sections and Statutes at Large pages upstream read from the
-granule's MODS record, unmodified, the items, `source_lines`, both inputs'
-`sha256:` digests and `parser_pin`.
+granule's MODS record, unmodified, the items, `source_lines`,
+`unaccounted_lines`, both inputs' `sha256:` digests and `parser_pin`.
 
 Each `RecordSpeechItem` carries upstream's `kind`, `speaker` exactly as upstream
 spelled it, `speaker_bioguide`, `text`, `turn` (speech items only), the line
@@ -129,6 +141,24 @@ On every fixture every item is located, the spans tile the text after the
 title, and each span's lines less the dropped ones join to the item's text; the
 test checks this with its own line rule, not upstream's patterns.
 
+### Lines nothing accounts for
+
+The same coverage is checked on every read, and reported rather than refused,
+so a partial parse keeps its items. `unaccounted_lines` is the 0-based indexes
+into `source_lines` of every line that is none of:
+
+- a header line, when upstream matched the header;
+- a blank or title line its title scan read before the first item;
+- a text line of a located item;
+- a whole whitespace-only line, `{time}` stamp or `[[Page]]` marker.
+
+Upstream's skip patterns match only a line's start, so a skipped line that
+carries text after its marker is text no item holds; it is listed, as are a
+header upstream did not match, the lines of unlocated items and the line a
+partial parse failed on. A caller that needs the whole granule requires
+`parse_status == "complete"` and an empty `unaccounted_lines`. Over the 535 real
+granules of the replay above, every one is complete and none lists a line.
+
 ### Partial parses and refusals
 
 - **`parse_status` is upstream's own.** When an item raises, upstream keeps the
@@ -142,6 +172,15 @@ test checks this with its own line rule, not upstream's patterns.
 - **Granule ids must be this issue's.** The id becomes the file name upstream
   reads the accessId from, up to the first dot, so an id with a dot, a path
   separator or another date's prefix refuses.
+- **The body's header must start on the id's page.** A granule id names its
+  first page (`-PgH5835-8` starts on H5835) or, for front matter, its section
+  (`-PgH-FrontMatter`). Upstream never compares it with the header's `[Page]`
+  line, so a body retained under the wrong id of the same issue would read as
+  that granule; the adapter refuses when the header's first page, or for front
+  matter its section, differs, and refuses an id that names neither. Every
+  granule accessId in the review's retained package MODS names one, and all 535
+  real granules' headers agree with their ids. A header upstream did not match
+  states no page; its lines are then in `unaccounted_lines`.
 
 Parses run one at a time. Upstream keeps its line-kind table on the class and
 writes each document's speaker pattern into it (`cr_parser.py:259`), which its
@@ -153,9 +192,11 @@ item builder reads mid-parse, so two threads would read each other's speakers.
   MODS record states for the speaker name upstream matched. A presiding officer,
   the Speaker pro tempore or a clerk has none, and a name the MODS does not list
   has none. Nothing here resolves a person.
-- **Segmentation accuracy across the corpus.** Three granules from September
-  2026 are pinned. Upstream's rules are line patterns; how often they misclassify
-  a line in other eras is not measured here.
+- **Segmentation accuracy across the corpus.** The fixtures pin a few
+  granules, and the replay reads 535 from 1996 to 2026 complete with every line
+  accounted for. That shows every line landed in some item, not that each item's kind is
+  right: upstream's rules are line patterns, and how often they misclassify a
+  line in other eras is not measured here.
 - **Completeness of a partial parse.** Its items are the ones before the
   failure; the rest of the granule was not read.
 - **Acquisition.** The adapter parses bytes a caller retained; identity of the
@@ -165,16 +206,20 @@ item builder reads mid-parse, so two threads would read each other's speakers.
 
 The extra installs `congressionalrecord==2.3.0` from
 [mikewolfd/congressional-record](https://github.com/mikewolfd/congressional-record),
-branch `spicy-docs-pin`, pinned to commit
-`6bb521b11b498f2e8dbac614a4394c703c6773ac`. Over upstream `84a5af4` it carries
-two changes offered upstream and one that stays on the fork:
+branch `spicy-docs-pin`, at the commit `PARSER_PIN` names in
+`sources/congress/record_speeches.py`, and `beautifulsoup4==4.14.3`, the version
+the `html` extra pins and the gate tests; without the pin a host resolves
+whatever is newest (spicy-regs resolved 4.15.0 in the review's simulation).
+Over upstream `84a5af4` the fork branch carries two changes offered upstream and
+one that stays on the fork:
 
 - [unitedstates/congressional-record#92](https://github.com/unitedstates/congressional-record/pull/92)
   ships the `govinfo` subpackage and SQL files in the wheel, admits a speaker
   line indented up to three spaces, and adds `parse_status`/`parse_error`.
 - [unitedstates/congressional-record#93](https://github.com/unitedstates/congressional-record/pull/93)
-  declares what the parser imports -- `beautifulsoup4`, `lxml`, `urllib3`,
-  `certifi`, `pydantic>=2` -- moves the PostgreSQL writer's `psycopg2-binary`,
+  declares what the package's non-PostgreSQL modules import -- the parser, the
+  downloader and the schema: `beautifulsoup4`, `lxml`, `urllib3`, `certifi`,
+  `pydantic>=2` -- moves the PostgreSQL writer's `psycopg2-binary`,
   `SQLAlchemy`, `PyYAML` and `unicodecsv` behind a `postgres` extra, and drops
   `numpy`, `requests`, `future` and `soupsieve`, which nothing imports. The
   `record-speeches` extra does not ask for `postgres`: a clean
@@ -191,23 +236,50 @@ The reasons for a fork are recorded under
 `PARSER_PIN` in the module, the `[tool.uv.sources]` revision and the commit
 `uv.lock` resolves are held equal by a test.
 
-**A vendored wheel is built from the pinned commit with `SOURCE_DATE_EPOCH` set
-to that commit's time** (`git log -1 --format=%ct`), from a `git archive` of it
-in an empty directory, with `uv build --wheel`; the branch pins the build
-backend, so the digest depends on nothing else. At the pin that is
+**A vendored wheel is built by one rule, all four parts of it:**
+
+1. `git archive` the pinned fork commit into an empty directory;
+2. `umask 022` before extracting and building, because the zip records each
+   file's mode;
+3. `SOURCE_DATE_EPOCH` set to that commit's time (`git log -1 --format=%ct`),
+   because the zip records timestamps;
+4. `uv build --wheel`, with the build backend the branch pins.
+
+Nothing else moves the digest. For the pin as of 2026-09-28 that is
 `SOURCE_DATE_EPOCH=1790623777`, giving a 24,814-byte, 23-file wheel with sha256
 `b5fd928072ec1fc38d5a82842b622fb55ab14bcc18b9ca576bee1731855fc897`, identical
-from two separate archives (2026-09-28; receipt
+from two separate archives (receipt
 `~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/`,
-with `SHA256SUMS`). Without the variable the zip timestamps, and so the digest,
-change per checkout.
+with `SHA256SUMS`). The same archive built under `umask 002` gives
+`e8adfa11b055c53c6629ee212b9cb6aafa177079ff634e566868df2060715401`
+(`review-fixes/wheel-umask/` beside it), and without the variable the zip
+timestamps, and so the digest, change per checkout.
 
 **Move the pin** by changing the revision in `pyproject.toml` and `PARSER_PIN`
-together, running `uv lock`, rebuilding the wheel by the rule above, and
-running this guide's tests.
+together, running `uv lock`, rebuilding the wheel by the rule above, recording
+its digest here, and running this guide's tests.
 **When upstream merges #92 and #93 and publishes a release**, delete the
 `congressionalrecord` entry from `[tool.uv.sources]`, pin the release in the
 extra, and replace `PARSER_PIN` and its lockstep test with the release version.
+
+### Hosts
+
+A host that vendors spicy-docs wheels, as spicy-regs does, cannot resolve this
+extra from a registry: nothing is published under `congressionalrecord`. It
+vendors the `congressionalrecord` wheel built by the rule above beside the
+spicy-docs wheel, declares `congressionalrecord==2.3.0` directly in both of its
+`source-readers` lists (the optional-dependency extra and the dependency
+group), and binds it to the wheel in `[tool.uv.sources]`, for example
+`congressionalrecord = { path = "vendor/congressionalrecord-2.3.0-py3-none-any.whl" }`.
+That is the shape spicy-regs already uses for `deltatrack`, which reaches it
+only through spicy-docs' `bill-diff` extra, and for `rulespec-artifacts`: a uv
+source binds only a dependency the project itself declares, so without the
+direct declaration uv looks for `congressionalrecord` in the registry and the
+resolve fails (the review's spicy-regs simulation, 2026-09-28:
+`regs-lock-without-direct.log` fails, `regs-lock.log` resolves, under
+`~/Work/corpora/fork-execution-2026-09-21/record-speeches-review/`). The vendored
+wheel's sha256 then goes into the host's lock, and its `vendor/README.md`
+records how it was built.
 
 ### To raise upstream
 

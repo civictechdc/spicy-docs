@@ -35,8 +35,10 @@ pdf-gemini = ["httpx>=0.28,<1"]
 bill-diff = ["deltatrack==0.1.0"]
 # Congressional Record speech turns, by the @unitedstates parser rather than a
 # copy of it. `sources/congress/record_speeches.py` is the adapter over it and
-# imports nothing when the extra is absent.
-record-speeches = ["congressionalrecord==2.3.0"]
+# imports nothing when the extra is absent. beautifulsoup4 is the parser's own
+# reader, pinned as the html extra pins it so a host resolves the version the
+# gate tests rather than the newest.
+record-speeches = ["congressionalrecord==2.3.0", "beautifulsoup4==4.14.3"]
 # Schema validation of reconstructed XML against a profile's pinned DTD or XSD
 # bundle. `reconstruction/validate.py` is the only importer and imports it at
 # call time; the rest of `reconstruction/` is stdlib and needs no extra.

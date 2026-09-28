@@ -9,14 +9,17 @@ partial, and a source line span for each item it emits, which it does not
 record. Nothing here imports the parser at module scope, so the rest of
 ``spicy_docs`` imports without it.
 
-The MODS is either the issue's package MODS or the granule's own, which is
-what ``GovInfoBodyAcquirer.acquire_granule`` retains; upstream reads the
-granule's record the same way from both. It is parsed once
-(:func:`read_record_issue`) and granules are read against it
-(:meth:`RecordIssue.speeches`). Upstream reads the MODS with BeautifulSoup:
-measured on 2026-09-28, 0.4-0.7 s for the 3.6 MB CREC-2026-09-16 package MODS
-against 1-9 ms per granule, so a loop over one issue's granules reads its
-package MODS once, and a granule's own MODS (a few kilobytes) avoids that cost.
+Two MODS routes give one reading. The cheap path is each granule's own MODS,
+one small document per granule (a few kilobytes), which is what
+``GovInfoBodyAcquirer.acquire_granule`` retains. The batch path is the issue's
+package MODS: :func:`read_record_issue` parses it once and
+:meth:`RecordIssue.speeches` reads each granule against it. Upstream parses a
+MODS with BeautifulSoup (measured 2026-09-28: 0.4-0.7 s for the 3.6 MB
+CREC-2026-09-16 package MODS) and finds a granule's record by scanning the
+whole parsed MODS for its accessId, so on the package path every granule pays
+a scan of every element, and an issue of G granules costs O(G x elements).
+That lookup cost is upstream's until its accessId index lands; a fork fix is in
+progress.
 """
 
 from __future__ import annotations
@@ -38,7 +41,7 @@ from spicy_docs.sources.govinfo.bodies import (
     parse_granule_identity,
     parse_package_id,
 )
-from spicy_docs.sources.govinfo.mods import GovInfoModsError, parse_govinfo_mods
+from spicy_docs.sources.govinfo.mods import RETAINED_MODS_MAX_ELEMENTS, GovInfoModsError, parse_govinfo_mods
 from spicy_docs.transport.source_acquirer import check_payload
 
 #: The fork commit ``pyproject.toml`` pins and ``uv.lock`` resolves; a test holds the three together.
@@ -51,9 +54,18 @@ UNLOCATED = "unlocated"
 
 _MODS_LABEL = "CREC MODS"
 _HTML_LABEL = "CREC granule HTML"
-# validate_package_mods's element bound; the 3.6 MB CREC-2026-09-16 package
-# MODS holds 35,978 elements (measured 2026-09-28).
-_MAX_MODS_ELEMENTS = 200_000
+# A granule id names the page it starts on (``-PgH5835-8`` starts on H5835) or,
+# for a chamber's front matter, only its section (``-PgH-FrontMatter-3``). Every
+# granule accessId in the package MODS the 2026-09-28 review retained, 1996 to
+# 2026 and suffixed issues among them, has one of these two shapes.
+_GRANULE_PAGE = re.compile(r"-Pg(?P<section>[A-Z]+)(?:(?P<number>[0-9]+)|-FrontMatter)(?:-[0-9]+)?$")
+# Upstream's header ``pages``: one page (``H5835``) or a range (``S4765-S4774``).
+_HEADER_PAGE = re.compile(r"(?P<section>[A-Z]+)(?P<number>[0-9]+)(?:-[A-Z]*[0-9]+)?")
+# A line upstream leaves out of an item's text, read whole: a whitespace-only
+# line, a ``{time}`` stamp or a ``[[Page]]`` marker. Upstream's own skip
+# patterns match only a line's start, so a skipped line carrying more than the
+# marker is text it dropped, and it is reported, not accounted for.
+_DROPPED_LINE = re.compile(r"\s+|\s*\{time\}\s+[0-9]{4}\s*|\s*\[\[Page [A-Z]*[0-9]+\]\]\s*")
 # What upstream raises from a document it cannot read: a missing accessId
 # (RuntimeError), a missing <pre>, searchTitle or granuleClass (AttributeError),
 # a body too short for its header (StopIteration), an unmatched date or time
@@ -145,6 +157,14 @@ class RecordSpeechDocument:
     bill, law, U.S. Code and Statutes at Large references upstream read from
     the granule's MODS record, unmodified. ``source_lines`` is the granule's
     ``<pre>`` text split the way upstream split it, up to the last line it read.
+
+    ``unaccounted_lines`` indexes the lines of ``source_lines`` nothing here
+    accounts for: not the header upstream read, not its title, not a line of a
+    located item's text, and not a whole whitespace-only, ``{time}`` or
+    ``[[Page]]`` line. A header upstream did not match, the lines of unlocated
+    items, the line a partial parse failed on and a skipped line that carried
+    text all land here, so a caller that needs the whole granule reads
+    ``parse_status == "complete"`` and an empty tuple.
     """
 
     granule_id: str
@@ -161,6 +181,7 @@ class RecordSpeechDocument:
     related_statute: tuple[Mapping[str, object], ...]
     items: tuple[RecordSpeechItem, ...]
     source_lines: tuple[str, ...]
+    unaccounted_lines: tuple[int, ...]
     html_sha256: str
     mods_sha256: str
     parser_pin: str
@@ -205,9 +226,10 @@ def _write_for_upstream(path: Path, text: str, *, label: str) -> None:
     makes its reading the retained text; reading back through the same call is
     the proof. A character the locale cannot encode, or a carriage return that
     universal newlines would fold, refuses rather than reaching the parser as
-    different text. Every CREC body and MODS the supply corpus retained on
-    2026-09-28 is ASCII with no carriage return, so neither refusal has been
-    observed (``docs/sources/congressional-record-speeches.md``).
+    different text. Neither refusal has been seen on publisher bytes, which are
+    UTF-8 without a carriage return but not all ASCII: a 1996 body carries
+    U+FFFD, which a UTF-8 locale carries through unchanged
+    (``docs/sources/congressional-record-speeches.md``).
     """
     encoding = locale.getpreferredencoding(False)
     try:
@@ -257,7 +279,7 @@ def _mods_identity(mods: bytes, *, max_bytes: int) -> tuple[PackageIdentity, str
     MODS mapping before upstream's parser sees the bytes.
     """
     try:
-        record = parse_govinfo_mods(mods, max_bytes=max_bytes, max_elements=_MAX_MODS_ELEMENTS).package
+        record = parse_govinfo_mods(mods, max_bytes=max_bytes, max_elements=RETAINED_MODS_MAX_ELEMENTS).package
     except GovInfoModsError as error:
         raise RecordSpeechesError(f"{_MODS_LABEL} is unreadable: {error}") from error
     stated, hosts = set(record.access_ids), set(record.host_access_ids)
@@ -279,10 +301,11 @@ def _mods_identity(mods: bytes, *, max_bytes: int) -> tuple[PackageIdentity, str
 def _line_recording(parse_file: Any) -> Any:
     """Upstream's file parser, recording the lines it reads and the line its first item starts on.
 
-    Both hooks call upstream's own method and only watch it: ``read_htm_file``
+    Every hook calls upstream's own method and only watches it: ``read_htm_file``
     is upstream's reader, so the lines are the ones it split rather than a
-    second reading, and ``get_title`` is where upstream stops consuming header
-    and title lines -- the line it stopped on is the first item's first line.
+    second reading; ``get_header`` consumes the header lines, matched or not;
+    and ``get_title`` is where upstream stops consuming title lines -- the line
+    it stopped on is the first item's first line.
     """
 
     class LineRecordingParse(parse_file):
@@ -291,6 +314,11 @@ def _line_recording(parse_file: Any) -> Any:
             for line in super().read_htm_file():
                 self.lines_read.append(line)
                 yield line
+
+        def get_header(self) -> Any:
+            header = super().get_header()
+            self.header_end = len(self.lines_read)
+            return header
 
         def get_title(self) -> Any:
             title = super().get_title()
@@ -302,8 +330,8 @@ def _line_recording(parse_file: Any) -> Any:
 
 def _span(
     lines: Sequence[str], wanted: Sequence[str], cursor: int, *, skipped: Callable[[str], bool], exact: bool
-) -> tuple[int, int] | None:
-    """Where ``wanted`` sits from ``cursor`` on, passing over only lines upstream drops, or ``None``.
+) -> tuple[int, ...] | None:
+    """The positions of ``wanted``'s lines from ``cursor`` on, passing over only lines upstream drops, or ``None``.
 
     Upstream builds an item from the line that ended the previous one and then
     every following line up to the next break, dropping the lines its skip
@@ -314,24 +342,23 @@ def _span(
     the first item to the line upstream's title scan stopped on.
     """
     position = cursor
-    start: int | None = None
+    found: list[int] = []
     for line in wanted:
         while not exact and position < len(lines) and lines[position] != line and skipped(lines[position]):
             position += 1
         if position == len(lines) or lines[position] != line:
             return None
-        if start is None:
-            start = position
+        found.append(position)
         exact = False
         position += 1
-    return None if start is None else (start, position - 1)
+    return tuple(found) or None
 
 
 def _locate(
     lines: Sequence[str], items: Sequence[Mapping[str, Any]], anchor: int | None, skipped: Callable[[str], bool]
-) -> list[tuple[int, int] | None]:
-    """Each item's span, in order and never backtracking; once one is not found, none after it is guessed."""
-    spans: list[tuple[int, int] | None] = []
+) -> list[tuple[int, ...] | None]:
+    """Each item's text-line positions, in order and never backtracking; once one is not found, none after it is guessed."""
+    spans: list[tuple[int, ...] | None] = []
     cursor = anchor
     for index, item in enumerate(items):
         text = item.get("text")
@@ -339,8 +366,36 @@ def _locate(
         if cursor is not None and isinstance(text, str):
             span = _span(lines, text.split("\n"), cursor, skipped=skipped, exact=index == 0)
         spans.append(span)
-        cursor = None if span is None else span[1] + 1
+        cursor = None if span is None else span[-1] + 1
     return spans
+
+
+def _unaccounted(
+    lines: Sequence[str],
+    spans: Sequence[tuple[int, ...] | None],
+    *,
+    header_end: int,
+    header_read: bool,
+    first_item_line: int | None,
+) -> tuple[int, ...]:
+    """The lines no header, title or located item accounts for, in one pass over ``lines``.
+
+    Before the first item, the header lines count only when upstream read them
+    as its header, and the lines its title scan consumed are blank or title.
+    From the first item on, a line counts when it is a text line of a located
+    item or a whole whitespace-only, ``{time}`` or ``[[Page]]`` line
+    (``_DROPPED_LINE``). So the lines of unlocated items, the line a partial
+    parse failed on and a skipped line that carried text are unaccounted.
+    """
+    missing = [index for index in range(header_end) if not header_read and lines[index] != ""]
+    text_lines = {position for span in spans if span is not None for position in span}
+    start = len(lines) if first_item_line is None else first_item_line
+    missing.extend(
+        index
+        for index in range(start, len(lines))
+        if index not in text_lines and _DROPPED_LINE.fullmatch(lines[index]) is None
+    )
+    return tuple(missing)
 
 
 class RecordIssue:
@@ -359,7 +414,8 @@ class RecordIssue:
         self.mods_sha256 = mods_sha256
         self._directory = directory
 
-    def _granule_id(self, granule_id: object) -> str:
+    def _granule_id(self, granule_id: object) -> tuple[str, re.Match[str]]:
+        """The granule id, checked against this issue and this MODS, and the page it names."""
         try:
             identity = parse_granule_identity(self._package, granule_id)
         except GovInfoBodySourceError as error:
@@ -373,14 +429,17 @@ class RecordIssue:
         # first dot (cr_parser.py:525); a dotted id would be looked up truncated.
         if "." in value:
             raise RecordSpeechesError(f"granule {value} contains a dot, which the parser cannot address")
-        return value
+        page = _GRANULE_PAGE.search(value)
+        if page is None:
+            raise RecordSpeechesError(f"granule {value} names no page (-Pg...) to hold its body's header to")
+        return value, page
 
     def speeches(self, granule_html: bytes, granule_id: str, *, max_html_bytes: int) -> RecordSpeechDocument:
         """Read one granule's retained HTML body into a :class:`RecordSpeechDocument`."""
         body = check_payload(
             granule_html, max_html_bytes, label=_HTML_LABEL, error_type=RecordSpeechesError, allow_empty=False
         )
-        granule = self._granule_id(granule_id)
+        granule, page = self._granule_id(granule_id)
         text = _decoded(body, label=_HTML_LABEL)
         parser_class = _line_recording(_parser_module().ParseCRFile)
         with TemporaryDirectory(prefix="spicy-docs-record-speeches-") as directory:
@@ -395,9 +454,9 @@ class RecordIssue:
                     raise RecordSpeechesError(
                         f"the parser could not read granule {granule}: {type(error).__name__}: {error}"
                     ) from error
-        return self._document(parser, granule, body)
+        return self._document(parser, granule, page, body)
 
-    def _document(self, parser: Any, granule: str, body: bytes) -> RecordSpeechDocument:
+    def _document(self, parser: Any, granule: str, page: re.Match[str], body: bytes) -> RecordSpeechDocument:
         crdoc = parser.crdoc
         status = crdoc.get("parse_status")
         error = crdoc.get("parse_error")
@@ -409,6 +468,8 @@ class RecordIssue:
             )
         if (status == "partial") != isinstance(error, Mapping):
             raise RecordSpeechesError(f"the parser reports {status} for {granule} with parse_error {error!r}")
+        header = crdoc.get("header")
+        _check_page(granule, page, header)
         patterns = tuple(parser.skip_items)
 
         def skipped(line: str) -> bool:
@@ -426,13 +487,12 @@ class RecordIssue:
                 speaker_bioguide=_stated(item.get("speaker_bioguide")),
                 text=item["text"],
                 line_start=None if span is None else span[0],
-                line_end=None if span is None else span[1],
+                line_end=None if span is None else span[-1],
                 coordinates_status=UNLOCATED if span is None else LOCATED,
                 source_item=_frozen(item),
             )
             for index, (item, span) in enumerate(zip(content, spans, strict=True))
         )
-        header = crdoc.get("header")
         return RecordSpeechDocument(
             granule_id=granule,
             package_id=self.package_id,
@@ -448,10 +508,38 @@ class RecordIssue:
             related_statute=_frozen(crdoc.get("related_statute", ())),
             items=items,
             source_lines=lines,
+            unaccounted_lines=_unaccounted(
+                lines,
+                spans,
+                header_end=parser.header_end,
+                header_read=bool(header),
+                first_item_line=parser.first_item_line,
+            ),
             html_sha256="sha256:" + hashlib.sha256(body).hexdigest(),
             mods_sha256=self.mods_sha256,
             parser_pin=PARSER_PIN,
         )
+
+
+def _check_page(granule: str, page: re.Match[str], header: object) -> None:
+    """Refuse a body whose header starts on another page than the granule id names.
+
+    Upstream never compares the two, so a body retained under the wrong id
+    would read as that granule. A front-matter id names only its section. A
+    header upstream did not match states no page; its lines are then in
+    ``unaccounted_lines``.
+    """
+    if not isinstance(header, Mapping):
+        return
+    pages = header.get("pages")
+    stated = _HEADER_PAGE.fullmatch(pages) if isinstance(pages, str) else None
+    if (
+        stated is None
+        or stated["section"] != page["section"]
+        or (page["number"] is not None and stated["number"] != page["number"])
+    ):
+        named = f"page {page['section']}{page['number']}" if page["number"] else f"section {page['section']}"
+        raise RecordSpeechesError(f"granule {granule} names {named}, but its body's header states pages {pages!r}")
 
 
 def read_record_issue(mods: bytes, *, max_mods_bytes: int) -> RecordIssue:
