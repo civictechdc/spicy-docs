@@ -14,8 +14,9 @@ MODS_NAMESPACE = "http://www.loc.gov/mods/v3"
 DEFAULT_MAX_ELEMENTS = 100_000
 #: The element bound for a MODS a caller retained from GovInfo's routes: the
 #: body routes' validators and the Record speech adapter read under it. A
-#: daily Record issue's package MODS is the largest such record (the 3.6 MB
-#: CREC-2026-09-16 holds 35,978 elements, measured 2026-09-28).
+#: daily Record issue's package MODS is the largest such record: of those the
+#: 2026-09-28 reviews retained, CREC-1995-01-04 holds the most elements (49,039
+#: in 5.0 MB), then CREC-1996-03-28 (46,003), measured 2026-09-28.
 RETAINED_MODS_MAX_ELEMENTS = 200_000
 
 

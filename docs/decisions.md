@@ -3330,6 +3330,7 @@ under the rule. The identity `(volume, issue)` and every other column are
 unchanged. A host sees the new values when it re-shapes an issue: spicy-regs
 reads only the details its published table lacks and merges on `update_date`
 (`build_index_table`), so a held issue keeps its old row until its detail is
-read again or the table is rebuilt. Receipt:
+read again or the table is rebuilt. **Host step:** rebuild `record_issues` once,
+or re-read the seven details above. Receipt:
 `~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/review-fixes/record-issues/`
 (`measure.py`, `measure.json`, `changed.csv`, the package summaries).
