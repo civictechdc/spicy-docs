@@ -45,7 +45,7 @@ from spicy_docs.interpretation.section_classification import (
 )
 from spicy_docs.schemas import BILL_SECTIONS, BILL_VERSIONS, TABLE_CONTRACTS
 from spicy_docs.schemas.bill_diff_tables import CONSECUTIVE_PAIR_RULE
-from spicy_docs.sources.congress.bill_status import BillIdentity, BillTextVersion, parse_bill_status
+from spicy_docs.sources.congress.bill_status import BillIdentity, BillSponsor, BillTextVersion, parse_bill_status
 from spicy_docs.sources.congress.bill_tree import engine_available, parse_bill_tree
 from spicy_docs.sources.congress.bill_versions import printing_version_code, version_slug
 from spicy_docs.transport.captured import CapturedBodyResponse
@@ -84,6 +84,28 @@ def test_bill_row_counts_the_native_cosponsor_list() -> None:
     assert not family(replace(capture, status=replace(status, cosponsors=None))).bill_cosponsors
     assert family(replace(capture, status=replace(status, cosponsors=()))).bills[0]["cosponsor_count"] == "0"
     assert family(replace(capture, status=replace(status, cosponsors=None))).bills[0]["cosponsor_count"] is None
+
+
+@pytest.mark.parametrize("change", ["input digest missing", "cosponsors typed as BillSponsor"])
+def test_an_unshapeable_cosponsor_is_refused_without_aborting_the_bill(change: str) -> None:
+    """The two shapes the 0.50.0 review reproduced: each occurrence is a named refusal and the bill still builds.
+
+    Both used to raise out of ``shape_bill_cosponsor`` past ``SHAPER_REFUSALS`` (a ``ValueError`` and an
+    ``AttributeError``), losing every table of the bill's pass.
+    """
+    status = parse_bill_status(
+        (CAPTURED / "status-118hr1-cosponsors.xml").read_bytes(), identity=BillIdentity(118, "hr", 1)
+    )
+    if change == "input digest missing":
+        status = replace(status, input_sha256=None)
+    else:
+        status = replace(status, cosponsors=tuple(BillSponsor(c.bioguide_id, c.full_name) for c in status.cosponsors))
+    tables = family(BillFamilyCapture(status=status, versions=(), observed_at=OBSERVED_AT))
+    assert tables.bills[0]["bill_id"] == "118-hr-1" and tables.bills[0]["cosponsor_count"] == "49"
+    assert not tables.bill_cosponsors
+    refused = [refusal for refusal in tables.refusals if refusal.table == "bill_cosponsors"]
+    assert [refusal.identity[-1] for refusal in refused] == [str(index) for index in range(49)]
+    assert all(refusal.reason.startswith("the shaper refused this row: cosponsor") for refusal in refused)
 
 
 needs_engine = pytest.mark.skipif(

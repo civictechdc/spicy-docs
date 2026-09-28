@@ -13,6 +13,7 @@ from spicy_docs.schemas.tables import (
     VALUE_KEY,
     Reference,
     Row,
+    TableContractError,
     bill_id,
     flag,
     joined,
@@ -448,36 +449,50 @@ BILL_COSPONSORS = table_contract(
 )
 
 
+#: The ``BillCosponsor`` fields a row copies as text, read by attribute so this module stays a leaf.
+_COSPONSOR_FIELDS: tuple[str, ...] = (
+    "bioguide_id",
+    "full_name",
+    "sponsorship_date",
+    "sponsorship_date_status",
+    "is_original_raw",
+    "sponsorship_withdrawn_date",
+    "sponsorship_withdrawn_date_status",
+    "party",
+    "state",
+    "district",
+)
+
+
 def shape_bill_cosponsor(status: object, *, cosponsor_index: int) -> Row:
-    """Project one parsed occurrence; never merge repeated member entries."""
+    """Project one parsed occurrence; never merge repeated member entries.
+
+    Every refusal is a :class:`TableContractError`, which the bill family files against this row
+    (``interpretation.bill_family.SHAPER_REFUSALS``) instead of aborting the bill's whole pass: a status without its
+    input digest, an unread list, an index outside it, and an entry that is not a ``BillCosponsor`` (0.47.0 typed the
+    list as ``BillSponsor``).
+    """
     if not status.input_sha256:
-        raise ValueError("cosponsor projection requires the retained input digest")
+        raise TableContractError("cosponsor projection requires the retained input digest")
     if type(cosponsor_index) is not int or cosponsor_index < 0:
-        raise ValueError("cosponsor_index must be a nonnegative integer")
+        raise TableContractError("cosponsor_index must be a nonnegative integer")
     if status.cosponsors is None:
-        raise ValueError("cosponsor list was not read")
+        raise TableContractError("cosponsor list was not read")
+    if cosponsor_index >= len(status.cosponsors):
+        raise TableContractError(f"cosponsor_index {cosponsor_index} is outside a list of {len(status.cosponsors)}")
     entry = status.cosponsors[cosponsor_index]
+    try:
+        values = {name: text(getattr(entry, name)) for name in _COSPONSOR_FIELDS}
+        source_xml = entry.source_xml
+    except AttributeError as error:
+        raise TableContractError(f"cosponsor entry is a {type(entry).__name__} without {error.name}") from error
     return {
         "bill_id": bill_id(status.identity),
         "input_sha256": status.input_sha256,
         "cosponsor_index": text(cosponsor_index),
-        **{
-            name: text(getattr(entry, name))
-            for name in (
-                "bioguide_id",
-                "full_name",
-                "sponsorship_date",
-                "sponsorship_date_status",
-                "is_original_raw",
-                "sponsorship_withdrawn_date",
-                "sponsorship_withdrawn_date_status",
-                "party",
-                "state",
-                "district",
-            )
-        },
+        **values,
         "source_path": f"/billStatus/bill/cosponsors/item[{cosponsor_index + 1}]",
-        "source_xml": entry.source_xml,
+        "source_xml": source_xml,
     }
 
 
