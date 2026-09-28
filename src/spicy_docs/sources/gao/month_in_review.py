@@ -76,7 +76,13 @@ _LABEL: Final = "GAO listing page"
 _PAGE_HREF = re.compile(r"\?page=(\d+)")
 #: HTML's own whitespace. A non-breaking space is text GAO wrote, and the feed's titles keep it.
 _HTML_WHITESPACE = re.compile(r"[\t\n\f\r ]+")
-_DECISION_NUMBER = re.compile(r"B-\d+(?:\.\d+)?")
+#: One B-number, with the letter suffix older decisions carry (``B-235577.2-O.M.``).
+_DECISION_NUMBER = re.compile(r"B-\d+(?:\.\d+)?(?:-[A-Z.]+)?")
+#: Older decisions list their numbers with commas or semicolons, with stray spaces and a trailing separator.
+_DECISION_SEPARATOR = re.compile(r"[,;]")
+_NOT_ALPHANUMERIC = re.compile(r"[^a-z0-9]")
+#: Drupal's suffix for a path alias already taken: 2015 links GAO-16-75SP as ``/products/gao-16-75sp-0``.
+_DUPLICATE_PATH = re.compile(r"-\d+")
 _FIELD_CLASSES: Final = {
     "field--name-field-product-number": "number",
     "field--name-field-issue-date": "published",
@@ -314,7 +320,18 @@ def _entry(position: int, teaser: dict) -> GaoListingEntry:
     if link != links.get("heading") or not link.startswith("/products/"):
         raise GaoListingSourceError(f"{_LABEL} teaser {position} does not link one product page")
     slug = unquote(link.removeprefix("/products/"))
-    if number is not None and slug != number.lower():
+    # A product's link is its number lowercased, or that with Drupal's duplicate-path suffix; the product id is the
+    # page the listing links. A decision's link spells its number GAO's older ways (``b-402003-b-402003.2`` for
+    # ``B-402003; B-402003.2``), so only its letters and digits must agree.
+    decision = number is not None and number.startswith("B-")
+    if number is not None and (
+        _NOT_ALPHANUMERIC.sub("", slug) != _NOT_ALPHANUMERIC.sub("", number.lower())
+        if decision
+        else not (
+            slug == number.lower()
+            or (slug.startswith(number.lower()) and _DUPLICATE_PATH.fullmatch(slug[len(number) :]))
+        )
+    ):
         raise GaoListingSourceError(f"{_LABEL} teaser {position} links a page other than its product number")
     product_id: str | None = None
     decisions: tuple[str, ...] = ()
@@ -325,9 +342,9 @@ def _entry(position: int, teaser: dict) -> GaoListingEntry:
             raise GaoListingSourceError(
                 f"{_LABEL} teaser {position} states no number and links no product page"
             ) from error
-    elif number.startswith("B-"):
-        decisions = tuple(number.split(","))
-        if not all(_DECISION_NUMBER.fullmatch(item) for item in decisions):
+    elif decision:
+        decisions = tuple(part.strip() for part in _DECISION_SEPARATOR.split(number) if part.strip())
+        if not decisions or not all(_DECISION_NUMBER.fullmatch(item) for item in decisions):
             raise GaoListingSourceError(f"{_LABEL} teaser {position} names a malformed B-number")
     else:
         try:

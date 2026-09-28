@@ -490,7 +490,12 @@ reads it.
   (`B-423916.2,B-423916.3`). They are kept apart as decisions, each number
   separate. A teaser GAO gives no product number at all (2011 lists an
   Antideficiency Act report as `/products/p00459` with an empty number field)
-  is kept apart as unnumbered, identified by its link.
+  is kept apart as unnumbered, identified by its link. Older indexes spell decisions
+  loosely (`B-402003; B-402003.2`, a trailing comma, `B-235577.2-O.M.`), so a
+  decision's link need only agree with its number in letters and digits. A
+  product's link is its number lowercased, or that with Drupal's
+  duplicate-path suffix (`/products/gao-16-75sp-0` for `GAO-16-75SP`), and the
+  product id is the page the listing links.
 
 ```sh
 export ZYTE_TOKEN

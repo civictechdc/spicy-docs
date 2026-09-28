@@ -182,6 +182,59 @@ def test_a_teaser_gao_gives_no_product_number_is_kept_apart_by_its_link():
     assert all(decision.decision_numbers for decision in decisions)
 
 
+#: The first decision teaser of August 2026's last page, respelled the four ways older indexes spell decisions (seen on
+#: 2009, 2010, 2011 and 2012 pages the 2026-09-28 backfill first refused).
+DECISION = b'href="/products/b-424129.2"'
+OLDER_DECISIONS = [
+    (
+        "/products/b-404896%2Cb-404896.2%2C",
+        "B-404896,B-404896.2,",
+        ("B-404896", "B-404896.2"),
+    ),
+    ("/products/b-235577.2-o.m.", "B-235577.2-O.M.", ("B-235577.2-O.M.",)),
+    ("/products/b-402003-b-402003.2", "B-402003; B-402003.2", ("B-402003", "B-402003.2")),
+    (
+        "/products/b-407312%2Cb-407372%2C-b-407382",
+        "B-407312,B-407372, B-407382",
+        ("B-407312", "B-407372", "B-407382"),
+    ),
+]
+
+
+@pytest.mark.parametrize(("link", "number", "numbers"), OLDER_DECISIONS)
+def test_older_decision_spellings_split_into_their_b_numbers(link, number, numbers):
+    """A decision's link need only name its number letter for letter; its numbers split on commas and semicolons."""
+    body = (
+        AUGUST_PAGES[3]
+        .replace(DECISION, f'href="{link}"'.encode(), 2)
+        .replace(b">B-424129.2<", f">{number}<".encode(), 1)
+    )
+    entry = page(body, index=3).entries[0]
+    assert (entry.link, entry.product_number, entry.decision_numbers, entry.product_id) == (link, number, numbers, None)
+
+
+@pytest.mark.parametrize(("suffix", "accepted"), [("-0", True), ("-12", True), ("-x", False), ("0", False)])
+def test_a_product_page_with_drupals_duplicate_path_suffix_keys_on_its_link(suffix, accepted):
+    """2015 links GAO-16-75SP as ``/products/gao-16-75sp-0``: the product id is the page the listing links."""
+    link = f"/products/gao-26-108640{suffix}"
+    body = _first_teaser(b'href="/products/gao-26-108640"', f'href="{link}"'.encode()).replace(
+        b'<h3 class="heading"><a href="/products/gao-26-108640">', f'<h3 class="heading"><a href="{link}">'.encode(), 1
+    )
+    if not accepted:
+        with pytest.raises(GaoListingSourceError, match="other than its product number"):
+            page(body)
+        return
+    entry = page(body).entries[0]
+    assert (entry.product_id, entry.product_number, entry.link) == (f"gao-26-108640{suffix}", "GAO-26-108640", link)
+
+
+def test_a_decision_linking_another_number_still_refuses():
+    """Letters and digits must agree: a decision teaser linking another decision's page is refused."""
+    body = AUGUST_PAGES[3].replace(DECISION, b'href="/products/b-424130.2"', 2)
+    with pytest.raises(GaoListingSourceError, match="other than its product number"):
+        page(body, index=3)
+
+
 def test_the_oldest_year_probed_keeps_its_older_number_forms():
     """2009's index reads with its own pager depth and GAO's older report, testimony and correspondence ids."""
     first = page((FIXTURES / "2009-page-0.html").read_bytes(), scope=GaoListingScope(2009))
