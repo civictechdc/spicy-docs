@@ -1421,12 +1421,14 @@ def fetch_derived_text(
     Transport failures retry as in the exact reader. An object listed or served
     over ``max_bytes``, a changed or vanished object, bytes that differ from the
     listed size, and a 401/403 raise rather than drop an attachment from the
-    comment's text. ``sha256`` names the bytes as served; ``text`` decodes them
-    as UTF-8, replacing undecodable bytes.
+    comment's text. ``sha256`` names the bytes as served, spelled ``sha256:``
+    plus the hex digest as every published digest is (a host publishes it in
+    ``comments.pdf_extraction_results_json``); ``text`` decodes them as UTF-8,
+    replacing undecodable bytes.
     """
     fetched = []
     for record in comment.attachments:
         content = _pinned_get(s3_resource, bucket, record.key, record.etag, record.size, max_bytes=max_bytes).content
         text = content.decode("utf-8", "replace")
-        fetched.append(replace(record, sha256=hashlib.sha256(content).hexdigest(), text=text))
+        fetched.append(replace(record, sha256="sha256:" + hashlib.sha256(content).hexdigest(), text=text))
     return replace(comment, attachments=tuple(fetched))

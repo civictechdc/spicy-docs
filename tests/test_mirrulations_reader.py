@@ -1932,7 +1932,9 @@ def test_derived_text_fetch_pins_etags_and_records_digest_and_text() -> None:
     fetched = fetch_derived_text(resource, listed)
 
     assert [(a.attachment, a.text) for a in fetched.attachments] == [(1, "café"), (2, ""), (10, "bad � byte")]
-    assert [a.sha256 for a in fetched.attachments] == [hashlib.sha256(contents[n]).hexdigest() for n in (1, 2, 10)]
+    assert [a.sha256 for a in fetched.attachments] == [
+        "sha256:" + hashlib.sha256(contents[n]).hexdigest() for n in (1, 2, 10)
+    ]
     assert resource.get_requests == [(a.key, {"IfMatch": a.etag}) for a in listed.attachments]
     record = json.loads(json.dumps(fetched.to_json()))
     assert record == {
