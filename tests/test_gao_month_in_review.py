@@ -68,7 +68,9 @@ class Clock:
         self.now += timedelta(seconds=seconds)
 
 
-def walk(tmp_path, zyte: FakeZyte, *, requests: int = 10, clock: Clock | None = None, spacing: float = 0):
+def walk(
+    tmp_path, zyte: FakeZyte, *, requests: int = 10, clock: Clock | None = None, spacing: float = 0, scopes=(AUGUST,)
+):
     clock = clock or Clock()
     budget = ZyteBudget(requests)
     transport = ZyteTransport(zyte, max_bytes=4 * 1024 * 1024, timeout_seconds=30, budget=budget)
@@ -77,7 +79,7 @@ def walk(tmp_path, zyte: FakeZyte, *, requests: int = 10, clock: Clock | None = 
     )
     with acquirer:
         code = walk_listing(
-            [AUGUST],
+            list(scopes),
             acquirer=acquirer,
             store=tmp_path / "store",
             receipts=tmp_path / "receipts.jsonl",
@@ -243,9 +245,11 @@ def test_a_walk_stops_at_its_zyte_budget_and_resumes_where_it_stopped(tmp_path):
     partial = read_listing_run(tmp_path / "receipts.jsonl", tmp_path / "store")
     assert partial.incomplete_scopes == ("2026-08",) and partial.products == () and partial.pages == ()
     zyte = FakeZyte(august_site())
-    assert walk(tmp_path, zyte, requests=5)[0] == 0
+    assert walk(tmp_path, zyte, requests=2, scopes=(AUGUST, GaoListingScope(2025)))[0] == 0
     assert zyte.calls == [AUGUST.page_url(2), AUGUST.page_url(3)]
-    assert len(read_listing_run(tmp_path / "receipts.jsonl", tmp_path / "store").products) == 33
+    run = read_listing_run(tmp_path / "receipts.jsonl", tmp_path / "store")
+    # A scope the walk was asked for but never reached reads as unfinished, not as absent.
+    assert run.complete_scopes == ("2026-08",) and run.incomplete_scopes == ("2025",) and len(run.products) == 33
 
 
 def test_a_failed_page_stops_the_walk_and_is_retried_on_resume(tmp_path):

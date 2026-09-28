@@ -15,7 +15,7 @@ zero never establishes absence.
 | GovInfo collection changes | Collection code and `lastModified` start, optional end | `packages` | api.data.gov key |
 | GovInfo package granules | Package identifier | `granules` | api.data.gov key |
 | GAO reports feed | None; about 25 recent products | RSS items | none |
-| GAO Month in Review and Annual Index | A year (the view answers from 2009) or a month; every page of it | Teasers: products once each with their topic headings, B-numbered decisions kept apart | Zyte token (`ZYTE_TOKEN`) |
+| GAO Month in Review and Annual Index | A year (probed back to 2009; earlier years untested) or a month; every page of it | Teasers: products once each with their topic headings, B-numbered decisions kept apart | Zyte token (`ZYTE_TOKEN`) |
 | LDA lobbying filings | Optional filing year and posted-date window, ordered by `dt_posted` | `results` | optional LDA token |
 | CourtListener search | `type=r` dockets or `type=o` opinion clusters; optional filed window, court, nature of suit, query | `results` | optional CourtListener token |
 | SAM.gov entities | Optional registration status and registration-date window narrow enough for 10,000 records | `entityData` | SAM.gov-issued key |
@@ -503,7 +503,9 @@ A walk appends one receipt row per page: requested and final URL, status,
 time, digest, blob path and the Zyte request id. It fetches each retained
 page at most once, stops at the budget, and stops at the first failure,
 recording it. Run it again to resume; failed pages are retried.
-`read_listing_run` re-reads only scopes whose every page is retained. It
+`read_listing_run` re-reads only scopes whose every page is retained; a scope
+a walk was asked for but has not finished, started or not, is named
+unfinished. It
 checks each digest, re-parses each page against its scope's first page, and
 returns the pages with their captures beside the products and decisions.
 Offline regressions are in

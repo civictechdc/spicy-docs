@@ -512,7 +512,10 @@ class _Progress:
 
 
 def _read_receipts(receipts: Path) -> tuple[dict[str, _Progress], datetime | None]:
-    """Each scope's retained pages, a later row for a page superseding an earlier one, and the last contact."""
+    """Each scope's retained pages, a later row for a page superseding an earlier one, and the last contact.
+
+    A scope a walk was asked for is present even before any of its pages is retained, so it reads as unfinished.
+    """
     progress: dict[str, _Progress] = {}
     contact: datetime | None = None
     if not receipts.exists():
@@ -525,7 +528,10 @@ def _read_receipts(receipts: Path) -> tuple[dict[str, _Progress], datetime | Non
         if stamp:
             instant = datetime.fromisoformat(stamp)
             contact = instant if contact is None else max(contact, instant)
-        if row.get("kind") == "page":
+        if row.get("kind") == "started":
+            for key in row.get("scopes", ()):
+                progress.setdefault(key, _Progress())
+        elif row.get("kind") == "page":
             progress.setdefault(row["scope"], _Progress()).add(row)
     return progress, contact
 
