@@ -5,13 +5,21 @@ scope's page or disagrees with the scope's first page; and a resumable, budgeted
 Zyte transport over a fake provider.
 """
 
+import inspect
 import json
+import threading
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from urllib.parse import unquote
 
+import httpx
 import pytest
 
+from spicy_docs.sources.gao import month_in_review
 from spicy_docs.sources.gao.month_in_review import (
+    CRAWL_DELAY_SECONDS,
+    MAX_BACKOFF_SECONDS,
+    MAX_CONCURRENCY,
     GaoListingAcquirer,
     GaoListingBudget,
     GaoListingScope,
@@ -19,6 +27,7 @@ from spicy_docs.sources.gao.month_in_review import (
     collect_listing,
     main,
     parse_listing_page,
+    parser,
     read_listing_run,
     walk_listing,
 )
@@ -29,6 +38,7 @@ FIXTURES = Path(__file__).parent / "fixtures" / "listings" / "gao-month-in-revie
 AUGUST = GaoListingScope(2026, 8)
 AUGUST_PAGES = [(FIXTURES / f"2026-08-page-{index}.html").read_bytes() for index in range(4)]
 START = datetime(2026, 9, 28, 17, 0, tzinfo=UTC)
+JUNE, JULY = GaoListingScope(2026, 6), GaoListingScope(2026, 7)
 
 
 def page(body: bytes, *, scope: GaoListingScope = AUGUST, index: int = 0, **expected):
@@ -90,12 +100,16 @@ def walk(
     scopes=(AUGUST,),
     concurrency: int = 1,
     max_consecutive_failures: int = 1,
+    backoff: float = 60,
+    made: list | None = None,
 ):
     clock = clock or Clock()
     budget = ZyteBudget(requests)
     transport = ZyteTransport(zyte, max_bytes=4 * 1024 * 1024, timeout_seconds=30, budget=budget)
 
     def acquirers() -> GaoListingAcquirer:
+        if made is not None:
+            made.append(1)
         return GaoListingAcquirer(
             budget=GaoListingBudget(min_request_interval_seconds=0, timeout_seconds=30),
             transport=transport,
@@ -108,11 +122,11 @@ def walk(
         store=tmp_path / "store",
         receipts=tmp_path / "receipts.jsonl",
         zyte_budget=budget,
-        proxy_records=lambda: transport.records,
+        proxy_record=transport.record_for,
         spacing_seconds=spacing,
         concurrency=concurrency,
         max_consecutive_failures=max_consecutive_failures,
-        failure_backoff_seconds=60,
+        failure_backoff_seconds=backoff,
         clock=clock,
         sleep=clock.sleep,
     )
@@ -164,7 +178,11 @@ def test_decisions_are_kept_apart_with_each_b_number_split():
     joint = next(entry for entry in entries if entry.product_number == "B-423916.2,B-423916.3")
     assert joint.product_id is None and joint.decision_numbers == ("B-423916.2", "B-423916.3")
     assert joint.link == "/products/b-423916.2%2Cb-423916.3" and joint.published is None
-    assert all((entry.product_id is None) == entry.product_number.startswith("B-") for entry in entries)
+    assert all(
+        (entry.product_id is None) == entry.product_number.startswith("B-")
+        for entry in entries
+        if entry.label != "Federal Agency Major Rule Report"
+    )
 
 
 def test_a_teaser_gao_gives_no_product_number_is_kept_apart_by_its_link():
@@ -287,6 +305,216 @@ def test_a_gao_numbered_product_under_a_legal_heading_is_still_a_product():
     assert entry.topic == "Bid Protest Decision" and entry.product_id == "gao-14-253r"
 
 
+MAJOR_RULE = b'href="/products/b-424129.2"'
+
+
+def _product_teaser(
+    body: bytes, *, link: str, number: str, label: str | None = None, heading: str | None = None
+) -> bytes:
+    """August's first teaser respelled as another product: its two links, number, and optionally label and heading."""
+    head, tail = body[:FIRST_ARTICLE], body[FIRST_ARTICLE:]
+    tail = tail.replace(b'href="/products/gao-26-108640"', f'href="{link}"'.encode(), 2)
+    tail = tail.replace(b">GAO-26-108640<", f">{number}<".encode(), 1)
+    if label is not None:
+        tail = tail.replace(b'rel="bookmark">College Athletics<', f'rel="bookmark">{label}<'.encode(), 1)
+    if heading is not None:
+        tail = tail.replace(b">Most Programs Spend More Than They Generate in Revenue<", f">{heading}<".encode(), 1)
+    return head + tail
+
+
+def test_a_product_listed_on_its_page_and_on_a_suffixed_twin_is_one_product():
+    """GAO-16-75SP is listed at ``gao-16-75sp`` and ``gao-16-75sp-0`` with the same fields: one product, the base page."""
+    base = page(AUGUST_PAGES[0])
+    twin = page(_product_teaser(AUGUST_PAGES[0], link="/products/gao-26-108640-0", number="GAO-26-108640"))
+    products, _, _ = collect_listing([base, twin])
+    listed = [product for product in products if product.product_number == "GAO-26-108640"]
+    assert [product.product_id for product in listed] == ["gao-26-108640"]
+
+
+def test_a_suffixed_page_with_its_own_fields_is_its_own_product():
+    """``gao-14-280r-0`` is a VA major-rule report, ``gao-14-280r`` a Defense report, both numbered GAO-14-280R."""
+    defense = page(
+        _product_teaser(
+            AUGUST_PAGES[0], link="/products/gao-14-280r", number="GAO-14-280R", label="Defense Infrastructure"
+        )
+    )
+    veterans = page(
+        _product_teaser(
+            AUGUST_PAGES[0],
+            link="/products/gao-14-280r-0",
+            number="GAO-14-280R",
+            label="Federal Agency Major Rule Report",
+            heading="Department of Veterans Affairs: Copayments for Medications",
+        )
+    )
+    products, _, _ = collect_listing([defense, veterans])
+    listed = {product.product_id: product.label for product in products if product.product_number == "GAO-14-280R"}
+    assert listed == {"gao-14-280r": "Defense Infrastructure", "gao-14-280r-0": "Federal Agency Major Rule Report"}
+
+
+def test_a_b_numbered_major_rule_report_is_a_product_keyed_on_its_page():
+    """The owner's exception: every major-rule report is a product, B-numbered from April 2017, keyed on its page."""
+    listed = page(AUGUST_PAGES[3], index=3)
+    reports = [entry for entry in listed.entries if entry.label == "Federal Agency Major Rule Report"]
+    assert reports and all(entry.product_id == unquote(entry.link.removeprefix("/products/")) for entry in reports)
+    assert all(entry.decision_numbers == () and entry.product_number.startswith("B-") for entry in reports)
+    assert all(entry.decision_numbers for entry in listed.entries if entry.label != "Federal Agency Major Rule Report")
+
+
+def test_a_b_number_under_a_topic_heading_is_still_a_decision():
+    """B-310950.2 (2009) is listed under Budget and Spending; the heading does not make it a product."""
+    body = _product_teaser(AUGUST_PAGES[0], link="/products/b-310950.2", number="B-310950.2", label="Legal")
+    entry = page(body).entries[0]
+    assert entry.topic == "Auditing and Financial Management" and entry.decision_numbers == ("B-310950.2",)
+    assert entry.product_id is None
+
+
+def test_a_decision_link_must_spell_its_number_token_for_token():
+    """``B-4241292`` is not the page ``b-424129.2``: the letters and digits agree but the tokens do not."""
+    body = AUGUST_PAGES[3].replace(b">B-424129.2<", b">B-4241292<", 1)
+    with pytest.raises(GaoListingSourceError, match="other than its product number"):
+        page(body, index=3)
+
+
+def test_the_polite_defaults_are_one_worker_and_the_sites_crawl_delay():
+    """The reviewed default path is serial and 420 s apart, in the library, the budget and the command alike."""
+    parameters = inspect.signature(walk_listing).parameters
+    assert (
+        parameters["concurrency"].default == 1 and parameters["spacing_seconds"].default == CRAWL_DELAY_SECONDS == 420
+    )
+    assert parameters["max_consecutive_failures"].default == 1
+    assert GaoListingBudget().min_request_interval_seconds == 420
+    args = parser().parse_args(
+        ["walk", "--scope", "2025", "--store", "s", "--receipts", "r", "--max-zyte-requests", "1"]
+    )
+    assert (args.delay_seconds, args.concurrency, args.max_consecutive_failures) == (420, 1, 1)
+
+
+def test_the_command_spaces_requests_once_in_the_walk_not_again_in_the_acquirer(tmp_path, monkeypatch):
+    """The walk owns spacing, across runs; the command's acquirers carry none of their own."""
+    seen = {}
+
+    def capture(scopes, **kwargs):
+        seen.update(kwargs, acquirer=kwargs["acquirers"]())
+        return 0
+
+    monkeypatch.setenv("ZYTE_TOKEN", "test-token-1234567890")
+    monkeypatch.setattr(month_in_review, "walk_listing", capture)
+    args = ["walk", "--scope", "2025", "--store", str(tmp_path / "s"), "--receipts", str(tmp_path / "r")]
+    assert main([*args, "--max-zyte-requests", "1", "--delay-seconds", "7"]) == 0
+    assert seen["spacing_seconds"] == 7 and seen["acquirer"].budget.min_request_interval_seconds == 0
+
+
+def test_a_page_cut_off_mid_teaser_refuses_as_incomplete():
+    """A body cut inside a teaser is refused, never read as the teasers before the cut."""
+    cut = AUGUST_PAGES[0][: AUGUST_PAGES[0].index(b"<article", FIRST_ARTICLE + 10) + 200]
+    with pytest.raises(GaoListingSourceError, match="markup is incomplete"):
+        page(cut)
+
+
+def test_a_pager_deeper_than_the_bound_refuses():
+    """A last page past ``max_last_page_index`` is refused rather than walked."""
+    with pytest.raises(GaoListingSourceError, match="runs past page index 2"):
+        page(AUGUST_PAGES[0], max_last_page_index=2)
+
+
+def test_receipts_that_disagree_on_a_scopes_last_page_refuse(tmp_path):
+    """Two retained pages of one scope stating different last pages cannot both be the listing."""
+    walk(tmp_path, FakeZyte(august_site()))
+    receipts = tmp_path / "receipts.jsonl"
+    rows = [json.loads(line) for line in receipts.read_text().splitlines()]
+    rows[2]["last_page_index"] = 4
+    receipts.write_text("".join(json.dumps(row) + "\n" for row in rows))
+    with pytest.raises(GaoListingSourceError, match="disagree on scope 2026-08's last page"):
+        read_listing_run(receipts, tmp_path / "store")
+
+
+def test_a_scope_missing_only_its_last_page_is_unfinished(tmp_path):
+    """Pages 1-3 of four retained is not a finished scope."""
+    walk(tmp_path, FakeZyte(august_site()), requests=3)
+    run = read_listing_run(tmp_path / "receipts.jsonl", tmp_path / "store")
+    assert run.incomplete_scopes == ("2026-08",) and run.pages == ()
+
+
+def test_a_page_read_back_from_another_url_refuses(tmp_path):
+    """A receipt naming another URL for a page is refused on read-back, whatever its bytes."""
+    walk(tmp_path, FakeZyte(august_site()))
+    receipts = tmp_path / "receipts.jsonl"
+    rows = [json.loads(line) for line in receipts.read_text().splitlines()]
+    rows[2]["request_url"] = AUGUST.page_url(2)
+    receipts.write_text("".join(json.dumps(row) + "\n" for row in rows))
+    with pytest.raises(GaoListingSourceError, match="requested at another URL"):
+        read_listing_run(receipts, tmp_path / "store")
+
+
+def test_a_repeated_scope_is_walked_once_by_no_more_workers_than_scopes(tmp_path):
+    """``--scope 2026-08`` twice pays Zyte once, and four workers for one scope open one acquirer."""
+    made: list = []
+    zyte = FakeZyte(august_site())
+    code, _ = walk(tmp_path, zyte, scopes=(AUGUST, AUGUST), concurrency=4, made=made)
+    assert code == 0 and zyte.calls == [AUGUST.page_url(index) for index in range(4)] and len(made) == 1
+
+
+def test_concurrency_is_capped():
+    """No walk runs more workers than the cap."""
+    with pytest.raises(ValueError, match="concurrency"):
+        walk_listing(
+            [AUGUST],
+            acquirers=lambda: None,
+            store=Path("unused"),
+            receipts=Path("unused"),
+            zyte_budget=ZyteBudget(1),
+            concurrency=MAX_CONCURRENCY + 1,
+        )
+
+
+def test_the_backoff_doubles_up_to_its_ceiling(tmp_path):
+    """Failures in a row pause twice as long each time, never past the ceiling."""
+    site = month_site(JUNE, JULY, AUGUST)
+    clock = Clock()
+    walk(
+        tmp_path,
+        FakeZyte(site, fail=set(site)),
+        clock=clock,
+        scopes=(JUNE, JULY, AUGUST),
+        max_consecutive_failures=3,
+        backoff=600,
+    )
+    assert clock.sleeps == [600.0, MAX_BACKOFF_SECONDS] and MAX_BACKOFF_SECONDS < 1200
+
+
+def test_an_interrupt_stops_the_workers_writes_a_stopped_row_and_propagates(tmp_path, monkeypatch):
+    """Ctrl-C while the workers run stops them, joins them, records the stop, then raises."""
+    real_join = threading.Thread.join
+    interrupted: list = []
+
+    def join(thread, timeout=None):
+        if not interrupted:
+            interrupted.append(thread)
+            raise KeyboardInterrupt
+        return real_join(thread, timeout)
+
+    monkeypatch.setattr(month_in_review.threading.Thread, "join", join)
+    with pytest.raises(KeyboardInterrupt):
+        walk(
+            tmp_path, FakeZyte(month_site(JUNE, JULY, AUGUST)), requests=20, scopes=(JUNE, JULY, AUGUST), concurrency=2
+        )
+    rows = [json.loads(line) for line in (tmp_path / "receipts.jsonl").read_text().splitlines()]
+    assert rows[-1]["kind"] == "stopped" and "interrupted" in rows[-1]["reason"]
+    assert not [thread for thread in threading.enumerate() if thread.name.startswith("gao-listing-")]
+
+
+def test_the_transport_names_the_record_for_each_url():
+    """The walk looks a page's Zyte record up by its URL, not by scanning every record so far."""
+    transport = ZyteTransport(FakeZyte(august_site()), max_bytes=4 * 1024 * 1024, timeout_seconds=30)
+    with httpx.Client(transport=transport) as client:
+        for index in (0, 1, 0):
+            client.get(AUGUST.page_url(index))
+    assert transport.record_for(AUGUST.page_url(0)).zyte_request_id == "req-3"
+    assert transport.record_for(AUGUST.page_url(1)).zyte_request_id == "req-2"
+    assert transport.record_for(AUGUST.page_url(3)) is None
+
+
 def test_the_oldest_year_probed_keeps_its_older_number_forms():
     """2009's index reads with its own pager depth and GAO's older report, testimony and correspondence ids."""
     first = page((FIXTURES / "2009-page-0.html").read_bytes(), scope=GaoListingScope(2009))
@@ -300,7 +528,10 @@ def test_a_whole_month_lists_each_product_once_with_every_topic():
     pages = [page(body, index=index) for index, body in enumerate(AUGUST_PAGES)]
     assert sum(len(p.entries) for p in pages) == 100
     products, decisions, others = collect_listing(pages)
-    assert (len(products), len(decisions), len(others)) == (33, 40, 0)
+    assert (len(products), len(decisions), len(others)) == (43, 30, 0)
+    major_rule = [product for product in products if product.product_number.startswith("B-")]
+    assert len(major_rule) == 10 and {product.label for product in major_rule} == {"Federal Agency Major Rule Report"}
+    assert all(product.product_id == product.product_number.lower() for product in major_rule)
     college = next(product for product in products if product.product_id == "gao-26-108640")
     assert college.topics == ("Auditing and Financial Management", "Education") and college.scopes == ("2026-08",)
     assert college.title == "College Athletics: Most Programs Spend More Than They Generate in Revenue"
@@ -401,7 +632,7 @@ def test_a_walk_retains_every_page_and_reads_back_verified(tmp_path):
     assert {row["proxied_client"] for row in pages} == {"zyte"} and pages[0]["last_page_index"] == 3
     run = read_listing_run(tmp_path / "receipts.jsonl", tmp_path / "store")
     assert run.complete_scopes == ("2026-08",) and run.incomplete_scopes == ()
-    assert (len(run.pages), len(run.products), len(run.decisions)) == (4, 33, 40)
+    assert (len(run.pages), len(run.products), len(run.decisions)) == (4, 43, 30)
     assert [retained.capture.body for retained in run.pages] == AUGUST_PAGES
     assert run.pages[0].capture.requested_url == AUGUST.url and run.pages[0].zyte_request_id == "req-1"
 
@@ -421,7 +652,7 @@ def test_a_walk_stops_at_its_zyte_budget_and_resumes_where_it_stopped(tmp_path):
     assert zyte.calls == [AUGUST.page_url(2), AUGUST.page_url(3)]
     run = read_listing_run(tmp_path / "receipts.jsonl", tmp_path / "store")
     # A scope the walk was asked for but never reached reads as unfinished, not as absent.
-    assert run.complete_scopes == ("2026-08",) and run.incomplete_scopes == ("2025",) and len(run.products) == 33
+    assert run.complete_scopes == ("2026-08",) and run.incomplete_scopes == ("2025",) and len(run.products) == 43
 
 
 def test_a_failed_page_stops_the_walk_and_is_retried_on_resume(tmp_path):
@@ -434,23 +665,30 @@ def test_a_failed_page_stops_the_walk_and_is_retried_on_resume(tmp_path):
     assert walk(tmp_path, zyte)[0] == 0 and zyte.calls == [AUGUST.page_url(2), AUGUST.page_url(3)]
 
 
-def test_a_pager_that_changes_shape_mid_walk_refuses_and_keeps_the_page(tmp_path):
-    """A later page whose pager states another last page refuses the walk and retains the refused bytes."""
+def test_a_listing_that_moves_restarts_its_scope_once_then_stops_it_by_name(tmp_path):
+    """A pager that changes shape restarts the scope from page 0 once; moving again stops it by name, for good."""
     moved = AUGUST_PAGES[2].replace(
         b'href="?page=3" class="usa-pagination__link usa-pagination__next-page" aria-label="Last page"',
         b'href="?page=4" class="usa-pagination__link usa-pagination__next-page" aria-label="Last page"',
     )
     assert moved != AUGUST_PAGES[2]
-    code, rows = walk(tmp_path, FakeZyte(august_site(**{"2": moved})))
+    zyte = FakeZyte(august_site(**{"2": moved}))
+    code, rows = walk(tmp_path, zyte)
+    pages = [AUGUST.page_url(index) for index in (0, 1, 2)]
+    assert code == 1 and zyte.calls == pages + pages
+    moves = [row for row in rows if row["kind"] == "moved"]
     (failed,) = [row for row in rows if row["kind"] == "failed"]
-    assert code == 1 and "changed shape" in failed["error"]
+    assert [row["page_index"] for row in moves] == [2, 2] and failed["scope"] == "2026-08"
+    assert "changed shape" in failed["error"]
     assert failed["refused_evidence"]["stage"] == "source-validation"
     assert (
         tmp_path / "store" / "sha256" / failed["refused_evidence"]["sha256"].removeprefix("sha256:")
     ).read_bytes() == moved
+    assert rows[-1]["kind"] == "stopped" and rows[-1]["unfinished"] == ["2026-08"] and "moved" in rows[-1]["reason"]
 
-
-JUNE, JULY = GaoListingScope(2026, 6), GaoListingScope(2026, 7)
+    again = FakeZyte(august_site())
+    code, rows = walk(tmp_path, again)
+    assert again.calls == [] and rows[-1]["unfinished"] == ["2026-08"] and "2026-08" in rows[-1]["reason"]
 
 
 def test_parallel_periods_fetch_each_page_once_and_one_periods_failure_spares_the_others(tmp_path):
@@ -468,7 +706,7 @@ def test_parallel_periods_fetch_each_page_once_and_one_periods_failure_spares_th
     code, rows = walk(tmp_path, again, scopes=(JUNE, JULY, AUGUST), concurrency=3)
     assert code == 0 and sorted(again.calls) == sorted(JULY.page_url(index) for index in (1, 2, 3))
     run = read_listing_run(tmp_path / "receipts.jsonl", tmp_path / "store")
-    assert len(run.complete_scopes) == 3 and len(run.pages) == 12 and len(run.products) == 33
+    assert len(run.complete_scopes) == 3 and len(run.pages) == 12 and len(run.products) == 43
     assert {product.scopes for product in run.products} == {("2026-06", "2026-07", "2026-08")}
 
 
@@ -538,7 +776,7 @@ def test_the_command_reads_a_walk_and_refuses_a_walk_without_a_token(tmp_path, m
         == 0
     )
     listed = [json.loads(line) for line in output.read_text().splitlines()]
-    assert [row["kind"] for row in listed].count("product") == 33 and len(listed) == 73
+    assert [row["kind"] for row in listed].count("product") == 43 and len(listed) == 73
     monkeypatch.delenv("ZYTE_TOKEN", raising=False)
     args = ["walk", "--scope", "2026-08", "--store", str(tmp_path / "s2"), "--receipts", str(tmp_path / "r2.jsonl")]
     assert main([*args, "--max-zyte-requests", "1"]) == 1

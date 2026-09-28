@@ -4,20 +4,20 @@ GAO states the listing on its Month in Review page: "GAO makes monthly and annua
 topic". Probed 2026-09-28 (``corpora/mcp-chaos-2026-09-28/gao-sitemap/``), month pages
 (``/reports-testimonies/month-in-review/2026/August``) and year pages (``.../2025``; ``.../2009`` answers though the
 landing page links only 2015 on) are one Drupal view of 25 teasers a page, paged with ``?page=N`` and grouped under
-GAO's topic headings, then its legal-product headings. A product sits under every topic it carries, so it can appear
-on several pages. Each teaser states the product number, its product link, a label and a heading (GAO's title is
-``label: heading``), and "Published" and "Publicly Released" dates. A month's list can hold a product released in the
-month before, so no date is checked against the scope.
+GAO's topic headings, then its legal-product headings. A year page is a calendar year of releases, although its
+title says "(FY2025)". A product sits under every topic it carries, so it can appear on several pages. Each teaser
+states the product number, its product link, a label and a heading (GAO's title is ``label: heading``), and
+"Published" and "Publicly Released" dates. A month's list can hold a product released in the month before, so no date
+is checked against the scope.
 
 ``www.gao.gov`` refuses plain clients, so pages come through Zyte, as product pages do. ``robots.txt`` disallows
-``/reports-testimonies`` by prefix and asks for a 420-second ``Crawl-delay``. The owner accepted the disallow for the
-2009-2026 backfill (2026-09-28); the walk keeps that delay as its default spacing, makes one request at a time under a
-hard Zyte budget, and resumes from its own receipts.
+``/reports-testimonies`` by prefix and asks for a 420-second ``Crawl-delay``. The library default honours that delay:
+one worker, one request every 420 seconds, under a hard Zyte budget, resuming from its own receipts. For the backfill
+of 2009-2025 and January-August 2026 (2026-09-28) the owner overrode it with run flags; see ``docs/decisions.md``.
 
-B-numbered legal decisions are listed beside the products. Their numbers are not product-page slugs, and one teaser
-can name several (``B-423916.2,B-423916.3``), so they are kept apart as decisions, with each number separate. A
-teaser GAO gives no product number at all (2011's index lists an Antideficiency Act report as ``/products/p00459``
-with an empty number field) is kept apart too, identified by its link.
+The number decides the class: ``GAO-`` is a product, ``B-`` a legal decision (its numbers split, one teaser can name
+several), anything else is kept apart. One named exception, the owner's: every Federal Agency Major Rule Report is a
+product, GAO-numbered up to February 2017 and B-numbered from April 2017, keyed on its page.
 """
 
 from __future__ import annotations
@@ -27,7 +27,6 @@ import json
 import re
 import sys
 import threading
-import time
 from collections import deque
 from collections.abc import Callable, Iterable, Sequence
 from contextlib import nullcontext
@@ -71,6 +70,15 @@ DEFAULT_MAX_PAGE_BYTES: Final = 4 * 1024 * 1024
 MAX_PAGE_BYTES: Final = 16 * 1024 * 1024
 #: The deepest pager seen was 2009's, last page index 87; a deeper one is refused rather than walked.
 DEFAULT_MAX_LAST_PAGE_INDEX: Final = 199
+#: GAO's label and heading for a major-rule report. Every one of the 1,655 on the 2009-2026 walk carries both.
+MAJOR_RULE_REPORT: Final = "Federal Agency Major Rule Report"
+#: Workers a walk may run. The 2026-09-28 backfill stalled at six (requests hanging to the 180 s timeout) and
+#: finished at three with a 60 s timeout.
+MAX_CONCURRENCY: Final = 8
+#: The longest pause between failures in a row; the pause doubles from the backoff up to this.
+MAX_BACKOFF_SECONDS: Final = 900.0
+#: A scope whose listing moves while it is read is restarted from its first page this many times, then stopped.
+MAX_SCOPE_RESTARTS: Final = 1
 _MAX_TEXT: Final = 4_000
 _LABEL: Final = "GAO listing page"
 _PAGE_HREF = re.compile(r"\?page=(\d+)")
@@ -82,7 +90,7 @@ _HTML_WHITESPACE = re.compile(r"[\t\n\f\r ]+")
 _DECISION_NUMBER = re.compile(r"B-\d+[A-Z0-9.\-]*")
 #: Older decisions list their numbers with commas or semicolons, with stray spaces and a trailing separator.
 _DECISION_SEPARATOR = re.compile(r"[,;]")
-_NOT_ALPHANUMERIC = re.compile(r"[^a-z0-9]")
+_TOKENS = re.compile(r"[a-z0-9]+")
 _PRERELEASE = re.compile(r"/prerelease/[a-z0-9]+")
 #: Drupal's suffix for a path alias already taken: 2015 links GAO-16-75SP as ``/products/gao-16-75sp-0``.
 _DUPLICATE_PATH = re.compile(r"-\d+")
@@ -98,6 +106,10 @@ _CAPTURED: Final = frozenset({"label", "heading", "number", "published", "releas
 
 class GaoListingSourceError(ValueError):
     """A listing page cannot establish the products GAO listed for its scope."""
+
+
+class GaoListingMovedError(GaoListingSourceError):
+    """A page disagrees with its scope's first page on the last page or the page size: the listing moved."""
 
 
 class GaoListingUnavailableError(GaoListingSourceError):
@@ -313,20 +325,26 @@ def _date(parts: list[str] | None, name: str) -> str | None:
 
 
 def _same_letters(slug: str, number: str) -> bool:
-    """A decision's link names its number when their letters and digits agree, less any duplicate-path suffix."""
-    wanted = _NOT_ALPHANUMERIC.sub("", number.lower())
-    if _NOT_ALPHANUMERIC.sub("", slug) == wanted:
+    """A link names a number when their letter-and-digit tokens agree, less a trailing duplicate-path ``-N``.
+
+    Tokens, not the letters run together: ``B-4241292`` and ``b-424129.2`` share every character but name two files.
+    """
+    wanted = _TOKENS.findall(number.lower())
+    if _TOKENS.findall(slug) == wanted:
         return True
     suffix = _TRAILING_DUPLICATE_PATH.search(slug)
-    return suffix is not None and _NOT_ALPHANUMERIC.sub("", slug[: suffix.start()]) == wanted
+    return suffix is not None and _TOKENS.findall(slug[: suffix.start()]) == wanted
 
 
 def _entry(position: int, teaser: dict) -> GaoListingEntry:
-    """One teaser, classed by its number: ``GAO-`` a product, ``B-`` a decision, anything else set apart.
+    """One teaser, classed by its number, with the owner's one exception for major-rule reports.
 
-    The number, not the heading, decides: 2012-2014 file major-rule reports numbered ``GAO-14-253R`` under a legal
-    heading, and every numbered teaser under a topic heading of the 2009-2026 walk is ``GAO-``. A number of neither
-    form is a Contract Appeals Board docket (``2020-02``) or a ``P`` number, listed as an Other Decision.
+    ``GAO-`` is a product and ``B-`` a decision wherever GAO files it: major-rule reports numbered ``GAO-14-253R``
+    sit under a legal heading (2009 to February 2017), and three B-numbered decisions sit under topic headings
+    (B-310950.2 in 2009, B-318897 in 2010, B-333501 in 2021). Any other number (a Contract Appeals Board docket,
+    ``2020-02``; a ``P`` number) or none is set apart. The exception: a teaser labelled Federal Agency Major Rule
+    Report is a product whatever its number, so the B-numbered ones from April 2017 on are products too, keyed on
+    their page like the others.
     """
     fields, links = teaser["fields"], teaser["links"]
     label, heading = _spelled(fields.get("label"), "label"), _spelled(fields.get("heading"), "heading")
@@ -336,32 +354,33 @@ def _entry(position: int, teaser: dict) -> GaoListingEntry:
     if not teaser["topic"]:
         raise GaoListingSourceError(f"{_LABEL} lists a teaser before any heading")
     link = links.get("label", "")
-    product = number is not None and number.upper().startswith("GAO-")
-    decision = number is not None and number.startswith("B-")
+    gao_numbered = number is not None and number.upper().startswith("GAO-")
+    b_numbered = number is not None and number.startswith("B-")
+    major_rule = label == MAJOR_RULE_REPORT and (gao_numbered or b_numbered)
     # 2020-2023 link some products by their prerelease path (``/prerelease/3mpz``); the product's page is still
     # ``/products/`` and its number lowercased, checked for GAO-21-584 on 2026-09-28.
-    prerelease = product and _PRERELEASE.fullmatch(link) is not None
+    prerelease = gao_numbered and _PRERELEASE.fullmatch(link) is not None
     if link != links.get("heading") or not (link.startswith("/products/") or prerelease):
         raise GaoListingSourceError(f"{_LABEL} teaser {position} does not link one product page")
     slug = number.lower() if prerelease and number is not None else unquote(link.removeprefix("/products/"))
-    # A product's link is its number lowercased, or that with Drupal's duplicate-path suffix, and the product id is
-    # the page it links. Any other number's link need only agree with it in letters and digits: older decisions
-    # link ``b-402003-b-402003.2`` for ``B-402003; B-402003.2``, and a docket's second page is ``2020-02-0``.
+    # A GAO number's link is the number lowercased, or that with Drupal's duplicate-path suffix. Any other number's
+    # link need only agree with it token for token: older decisions link ``b-402003-b-402003.2`` for
+    # ``B-402003; B-402003.2``, and a docket's second page is ``2020-02-0``.
     if number is not None and not (
         slug == number.lower() or (slug.startswith(number.lower()) and _DUPLICATE_PATH.fullmatch(slug[len(number) :]))
-        if product
+        if gao_numbered
         else _same_letters(slug, number)
     ):
         raise GaoListingSourceError(f"{_LABEL} teaser {position} links a page other than its product number")
     product_id: str | None = None
     decisions: tuple[str, ...] = ()
-    if product:
+    if gao_numbered or major_rule:
         try:
             gao_product_url(slug)
         except GaoProductSourceError as error:
             raise GaoListingSourceError(f"{_LABEL} teaser {position} names no product id") from error
         product_id = slug
-    elif decision and number is not None:
+    elif b_numbered and number is not None:
         # The whole stated number keys a decision. Its parts are what of it reads as B-numbers: GAO cut one long
         # 2010 list mid-number ("...,B-403648,B"), and a fragment is not a number.
         parts = (part.strip() for part in _DECISION_SEPARATOR.split(number))
@@ -450,13 +469,13 @@ def parse_listing_page(
     if last > max_last_page_index:
         raise GaoListingSourceError(f"{_LABEL} pager runs past page index {max_last_page_index}")
     if expected_last_page_index is not None and last != expected_last_page_index:
-        raise GaoListingSourceError(
+        raise GaoListingMovedError(
             f"{_LABEL} pager changed shape: last page {last}, not {expected_last_page_index}; the listing moved"
         )
     if expected_page_size is not None and (
         len(entries) > expected_page_size or (page_index < last and len(entries) != expected_page_size)
     ):
-        raise GaoListingSourceError(
+        raise GaoListingMovedError(
             f"{_LABEL} {page_index} holds {len(entries)} teasers where the first page held {expected_page_size}"
         )
     return GaoListingPage(scope, page_index, last, entries)
@@ -540,6 +559,10 @@ class _Progress:
     last: int | None = None
     size: int | None = None
     rows: dict[int, dict] = field(default_factory=dict)
+    #: Times the scope's listing moved and it was restarted from page 0.
+    restarts: int = 0
+    #: The first page not yet known to be retained; pages are retained in order, so it only moves forward.
+    cursor: int = 0
 
     def add(self, row: dict) -> None:
         last, index = row["last_page_index"], row["page_index"]
@@ -551,15 +574,23 @@ class _Progress:
         self.rows[index] = row
 
     def next_page(self) -> int | None:
+        while self.cursor in self.rows:
+            self.cursor += 1
         if self.last is None:
-            return None if 0 in self.rows else 0
-        return next((index for index in range(self.last + 1) if index not in self.rows), None)
+            return self.cursor if self.cursor == 0 else None
+        return self.cursor if self.cursor <= self.last else None
+
+    @property
+    def stopped(self) -> bool:
+        """Moved more often than a restart allows: walk it no more until someone looks at it."""
+        return self.restarts > MAX_SCOPE_RESTARTS
 
 
 def _read_receipts(receipts: Path) -> tuple[dict[str, _Progress], datetime | None]:
     """Each scope's retained pages, a later row for a page superseding an earlier one, and the last contact.
 
     A scope a walk was asked for is present even before any of its pages is retained, so it reads as unfinished.
+    A ``moved`` row drops the scope's pages so far and counts a restart.
     """
     progress: dict[str, _Progress] = {}
     contact: datetime | None = None
@@ -578,6 +609,8 @@ def _read_receipts(receipts: Path) -> tuple[dict[str, _Progress], datetime | Non
                 progress.setdefault(key, _Progress())
         elif row.get("kind") == "page":
             progress.setdefault(row["scope"], _Progress()).add(row)
+        elif row.get("kind") == "moved":
+            progress[row["scope"]] = _Progress(restarts=progress.get(row["scope"], _Progress()).restarts + 1)
     return progress, contact
 
 
@@ -590,6 +623,7 @@ class _Walk:
     """What the workers of one walk share, read and written only under ``lock``."""
 
     lock: threading.Lock
+    halt: threading.Event
     queue: deque[GaoListingScope]
     #: The receipts' last recorded contact: every worker's first request waits out the spacing from it.
     contact: datetime | None
@@ -607,34 +641,38 @@ def walk_listing(
     store: Path,
     receipts: Path,
     zyte_budget: ZyteBudget,
-    proxy_records: Callable[[], Sequence[ZyteProxyRecord]] = tuple,
+    proxy_record: Callable[[str], ZyteProxyRecord | None] = lambda _url: None,
     credential: str = "",
     concurrency: int = 1,
     spacing_seconds: float = CRAWL_DELAY_SECONDS,
     failure_backoff_seconds: float = CRAWL_DELAY_SECONDS,
     max_consecutive_failures: int = 1,
     clock: Callable[[], datetime] = utc_now,
-    sleep: Callable[[float], None] = time.sleep,
+    sleep: Callable[[float], None] | None = None,
 ) -> int:
     """Walk each scope's pages in order, resuming from ``receipts``; 0 when done or stopped at budget, 1 after a failure.
 
     Every page's exact bytes go to ``store`` and one row to ``receipts`` (appended). A retained page is never
-    fetched again. ``concurrency`` workers each take whole scopes in turn, each with its own acquirer from
-    ``acquirers``, so a scope is still read page by page against its first page. A failure is recorded and stops
-    its scope, which the next run retries; the other scopes' pages are kept. Each failure pauses every worker for
-    ``failure_backoff_seconds``, doubling with each failure in a row, and ``max_consecutive_failures`` in a row stop
-    the walk. The default, one worker allowed one failure, stops at the first. The Zyte budget is an exact ceiling:
-    a request is counted before it starts. Each worker spaces its own request starts by ``spacing_seconds``, its
-    first from the last contact the receipts record, so stopping and resuming never shortens the spacing; the
-    default is one request every 420 seconds, the site's stated crawl delay.
+    fetched again, and a scope named twice is walked once. Up to ``concurrency`` workers (no more than the scopes,
+    at most :data:`MAX_CONCURRENCY`) each take whole scopes in turn with their own acquirer from ``acquirers``, so a
+    scope is still read page by page against its first page. A failure is recorded and stops its scope, which the
+    next run retries; the other scopes' pages are kept. Each failure pauses every worker for
+    ``failure_backoff_seconds``, doubling with each failure in a row up to :data:`MAX_BACKOFF_SECONDS`, and
+    ``max_consecutive_failures`` in a row stop the walk. A listing that moves mid-scope writes a ``moved`` row and
+    restarts the scope from page 0, once; moving again stops it, named, for this and every later run. The Zyte
+    budget is an exact ceiling: a request is counted before it starts. Each worker spaces its own request starts by
+    ``spacing_seconds``, its first from the last contact the receipts record, so stopping and resuming never shortens
+    the spacing; this is the only pacing, so a caller's acquirers carry none. The default, one worker 420 seconds
+    apart stopping at the first failure, is the site's stated crawl delay. On an interrupt the workers are stopped
+    and joined and a ``stopped`` row is written before it propagates.
     """
     from rulespec_artifacts import LocalBlobWriter
 
     from spicy_docs.reading.refusals import retain_refused_response
     from spicy_docs.transport.credentials import scrub_credential
 
-    if isinstance(concurrency, bool) or not isinstance(concurrency, int) or concurrency < 1:
-        raise ValueError("concurrency must be a positive integer")
+    if isinstance(concurrency, bool) or not isinstance(concurrency, int) or not 1 <= concurrency <= MAX_CONCURRENCY:
+        raise ValueError(f"concurrency must be an integer from 1 to {MAX_CONCURRENCY}")
     if (
         isinstance(max_consecutive_failures, bool)
         or not isinstance(max_consecutive_failures, int)
@@ -643,11 +681,13 @@ def walk_listing(
         raise ValueError("max_consecutive_failures must be a positive integer")
     check_timing(1, spacing_seconds)
     check_timing(1, failure_backoff_seconds)
+    scopes = list(dict.fromkeys(scopes))
     progress, contact = _read_receipts(receipts)
     writer = LocalBlobWriter(store)
     run_id = str(uuid4())
     spent_before = zyte_budget.spent
-    shared = _Walk(threading.Lock(), deque(scopes), contact)
+    shared = _Walk(threading.Lock(), threading.Event(), deque(scopes), contact)
+    pause = sleep if sleep is not None else shared.halt.wait
     with receipts.open("a", encoding="utf-8") as sink:
 
         def emit(kind: str, **value: object) -> None:
@@ -668,9 +708,9 @@ def walk_listing(
                 shared.begun += 1
                 return shared.pause_until
 
-        def failed(
+        def refusal(
             scope: GaoListingScope, page_index: int, attempted: datetime, error: Exception, max_bytes: int
-        ) -> None:
+        ) -> dict:
             detail: dict[str, object] = {
                 "scope": scope.key,
                 "page_index": page_index,
@@ -680,29 +720,36 @@ def walk_listing(
                 "error": scrub_credential(str(error), credential)[:1000],
                 "zyte_requests": zyte_budget.spent,
             }
-            with shared.lock:
-                refused = retain_refused_response(error, store=store, max_bytes=max_bytes, credential=credential)
-                if refused is not None:
-                    detail["refused_evidence"] = refused
-                emit("failed", **detail)
-                shared.failed += 1
-                shared.consecutive_failures += 1
-                backoff = failure_backoff_seconds * 2 ** (shared.consecutive_failures - 1)
-                shared.pause_until = clock() + timedelta(seconds=backoff)
-                if shared.consecutive_failures >= max_consecutive_failures:
-                    shared.stop = f"{shared.consecutive_failures} consecutive failures; run again to retry"
+            refused = retain_refused_response(error, store=store, max_bytes=max_bytes, credential=credential)
+            if refused is not None:
+                detail["refused_evidence"] = refused
+            return detail
+
+        def failed(detail: dict) -> None:
+            """Record a failure; the caller holds the lock."""
+            emit("failed", **detail)
+            shared.failed += 1
+            shared.consecutive_failures += 1
+            backoff = min(failure_backoff_seconds * 2 ** (shared.consecutive_failures - 1), MAX_BACKOFF_SECONDS)
+            shared.pause_until = clock() + timedelta(seconds=backoff)
+            if shared.consecutive_failures >= max_consecutive_failures:
+                shared.stop = f"{shared.consecutive_failures} consecutive failures; run again to retry"
 
         def walk_scope(acquirer: GaoListingAcquirer, scope: GaoListingScope, last: datetime | None) -> datetime | None:
             """One scope, page after page; returns this worker's last request start."""
             with shared.lock:
                 state = progress.setdefault(scope.key, _Progress())
+            if state.stopped:
+                return last
             while (page_index := state.next_page()) is not None:
-                pause = begin()
+                until = begin()
                 waits = [spacing_seconds - (clock() - last).total_seconds()] if last is not None else []
-                if pause is not None:
-                    waits.append((pause - clock()).total_seconds())
+                if until is not None:
+                    waits.append((until - clock()).total_seconds())
                 if (wait := max(waits, default=0)) > 0:
-                    sleep(wait)
+                    pause(wait)
+                    if shared.halt.is_set():
+                        raise _Stopped
                 last = clock()
                 try:
                     page, capture = acquirer.acquire_page(
@@ -713,11 +760,18 @@ def walk_listing(
                             [capture.body], max_bytes=acquirer.budget.max_page_bytes, expected_digest=capture.sha256
                         )
                 except Exception as error:  # noqa: BLE001 - recorded with its evidence, then retried on resume
-                    failed(scope, page_index, last, error, acquirer.budget.max_page_bytes)
+                    with shared.lock:
+                        detail = refusal(scope, page_index, last, error, acquirer.budget.max_page_bytes)
+                        if isinstance(error, GaoListingMovedError):
+                            # Every move is a ``moved`` row, so a later run counts it too; past the allowance the
+                            # scope stops here and in every later run, named, until someone looks at it.
+                            emit("moved", **detail)
+                            state = progress[scope.key] = _Progress(restarts=state.restarts + 1)
+                            if not state.stopped:
+                                continue
+                        failed(detail)
                     return last
-                record = next(
-                    (item for item in reversed(proxy_records()) if item.requested_url == capture.requested_url), None
-                )
+                record = proxy_record(capture.requested_url)
                 row = {
                     "scope": scope.key,
                     "page_index": page_index,
@@ -761,6 +815,9 @@ def walk_listing(
                         "failed", error_type=type(error).__name__, error=scrub_credential(str(error), credential)[:1000]
                     )
 
+        def unfinished() -> list[str]:
+            return [scope.key for scope in scopes if progress.get(scope.key, _Progress()).next_page() is not None]
+
         with shared.lock:
             emit(
                 "started",
@@ -769,28 +826,36 @@ def walk_listing(
                 spacing_seconds=spacing_seconds,
                 concurrency=concurrency,
             )
-        workers = [threading.Thread(target=worker, name=f"gao-listing-{index}") for index in range(concurrency)]
-        for thread in workers:
-            thread.start()
-        for thread in workers:
-            thread.join()
-        unfinished = [
-            scope.key
-            for scope in scopes
-            if progress.get(scope.key, _Progress()).next_page() is not None
-            or progress.get(scope.key, _Progress()).last is None
+        workers = [
+            threading.Thread(target=worker, name=f"gao-listing-{index}")
+            for index in range(min(concurrency, len(scopes)))
         ]
+        try:
+            for thread in workers:
+                thread.start()
+            for thread in workers:
+                thread.join()
+        except BaseException:
+            with shared.lock:
+                shared.stop = "interrupted; run again to resume" + (f" (after: {shared.stop})" if shared.stop else "")
+            shared.halt.set()
+            for thread in workers:
+                if thread.is_alive():
+                    thread.join()
+            with shared.lock:
+                emit("stopped", reason=shared.stop, unfinished=unfinished(), zyte_requests=zyte_budget.spent)
+            raise
+        left = unfinished()
         with shared.lock:
-            if not unfinished:
+            if not left:
                 emit("complete", scopes=[scope.key for scope in scopes], zyte_requests=zyte_budget.spent)
             else:
-                emit(
-                    "stopped",
-                    reason=shared.stop or "a scope stopped at a failure; run again to retry it",
-                    unfinished=unfinished,
-                    zyte_requests=zyte_budget.spent,
-                )
-    return 1 if shared.failed else 0
+                moved = [key for key in left if progress.get(key, _Progress()).stopped]
+                reason = shared.stop or "a scope stopped at a failure; run again to retry it"
+                if moved:
+                    reason = f"{reason}; listing moved while read, stopped until checked: {', '.join(moved)}"
+                emit("stopped", reason=reason, unfinished=left, zyte_requests=zyte_budget.spent)
+    return 1 if shared.failed or any(progress.get(key, _Progress()).stopped for key in left) else 0
 
 
 class _Stopped(Exception):
@@ -876,7 +941,9 @@ def collect_listing(
     """Each product once by its id, each decision and other page once by its page, in first-listed order.
 
     One listed twice with differing fields refuses. A product's link is not among them: 2020-2023 link one product
-    by its prerelease path in one place and its page in another.
+    by its prerelease path in one place and its page in another. A product listed on a suffixed twin page too
+    (``gao-16-75sp`` and ``gao-16-75sp-0``) is one product, on the base page, when every other field agrees; a twin
+    that differs (``gao-14-280r-0``, a VA major-rule report beside Defense's ``gao-14-280r``) is its own product.
     """
     found: dict[tuple[str, str], tuple[GaoListingEntry, list[str], list[str]]] = {}
     for page in pages:
@@ -890,6 +957,13 @@ def collect_listing(
             for values, value in ((held[1], entry.topic), (held[2], page.scope.key)):
                 if value not in values:
                     values.append(value)
+    for key in [key for key in found if key[0] == "product"]:
+        suffix = _TRAILING_DUPLICATE_PATH.search(key[1])
+        base = ("product", key[1][: suffix.start()]) if suffix else None
+        if base in found and _same_product(found[base][0], found[key][0]):
+            _, topics, scopes = found.pop(key)
+            for held, values in ((found[base][1], topics), (found[base][2], scopes)):
+                held.extend(value for value in values if value not in held)
     products, decisions, others = [], [], []
     for entry, topics, scopes in found.values():
         seen = (entry.published, entry.released, tuple(topics), tuple(scopes))
@@ -906,6 +980,11 @@ def collect_listing(
         else:
             others.append(GaoListedOther(entry.product_number, entry.link, entry.label, entry.heading, *seen))
     return tuple(products), tuple(decisions), tuple(others)
+
+
+def _same_product(base: GaoListingEntry, twin: GaoListingEntry) -> bool:
+    """A suffixed twin states its base page's product: every fixed field but the page agrees."""
+    return _fixed(base)[1:] == _fixed(twin)[1:]
 
 
 def _fixed(entry: GaoListingEntry) -> tuple:
@@ -941,11 +1020,12 @@ def read_listing_run(
     pages: list[RetainedListingPage] = []
     complete, incomplete = [], []
     for key, state in progress.items():
-        if state.next_page() is not None or state.last is None:
+        last = state.last
+        if state.next_page() is not None or last is None:  # a scope with no page yet has no last page either
             incomplete.append(key)
             continue
         scope = GaoListingScope.parse(key)
-        for index in range(state.last + 1):
+        for index in range(last + 1):
             row = state.rows[index]
             with source.open(row["sha256"]) as stream:
                 body = stream.read(max_page_bytes + 1)
@@ -967,7 +1047,7 @@ def read_listing_run(
                 page_index=index,
                 max_bytes=max_page_bytes,
                 max_last_page_index=max_last_page_index,
-                expected_last_page_index=state.last,
+                expected_last_page_index=last,
                 expected_page_size=state.size,
             )
             pages.append(RetainedListingPage(page, capture, row["blob_path"], row.get("zyte_request_id")))
@@ -984,10 +1064,9 @@ def _walk(args: argparse.Namespace) -> int:
     token = ""
     try:
         scopes = [GaoListingScope.parse(value) for value in args.scope]
+        # The walk spaces requests itself, from the receipts' last contact across runs; the acquirer adds none.
         budget = GaoListingBudget(
-            max_page_bytes=args.max_page_bytes,
-            timeout_seconds=args.timeout_seconds,
-            min_request_interval_seconds=args.delay_seconds,
+            max_page_bytes=args.max_page_bytes, timeout_seconds=args.timeout_seconds, min_request_interval_seconds=0
         )
         token = require_zyte_token_from_environment()
         zyte_budget = ZyteBudget(args.max_zyte_requests)
@@ -1004,7 +1083,7 @@ def _walk(args: argparse.Namespace) -> int:
             store=args.store,
             receipts=args.receipts,
             zyte_budget=zyte_budget,
-            proxy_records=lambda: transport.records,
+            proxy_record=transport.record_for,
             credential=token,
             concurrency=args.concurrency,
             spacing_seconds=args.delay_seconds,
@@ -1039,7 +1118,8 @@ def _read(args: argparse.Namespace) -> int:
     return 0
 
 
-def main(argv: list[str] | None = None) -> int:
+def parser() -> argparse.ArgumentParser:
+    """The command's arguments; its defaults are the polite walk, one worker 420 seconds apart."""
     parser = argparse.ArgumentParser(description="Walk or read GAO's Month in Review and Annual Index pages")
     commands = parser.add_subparsers(dest="command", required=True)
     walk = commands.add_parser("walk", help="Capture listing pages through Zyte, resuming from the receipts")
@@ -1050,7 +1130,12 @@ def main(argv: list[str] | None = None) -> int:
     walk.add_argument(
         "--delay-seconds", type=float, default=CRAWL_DELAY_SECONDS, help="Seconds between one worker's requests"
     )
-    walk.add_argument("--concurrency", type=int, default=1, help="Workers, each walking whole scopes in turn")
+    walk.add_argument(
+        "--concurrency",
+        type=int,
+        default=1,
+        help=f"Workers, each walking whole scopes in turn (at most {MAX_CONCURRENCY})",
+    )
     walk.add_argument(
         "--failure-backoff-seconds",
         type=float,
@@ -1066,7 +1151,11 @@ def main(argv: list[str] | None = None) -> int:
     read.add_argument("--store", type=Path, required=True)
     read.add_argument("--receipts", type=Path, required=True)
     read.add_argument("--output", type=Path, help="Create a new JSONL file; defaults to stdout")
-    args = parser.parse_args(argv)
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parser().parse_args(argv)
     return _walk(args) if args.command == "walk" else _read(args)
 
 
@@ -1075,13 +1164,18 @@ __all__ = [
     "DEFAULT_MAX_LAST_PAGE_INDEX",
     "DEFAULT_MAX_PAGE_BYTES",
     "LISTING_URL",
+    "MAJOR_RULE_REPORT",
+    "MAX_BACKOFF_SECONDS",
+    "MAX_CONCURRENCY",
     "MAX_PAGE_BYTES",
+    "MAX_SCOPE_RESTARTS",
     "GaoListedDecision",
     "GaoListedOther",
     "GaoListedProduct",
     "GaoListingAcquirer",
     "GaoListingBudget",
     "GaoListingEntry",
+    "GaoListingMovedError",
     "GaoListingPage",
     "GaoListingRun",
     "GaoListingScope",
@@ -1090,6 +1184,7 @@ __all__ = [
     "RetainedListingPage",
     "collect_listing",
     "parse_listing_page",
+    "parser",
     "read_listing_run",
     "walk_listing",
 ]

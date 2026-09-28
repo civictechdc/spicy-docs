@@ -108,12 +108,18 @@ class ZyteTransport(httpx.BaseTransport):
         self._mode = mode
         self._budget = budget
         self._records: list[ZyteProxyRecord] = []
+        self._by_url: dict[str, ZyteProxyRecord] = {}
         self._records_lock = threading.Lock()
 
     @property
     def records(self) -> Sequence[ZyteProxyRecord]:
         """Every proxied capture this transport made, in request order."""
         return tuple(self._records)
+
+    def record_for(self, url: str) -> ZyteProxyRecord | None:
+        """The latest capture of ``url``, in constant time, for a caller that needs one record per request."""
+        with self._records_lock:
+            return self._by_url.get(url)
 
     def handle_request(self, request: httpx.Request) -> httpx.Response:
         """Proxy this one GET through the fetcher, spending one budget call.
@@ -167,6 +173,7 @@ class ZyteTransport(httpx.BaseTransport):
             sha256=digest,
         )
         self._records.append(record)
+        self._by_url[url] = record
         return record
 
 
