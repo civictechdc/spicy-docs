@@ -53,7 +53,7 @@ def test_each_real_file_links_only_the_bill_it_names(fixture, locator, status, s
 
 
 def test_the_contract_keeps_the_clerks_legis_num_so_a_held_row_relinks_without_its_file():
-    assert ROLL_CALL_VOTES.columns[-1] == "legis_num"
+    assert ROLL_CALL_VOTES.columns[-2:] == ("legis_num", "clerk_body_element")  # appended in that order
     assert _row("clerk-roll240.xml", VoteLocator("house", 119, 1, 240))["legis_num"] == "H R 3424"
     assert _row("clerk-speaker-119-1-2.xml", VoteLocator("house", 119, 1, 2))["legis_num"] == ""
     assert _row("senate-vote-119-1-00001.xml", VoteLocator("senate", 119, 1, 1))["legis_num"] is None
