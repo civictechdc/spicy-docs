@@ -3224,7 +3224,7 @@ Replayed over the parsing survey's 60,000 Federal Register texts
 Unreleased, 2026-09-28; the owner approved carrying both fields in the fork's
 `comments` table. `schemas.regulations` extracts Regulations.gov `subtype` and
 `duplicateComments` into `comments.subtype` and `comments.duplicate_comments`,
-as stated, after `category`. The `comments` contract types
+as stated, appended last in that order. The `comments` contract types
 `duplicate_comments` `INTEGER`; every other column stays VARCHAR. NULL means the
 record did not state the field or the host has not read it; a stated 0 stays 0.
 
@@ -3242,12 +3242,20 @@ only EPA classified submitters. The receipt is
 `supply-2026-09-02/receipts/comments-subtype-duplicates-2026-09-28/` under
 `~/Work/corpora`.
 
-The columns sit after `category`, mid-table, as the owner's 0.50.0 ruling kept
-for the comment reference columns
-([above](#three-hosted-tables-take-new-columns-mid-table)).
-`tests/test_table_contracts.py` inserts both as NULL into the retained
-published comment rows, which predate them (`_UNPUBLISHED_REGULATIONS_COLUMNS`);
-empty that entry when the host has republished and the rows are re-read. The
+**Both are appended, after the host's `pdf_extraction_results_json`.** Every
+new column is appended ([tables](tables.md)), as `bill_sections.congress` was.
+The 0.50.0 ruling ([above](#three-hosted-tables-take-new-columns-mid-table))
+kept an order that was already live; it is not a rule to insert. Appending
+keeps every live column at its position in the fork's mirror, and it matches
+the host's catalog, whose `ADD COLUMN` appends. A first draft (`9905ca0`)
+placed them after `category`; the release owner's review moved them. The
+extract's columns therefore no longer all precede the host's: the test now
+holds each table to the extract's columns in the extract's order plus the named
+host columns (`_REGULATIONS_HOST_COLUMNS`).
+`tests/test_table_contracts.py` appends both as NULL to the retained published
+comment rows, which predate them (`_UNPUBLISHED_REGULATIONS_COLUMNS`), and
+refuses a pending column that is not last; empty that entry when the host has
+republished and the rows are re-read. The
 `public_tables` comment profile takes its columns from `COMMENT.schema`, as it
 did for the reference columns, so it gains both; its schema id stays
 `public-comments:1.0`, as it did then.

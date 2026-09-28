@@ -1231,6 +1231,7 @@ def _regulations_cases() -> list[ShapedCase]:
         for row, identity in zip(published[table], identities, strict=True):
             assert set(columns) - set(row) == pending and set(row) <= set(columns)
             assert [c for c in columns if c not in pending] == list(row), f"{table}: published order moved"
+            assert columns[len(row) :] == tuple(c for c in columns if c in pending), f"{table}: pending not appended"
             cases.append(_case(table, {c: row.get(c) for c in columns} if pending else row, (identity,)))
     return cases
 
@@ -1552,11 +1553,25 @@ def test_a_multi_part_report_is_one_row_per_part_and_its_blocks_key_under_their_
     assert len(set(keys)) == 2
 
 
-def test_each_regulations_gov_table_publishes_its_extract_columns_first() -> None:
-    """The extract's columns lead each published table in the extract's order; only host columns may follow."""
+#: Columns the host adds to each Regulations.gov table, which the extract does not produce.
+_REGULATIONS_HOST_COLUMNS: dict[str, frozenset[str]] = {
+    "dockets": frozenset(),
+    "documents": frozenset({"pdf_extraction_results_json"}),
+    "comments": frozenset({"pdf_extraction_results_json"}),
+}
+
+
+def test_each_regulations_gov_table_publishes_its_extract_columns_in_the_extract_order() -> None:
+    """Each published table is the extract's columns in the extract's order plus the host's own.
+
+    A host column keeps the position it was appended at, so an extract column appended later (``comments.subtype``)
+    follows it; the host column's order is otherwise the extract's.
+    """
     for record_type in RECORD_TYPES.values():
         contract = TABLE_CONTRACTS[record_type.name]
-        assert contract.columns[: len(record_type.schema)] == tuple(record_type.schema)
+        host = _REGULATIONS_HOST_COLUMNS[record_type.name]
+        assert set(contract.columns) - set(record_type.schema) == host
+        assert tuple(c for c in contract.columns if c not in host) == tuple(record_type.schema)
 
 
 def test_the_published_document_row_is_the_extract_of_its_captured_record() -> None:

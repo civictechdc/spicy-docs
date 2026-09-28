@@ -178,7 +178,9 @@ timestamps cannot establish that this correction has run.
 `dockets`, `documents` and `comments` are shaped by the host, from Mirrulations
 records through its copy of the extract in `schemas.regulations`, so they have
 no `shape_*` here. Each contract lists the extract's columns in its order, then,
-on documents and comments, the host's `pdf_extraction_results_json`. The record
+on documents and comments, the host's `pdf_extraction_results_json`; the
+extract's `comments.subtype` and `comments.duplicate_comments`, added later, are
+appended after it ([decision](decisions.md#comments-carry-the-agencys-submitter-class-and-campaign-count)). The record
 types here, and the `public_tables` and public-comment profiles built on them,
 still lack that column; the contracts state what is published. The comment
 reference columns and `documents.attachment_records_json` sit mid-table, not

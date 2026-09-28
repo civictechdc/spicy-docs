@@ -42,9 +42,6 @@ def _extract_comment(d: dict) -> dict:
         "last_name": attrs.get("lastName"),
         "organization": attrs.get("organization"),
         "category": attrs.get("category"),
-        # As stated, so NULL means the record did not state it and 0 a stated zero.
-        "subtype": attrs.get("subtype"),
-        "duplicate_comments": attrs.get("duplicateComments"),
         "title": attrs.get("title"),
         "comment": attrs.get("comment"),
         "document_type": attrs.get("documentType"),
@@ -59,6 +56,9 @@ def _extract_comment(d: dict) -> dict:
         # extracted upstream.
         "text_content": None,
         "text_extraction_status": None,
+        # Appended (docs/tables.md): as stated, so NULL means the record did not state it and 0 a stated zero.
+        "subtype": attrs.get("subtype"),
+        "duplicate_comments": attrs.get("duplicateComments"),
     }
 
 
@@ -175,8 +175,6 @@ COMMENT = RecordType(
         "last_name": str,
         "organization": str,
         "category": str,
-        "subtype": str,
-        "duplicate_comments": int,
         "title": str,
         "comment": str,
         "document_type": str,
@@ -188,6 +186,8 @@ COMMENT = RecordType(
         # ("ok"/"empty"/"encrypted"/"error"/None if not yet run).
         "text_content": str,
         "text_extraction_status": str,
+        "subtype": str,
+        "duplicate_comments": int,
     },
     dedup_key="comment_id",
     extract=_extract_comment,
@@ -291,16 +291,6 @@ COMMENTS = table_contract(
         "last_name": "The submitter's last name, when given.",
         "organization": "The organization the submitter names, when given.",
         "category": "The submitter category the publisher assigns, often NULL.",
-        "subtype": (
-            "The agency's own class for the submission (`subtype`), spelled as stated. It is agency-specific: a "
-            "submitter class such as a mass-mail campaign or an organization at EPA, a generic label at many agencies. "
-            "NULL when the record states none or the host has not read it."
-        ),
-        "duplicate_comments": (
-            "How many received submissions the agency says this posted record stands for (`duplicateComments`), as "
-            "stated. Agencies that do not count state 0; EPA states 1 for a single comment and the campaign's size on "
-            "a mass-mail record. NULL when the host has not read it."
-        ),
         "title": "The comment's title as the publisher states it.",
         "comment": "The comment's body as the publisher states it, markup included.",
         "document_type": "The publisher's category, `Public Submission` for almost every comment.",
@@ -322,6 +312,16 @@ COMMENTS = table_contract(
         "pdf_extraction_results_json": (
             "Provenance of `text_content` as JSON: for `derived` text the Mirrulations objects it was read from, else "
             "the host's latest PDF attempts; NULL when neither is recorded."
+        ),
+        "subtype": (
+            "The agency's own class for the submission (`subtype`), spelled as stated. It is agency-specific: a "
+            "submitter class such as a mass-mail campaign or an organization at EPA, a generic label at many agencies. "
+            "NULL when the record states none or the host has not read it."
+        ),
+        "duplicate_comments": (
+            "How many received submissions the agency says this posted record stands for (`duplicateComments`), as "
+            "stated. Agencies that do not count state 0; EPA states 1 for a single comment and the campaign's size on "
+            "a mass-mail record. NULL when the host has not read it."
         ),
     },
 )

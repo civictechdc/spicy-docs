@@ -59,9 +59,10 @@ def test_unstated_fields_stay_null_and_a_stated_null_subtype_stays_null():
     )
 
 
-def test_the_contract_types_the_count_and_places_both_after_category():
+def test_the_contract_types_the_count_and_appends_both():
+    """Appended, so every live column keeps its position (docs/tables.md) and a catalog ADD COLUMN agrees."""
     contract = TABLE_CONTRACTS["comments"]
     assert contract.column_type("duplicate_comments") == "INTEGER"
     assert contract.column_type("subtype") == "VARCHAR"
-    at = contract.columns.index("category")
-    assert contract.columns[at + 1 : at + 3] == ("subtype", "duplicate_comments")
+    assert contract.columns[-2:] == ("subtype", "duplicate_comments")
+    assert tuple(COMMENT.schema)[-2:] == ("subtype", "duplicate_comments")
