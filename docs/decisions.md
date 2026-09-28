@@ -3226,7 +3226,13 @@ Unreleased, 2026-09-28; the owner approved carrying both fields in the fork's
 `duplicateComments` into `comments.subtype` and `comments.duplicate_comments`,
 as stated, appended last in that order. The `comments` contract types
 `duplicate_comments` `INTEGER`; every other column stays VARCHAR. NULL means the
-record did not state the field or the host has not read it; a stated 0 stays 0.
+record did not state the field, stated it null, or the host has not read it; a
+stated 0 stays 0. The extract never coerces a count: anything but an int (not a
+bool) from 0 to 2**31 - 1 raises, which a reader turns into an unreadable
+record, rather than reaching a host's integer column that would turn `"5"` into
+5 or `true` into 1. The comment validator admits the same range, and admits
+`pageCount` only as an int in that range; its JSON schema, sealed into
+released evidence, is unchanged.
 
 Why: `comments` counts posted records. An agency posts one record for a
 mass-mail campaign, and some classify submitters only in `subtype`. EPA's PFAS
@@ -3237,8 +3243,12 @@ is the agency's posted accounting, not its total. A stratified sample of 5,945
 Mirrulations comment objects (179 agencies, 2026-09-28) stated
 `duplicateComments` on every record: 0 on 5,281, 1 on 660, more on 4. Only EPA
 and a few others use it as a count; 0 is the default elsewhere. `subtype` was
-stated on 2,041 and NULL on 3,904; most agencies state a generic label, and
-only EPA classified submitters. The receipt is
+stated on 2,041 and NULL on 3,904; most agencies state a generic label. Submitter
+classes are mostly EPA's, but not only: the spicy-regs re-read of every comment
+finds `Company/Organization Comment` at AMS (188), COE (171), EEOC (11), DOD (4)
+and ATBCB (3), `Member of Congress` at AMS (20), and `Mass Mail Campaign` at
+BSEE (1,077) and CMS (14), among the agencies it had read (ACF to EPA,
+2026-09-28). The receipt is
 `supply-2026-09-02/receipts/comments-subtype-duplicates-2026-09-28/` under
 `~/Work/corpora`.
 
@@ -3247,8 +3257,8 @@ new column is appended ([tables](tables.md)), as `bill_sections.congress` was.
 The 0.50.0 ruling ([above](#three-hosted-tables-take-new-columns-mid-table))
 kept an order that was already live; it is not a rule to insert. Appending
 keeps every live column at its position in the fork's mirror, and it matches
-the host's catalog, whose `ADD COLUMN` appends. A first draft (`9905ca0`)
-placed them after `category`; the release owner's review moved them. The
+the host's catalog, whose `ADD COLUMN` appends. A first draft placed them
+after `category`; the release owner's review moved them. The
 extract's columns therefore no longer all precede the host's: the test now
 holds each table to the extract's columns in the extract's order plus the named
 host columns (`_REGULATIONS_HOST_COLUMNS`).
@@ -3256,9 +3266,26 @@ host columns (`_REGULATIONS_HOST_COLUMNS`).
 comment rows, which predate them (`_UNPUBLISHED_REGULATIONS_COLUMNS`), and
 refuses a pending column that is not last; empty that entry when the host has
 republished and the rows are re-read. The
-`public_tables` comment profile takes its columns from `COMMENT.schema`, as it
-did for the reference columns, so it gains both; its schema id stays
-`public-comments:1.0`, as it did then.
+`public_tables` comment profile takes its columns from `COMMENT.schema`, so it
+gains both, as it gained the reference columns without moving its ids. Its shape
+changed, so both ids move: schema `public-comments:1.1` and projection `1.1`
+(the Federal Register precedent [above](#federal-register-public-tables-preserve-composite-identity)
+kept its schema id only because its columns did not change).
+
+### What an importer must change
+
+- The `comments` contract is now typed (`duplicate_comments` INTEGER), so
+  DocSpec's `_contract_types` check applies to it: a published comments member
+  must carry that column as INTEGER, or admission refuses. The fork's mirror
+  exports it typed.
+- A host adds `subtype` and `duplicate_comments` last, as nullable columns; rows
+  read before them stay NULL until re-read.
+- The comment extract raises on a malformed `duplicateComments`; a host that
+  calls it outside a reader must treat the raise as an unreadable record.
+- `KeyedPayload` carries `etag` and `size`; `_download_record` returns the GET's
+  `DownloadedObject` with the payload.
+- The public-comments profile ids moved to `public-comments:1.1`, projection
+  `1.1`; a reader requiring 1.0 refuses the new shape.
 
 ## A keyed Mirrulations payload carries its GET's ETag and size
 

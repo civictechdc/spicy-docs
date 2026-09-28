@@ -8,7 +8,9 @@ import pytest
 
 from spicy_docs.schemas import TABLE_CONTRACTS
 from spicy_docs.schemas.regulations import COMMENT
+from spicy_docs.sources.regulations_gov.definitions import RegulationsGovSourceError
 from spicy_docs.sources.regulations_gov.records import classify_comment
+from spicy_docs.sources.regulations_gov.validation import _validate_comment_attributes
 
 FIXTURES = Path(__file__).parent / "fixtures/regulations_gov_comments"
 SHA256 = {
@@ -50,13 +52,36 @@ def test_the_organization_class_is_in_subtype_not_organization():
     assert row["organization"] is None and row["category"] is None
 
 
-def test_unstated_fields_stay_null_and_a_stated_null_subtype_stays_null():
-    assert {
-        k: v for k, v in COMMENT.extract({"data": {"attributes": {}}}).items() if k in ("subtype", "duplicate_comments")
-    } == {"subtype": None, "duplicate_comments": None}
+def test_unstated_and_stated_null_fields_stay_null_and_a_stated_zero_stays_zero():
+    def fields(attributes):
+        row = COMMENT.extract({"data": {"attributes": attributes}})
+        return row["subtype"], row["duplicate_comments"]
+
+    assert fields({}) == (None, None)  # not stated
+    assert fields({"subtype": None, "duplicateComments": None}) == (None, None)  # stated null: never "" or 0
+    assert fields({"subtype": "", "duplicateComments": 0}) == ("", 0)  # stated empty and zero, as stated
+
+
+@pytest.mark.parametrize("stated", ["5", True, 1.5, -1, 2**31])
+def test_a_count_that_is_not_a_non_negative_32_bit_integer_refuses(stated):
+    """Never coerced: the host's Int32 frame would turn "5" into 5, True into 1 and 1.5 into 1."""
+    with pytest.raises(ValueError, match="duplicateComments"):
+        COMMENT.extract({"data": {"attributes": {"duplicateComments": stated}}})
+    with pytest.raises(RegulationsGovSourceError, match="duplicateComments"):
+        _validate_comment_attributes({"duplicateComments": stated})
+
+
+def test_the_largest_count_is_kept():
     assert (
-        COMMENT.extract({"data": {"attributes": {"subtype": None, "duplicateComments": 0}}})["duplicate_comments"] == 0
+        COMMENT.extract({"data": {"attributes": {"duplicateComments": 2**31 - 1}}})["duplicate_comments"] == 2**31 - 1
     )
+
+
+@pytest.mark.parametrize("stated", ["3", -1, True, 2**31])
+def test_page_count_is_admitted_only_as_the_projector_types_it(stated):
+    """A typed host column takes page_count as INTEGER; the validator admits no more than that."""
+    with pytest.raises(RegulationsGovSourceError, match="pageCount"):
+        _validate_comment_attributes({"pageCount": stated})
 
 
 def test_the_contract_types_the_count_and_appends_both():

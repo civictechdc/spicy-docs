@@ -10,7 +10,7 @@ The reader is a *pure source*: it yields the raw JSON payloads. Flattening them
 into schema-shaped records is the job of the
 :class:`~spicy_regs.transforms.extract.ExtractRecords` transform, which stays
 in spicy-regs. :meth:`MirrulationsReader.iter_keyed_records` yields each payload as a
-:class:`KeyedPayload` with its key and S3 ``LastModified``.
+:class:`KeyedPayload` with its key and that GET's ``LastModified``, ``ETag`` and byte size.
 
 The mirror keeps every re-fetch of a record as another object (``X.json``,
 ``X(1).json``, ``X(1)(2).json``, …), but the suffix does not order them: the

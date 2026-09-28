@@ -2,14 +2,31 @@
 
 Each :class:`RecordType` pairs an S3 path pattern, Parquet schema, dedup key and extract function; ``RECORD_TYPES`` keys
 them by name, and its order drives the default set of data types the pipeline processes.  ``DOCKETS``, ``DOCUMENTS``
-and ``COMMENTS`` state the tables the host publishes: the extract's columns in its order, then on documents and
-comments the host's ``pdf_extraction_results_json``, each keyed on its dedup key spelled ``value/1``.
+and ``COMMENTS`` state the tables the host publishes, each keyed on its dedup key spelled ``value/1``: the extract's
+columns in its order, then on documents and comments the host's ``pdf_extraction_results_json``; on comments the
+extract's ``subtype`` and ``duplicate_comments``, added later, are appended after that host column.
 """
 
 from json import dumps as json_dumps
 
 from spicy_docs.schemas.base import RecordType
 from spicy_docs.schemas.tables import INTEGER, VALUE_KEY, Reference, table_contract
+
+#: ``duplicateComments`` is published as INTEGER (32-bit); the count is never negative.
+_COUNT_BOUND = 2**31
+
+
+def _stated_count(value: object) -> int | None:
+    """A stated ``duplicateComments`` as published: NULL, or an int that is not a bool, 0 <= n < 2**31.
+
+    Anything else raises rather than reaching a host's integer column, which would coerce "5" to 5, True to 1 and 1.5
+    to 1; a reader turns the raise into an unreadable record.
+    """
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value < _COUNT_BOUND:
+        raise ValueError(f"duplicateComments must be an integer from 0 to 2**31 - 1, not {value!r}")
+    return value
 
 
 def _extract_comment(d: dict) -> dict:
@@ -58,7 +75,7 @@ def _extract_comment(d: dict) -> dict:
         "text_extraction_status": None,
         # Appended (docs/tables.md): as stated, so NULL means the record did not state it and 0 a stated zero.
         "subtype": attrs.get("subtype"),
-        "duplicate_comments": attrs.get("duplicateComments"),
+        "duplicate_comments": _stated_count(attrs.get("duplicateComments")),
     }
 
 
@@ -321,7 +338,7 @@ COMMENTS = table_contract(
         "duplicate_comments": (
             "How many received submissions the agency says this posted record stands for (`duplicateComments`), as "
             "stated. Agencies that do not count state 0; EPA states 1 for a single comment and the campaign's size on "
-            "a mass-mail record. NULL when the host has not read it."
+            "a mass-mail record. NULL when the record states none or the host has not read it."
         ),
     },
 )

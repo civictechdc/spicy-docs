@@ -144,9 +144,11 @@ REGULATIONS_GOV_DOCKET_PUBLIC_TABLE: Final = PublicTableProfile(
 
 REGULATIONS_GOV_COMMENT_PUBLIC_TABLE: Final = PublicTableProfile(
     table_name="comments",
-    schema_id="urn:spicy-regs:schema:public-comments:1.0",
+    # 1.1: the columns follow COMMENT.schema, which gained the four comment-reference columns and subtype and
+    # duplicate_comments after 1.0 (docs/decisions.md, "Comments carry the agency's submitter class").
+    schema_id="urn:spicy-regs:schema:public-comments:1.1",
     projection_id="urn:spicy-regs:projection:regulations-gov-public-comments",
-    projection_version="1.0",
+    projection_version="1.1",
     source_system_id=COMMENT_SOURCE_SYSTEM_ID,
     source_schema_name=COMMENT_SCHEMA_NAME,
     columns=tuple(COMMENT.schema),

@@ -15,7 +15,8 @@ tree's 16-column row, 15 columns per partition file (``schemas.spicy_regs_public
 fork mirrors comments at the same paths on its own R2 in a different shape: its partition file
 has 20 columns (``agency_code=ACF/part-0.parquet``, 2026-09-28), the ``comments`` table contract
 of ``schemas.regulations`` less ``agency_code``, adding 0.50.0's four comment-reference columns
-and the host's ``pdf_extraction_results_json``. ``validate_partition_columns`` refusing that file
+and the host's ``pdf_extraction_results_json``; 22 once the host publishes ``subtype`` and
+``duplicate_comments``. ``validate_partition_columns`` refusing that file
 is by design. The ``comments`` contract is the fork mirror's shape; capturing it as a source would
 be a separate profile under its own policy version, not a wider one here.
 """
