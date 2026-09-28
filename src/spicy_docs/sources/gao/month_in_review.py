@@ -70,6 +70,8 @@ DEFAULT_MAX_LAST_PAGE_INDEX: Final = 199
 _MAX_TEXT: Final = 4_000
 _LABEL: Final = "GAO listing page"
 _PAGE_HREF = re.compile(r"\?page=(\d+)")
+#: HTML's own whitespace. A non-breaking space is text GAO wrote, and the feed's titles keep it.
+_HTML_WHITESPACE = re.compile(r"[\t\n\f\r ]+")
 _DECISION_NUMBER = re.compile(r"B-\d+(?:\.\d+)?")
 _FIELD_CLASSES: Final = {
     "field--name-field-product-number": "number",
@@ -248,9 +250,7 @@ class _ListingHtml(HTMLParser):
                     del self._stack[index:]
                     break
         elif tag == "h2" and self._heading is not None:
-            self._topic = joined_text(
-                self._heading, label=f"{_LABEL} heading", bound=_MAX_TEXT, error_type=GaoListingSourceError
-            )
+            self._topic = _spelled(self._heading, "topic heading")
             self._heading = None
         elif tag == "nav" and self._in_pager:
             self._in_pager = False
@@ -268,6 +268,14 @@ class _ListingHtml(HTMLParser):
 
 def _text(parts: list[str] | None, name: str) -> str:
     return joined_text(parts or [], label=f"{_LABEL} {name}", bound=_MAX_TEXT, error_type=GaoListingSourceError)
+
+
+def _spelled(parts: list[str] | None, name: str) -> str:
+    """Text as GAO wrote it: references decoded, runs of HTML whitespace one space, non-breaking spaces kept."""
+    value = _HTML_WHITESPACE.sub(" ", "".join(parts or [])).strip("\t\n\f\r ")
+    if len(value) > _MAX_TEXT:
+        raise GaoListingSourceError(f"{_LABEL} {name} exceeds its length bound")
+    return value
 
 
 def _date(parts: list[str] | None, name: str) -> str | None:
@@ -291,7 +299,8 @@ def _date(parts: list[str] | None, name: str) -> str | None:
 
 def _entry(position: int, teaser: dict) -> GaoListingEntry:
     fields, links = teaser["fields"], teaser["links"]
-    label, heading, number = (_text(fields.get(name), name) for name in ("label", "heading", "number"))
+    label, heading = _spelled(fields.get("label"), "label"), _spelled(fields.get("heading"), "heading")
+    number = _text(fields.get("number"), "number")
     if not (label and heading and number):
         raise GaoListingSourceError(f"{_LABEL} teaser {position} lacks a label, heading or product number")
     if not teaser["topic"]:

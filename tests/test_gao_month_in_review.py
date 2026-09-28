@@ -155,6 +155,9 @@ def test_a_whole_month_lists_each_product_once_with_every_topic():
     college = next(product for product in products if product.product_id == "gao-26-108640")
     assert college.topics == ("Auditing and Financial Management", "Education") and college.scopes == ("2026-08",)
     assert college.title == "College Athletics: Most Programs Spend More Than They Generate in Revenue"
+    receipts = next(product for product in products if product.product_id == "gao-26-108615")
+    # GAO wrote non-breaking spaces into this heading, and the feed's title keeps them; so does the listing's.
+    assert receipts.heading.count("\xa0") == 3 and "  " not in receipts.heading
 
 
 def test_one_product_listed_with_differing_fields_refuses():

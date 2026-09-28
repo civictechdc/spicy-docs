@@ -477,9 +477,11 @@ reads it.
   walk refuses and keeps the refused bytes.
 - **Products.** A product appears once under each topic it carries.
   `collect_listing` states it once, with its topic headings in listed order.
-  It keeps GAO's `label` and `heading` (the title is `label: heading`, matching
-  the feed's titles on all 60 teasers compared on 2026-09-28), the
-  "Published" and "Publicly Released" dates, and every scope that listed it.
+  It keeps GAO's `label` and `heading` as written, collapsing only HTML
+  whitespace; non-breaking spaces stay. The title is `label: heading`, and it
+  and the "Publicly Released" date equal the feed's title and date on all 33
+  August 2026 products both held. It also keeps the "Published" date and every
+  scope that listed it.
   The same product stated twice with different fields is refused rather than
   either spelling chosen. A month can list a product released the month
   before, so no date is checked against the scope.
