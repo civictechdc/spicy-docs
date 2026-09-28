@@ -1,0 +1,470 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<billStatus>
+  <version>3.0.0</version>
+  <bill>
+    <number>64</number>
+    <updateDate>2023-01-11T13:17:02Z</updateDate>
+    <updateDateIncludingText>2023-01-11T13:17:02Z</updateDateIncludingText>
+    <originChamber>House</originChamber>
+    <originChamberCode>H</originChamberCode>
+    <type>HJRES</type>
+    <introducedDate>2009-12-15</introducedDate>
+    <congress>111</congress>
+    <committees>
+      <item>
+        <systemCode>hsap00</systemCode>
+        <name>Appropriations Committee</name>
+        <chamber>House</chamber>
+        <type>Standing</type>
+        <activities>
+          <item>
+            <name>Referred to</name>
+            <date>2009-12-15T14:01:47Z</date>
+          </item>
+        </activities>
+      </item>
+    </committees>
+    <relatedBills>
+      <item>
+        <title>Providing for consideration of the Senate amendment to the bill (H.R. 3326) making appropriations for the Department of Defense for the fiscal year ending September 30, 2010, and for other purposes; for consideration of the joint resolution (H.J.Res. 64) making further continuing appropriations for fiscal year 2010, and for other purposes; for consideration of the bill (H.R. 4314) to permit continued financing of Government operations; for consideration of the Senate amendment to the bill (H.R. 2847) making appropriations for the Departments of Commerce and Justice, and Science, and Related Agencies for the fiscal year ending September 30, 2010, and for other purposes; and for other purposes.</title>
+        <congress>111</congress>
+        <number>976</number>
+        <type>HRES</type>
+        <latestAction>
+          <actionDate>2009-12-16</actionDate>
+          <text>Motion to reconsider laid on the table Agreed to without objection.</text>
+          <actionTime>13:11:33</actionTime>
+        </latestAction>
+        <relationshipDetails>
+          <item>
+            <type>Related bill</type>
+            <identifiedBy>House</identifiedBy>
+          </item>
+          <item>
+            <type>Procedurally-related</type>
+            <identifiedBy>House</identifiedBy>
+          </item>
+        </relationshipDetails>
+      </item>
+    </relatedBills>
+    <actions>
+      <item>
+        <actionDate>2010-01-13</actionDate>
+        <text>On passage, the objections of the President to the contrary notwithstanding Failed by the Yeas and Nays: (2/3 required): 143 - 245, 1 Present (Roll no. 2).</text>
+        <type>Veto</type>
+        <actionCode>H43410</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+        <recordedVotes>
+          <recordedVote>
+            <rollNumber>2</rollNumber>
+            <url>https://clerk.house.gov/evs/2010/roll002.xml</url>
+            <chamber>House</chamber>
+            <congress>111</congress>
+            <date>2010-01-13T20:35:17Z</date>
+            <sessionNumber>2</sessionNumber>
+          </recordedVote>
+        </recordedVotes>
+      </item>
+      <item>
+        <actionDate>2010-01-13</actionDate>
+        <text>Failed of passage in House over veto: On passage, the objections of the President to the contrary notwithstanding Failed by the Yeas and Nays: (2/3 required): 143 - 245, 1 Present (Roll no. 2).</text>
+        <type>Veto</type>
+        <actionCode>33000</actionCode>
+        <sourceSystem>
+          <code>9</code>
+          <name>Library of Congress</name>
+        </sourceSystem>
+        <recordedVotes>
+          <recordedVote>
+            <rollNumber>2</rollNumber>
+            <url>https://clerk.house.gov/evs/2010/roll002.xml</url>
+            <chamber>House</chamber>
+            <congress>111</congress>
+            <date>2010-01-13T20:35:17Z</date>
+            <sessionNumber>2</sessionNumber>
+          </recordedVote>
+        </recordedVotes>
+      </item>
+      <item>
+        <actionDate>2010-01-13</actionDate>
+        <text>The Chair announced the unfinished business to be the consideration of the veto. (consideration: CR H104-105)</text>
+        <type>President</type>
+        <actionCode>H40310</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2010-01-13</actionDate>
+        <actionTime>10:45:30</actionTime>
+        <text>POSTPONED PROCEEDINGS - At the conclusion of debate, the Chair put the question on passage, the objections of the President to the contrary notwithstanding, and announced that under the Constitution, the Yeas and Nays were ordered. The Chair then postponed further proceedings on the question until later in the legislative day.</text>
+        <type>Floor</type>
+        <actionCode>H8D000</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2010-01-13</actionDate>
+        <actionTime>10:40:57</actionTime>
+        <text>The House proceeded with one hour of debate on the question of passage, the objections of the President to the contrary notwithstanding.</text>
+        <type>Floor</type>
+        <actionCode>H8D000</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2010-01-13</actionDate>
+        <text>The Chair laid before the House the veto message from the President. (consideration: CR H48-49)</text>
+        <type>Veto</type>
+        <actionCode>H40300</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2010-01-12</actionDate>
+        <actionTime>19:14:54</actionTime>
+        <text>Pursuant to a previous order of the House, consideration of the veto message on H.J. Res. 64 is postponed until the legislative day of January 13, 2010.</text>
+        <type>Floor</type>
+        <actionCode>H8D000</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2010-01-12</actionDate>
+        <actionTime>19:14:53</actionTime>
+        <text>The Chair laid before the House the veto message from the President. (H. Doc. 111-84). In a Memorandum of Disapproval, the President stated the enactment of H.R. 3326 (Department of Defense Appropriations Act, 2010, P.L. 111-118), which was signed into law on December 19, 2009, has rendered the enactment of H.J. Res. 64 (Continuing Appropriations, FY 2010) unnecessary and accordingly, he is withholding his approval from the bill. In order to leave no doubt that the bill is being vetoed as unnecessary legislation, and in addition to withholding his signature, the President returned H.J. Res. 64 to the House along with the Memorandum of Disapproval . (consideration: CR H10)</text>
+        <type>Floor</type>
+        <actionCode>H8D000</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2009-12-30</actionDate>
+        <text>Vetoed by President. (text of veto message: CR 1/12/2010 H11)</text>
+        <type>President</type>
+        <actionCode>E30000</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2009-12-30</actionDate>
+        <text>Vetoed by President.(text of veto message: CR 1/12/2010 H11)</text>
+        <type>President</type>
+        <actionCode>31000</actionCode>
+        <sourceSystem>
+          <code>9</code>
+          <name>Library of Congress</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2009-12-19</actionDate>
+        <text>Presented to President.</text>
+        <type>Floor</type>
+        <actionCode>E20000</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2009-12-19</actionDate>
+        <text>Presented to President.</text>
+        <type>President</type>
+        <actionCode>28000</actionCode>
+        <sourceSystem>
+          <code>9</code>
+          <name>Library of Congress</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2009-12-19</actionDate>
+        <text>Cleared for White House.</text>
+      </item>
+      <item>
+        <actionDate>2009-12-19</actionDate>
+        <sourceSystem>
+          <name>Senate</name>
+        </sourceSystem>
+        <text>Message on Senate action sent to the House.</text>
+        <type>Floor</type>
+      </item>
+      <item>
+        <actionDate>2009-12-19</actionDate>
+        <sourceSystem>
+          <name>Senate</name>
+        </sourceSystem>
+        <text>Passed Senate without amendment by Unanimous Consent. (consideration: CR S13477)</text>
+        <type>Floor</type>
+      </item>
+      <item>
+        <actionDate>2009-12-19</actionDate>
+        <text>Passed/agreed to in Senate: Passed Senate without amendment by Unanimous Consent.(consideration: CR S13477)</text>
+        <type>Floor</type>
+        <actionCode>17000</actionCode>
+        <sourceSystem>
+          <code>9</code>
+          <name>Library of Congress</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2009-12-16</actionDate>
+        <sourceSystem>
+          <name>Senate</name>
+        </sourceSystem>
+        <text>Received in the Senate, read twice.</text>
+        <type>IntroReferral</type>
+      </item>
+      <item>
+        <actionDate>2009-12-16</actionDate>
+        <actionTime>14:11:23</actionTime>
+        <text>Motion to reconsider laid on the table Agreed to without objection.</text>
+        <type>Floor</type>
+        <actionCode>H38310</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2009-12-16</actionDate>
+        <actionTime>14:10:59</actionTime>
+        <text>On passage Passed by voice vote. (text: CR H15421)</text>
+        <type>Floor</type>
+        <actionCode>H37100</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2009-12-16</actionDate>
+        <actionTime>14:10:59</actionTime>
+        <text>Passed/agreed to in House: On passage Passed by voice vote.(text: CR H15421)</text>
+        <type>Floor</type>
+        <actionCode>8000</actionCode>
+        <sourceSystem>
+          <code>9</code>
+          <name>Library of Congress</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2009-12-16</actionDate>
+        <actionTime>14:10:58</actionTime>
+        <text>The previous question was ordered pursuant to the rule. (consideration: CR H15421)</text>
+        <type>Floor</type>
+        <actionCode>H35000</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2009-12-16</actionDate>
+        <actionTime>14:08:41</actionTime>
+        <text>DEBATE - The House proceeded with one hour of debate on H.J. Res. 64.</text>
+        <type>Floor</type>
+        <actionCode>H8D000</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2009-12-16</actionDate>
+        <actionTime>14:08:40</actionTime>
+        <text>Rule provides for consideration of H.R. 3326, H.J. Res. 64, H.R. 4314 and H.R. 2847.</text>
+        <type>Floor</type>
+        <actionCode>H8D000</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2009-12-16</actionDate>
+        <actionTime>14:08:39</actionTime>
+        <text>Considered under the provisions of rule H. Res. 976. (consideration: CR H15421)</text>
+        <type>Floor</type>
+        <actionCode>H30000</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2009-12-16</actionDate>
+        <actionTime>09:25:52</actionTime>
+        <text>Rules Committee Resolution H. Res. 976 Reported to House. Rule provides for consideration of H.R. 3326, H.J. Res. 64, H.R. 4314 and H.R. 2847.</text>
+        <type>Floor</type>
+        <actionCode>H1L210</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2009-12-15</actionDate>
+        <text>Referred to the House Committee on Appropriations.</text>
+        <type>IntroReferral</type>
+        <actionCode>H11100</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+        <committees>
+          <item>
+            <systemCode>hsap00</systemCode>
+            <name>Appropriations Committee</name>
+          </item>
+        </committees>
+      </item>
+      <item>
+        <actionDate>2009-12-15</actionDate>
+        <text>Introduced in House</text>
+        <type>IntroReferral</type>
+        <actionCode>Intro-H</actionCode>
+        <sourceSystem>
+          <code>9</code>
+          <name>Library of Congress</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2009-12-15</actionDate>
+        <text>Introduced in House</text>
+        <type>IntroReferral</type>
+        <actionCode>1000</actionCode>
+        <sourceSystem>
+          <code>9</code>
+          <name>Library of Congress</name>
+        </sourceSystem>
+      </item>
+    </actions>
+    <sponsors>
+      <item>
+        <bioguideId>O000007</bioguideId>
+        <fullName>Rep. Obey, David R. [D-WI-7]</fullName>
+        <firstName>DAVID</firstName>
+        <lastName>OBEY</lastName>
+        <party>D</party>
+        <state>WI</state>
+        <middleName>R.</middleName>
+        <district>7</district>
+        <isByRequest>N</isByRequest>
+      </item>
+    </sponsors>
+    <policyArea>
+      <name>Economics and Public Finance</name>
+    </policyArea>
+    <subjects>
+      <legislativeSubjects>
+        <item>
+          <name>Appropriations</name>
+        </item>
+      </legislativeSubjects>
+      <policyArea>
+        <name>Economics and Public Finance</name>
+      </policyArea>
+    </subjects>
+    <summaries>
+      <summary>
+        <versionCode>00</versionCode>
+        <actionDate>2009-12-15</actionDate>
+        <actionDesc>Introduced in House</actionDesc>
+        <updateDate>2009-12-16T15:30:03Z</updateDate>
+        <text><![CDATA[ <p>Amends the Continuing Appropriations Resolution, 2010 to extend from October 31, 2009, through December 23, 2009, appropriations and funds made available and authority granted pursuant to that joint resolution, unless either of the following occurs first: (1) the enactment into law of an appropriation for any project or activity provided for in this joint resolution; or (2) the enactment into law of the applicable appropriations Act for FY2010 without any provision for such project or activity.<br> </p>]]></text>
+      </summary>
+      <summary>
+        <versionCode>81</versionCode>
+        <actionDate>2009-12-16</actionDate>
+        <actionDesc>Passed House without amendment</actionDesc>
+        <updateDate>2010-01-05T16:50:19Z</updateDate>
+        <text><![CDATA[ <p><b>(This measure has not been amended since it was introduced. The summary of that version is repeated here.)</b></p> <p>Amends the Continuing Appropriations Resolution, 2010 to extend from October 31, 2009, through December 23, 2009, appropriations and funds made available and authority granted pursuant to that joint resolution, unless either of the following occurs first: (1) the enactment into law of an appropriation for any project or activity provided for in this joint resolution; or (2) the enactment into law of the applicable appropriations Act for FY2010 without any provision for such project or activity.<br> </p>]]></text>
+      </summary>
+      <summary>
+        <versionCode>82</versionCode>
+        <actionDate>2009-12-19</actionDate>
+        <actionDesc>Passed Senate without amendment</actionDesc>
+        <updateDate>2010-01-05T16:50:27Z</updateDate>
+        <text><![CDATA[ <p><b>(This measure has not been amended since it was introduced. The summary of that version is repeated here.)</b></p> <p>Amends the Continuing Appropriations Resolution, 2010 to extend from October 31, 2009, through December 23, 2009, appropriations and funds made available and authority granted pursuant to that joint resolution, unless either of the following occurs first: (1) the enactment into law of an appropriation for any project or activity provided for in this joint resolution; or (2) the enactment into law of the applicable appropriations Act for FY2010 without any provision for such project or activity.<br> </p>]]></text>
+      </summary>
+    </summaries>
+    <title>Making further continuing appropriations for fiscal year 2010, and for other purposes.</title>
+    <titles>
+      <item>
+        <titleType>Display Title</titleType>
+        <title>Making further continuing appropriations for fiscal year 2010, and for other purposes.</title>
+      </item>
+      <item>
+        <titleType>Official Title as Introduced</titleType>
+        <title>Making further continuing appropriations for fiscal year 2010, and for other purposes.</title>
+        <billTextVersionName>Introduced in House</billTextVersionName>
+        <billTextVersionCode>IH</billTextVersionCode>
+      </item>
+    </titles>
+    <textVersions>
+      <item>
+        <type>Enrolled Bill</type>
+        <date/>
+        <formats>
+          <item>
+            <url>https://www.govinfo.gov/content/pkg/BILLS-111hjres64enr/xml/BILLS-111hjres64enr.xml</url>
+          </item>
+        </formats>
+      </item>
+      <item>
+        <type>Received in Senate</type>
+        <date>2009-12-16T05:00:00Z</date>
+        <formats>
+          <item>
+            <url>https://www.govinfo.gov/content/pkg/BILLS-111hjres64rds/xml/BILLS-111hjres64rds.xml</url>
+          </item>
+        </formats>
+      </item>
+      <item>
+        <type>Engrossed in House</type>
+        <date>2009-12-16T05:00:00Z</date>
+        <formats>
+          <item>
+            <url>https://www.govinfo.gov/content/pkg/BILLS-111hjres64eh/xml/BILLS-111hjres64eh.xml</url>
+          </item>
+        </formats>
+      </item>
+      <item>
+        <type>Introduced in House</type>
+        <date>2009-12-15T05:00:00Z</date>
+        <formats>
+          <item>
+            <url>https://www.govinfo.gov/content/pkg/BILLS-111hjres64ih/xml/BILLS-111hjres64ih.xml</url>
+          </item>
+        </formats>
+      </item>
+    </textVersions>
+    <latestAction>
+      <actionDate>2010-01-13</actionDate>
+      <text>On passage, the objections of the President to the contrary notwithstanding Failed by the Yeas and Nays: (2/3 required): 143 - 245, 1 Present (Roll no. 2).</text>
+    </latestAction>
+  </bill>
+  <dublinCore xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:format>text/xml</dc:format>
+    <dc:language>EN</dc:language>
+    <dc:rights>Pursuant to Title 17 Section 105 of the United States Code, this file is not subject to copyright protection and is in the public domain.</dc:rights>
+    <dc:contributor>Congressional Research Service, Library of Congress</dc:contributor>
+    <dc:description>This file contains bill summaries and statuses for federal legislation. A bill summary describes the most significant provisions of a piece of legislation and details the effects the legislative text may have on current law and federal programs. Bill summaries are authored by the Congressional Research Service (CRS) of the Library of Congress. As stated in Public Law 91-510 (2 USC 166 (d)(6)), one of the duties of CRS is "to prepare summaries and digests of bills and resolutions of a public general nature introduced in the Senate or House of Representatives". For more information, refer to the User Guide that accompanies this file.</dc:description>
+  </dublinCore>
+</billStatus>

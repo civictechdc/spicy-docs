@@ -1,0 +1,605 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<billStatus>
+  <version>3.0.0</version>
+  <bill>
+    <number>5</number>
+    <updateDate>2025-11-18T11:18:14Z</updateDate>
+    <updateDateIncludingText>2025-11-18T11:18:14Z</updateDateIncludingText>
+    <originChamber>House</originChamber>
+    <originChamberCode>H</originChamberCode>
+    <type>HRES</type>
+    <introducedDate>2023-01-09</introducedDate>
+    <congress>118</congress>
+    <legislationUrl>https://www.congress.gov/bill/118th-congress/house-resolution/5</legislationUrl>
+    <cdata/>
+    <relatedBills>
+      <item>
+        <title>Strategic Production Response Act</title>
+        <congress>118</congress>
+        <number>21</number>
+        <type>HR</type>
+        <latestAction>
+          <actionDate>2023-01-30</actionDate>
+          <text>Received in the Senate and Read twice and referred to the Committee on Energy and Natural Resources.</text>
+        </latestAction>
+        <relationshipDetails>
+          <item>
+            <type>Related bill</type>
+            <identifiedBy>House</identifiedBy>
+          </item>
+        </relationshipDetails>
+      </item>
+      <item>
+        <title>Protecting America’s Strategic Petroleum Reserve from China Act</title>
+        <congress>118</congress>
+        <number>22</number>
+        <type>HR</type>
+        <latestAction>
+          <actionDate>2023-01-25</actionDate>
+          <text>Read the second time. Placed on Senate Legislative Calendar under General Orders. Calendar No. 4.</text>
+        </latestAction>
+        <relationshipDetails>
+          <item>
+            <type>Related bill</type>
+            <identifiedBy>House</identifiedBy>
+          </item>
+        </relationshipDetails>
+      </item>
+      <item>
+        <title>Family and Small Business Taxpayer Protection Act</title>
+        <congress>118</congress>
+        <number>23</number>
+        <type>HR</type>
+        <latestAction>
+          <actionDate>2023-01-25</actionDate>
+          <text>Read the second time. Placed on Senate Legislative Calendar under General Orders. Calendar No. 1.</text>
+        </latestAction>
+        <relationshipDetails>
+          <item>
+            <type>Related bill</type>
+            <identifiedBy>House</identifiedBy>
+          </item>
+        </relationshipDetails>
+      </item>
+      <item>
+        <title>Born-Alive Abortion Survivors Protection Act</title>
+        <congress>118</congress>
+        <number>26</number>
+        <type>HR</type>
+        <latestAction>
+          <actionDate>2023-01-25</actionDate>
+          <text>Read the second time. Placed on Senate Legislative Calendar under General Orders. Calendar No. 2.</text>
+        </latestAction>
+        <relationshipDetails>
+          <item>
+            <type>Related bill</type>
+            <identifiedBy>House</identifiedBy>
+          </item>
+        </relationshipDetails>
+      </item>
+      <item>
+        <title>Expressing the sense of Congress condemning the recent attacks on pro-life facilities, groups, and churches.</title>
+        <congress>118</congress>
+        <number>3</number>
+        <type>HCONRES</type>
+        <latestAction>
+          <actionDate>2023-01-23</actionDate>
+          <text>Received in the Senate and referred to the Committee on the Judiciary.</text>
+        </latestAction>
+        <relationshipDetails>
+          <item>
+            <type>Related bill</type>
+            <identifiedBy>House</identifiedBy>
+          </item>
+        </relationshipDetails>
+      </item>
+      <item>
+        <title>Establishing the Select Committee on the Strategic Competition Between the United States and the Chinese Communist Party.</title>
+        <congress>118</congress>
+        <number>11</number>
+        <type>HRES</type>
+        <latestAction>
+          <actionDate>2023-01-10</actionDate>
+          <text>Motion to reconsider laid on the table Agreed to without objection.</text>
+          <actionTime>16:24:07</actionTime>
+        </latestAction>
+        <relationshipDetails>
+          <item>
+            <type>Related bill</type>
+            <identifiedBy>House</identifiedBy>
+          </item>
+        </relationshipDetails>
+      </item>
+      <item>
+        <title>Establishing a Select Subcommittee on the Weaponization of the Federal Government as a select investigative subcommittee of the Committee on the Judiciary.</title>
+        <congress>118</congress>
+        <number>12</number>
+        <type>HRES</type>
+        <latestAction>
+          <actionDate>2023-02-01</actionDate>
+          <text>UNANIMOUS CONSENT - Mr. Franklin, C. Scott asked unanimous consent that, notwithstanding section 1(a)(2)(A) of House Resolution 12 (as amended by section 1(c) of House Resolution 78), and the order of the House of today, the Select Subcommittee on the Weaponization of the Federal Government be composed of not more than 21 Members, Delegates, or the Resident Commissioner appointed by the Speaker, of whom not more than 9 shall be appointed in consultation with the Minority Leader. Agreed to without objection.</text>
+          <actionTime>17:11:09</actionTime>
+        </latestAction>
+        <relationshipDetails>
+          <item>
+            <type>Related bill</type>
+            <identifiedBy>House</identifiedBy>
+          </item>
+        </relationshipDetails>
+      </item>
+      <item>
+        <title>Providing for consideration of the bill (H.R. 3334) to provide for the imposition of sanctions on members of the National Communist Party Congress of the People's Republic of China, and for other purposes; providing for consideration of the bill (H.R. 8205) to amend the Omnibus Crime Control and Safe Streets Act of 1968 to provide that Byrne grant funds may be used for public safety report systems, and for other purposes; providing for consideration of the bill (H.R. 8790) to expedite under the National Environmental Policy Act of 1969 and improve forest management activities on National Forest System lands, on public lands under the jurisdiction of the Bureau of Land Management, and on Tribal lands to return resilience to overgrown, fire-prone forested lands, and for other purposes; providing for consideration of the resolution (H. Res. 1469) ensuring accountability for key officials in the Biden-Harris administration responsible for decisionmaking and execution failures throughout the withdrawal from Afghanistan; and for other purposes.</title>
+        <congress>118</congress>
+        <number>1486</number>
+        <type>HRES</type>
+        <latestAction>
+          <actionDate>2024-09-24</actionDate>
+          <text>Motion to reconsider laid on the table Agreed to without objection.</text>
+          <actionTime>14:05:17</actionTime>
+        </latestAction>
+        <relationshipDetails>
+          <item>
+            <type>Related bill</type>
+            <identifiedBy>House</identifiedBy>
+          </item>
+        </relationshipDetails>
+      </item>
+    </relatedBills>
+    <actions>
+      <item>
+        <actionDate>2023-01-09</actionDate>
+        <actionTime>19:08:51</actionTime>
+        <text>Motion to reconsider laid on the table Agreed to without objection.</text>
+        <type>Floor</type>
+        <actionCode>H38310</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2023-01-09</actionDate>
+        <actionTime>19:08:48</actionTime>
+        <text>On agreeing to the resolution Agreed to by the Yeas and Nays: 220 - 213 (Roll no. 23). (text: CR H51-57)</text>
+        <type>Floor</type>
+        <actionCode>H37100</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+        <recordedVotes>
+          <recordedVote>
+            <rollNumber>23</rollNumber>
+            <url>https://clerk.house.gov/evs/2023/roll023.xml</url>
+            <chamber>House</chamber>
+            <congress>118</congress>
+            <date>2023-01-10T00:08:48Z</date>
+            <sessionNumber>1</sessionNumber>
+          </recordedVote>
+        </recordedVotes>
+      </item>
+      <item>
+        <actionDate>2023-01-09</actionDate>
+        <actionTime>19:08:48</actionTime>
+        <text>Passed/agreed to in House: On agreeing to the resolution Agreed to by the Yeas and Nays: 220 - 213 (Roll no. 23). (text: CR H51-57)</text>
+        <type>Floor</type>
+        <actionCode>8000</actionCode>
+        <sourceSystem>
+          <code>9</code>
+          <name>Library of Congress</name>
+        </sourceSystem>
+        <recordedVotes>
+          <recordedVote>
+            <rollNumber>23</rollNumber>
+            <url>https://clerk.house.gov/evs/2023/roll023.xml</url>
+            <chamber>House</chamber>
+            <congress>118</congress>
+            <date>2023-01-10T00:08:48Z</date>
+            <sessionNumber>1</sessionNumber>
+          </recordedVote>
+        </recordedVotes>
+      </item>
+      <item>
+        <actionDate>2023-01-09</actionDate>
+        <actionTime>18:59:18</actionTime>
+        <text>On motion to commit Failed by the Yeas and Nays: 210 - 220 (Roll No. 22).</text>
+        <type>Floor</type>
+        <actionCode>H36610</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+        <recordedVotes>
+          <recordedVote>
+            <rollNumber>22</rollNumber>
+            <url>https://clerk.house.gov/evs/2023/roll022.xml</url>
+            <chamber>House</chamber>
+            <congress>118</congress>
+            <date>2023-01-09T23:59:18Z</date>
+            <sessionNumber>1</sessionNumber>
+          </recordedVote>
+        </recordedVotes>
+      </item>
+      <item>
+        <actionDate>2023-01-09</actionDate>
+        <actionTime>18:54:38</actionTime>
+        <text>Ms. DeLauro moved to commit.</text>
+        <type>Floor</type>
+        <actionCode>H36600</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2023-01-09</actionDate>
+        <actionTime>18:53:11</actionTime>
+        <text>The previous question on the motion to commit was ordered without objection.</text>
+        <type>Floor</type>
+        <actionCode>H8D000</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2023-01-09</actionDate>
+        <actionTime>18:52:32</actionTime>
+        <text>Ms. DeLauro moved to commit the resolution to a select committee composed of the Majority Leader and Minority Leader with instructions to report the same back to the House forthwith with an amendment.</text>
+        <type>Floor</type>
+        <actionCode>H8D000</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2023-01-09</actionDate>
+        <actionTime>18:52:25</actionTime>
+        <text>On ordering the previous question Agreed to by the Yeas and Nays: 211 - 205 (Roll no. 21).</text>
+        <type>Floor</type>
+        <actionCode>H35000</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+        <recordedVotes>
+          <recordedVote>
+            <rollNumber>21</rollNumber>
+            <url>https://clerk.house.gov/evs/2023/roll021.xml</url>
+            <chamber>House</chamber>
+            <congress>118</congress>
+            <date>2023-01-09T23:52:25Z</date>
+            <sessionNumber>1</sessionNumber>
+          </recordedVote>
+        </recordedVotes>
+      </item>
+      <item>
+        <actionDate>2023-01-09</actionDate>
+        <actionTime>18:30:39</actionTime>
+        <text>Considered as unfinished business. (consideration: H70-73)</text>
+        <type>Floor</type>
+        <actionCode>H30000</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2023-01-09</actionDate>
+        <actionTime>18:20:12</actionTime>
+        <text>POSTPONED PROCEEDINGS - At the conclusion of debate on H. Res. 5, the Chair put the question on ordering the previous question on the resolution and by voice vote, announced that the ayes had prevailed. Mr. McGovern demanded the yeas and nays and the Chair postponed further proceedings until a time to be announced.</text>
+        <type>Floor</type>
+        <actionCode>H8D000</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2023-01-09</actionDate>
+        <actionTime>18:10:10</actionTime>
+        <text>DEBATE - The House resumed debate on H. Res. 5.</text>
+        <type>Floor</type>
+        <actionCode>H8D000</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2023-01-09</actionDate>
+        <actionTime>18:06:16</actionTime>
+        <text>ORDER OF PROCEDURE - Mr. Cole asked unanimous consent that the Chair may reduce to 5 minutes the minimum time for electronic voting on any question relating to H. Res. 5 that follows a 15 minute vote. Agreed to without objection.</text>
+        <type>Floor</type>
+        <actionCode>H8D000</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2023-01-09</actionDate>
+        <actionTime>18:05:25</actionTime>
+        <text>ORDER OF PROCEDURE - Mr. Cole asked unanimous consent that the Speaker be authorized to postpone the vote on ordering the previous queston on H. Res. 5 to a designated time later today. Agreed to without objection.</text>
+        <type>Floor</type>
+        <actionCode>H8D000</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2023-01-09</actionDate>
+        <actionTime>17:07:00</actionTime>
+        <text>DEBATE - The House proceeded with one hour of debate on H. Res. 5.</text>
+        <type>Floor</type>
+        <actionCode>H8D000</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2023-01-09</actionDate>
+        <actionTime>17:06:27</actionTime>
+        <text>Considered as privileged matter. (consideration: CR H51-70)</text>
+        <type>Floor</type>
+        <actionCode>H30000</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2023-01-09</actionDate>
+        <text>Introduced in House</text>
+        <type>IntroReferral</type>
+        <actionCode>Intro-H</actionCode>
+        <sourceSystem>
+          <code>9</code>
+          <name>Library of Congress</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2023-01-09</actionDate>
+        <text>Introduced in House</text>
+        <type>IntroReferral</type>
+        <actionCode>1000</actionCode>
+        <sourceSystem>
+          <code>9</code>
+          <name>Library of Congress</name>
+        </sourceSystem>
+      </item>
+    </actions>
+    <sponsors>
+      <item>
+        <bioguideId>S001176</bioguideId>
+        <fullName>Rep. Scalise, Steve [R-LA-1]</fullName>
+        <firstName>Steve</firstName>
+        <lastName>Scalise</lastName>
+        <party>R</party>
+        <state>LA</state>
+        <district>1</district>
+        <isByRequest>N</isByRequest>
+      </item>
+    </sponsors>
+    <policyArea>
+      <name>Congress</name>
+    </policyArea>
+    <subjects>
+      <legislativeSubjects>
+        <item>
+          <name>Administrative law and regulatory procedures</name>
+          <updateDate>2023-01-24T20:00:21Z</updateDate>
+        </item>
+        <item>
+          <name>Appropriations</name>
+          <updateDate>2023-01-24T20:00:22Z</updateDate>
+        </item>
+        <item>
+          <name>Asia</name>
+          <updateDate>2023-01-24T20:00:21Z</updateDate>
+        </item>
+        <item>
+          <name>Assault and harassment offenses</name>
+          <updateDate>2023-01-24T20:00:21Z</updateDate>
+        </item>
+        <item>
+          <name>Budget deficits and national debt</name>
+          <updateDate>2023-01-24T20:00:21Z</updateDate>
+        </item>
+        <item>
+          <name>Budget process</name>
+          <updateDate>2023-01-24T20:00:21Z</updateDate>
+        </item>
+        <item>
+          <name>China</name>
+          <updateDate>2023-01-24T20:00:21Z</updateDate>
+        </item>
+        <item>
+          <name>Congressional Budget Office (CBO)</name>
+          <updateDate>2023-01-24T20:00:21Z</updateDate>
+        </item>
+        <item>
+          <name>Congressional committees</name>
+          <updateDate>2023-01-24T20:00:21Z</updateDate>
+        </item>
+        <item>
+          <name>Congressional leadership</name>
+          <updateDate>2023-01-24T20:00:21Z</updateDate>
+        </item>
+        <item>
+          <name>Congressional officers and employees</name>
+          <updateDate>2023-01-24T20:00:21Z</updateDate>
+        </item>
+        <item>
+          <name>Congressional operations and organization</name>
+          <updateDate>2023-01-24T20:00:21Z</updateDate>
+        </item>
+        <item>
+          <name>Congressional oversight</name>
+          <updateDate>2023-01-24T20:00:21Z</updateDate>
+        </item>
+        <item>
+          <name>Evidence and witnesses</name>
+          <updateDate>2023-01-24T20:00:21Z</updateDate>
+        </item>
+        <item>
+          <name>Executive agency funding and structure</name>
+          <updateDate>2023-01-24T20:00:22Z</updateDate>
+        </item>
+        <item>
+          <name>Government employee pay, benefits, personnel management</name>
+          <updateDate>2023-01-24T20:00:22Z</updateDate>
+        </item>
+        <item>
+          <name>Government information and archives</name>
+          <updateDate>2023-01-24T20:00:22Z</updateDate>
+        </item>
+        <item>
+          <name>Government lending and loan guarantees</name>
+          <updateDate>2023-01-24T20:00:22Z</updateDate>
+        </item>
+        <item>
+          <name>Government trust funds</name>
+          <updateDate>2023-01-24T20:00:22Z</updateDate>
+        </item>
+        <item>
+          <name>Higher education</name>
+          <updateDate>2023-01-24T20:00:22Z</updateDate>
+        </item>
+        <item>
+          <name>House Committee on Agriculture</name>
+          <updateDate>2023-01-24T20:00:22Z</updateDate>
+        </item>
+        <item>
+          <name>House Committee on Appropriations</name>
+          <updateDate>2023-01-24T20:00:22Z</updateDate>
+        </item>
+        <item>
+          <name>House Committee on Education and the Workforce</name>
+          <updateDate>2023-01-24T20:15:19Z</updateDate>
+        </item>
+        <item>
+          <name>House Committee on Ethics</name>
+          <updateDate>2023-01-24T20:00:22Z</updateDate>
+        </item>
+        <item>
+          <name>House Committee on Oversight and Accountability</name>
+          <updateDate>2023-01-31T18:08:13Z</updateDate>
+        </item>
+        <item>
+          <name>House Committee on Rules</name>
+          <updateDate>2023-01-24T20:00:22Z</updateDate>
+        </item>
+        <item>
+          <name>House Committee on the Budget</name>
+          <updateDate>2023-01-24T20:00:22Z</updateDate>
+        </item>
+        <item>
+          <name>House of Representatives</name>
+          <updateDate>2023-01-24T20:00:22Z</updateDate>
+        </item>
+        <item>
+          <name>Income tax rates</name>
+          <updateDate>2023-01-24T20:00:22Z</updateDate>
+        </item>
+        <item>
+          <name>Internal Revenue Service (IRS)</name>
+          <updateDate>2023-01-24T20:00:22Z</updateDate>
+        </item>
+        <item>
+          <name>Land transfers</name>
+          <updateDate>2023-01-24T20:00:22Z</updateDate>
+        </item>
+        <item>
+          <name>Legislative rules and procedure</name>
+          <updateDate>2023-01-24T20:00:22Z</updateDate>
+        </item>
+        <item>
+          <name>Members of Congress</name>
+          <updateDate>2023-01-24T20:00:22Z</updateDate>
+        </item>
+        <item>
+          <name>Oil and gas</name>
+          <updateDate>2023-01-24T20:00:22Z</updateDate>
+        </item>
+        <item>
+          <name>Sex, gender, sexual orientation discrimination</name>
+          <updateDate>2023-01-24T20:00:22Z</updateDate>
+        </item>
+        <item>
+          <name>Student aid and college costs</name>
+          <updateDate>2023-01-24T20:00:22Z</updateDate>
+        </item>
+        <item>
+          <name>War and emergency powers</name>
+          <updateDate>2023-01-24T20:00:21Z</updateDate>
+        </item>
+      </legislativeSubjects>
+      <policyArea>
+        <name>Congress</name>
+        <updateDate>2023-01-11T17:32:26Z</updateDate>
+      </policyArea>
+    </subjects>
+    <summaries>
+      <summary>
+        <versionCode>00</versionCode>
+        <actionDate>2023-01-09</actionDate>
+        <actionDesc>Introduced in House</actionDesc>
+        <updateDate>2023-02-24T16:17:24Z</updateDate>
+        <cdata>
+          <text>&lt;p&gt;This resolution establishes the rules of the House of Representatives for the 118th Congress by adopting and modifying the rules from the 117th Congress; it also adopts other procedural orders.&lt;/p&gt; &lt;p&gt;Specific changes include&lt;/p&gt; &lt;ul&gt; &lt;li&gt;permitting a single Member to call for a vote to remove the Speaker;&lt;/li&gt; &lt;li&gt;prohibiting consideration of legislation that increases without offsetting mandatory spending in set budget windows;&lt;/li&gt; &lt;li&gt;eliminating the Gephardt rule, which provides for the automatic passage of a joint resolution to suspend the debt ceiling upon passage of a concurrent resolution on the budget;&lt;/li&gt; &lt;li&gt;requiring a three-fifths majority of House Members to approve tax rate increases;&lt;/li&gt; &lt;li&gt;reinstating the Holman rule, which allows for the termination of or a salary deduction for a federal official or cuts to a specific program through amendments to appropriations bills;&lt;/li&gt; &lt;li&gt;nullifying regulations that extend collective bargaining rights to certain congressional employees; and&lt;/li&gt; &lt;li&gt;requiring that sponsors identify the single subject that each bill focuses on.&lt;/li&gt; &lt;/ul&gt; &lt;p&gt;The resolution further acts as a special rule for particular legislation, including bills that address (1) Internal Revenue Service funding, (2) sales from the Strategic Petroleum Reserve to China, and (3) establishing committees to investigate U.S.-Chinese competition and the weaponization of the federal government.&lt;/p&gt; &lt;p&gt;The Congressional Budget Office must include in its cost estimates for major legislation macroeconomic effects (e.g., changes in economic output and employment). &lt;/p&gt; &lt;p&gt;The resolution also establishes new and reauthorizes and modifies existing commissions, offices, and committees.&lt;/p&gt;</text>
+        </cdata>
+      </summary>
+      <summary>
+        <versionCode>53</versionCode>
+        <actionDate>2023-01-09</actionDate>
+        <actionDesc>Passed House</actionDesc>
+        <updateDate>2023-02-24T16:16:38Z</updateDate>
+        <cdata>
+          <text>&lt;p&gt;This resolution establishes the rules of the House of Representatives for the 118th Congress by adopting and modifying the rules from the 117th Congress; it also adopts other procedural orders.&lt;/p&gt; &lt;p&gt;Specific changes include &lt;/p&gt; &lt;ul&gt; &lt;li&gt;permitting a single Member to call for a vote to remove the Speaker;&lt;/li&gt; &lt;li&gt;prohibiting consideration of legislation that increases without offsetting mandatory spending in set budget windows;&lt;/li&gt; &lt;li&gt;eliminating the Gephardt rule, which provides for the automatic passage of a joint resolution to suspend the debt ceiling upon passage of a concurrent resolution on the budget;&lt;/li&gt; &lt;li&gt;requiring a three-fifths majority of House Members to approve tax rate increases;&lt;/li&gt; &lt;li&gt;reinstating the Holman rule, which allows for the termination of or a salary deduction for a federal official or cuts to a specific program through amendments to appropriations bills;&lt;/li&gt; &lt;li&gt;nullifying regulations that extend collective bargaining rights to certain congressional employees; and&lt;/li&gt; &lt;li&gt;requiring that sponsors identify the single subject that each bill focuses on.&lt;/li&gt; &lt;/ul&gt; &lt;p&gt;The resolution further acts as a special rule for particular legislation, including bills that address (1) Internal Revenue Service funding, (2) sales from the Strategic Petroleum Reserve to China, and (3) establishing committees to investigate U.S.-Chinese competition and the weaponization of the federal government.&lt;/p&gt; &lt;p&gt;The Congressional Budget Office must include in its cost estimates for major legislation macroeconomic effects (e.g., changes in economic output and employment).&lt;/p&gt; &lt;p&gt;The resolution also establishes new and reauthorizes and modifies existing commissions, offices, and committees. For example, it establishes a subcommittee to investigate the coronavirus pandemic and modifies the operation of the House Ethics Committee and Office of Congressional Ethics.&lt;/p&gt;</text>
+        </cdata>
+      </summary>
+    </summaries>
+    <title>Adopting the Rules of the House of Representatives for the One Hundred Eighteenth Congress, and for other purposes.</title>
+    <titles>
+      <item>
+        <titleType>Display Title</titleType>
+        <titleTypeCode>45</titleTypeCode>
+        <title>Adopting the Rules of the House of Representatives for the One Hundred Eighteenth Congress, and for other purposes.</title>
+        <updateDate>2024-07-24T15:24:15Z</updateDate>
+      </item>
+      <item>
+        <titleType>Official Title as Introduced</titleType>
+        <titleTypeCode>6</titleTypeCode>
+        <title>Adopting the Rules of the House of Representatives for the One Hundred Eighteenth Congress, and for other purposes.</title>
+        <updateDate>2024-03-18T20:09:46Z</updateDate>
+      </item>
+    </titles>
+    <textVersions>
+      <item>
+        <type>Engrossed in House</type>
+        <date>2023-01-09T05:00:00Z</date>
+        <formats>
+          <item>
+            <url>https://www.govinfo.gov/content/pkg/BILLS-118hres5eh/xml/BILLS-118hres5eh.xml</url>
+          </item>
+        </formats>
+      </item>
+    </textVersions>
+    <latestAction>
+      <actionDate>2023-01-09</actionDate>
+      <text>Motion to reconsider laid on the table Agreed to without objection.</text>
+      <actionTime>19:08:51</actionTime>
+    </latestAction>
+  </bill>
+  <dublinCore xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:format>text/xml</dc:format>
+    <dc:language>EN</dc:language>
+    <dc:rights>Pursuant to Title 17 Section 105 of the United States Code, this file is not subject to copyright protection and is in the public domain.</dc:rights>
+    <dc:contributor>Congressional Research Service, Library of Congress</dc:contributor>
+    <dc:description>This file contains bill summaries and statuses for federal legislation. A bill summary describes the most significant provisions of a piece of legislation and details the effects the legislative text may have on current law and federal programs. Bill summaries are authored by the Congressional Research Service (CRS) of the Library of Congress. As stated in Public Law 91-510 (2 USC 166 (d)(6)), one of the duties of CRS is "to prepare summaries and digests of bills and resolutions of a public general nature introduced in the Senate or House of Representatives". For more information, refer to the User Guide that accompanies this file.</dc:description>
+  </dublinCore>
+</billStatus>

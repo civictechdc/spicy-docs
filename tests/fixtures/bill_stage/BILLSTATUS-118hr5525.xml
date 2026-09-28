@@ -1,0 +1,1112 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<billStatus>
+  <version>3.0.0</version>
+  <bill>
+    <number>5525</number>
+    <updateDate>2025-05-27T14:15:30Z</updateDate>
+    <updateDateIncludingText>2025-05-27T14:15:30Z</updateDateIncludingText>
+    <originChamber>House</originChamber>
+    <originChamberCode>H</originChamberCode>
+    <type>HR</type>
+    <introducedDate>2023-09-18</introducedDate>
+    <congress>118</congress>
+    <cdata>
+      <constitutionalAuthorityStatementText>&lt;pre&gt;[Congressional Record Volume 169, Number 150 (Monday, September 18, 2023)][House]From the Congressional Record Online through the Government Publishing Office [&lt;a href="https://www.gpo.gov"&gt;www.gpo.gov&lt;/a&gt;]By Mr. DONALDS:H.R. 5525.Congress has the power to enact this legislation pursuantto the following:Article I, Section 9, Clause 7No Money shall be drawn from the Treasury, but inConsequence of Appropriations made by Law; and a regularStatement and Account of the Receipts and Expenditures of allpublic Money shall be published from time to time.The single subject of this legislation is:To provide continuing approprations for the security of thenation.[Page H4381]&lt;/pre&gt;</constitutionalAuthorityStatementText>
+    </cdata>
+    <committees>
+      <item>
+        <systemCode>hsap00</systemCode>
+        <name>Appropriations Committee</name>
+        <chamber>House</chamber>
+        <type>Standing</type>
+        <activities>
+          <item>
+            <name>Unknown</name>
+            <date>2023-09-29T17:43:55Z</date>
+          </item>
+          <item>
+            <name>Unknown</name>
+            <date>2023-09-29T17:19:42Z</date>
+          </item>
+          <item>
+            <name>Referred To</name>
+            <date>2023-09-18T16:04:05Z</date>
+          </item>
+        </activities>
+      </item>
+      <item>
+        <systemCode>hsbu00</systemCode>
+        <name>Budget Committee</name>
+        <chamber>House</chamber>
+        <type>Standing</type>
+        <activities>
+          <item>
+            <name>Referred To</name>
+            <date>2023-09-18T16:04:10Z</date>
+          </item>
+        </activities>
+      </item>
+    </committees>
+    <relatedBills>
+      <item>
+        <title>Secure the Border Act of 2023</title>
+        <congress>118</congress>
+        <number>2</number>
+        <type>HR</type>
+        <latestAction>
+          <actionDate>2024-12-17</actionDate>
+          <text>Referred to the Subcommittee on Social Security.</text>
+        </latestAction>
+        <relationshipDetails>
+          <item>
+            <type>Related bill</type>
+            <identifiedBy>CRS</identifiedBy>
+          </item>
+        </relationshipDetails>
+      </item>
+      <item>
+        <title>Providing for consideration of the bill (H.R. 1130) to repeal restrictions on the export and import of natural gas; providing for consideration of the resolution (H. Res. 684) condemning the actions of Governor of New Mexico, Michelle Lujan Grisham, for subverting the Second Amendment to the Constitution and depriving the citizens of New Mexico of their right to bear arms; and providing for consideration of the bill (H.R. 5525) making continuing appropriations for fiscal year 2024, and for other purposes.</title>
+        <congress>118</congress>
+        <number>699</number>
+        <type>HRES</type>
+        <latestAction>
+          <actionDate>2023-10-03</actionDate>
+          <text>Pursuant to the provisions of H. Res. 756, H. Res. 699 is laid on the table.</text>
+          <actionTime>14:31:12</actionTime>
+        </latestAction>
+        <relationshipDetails>
+          <item>
+            <type>Procedurally-related</type>
+            <identifiedBy>House</identifiedBy>
+          </item>
+        </relationshipDetails>
+      </item>
+      <item>
+        <title>Providing for consideration of the bill (H.R. 5525) making continuing appropriations for fiscal year 2024, and for other purposes.</title>
+        <congress>118</congress>
+        <number>741</number>
+        <type>HRES</type>
+        <latestAction>
+          <actionDate>2023-09-29</actionDate>
+          <text>Motion to reconsider laid on the table Agreed to without objection.</text>
+          <actionTime>12:01:47</actionTime>
+        </latestAction>
+        <relationshipDetails>
+          <item>
+            <type>Procedurally-related</type>
+            <identifiedBy>House</identifiedBy>
+          </item>
+        </relationshipDetails>
+      </item>
+      <item>
+        <title>Secure the Border Act of 2023</title>
+        <congress>118</congress>
+        <number>2824</number>
+        <type>S</type>
+        <latestAction>
+          <actionDate>2024-01-11</actionDate>
+          <text>Committee on Banking, Housing, and Urban Affairs. Hearings held.</text>
+        </latestAction>
+        <relationshipDetails>
+          <item>
+            <type>Related bill</type>
+            <identifiedBy>CRS</identifiedBy>
+          </item>
+        </relationshipDetails>
+      </item>
+      <item>
+        <title>ORDER Act</title>
+        <congress>118</congress>
+        <number>1690</number>
+        <type>HR</type>
+        <latestAction>
+          <actionDate>2023-05-05</actionDate>
+          <text>Placed on the Union Calendar, Calendar No. 30.</text>
+        </latestAction>
+        <relationshipDetails>
+          <item>
+            <type>Related bill</type>
+            <identifiedBy>CRS</identifiedBy>
+          </item>
+        </relationshipDetails>
+      </item>
+      <item>
+        <title>To amend the Immigration and Nationality Act to reform the process for inspection of applicants for admission.</title>
+        <congress>118</congress>
+        <number>6477</number>
+        <type>HR</type>
+        <latestAction>
+          <actionDate>2023-12-07</actionDate>
+          <text>Sponsor introductory remarks on measure. (CR H6733-6734)</text>
+        </latestAction>
+        <relationshipDetails>
+          <item>
+            <type>Related bill</type>
+            <identifiedBy>CRS</identifiedBy>
+          </item>
+        </relationshipDetails>
+      </item>
+      <item>
+        <title>Visa Overstays Penalties Act</title>
+        <congress>118</congress>
+        <number>2436</number>
+        <type>HR</type>
+        <latestAction>
+          <actionDate>2023-03-30</actionDate>
+          <text>Referred to the House Committee on the Judiciary.</text>
+        </latestAction>
+        <relationshipDetails>
+          <item>
+            <type>Related bill</type>
+            <identifiedBy>CRS</identifiedBy>
+          </item>
+        </relationshipDetails>
+      </item>
+      <item>
+        <title>Ensuring United Families at the Border Act</title>
+        <congress>118</congress>
+        <number>2580</number>
+        <type>HR</type>
+        <latestAction>
+          <actionDate>2023-04-13</actionDate>
+          <text>Referred to the House Committee on the Judiciary.</text>
+        </latestAction>
+        <relationshipDetails>
+          <item>
+            <type>Related bill</type>
+            <identifiedBy>CRS</identifiedBy>
+          </item>
+        </relationshipDetails>
+      </item>
+      <item>
+        <title>Border Reinforcement Act of 2023</title>
+        <congress>118</congress>
+        <number>2794</number>
+        <type>HR</type>
+        <latestAction>
+          <actionDate>2024-12-17</actionDate>
+          <text>Referred to the Subcommittee on Trade.</text>
+        </latestAction>
+        <relationshipDetails>
+          <item>
+            <type>Related bill</type>
+            <identifiedBy>CRS</identifiedBy>
+          </item>
+        </relationshipDetails>
+      </item>
+      <item>
+        <title>ANTI-Drugs Act</title>
+        <congress>118</congress>
+        <number>1857</number>
+        <type>S</type>
+        <latestAction>
+          <actionDate>2023-06-07</actionDate>
+          <text>Read twice and referred to the Committee on the Judiciary.</text>
+        </latestAction>
+        <relationshipDetails>
+          <item>
+            <type>Related bill</type>
+            <identifiedBy>CRS</identifiedBy>
+          </item>
+        </relationshipDetails>
+      </item>
+    </relatedBills>
+    <actions>
+      <item>
+        <actionDate>2023-09-29</actionDate>
+        <actionTime>13:51:45</actionTime>
+        <text>Motion to reconsider laid on the table Agreed to without objection.</text>
+        <type>Floor</type>
+        <actionCode>H38310</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2023-09-29</actionDate>
+        <actionTime>13:50:50</actionTime>
+        <text>On passage Failed by the Yeas and Nays: 198 - 232 (Roll no. 511).</text>
+        <type>Floor</type>
+        <actionCode>H37100</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+        <recordedVotes>
+          <recordedVote>
+            <rollNumber>511</rollNumber>
+            <url>https://clerk.house.gov/evs/2023/roll511.xml</url>
+            <chamber>House</chamber>
+            <congress>118</congress>
+            <date>2023-09-29T17:50:50Z</date>
+            <sessionNumber>1</sessionNumber>
+          </recordedVote>
+        </recordedVotes>
+      </item>
+      <item>
+        <actionDate>2023-09-29</actionDate>
+        <actionTime>13:50:50</actionTime>
+        <text>Failed of passage/not agreed to in House On passage Failed by the Yeas and Nays: 198 - 232 (Roll no. 511).</text>
+        <type>Floor</type>
+        <actionCode>9000</actionCode>
+        <sourceSystem>
+          <code>9</code>
+          <name>Library of Congress</name>
+        </sourceSystem>
+        <recordedVotes>
+          <recordedVote>
+            <rollNumber>511</rollNumber>
+            <url>https://clerk.house.gov/evs/2023/roll511.xml</url>
+            <chamber>House</chamber>
+            <congress>118</congress>
+            <date>2023-09-29T17:50:50Z</date>
+            <sessionNumber>1</sessionNumber>
+          </recordedVote>
+        </recordedVotes>
+      </item>
+      <item>
+        <actionDate>2023-09-29</actionDate>
+        <actionTime>13:43:55</actionTime>
+        <text>On motion to recommit Failed by the Yeas and Nays: 210 - 216 (Roll no. 510). (CR H4898)</text>
+        <type>Floor</type>
+        <actionCode>H36210</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+        <committees>
+          <item>
+            <systemCode>hsap00</systemCode>
+            <name>Appropriations Committee</name>
+          </item>
+        </committees>
+        <recordedVotes>
+          <recordedVote>
+            <rollNumber>510</rollNumber>
+            <url>https://clerk.house.gov/evs/2023/roll510.xml</url>
+            <chamber>House</chamber>
+            <congress>118</congress>
+            <date>2023-09-29T17:43:55Z</date>
+            <sessionNumber>1</sessionNumber>
+          </recordedVote>
+        </recordedVotes>
+      </item>
+      <item>
+        <actionDate>2023-09-29</actionDate>
+        <actionTime>13:19:50</actionTime>
+        <text>The previous question on the motion to recommit was ordered pursuant to clause 2(b) of rule XIX.</text>
+        <type>Floor</type>
+        <actionCode>H8A000</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2023-09-29</actionDate>
+        <actionTime>13:19:42</actionTime>
+        <text>Mrs. Ramirez moved to recommit to the Committee on Appropriations.</text>
+        <type>Floor</type>
+        <actionCode>H36200</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+        <committees>
+          <item>
+            <systemCode>hsap00</systemCode>
+            <name>Appropriations Committee</name>
+          </item>
+        </committees>
+      </item>
+      <item>
+        <actionDate>2023-09-29</actionDate>
+        <actionTime>13:19:01</actionTime>
+        <text>The previous question was ordered pursuant to the rule.</text>
+        <type>Floor</type>
+        <actionCode>H35000</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2023-09-29</actionDate>
+        <actionTime>12:10:46</actionTime>
+        <text>DEBATE - The House proceeded with one hour of debate on H.R. 5525.</text>
+        <type>Floor</type>
+        <actionCode>H8D000</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2023-09-29</actionDate>
+        <actionTime>12:09:01</actionTime>
+        <text>Rule provides for consideration of H.R. 5525 with 1 hour of general debate. Motion to recommit allowed. Bill is closed to amendments.</text>
+        <type>Floor</type>
+        <actionCode>H8D000</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2023-09-29</actionDate>
+        <actionTime>12:08:56</actionTime>
+        <text>Considered under the provisions of rule H. Res. 741. (consideration: CR H4870-4898 ; text: CR H4870-4889)</text>
+        <type>Floor</type>
+        <actionCode>H30000</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2023-09-29</actionDate>
+        <actionTime>12:01:28</actionTime>
+        <text>Rule H. Res. 741 passed House.</text>
+        <type>Floor</type>
+        <actionCode>H1L220</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2023-09-29</actionDate>
+        <actionTime>09:21:17</actionTime>
+        <text>Rules Committee Resolution H. Res. 741 Reported to House. Rule provides for consideration of H.R. 5525 with 1 hour of general debate. Motion to recommit allowed. Bill is closed to amendments.</text>
+        <type>Floor</type>
+        <actionCode>H1L210</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2023-09-19</actionDate>
+        <actionTime>09:50:26</actionTime>
+        <text>Rules Committee Resolution H. Res. 699 Reported to House. Rule provides for consideration of H.R. 1130, H. Res. 684 and H.R. 5525. The resolution provides for consideration of H.R. 1130, under a structured rule; H.Res. 684, under a closed rule; and H.R. 5525, under a closed rule. The resolution provides for one hour of general debate on all three bills.</text>
+        <type>Floor</type>
+        <actionCode>H1L210</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2023-09-18</actionDate>
+        <text>Referred to the Committee on Appropriations, and in addition to the Committee on the Budget, for a period to be subsequently determined by the Speaker, in each case for consideration of such provisions as fall within the jurisdiction of the committee concerned.</text>
+        <type>IntroReferral</type>
+        <actionCode>H11100</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+        <committees>
+          <item>
+            <systemCode>hsbu00</systemCode>
+            <name>Budget Committee</name>
+          </item>
+        </committees>
+      </item>
+      <item>
+        <actionDate>2023-09-18</actionDate>
+        <text>Referred to the Committee on Appropriations, and in addition to the Committee on the Budget, for a period to be subsequently determined by the Speaker, in each case for consideration of such provisions as fall within the jurisdiction of the committee concerned.</text>
+        <type>IntroReferral</type>
+        <actionCode>H11100</actionCode>
+        <sourceSystem>
+          <code>2</code>
+          <name>House floor actions</name>
+        </sourceSystem>
+        <committees>
+          <item>
+            <systemCode>hsap00</systemCode>
+            <name>Appropriations Committee</name>
+          </item>
+        </committees>
+      </item>
+      <item>
+        <actionDate>2023-09-18</actionDate>
+        <text>Introduced in House</text>
+        <type>IntroReferral</type>
+        <actionCode>Intro-H</actionCode>
+        <sourceSystem>
+          <code>9</code>
+          <name>Library of Congress</name>
+        </sourceSystem>
+      </item>
+      <item>
+        <actionDate>2023-09-18</actionDate>
+        <text>Introduced in House</text>
+        <type>IntroReferral</type>
+        <actionCode>1000</actionCode>
+        <sourceSystem>
+          <code>9</code>
+          <name>Library of Congress</name>
+        </sourceSystem>
+      </item>
+    </actions>
+    <sponsors>
+      <item>
+        <bioguideId>D000032</bioguideId>
+        <fullName>Rep. Donalds, Byron [R-FL-19]</fullName>
+        <firstName>Byron</firstName>
+        <lastName>Donalds</lastName>
+        <party>R</party>
+        <state>FL</state>
+        <district>19</district>
+        <isByRequest>N</isByRequest>
+      </item>
+    </sponsors>
+    <cosponsors>
+      <item>
+        <bioguideId>J000301</bioguideId>
+        <fullName>Rep. Johnson, Dusty [R-SD-At Large]</fullName>
+        <firstName>Dusty</firstName>
+        <lastName>Johnson</lastName>
+        <party>R</party>
+        <state>SD</state>
+        <district>0</district>
+        <sponsorshipDate>2023-09-18</sponsorshipDate>
+        <isOriginalCosponsor>True</isOriginalCosponsor>
+      </item>
+      <item>
+        <bioguideId>P000605</bioguideId>
+        <fullName>Rep. Perry, Scott [R-PA-10]</fullName>
+        <firstName>Scott</firstName>
+        <lastName>Perry</lastName>
+        <party>R</party>
+        <state>PA</state>
+        <district>10</district>
+        <sponsorshipDate>2023-09-18</sponsorshipDate>
+        <isOriginalCosponsor>True</isOriginalCosponsor>
+      </item>
+      <item>
+        <bioguideId>B000740</bioguideId>
+        <fullName>Rep. Bice, Stephanie I. [R-OK-5]</fullName>
+        <firstName>Stephanie</firstName>
+        <lastName>Bice</lastName>
+        <party>R</party>
+        <state>OK</state>
+        <middleName>I.</middleName>
+        <district>5</district>
+        <sponsorshipDate>2023-09-18</sponsorshipDate>
+        <isOriginalCosponsor>True</isOriginalCosponsor>
+      </item>
+      <item>
+        <bioguideId>R000614</bioguideId>
+        <fullName>Rep. Roy, Chip [R-TX-21]</fullName>
+        <firstName>Chip</firstName>
+        <lastName>Roy</lastName>
+        <party>R</party>
+        <state>TX</state>
+        <district>21</district>
+        <sponsorshipDate>2023-09-18</sponsorshipDate>
+        <isOriginalCosponsor>True</isOriginalCosponsor>
+      </item>
+      <item>
+        <bioguideId>A000377</bioguideId>
+        <fullName>Rep. Armstrong, Kelly [R-ND-At Large]</fullName>
+        <firstName>Kelly</firstName>
+        <lastName>Armstrong</lastName>
+        <party>R</party>
+        <state>ND</state>
+        <district>0</district>
+        <sponsorshipDate>2023-09-18</sponsorshipDate>
+        <isOriginalCosponsor>True</isOriginalCosponsor>
+      </item>
+    </cosponsors>
+    <policyArea>
+      <name>Economics and Public Finance</name>
+    </policyArea>
+    <subjects>
+      <legislativeSubjects>
+        <item>
+          <name>Administrative remedies</name>
+          <updateDate>2023-09-25T21:00:29Z</updateDate>
+        </item>
+        <item>
+          <name>Adoption and foster care</name>
+          <updateDate>2023-09-25T21:00:29Z</updateDate>
+        </item>
+        <item>
+          <name>Advanced technology and technological innovations</name>
+          <updateDate>2023-09-25T21:00:28Z</updateDate>
+        </item>
+        <item>
+          <name>Agricultural insurance</name>
+          <updateDate>2023-09-25T21:00:29Z</updateDate>
+        </item>
+        <item>
+          <name>Agricultural marketing and promotion</name>
+          <updateDate>2023-09-25T21:00:29Z</updateDate>
+        </item>
+        <item>
+          <name>Agricultural prices, subsidies, credit</name>
+          <updateDate>2023-09-25T21:00:29Z</updateDate>
+        </item>
+        <item>
+          <name>Alabama</name>
+          <updateDate>2023-09-25T21:00:29Z</updateDate>
+        </item>
+        <item>
+          <name>Appropriations</name>
+          <updateDate>2023-09-25T21:00:29Z</updateDate>
+        </item>
+        <item>
+          <name>Aviation and airports</name>
+          <updateDate>2023-09-25T21:00:29Z</updateDate>
+        </item>
+        <item>
+          <name>Banking and financial institutions regulation</name>
+          <updateDate>2023-09-25T21:00:29Z</updateDate>
+        </item>
+        <item>
+          <name>Border security and unlawful immigration</name>
+          <updateDate>2023-09-25T21:00:29Z</updateDate>
+        </item>
+        <item>
+          <name>Broadcasting, cable, digital technologies</name>
+          <updateDate>2023-09-25T21:00:29Z</updateDate>
+        </item>
+        <item>
+          <name>Budget process</name>
+          <updateDate>2023-09-25T21:00:29Z</updateDate>
+        </item>
+        <item>
+          <name>Business investment and capital</name>
+          <updateDate>2023-09-25T21:00:29Z</updateDate>
+        </item>
+        <item>
+          <name>Canada</name>
+          <updateDate>2023-09-25T21:00:29Z</updateDate>
+        </item>
+        <item>
+          <name>Cardiovascular and respiratory health</name>
+          <updateDate>2023-09-25T21:00:30Z</updateDate>
+        </item>
+        <item>
+          <name>Child safety and welfare</name>
+          <updateDate>2023-09-25T21:00:30Z</updateDate>
+        </item>
+        <item>
+          <name>Civil actions and liability</name>
+          <updateDate>2023-09-25T21:00:30Z</updateDate>
+        </item>
+        <item>
+          <name>Computers and information technology</name>
+          <updateDate>2023-09-25T21:00:30Z</updateDate>
+        </item>
+        <item>
+          <name>Congressional oversight</name>
+          <updateDate>2023-09-25T21:00:30Z</updateDate>
+        </item>
+        <item>
+          <name>Credit and credit markets</name>
+          <updateDate>2023-09-25T21:00:30Z</updateDate>
+        </item>
+        <item>
+          <name>Crime victims</name>
+          <updateDate>2023-09-25T21:00:30Z</updateDate>
+        </item>
+        <item>
+          <name>Crimes against children</name>
+          <updateDate>2023-09-25T21:00:30Z</updateDate>
+        </item>
+        <item>
+          <name>Criminal justice information and records</name>
+          <updateDate>2023-09-25T21:00:30Z</updateDate>
+        </item>
+        <item>
+          <name>Criminal procedure and sentencing</name>
+          <updateDate>2023-09-25T21:00:30Z</updateDate>
+        </item>
+        <item>
+          <name>Cuba</name>
+          <updateDate>2023-09-25T21:00:30Z</updateDate>
+        </item>
+        <item>
+          <name>Customs enforcement</name>
+          <updateDate>2023-09-25T21:00:30Z</updateDate>
+        </item>
+        <item>
+          <name>Department of Homeland Security</name>
+          <updateDate>2023-09-25T21:00:31Z</updateDate>
+        </item>
+        <item>
+          <name>Department of Justice</name>
+          <updateDate>2023-09-25T21:00:31Z</updateDate>
+        </item>
+        <item>
+          <name>Detention of persons</name>
+          <updateDate>2023-09-25T21:00:31Z</updateDate>
+        </item>
+        <item>
+          <name>Diplomacy, foreign officials, Americans abroad</name>
+          <updateDate>2023-09-25T21:00:31Z</updateDate>
+        </item>
+        <item>
+          <name>Disaster relief and insurance</name>
+          <updateDate>2023-09-25T21:00:31Z</updateDate>
+        </item>
+        <item>
+          <name>District of Columbia</name>
+          <updateDate>2023-09-25T21:00:31Z</updateDate>
+        </item>
+        <item>
+          <name>Drug trafficking and controlled substances</name>
+          <updateDate>2023-09-25T21:00:31Z</updateDate>
+        </item>
+        <item>
+          <name>El Salvador</name>
+          <updateDate>2023-09-25T21:00:31Z</updateDate>
+        </item>
+        <item>
+          <name>Employee hiring</name>
+          <updateDate>2023-09-25T21:00:31Z</updateDate>
+        </item>
+        <item>
+          <name>Executive agency funding and structure</name>
+          <updateDate>2023-09-25T21:00:32Z</updateDate>
+        </item>
+        <item>
+          <name>Federal preemption</name>
+          <updateDate>2023-09-25T21:00:32Z</updateDate>
+        </item>
+        <item>
+          <name>Fires</name>
+          <updateDate>2023-09-25T21:00:32Z</updateDate>
+        </item>
+        <item>
+          <name>First responders and emergency personnel</name>
+          <updateDate>2023-09-25T21:00:32Z</updateDate>
+        </item>
+        <item>
+          <name>Floods and storm protection</name>
+          <updateDate>2023-09-25T21:00:32Z</updateDate>
+        </item>
+        <item>
+          <name>Florida</name>
+          <updateDate>2023-09-25T21:00:32Z</updateDate>
+        </item>
+        <item>
+          <name>Forests, forestry, trees</name>
+          <updateDate>2023-09-25T21:00:28Z</updateDate>
+        </item>
+        <item>
+          <name>Genetics</name>
+          <updateDate>2023-09-25T21:00:32Z</updateDate>
+        </item>
+        <item>
+          <name>Georgia</name>
+          <updateDate>2023-09-25T21:00:32Z</updateDate>
+        </item>
+        <item>
+          <name>Government employee pay, benefits, personnel management</name>
+          <updateDate>2023-09-25T21:00:32Z</updateDate>
+        </item>
+        <item>
+          <name>Government information and archives</name>
+          <updateDate>2023-09-25T21:00:32Z</updateDate>
+        </item>
+        <item>
+          <name>Government lending and loan guarantees</name>
+          <updateDate>2023-09-25T21:00:32Z</updateDate>
+        </item>
+        <item>
+          <name>Government studies and investigations</name>
+          <updateDate>2023-09-25T21:00:32Z</updateDate>
+        </item>
+        <item>
+          <name>Guatemala</name>
+          <updateDate>2023-09-25T21:00:32Z</updateDate>
+        </item>
+        <item>
+          <name>Homeland security</name>
+          <updateDate>2023-09-25T21:00:32Z</updateDate>
+        </item>
+        <item>
+          <name>Honduras</name>
+          <updateDate>2023-09-25T21:00:32Z</updateDate>
+        </item>
+        <item>
+          <name>Horticulture and plants</name>
+          <updateDate>2023-09-25T21:00:33Z</updateDate>
+        </item>
+        <item>
+          <name>Human trafficking</name>
+          <updateDate>2023-09-25T21:00:33Z</updateDate>
+        </item>
+        <item>
+          <name>Hybrid, electric, and advanced technology vehicles</name>
+          <updateDate>2023-09-25T21:00:33Z</updateDate>
+        </item>
+        <item>
+          <name>Immigrant health and welfare</name>
+          <updateDate>2023-09-25T21:00:33Z</updateDate>
+        </item>
+        <item>
+          <name>Immigration status and procedures</name>
+          <updateDate>2023-09-25T21:00:33Z</updateDate>
+        </item>
+        <item>
+          <name>Immunology and vaccination</name>
+          <updateDate>2023-09-25T21:00:33Z</updateDate>
+        </item>
+        <item>
+          <name>Infectious and parasitic diseases</name>
+          <updateDate>2023-09-25T21:00:33Z</updateDate>
+        </item>
+        <item>
+          <name>Intelligence activities, surveillance, classified information</name>
+          <updateDate>2023-09-25T21:00:28Z</updateDate>
+        </item>
+        <item>
+          <name>International law and treaties</name>
+          <updateDate>2023-09-25T21:00:33Z</updateDate>
+        </item>
+        <item>
+          <name>Internet, web applications, social media</name>
+          <updateDate>2023-09-25T21:00:33Z</updateDate>
+        </item>
+        <item>
+          <name>Judicial review and appeals</name>
+          <updateDate>2023-09-25T21:00:33Z</updateDate>
+        </item>
+        <item>
+          <name>Lakes and rivers</name>
+          <updateDate>2023-09-25T21:00:33Z</updateDate>
+        </item>
+        <item>
+          <name>Latin America</name>
+          <updateDate>2023-09-25T21:00:33Z</updateDate>
+        </item>
+        <item>
+          <name>Law enforcement administration and funding</name>
+          <updateDate>2023-09-25T21:00:33Z</updateDate>
+        </item>
+        <item>
+          <name>Law enforcement officers</name>
+          <updateDate>2023-09-25T21:00:33Z</updateDate>
+        </item>
+        <item>
+          <name>Lawyers and legal services</name>
+          <updateDate>2023-09-25T21:00:33Z</updateDate>
+        </item>
+        <item>
+          <name>Licensing and registrations</name>
+          <updateDate>2023-09-25T21:00:28Z</updateDate>
+        </item>
+        <item>
+          <name>Livestock</name>
+          <updateDate>2023-09-25T21:00:33Z</updateDate>
+        </item>
+        <item>
+          <name>Low- and moderate-income housing</name>
+          <updateDate>2023-09-25T21:00:33Z</updateDate>
+        </item>
+        <item>
+          <name>Massachusetts</name>
+          <updateDate>2023-09-25T21:00:33Z</updateDate>
+        </item>
+        <item>
+          <name>Mental health</name>
+          <updateDate>2023-09-25T21:00:33Z</updateDate>
+        </item>
+        <item>
+          <name>Mexico</name>
+          <updateDate>2023-09-25T21:00:33Z</updateDate>
+        </item>
+        <item>
+          <name>Military personnel and dependents</name>
+          <updateDate>2023-09-25T21:00:34Z</updateDate>
+        </item>
+        <item>
+          <name>Nicaragua</name>
+          <updateDate>2023-09-25T21:00:34Z</updateDate>
+        </item>
+        <item>
+          <name>Nuclear power</name>
+          <updateDate>2023-09-25T21:00:34Z</updateDate>
+        </item>
+        <item>
+          <name>Organized crime</name>
+          <updateDate>2023-09-25T21:00:34Z</updateDate>
+        </item>
+        <item>
+          <name>Protection of officials</name>
+          <updateDate>2023-09-25T21:00:34Z</updateDate>
+        </item>
+        <item>
+          <name>Public contracts and procurement</name>
+          <updateDate>2023-09-25T21:00:34Z</updateDate>
+        </item>
+        <item>
+          <name>Public-private cooperation</name>
+          <updateDate>2023-09-25T21:00:34Z</updateDate>
+        </item>
+        <item>
+          <name>Refugees, asylum, displaced persons</name>
+          <updateDate>2023-09-25T21:00:34Z</updateDate>
+        </item>
+        <item>
+          <name>Religion</name>
+          <updateDate>2023-09-25T21:00:34Z</updateDate>
+        </item>
+        <item>
+          <name>Rural conditions and development</name>
+          <updateDate>2023-09-25T21:00:34Z</updateDate>
+        </item>
+        <item>
+          <name>Separation, divorce, custody, support</name>
+          <updateDate>2023-09-25T21:00:34Z</updateDate>
+        </item>
+        <item>
+          <name>Small business</name>
+          <updateDate>2023-09-25T21:00:34Z</updateDate>
+        </item>
+        <item>
+          <name>Smuggling and trafficking</name>
+          <updateDate>2023-09-25T21:00:34Z</updateDate>
+        </item>
+        <item>
+          <name>Spacecraft and satellites</name>
+          <updateDate>2023-09-25T21:00:34Z</updateDate>
+        </item>
+        <item>
+          <name>Specialized courts</name>
+          <updateDate>2023-09-25T21:00:34Z</updateDate>
+        </item>
+        <item>
+          <name>State and local finance</name>
+          <updateDate>2023-09-25T21:00:34Z</updateDate>
+        </item>
+        <item>
+          <name>State and local government operations</name>
+          <updateDate>2023-09-25T21:00:34Z</updateDate>
+        </item>
+        <item>
+          <name>Terrorism</name>
+          <updateDate>2023-09-25T21:00:34Z</updateDate>
+        </item>
+        <item>
+          <name>Texas</name>
+          <updateDate>2023-09-25T21:00:34Z</updateDate>
+        </item>
+        <item>
+          <name>User charges and fees</name>
+          <updateDate>2023-09-25T21:00:35Z</updateDate>
+        </item>
+        <item>
+          <name>Venezuela</name>
+          <updateDate>2023-09-25T21:00:35Z</updateDate>
+        </item>
+        <item>
+          <name>Veterans' loans, housing, homeless programs</name>
+          <updateDate>2023-09-25T21:00:35Z</updateDate>
+        </item>
+        <item>
+          <name>Visas and passports</name>
+          <updateDate>2023-09-25T21:00:35Z</updateDate>
+        </item>
+      </legislativeSubjects>
+      <policyArea>
+        <name>Economics and Public Finance</name>
+        <updateDate>2023-09-19T10:30:28Z</updateDate>
+      </policyArea>
+    </subjects>
+    <summaries>
+      <summary>
+        <versionCode>00</versionCode>
+        <actionDate>2023-09-18</actionDate>
+        <actionDesc>Introduced in House</actionDesc>
+        <updateDate>2023-09-19T19:41:37Z</updateDate>
+        <cdata>
+          <text>&lt;p&gt;&lt;b&gt;Continuing Appropriations and Border Security Enhancement Act, 2024 &lt;/b&gt;&lt;/p&gt; &lt;p&gt;This bill provides continuing FY2024 appropriations for federal agencies through October 31, 2023. It also makes various changes to immigration law, including by imposing limits on asylum eligibility.&lt;/p&gt; &lt;p&gt; DIVISION A--CONTINUING APPROPRIATIONS ACT, 2024&lt;/p&gt; &lt;p&gt;&lt;i&gt;Continuing Appropriations Act, 2024&lt;/i&gt;&lt;/p&gt; &lt;p&gt;This division provides continuing FY2024 appropriations to federal agencies through the earlier of October 31, 2023, or the enactment of the applicable appropriations act. &lt;/p&gt; &lt;p&gt;It is known as a continuing resolution (CR) and prevents a government shutdown that would otherwise occur if the FY2024 appropriations bills have not been enacted when FY2024 begins on October 1, 2023. &lt;/p&gt; &lt;p&gt;The CR generally funds defense, Department of Veterans Affairs, and disaster relief programs at the FY2023 levels and reduces funding for other programs by 8.1%. It also includes several exceptions that provide funding flexibility and additional appropriations for various programs. &lt;/p&gt; &lt;p&gt;The division extends the National Flood Insurance Program and the Department of Agriculture's Livestock Mandatory Reporting program through October 31, 2023. &lt;/p&gt; &lt;p&gt;The division also includes several provisions that prohibit the Department of Homeland Security from using the funds provided by the CR for various purposes related to immigration.&lt;/p&gt; &lt;p&gt;DIVISION B--OTHER MATTERS &lt;/p&gt; &lt;p&gt;This division exempts the budgetary effects of this division and each succeeding division from (1) the Statutory Pay-As-You-Go Act of 2010 (PAYGO Act), (2) the Senate PAYGO rule, and (3) certain budget scorekeeping rules.&lt;/p&gt; &lt;p&gt;DIVISION C--BORDER SECURITY&lt;/p&gt; &lt;p&gt;This division requires certain actions related to border security. &lt;/p&gt; &lt;p&gt;(Sec. 102) This section requires the Department of Homeland Security (DHS) to resume all activities related to constructing a wall along the U.S.-Mexico border that were underway or planned prior to January 20, 2021.&lt;/p&gt; &lt;p&gt;(Sec. 103) This section imposes additional requirements on DHS related to the construction of barriers along the U.S.-Mexico border. For example, the bill requires DHS to construct a border wall (including related infrastructure and technology) along at least 900 miles of that border, whereas currently DHS is required to have at least 700 miles of reinforced fencing along that border.&lt;/p&gt; &lt;p&gt;This section also requires DHS to waive all legal requirements necessary to ensure the expeditious construction of the border barriers, whereas currently DHS is authorized to waive such requirements.&lt;/p&gt; &lt;p&gt;(Sec. 104) This section requires U.S. Customs and Border Protection (CBP) to submit a strategic five-year technology investment plan to Congress.&lt;/p&gt; &lt;p&gt;(Sec. 105) This section imposes certain documentation and acquisition-related standards on major border security technology acquisitions, generally those that cost at least $100 million based on FY2023 constant dollars. &lt;/p&gt; &lt;p&gt;(Sec. 106) This section requires CBP to (1) ensure that each CBP officer or agent is equipped with a two-way communication device, (2) fully implement the Border Security Deployment Program (a border surveillance program), and (3) upgrade license plate readers as needed at ports of entry along the northern and southern borders. &lt;/p&gt; &lt;p&gt;(Sec. 107) This section authorizes retention bonuses for eligible frontline U.S. Border Patrol law enforcement agents. &lt;/p&gt; &lt;p&gt;The section also requires CBP to maintain an active duty presence of at least 22,000 full-time equivalent Border Patrol agents by September 30, 2025.&lt;/p&gt; &lt;p&gt;(Sec. 108) This section modifies a provision that exempts certain applicants for CBP law enforcement positions from having to take a polygraph test. For example, this section provides this exemption to certain law enforcement officers, whereas currently the waiver is only available to eligible veterans. &lt;/p&gt; &lt;p&gt;The waiver provision established by this section is not applicable during periods when CBP certifies that it has met certain staffing requirements. &lt;/p&gt; &lt;p&gt;(Sec. 109) This section requires CBP to implement a workload staffing model for the Border Patrol and CBP Air and Marine Operations.&lt;/p&gt; &lt;p&gt;(Sec. 110) This section provides statutory authorization for Operation Stonegarden, a program which provides grants to law enforcement agencies that are (1) in a state with an international land or maritime border, and (2) involved in an active CBP operation coordinated through the Border Patrol. &lt;/p&gt; &lt;p&gt;(Sec. 111) This section establishes certain requirements for CBP Air and Marine Operations. For example, CBP must ensure that its Air and Marine Operations (1) carry out at least 110,000 flight hours each year, and (2) operate unmanned aircraft systems (drones) on the southern border 24 hours a day. &lt;/p&gt; &lt;p&gt;(Sec. 112) This section requires DHS to hire contractors to begin eradicating certain plant growth along the Rio Grande River that impedes border security operations.&lt;/p&gt; &lt;p&gt;(Sec. 113) This section requires the Border Patrol to issue a Border Patrol Strategic Plan to enhance border security.&lt;/p&gt; &lt;p&gt;(Sec. 115) This section prohibits DHS from (1) processing the entry of non-U.S. nationals (&lt;i&gt;aliens&lt;/i&gt; under federal law) arriving in between ports of entry; (2) providing funds to nongovernmental organizations (NGOs) that facilitate or encourage unlawful activity; or (3) providing funds to NGOs that provide certain services, such as lodging or immigration legal services, to inadmissible non-U.S. nationals who enter the United States.&lt;/p&gt; &lt;p&gt;(Sec. 116) This section requires DHS to ensure that CBP is, within 14 days of this bill's enactment, fully compliant with federal DNA and biometric collection requirements at U.S. land borders. &lt;/p&gt; &lt;p&gt;(Sec. 117) This section requires CBP to periodically review and update, as necessary, manuals and policies related to inspections at ports of entry to ensure the uniformity of inspection practices to effectively detect illegal activity along the border, such as the smuggling of drugs and humans. &lt;/p&gt; &lt;p&gt;(Sec. 118) This section requires CBP to publish information monthly about CBP encounters with non-U.S. nationals, including the total number of encounters and the nationalities of the individuals encountered. &lt;/p&gt; &lt;p&gt;(Sec. 119) This section requires CBP to, within seven days of this bill's enactment, certify to Congress that CBP has real-time access to the criminal history databases of all countries of origin and transit for non-U.S. nationals encountered by CBP. &lt;/p&gt; &lt;p&gt;(Sec. 120) This section prohibits the Transportation Security Administration (TSA) from accepting as proof of identification certain documents, such as a warrant issued by U.S. Immigration and Customs Enforcement (ICE) or an employment authorization issued by DHS.&lt;/p&gt; &lt;p&gt;The TSA must collect the biometric information of any individual who (1) seeks to enter the aircraft boarding area of an airport where access is controlled by the TSA, (2) does not present an accepted identification document, and (3) the TSA cannot verify is a U.S. national. The TSA must share this collected biometric information with the Automated Biometric Identification System (IDENT).&lt;/p&gt; &lt;p&gt;(Sec. 121) This section prohibits DHS from (1) issuing any COVID-19 vaccine mandate unless expressly authorized by Congress, or (2) taking any adverse action against an employee based solely on the employee's refusal to receive a COVID-19 vaccine.&lt;/p&gt; &lt;p&gt;(Sec. 122) This section limits the use of the CBP One mobile application or a similar program. Specifically, DHS may only use such an application for inspecting perishable cargo.&lt;/p&gt; &lt;p&gt;(Sec. 124) This section requires the Government Accountability Office to study and report to Congress on the costs incurred by states in support of the federal mission to secure the southwest border and the feasibility of reimbursing states for such costs. &lt;/p&gt; &lt;p&gt;(Sec. 125) This section requires the Office of Inspector General of DHS to annually report to Congress on the economic and security impact of mass migration to municipalities and states along the southwest border. &lt;/p&gt; &lt;p&gt;(Sec. 126) This section specifies that no funds are authorized to be appropriated for specified DHS activities, including a pilot program for alternatives to detention or purchasing electric vehicles.&lt;/p&gt; &lt;p&gt;(Sec. 128) This section requires the Office of Inspector General of DHS to report to Congress an assessment of CBP's ability to mitigate unmanned aircraft systems along the southwest border. &lt;/p&gt; &lt;p&gt;DIVISION D--IMMIGRATION ENFORCEMENT AND FOREIGN AFFAIRS&lt;/p&gt; &lt;p&gt;TITLE I--ASYLUM REFORM AND BORDER PROTECTION&lt;/p&gt; &lt;p&gt;This title imposes additional requirements for asylum eligibility. &lt;/p&gt; &lt;p&gt;(Sec. 101) This section expands provisions that bar certain individuals from applying for asylum.&lt;/p&gt; &lt;p&gt;Currently, an individual may not apply for asylum if that individual may be removed to a third country (i.e., a country that is not the applicant's country of nationality or last habitual residence) if that third country has (1) a full and fair asylum process that the individual could use, and (2) an agreement with the United States allowing for such removals. This section expands this provision by authorizing removal to third countries that do not have an agreement with the United States.&lt;/p&gt; &lt;p&gt;This section also bars an individual from applying for asylum if the individual traveled through at least one third country before arriving in the United States, with certain exceptions (e.g., the individual applied for and was denied asylum in that third country). &lt;/p&gt; &lt;p&gt;(Sec. 102) This section modifies the standard for establishing an asylum applicant's credible fear of persecution. &lt;/p&gt; &lt;p&gt;Specifically, to find credible fear, an asylum officer must find that the applicant could &lt;i&gt;more likely than not&lt;/i&gt; establish eligibility for asylum. Currently, an asylum officer must conclude that there is a significant possibility that the applicant could establish eligibility for asylum. &lt;/p&gt; &lt;p&gt;(Sec. 103) This section limits asylum eligibility to individuals who arrived in the United States at a port of entry.&lt;/p&gt; &lt;p&gt;(Sec. 104) This section expands the types of crimes that may make an individual ineligible for asylum, such as a conviction for (1) a misdemeanor relating to the unlawful possession or use of an identification, (2) an offense for driving while intoxicated causing another person's serious bodily injury or death, or (3) any felony. &lt;/p&gt; &lt;p&gt;This section further expands this bar to asylum eligibility by broadening the definition of felony to include any crime that is punishable by more than one year of imprisonment. (Some states have misdemeanors that are punishable by imprisonment of more than a year.) Currently, a felony is generally not a bar against asylum eligibility, though certain felonies, such as one for a particularly serious crime, would bar an individual if the individual constitutes a danger to the community.&lt;/p&gt; &lt;p&gt;(Sec. 105) This section establishes a duration of six months for an employment authorization for an applicant for asylum. Such an employment authorization may also be renewed for six months or terminated under specified conditions.&lt;/p&gt; &lt;p&gt;(Sec. 106) This section requires DHS to charge a fee for each asylum application, except for one filed by an unaccompanied alien child. Currently, DHS is authorized but not required to charge such fees. &lt;/p&gt; &lt;p&gt;The section also authorizes DHS to charge fees for a refugee's application for employment authorization or for lawful permanent resident status. &lt;/p&gt; &lt;p&gt;(Sec. 107) This section increases the requirements for qualifying as a refugee.&lt;/p&gt; &lt;p&gt;Generally, a refugee must have a well-founded fear of persecution based on certain characteristics, such as the individual's race, membership in a particular social group, or political opinion. &lt;/p&gt; &lt;p&gt;The section establishes additional requirements for meeting these criteria. For example, such persecution may not be based solely on (1) infrequently enforced laws or government policies unless there is credible evidence that the law or policy would be personally applied to the individual, or (2) conduct of rogue government officials acting outside their official capacity.&lt;/p&gt; &lt;p&gt;Furthermore, to be a member of a particular social group, the asylum applicant must establish that the group exists independently of the alleged acts of persecution (i.e., the group cannot be defined solely as the victims of the alleged persecution). &lt;/p&gt; &lt;p&gt;The section also imposes limits on when DHS or DOJ may exercise discretion in favor of an asylum applicant. For example, favorable discretion may not be exercised, with certain exceptions, for an applicant who (1) has been unlawfully present in the United States for more than one year before applying for asylum; or (2) failed to file federal, state, or local tax returns. &lt;/p&gt; &lt;p&gt;(Sec. 108) This section establishes certain situations when an asylum applicant must be considered to have firmly resettled in another country. (Generally, an individual who has firmly resettled in a country that is not their country of nationality is not eligible for asylum.)&lt;/p&gt; &lt;p&gt;For example, an individual must be considered to have firmly resettled in another country if, after the events giving rise to the asylum claim, the individual resided in a country where the individual was eligible for any permanent or indefinitely renewable legal immigration status, such as refugee status. &lt;/p&gt; &lt;p&gt;(Sec. 109) This section establishes a statutory definition of what constitutes a frivolous asylum application, whereas currently this definition is defined in regulations. Under this bill, an application is frivolous if (1) it is so insufficient in substance that it is clear that it was filed to achieve another objective, such as to delay removal; or (2) any material elements are knowingly fabricated. &lt;/p&gt; &lt;p&gt;(Sec. 111) This section requires DOJ to establish procedures to expedite the adjudication of asylum applications from individuals who are (1) subject to formal removal proceedings; and (2) nationals of a Western Hemisphere country subject to sanctions related to Cuba, Nicaragua, or Venezuela. &lt;/p&gt; &lt;p&gt;TITLE II--BORDER SAFETY AND MIGRANT PROTECTION&lt;/p&gt; &lt;p&gt;(Sec. 201) This section expands the category of non-U.S. nationals who are subject to expedited removal (i.e., removal without further hearing or review) and addresses related issues.&lt;/p&gt; &lt;p&gt;Specifically, this section requires expedited removal for individuals who are unlawfully present or who unlawfully entered the United States. (Currently, DHS may, but is not required to, apply expedited removal to unlawfully present individuals who have been physically present in the United States for less than two years.) &lt;/p&gt; &lt;p&gt;This section also requires, with certain exceptions, detention for individuals who (1) are subject to expedited removal, (2) are subject to expedited removal and have expressed an intention to apply for asylum, or (3) have established a credible fear of persecution and are awaiting consideration of an asylum application.&lt;/p&gt; &lt;p&gt;If DHS cannot comply with this detention requirement or remove an individual to a safe third country, DHS must return the individual to the neighboring country that the individual traveled through to reach the United States while the individual's case is pending. &lt;/p&gt; &lt;p&gt;A state may sue DHS to enforce the requirements imposed by this section.&lt;/p&gt; &lt;p&gt;This section also authorizes DHS to suspend the introduction of certain non-U.S. nationals at an international border if DHS determines that the suspension is necessary to achieve operational control of that border. &lt;/p&gt; &lt;p&gt;(Sec. 202) This section requires DHS to take all actions necessary to reopen or restore all ICE detention facilities that were in operation on January 20, 2021. &lt;/p&gt; &lt;p&gt;TITLE III--PREVENTING UNCONTROLLED MIGRATION FLOWS IN THE WESTERN HEMISPHERE&lt;/p&gt; &lt;p&gt;(Sec. 302) This section requires the Department of State to seek to negotiate agreements with Western Hemisphere countries on cooperation and burden sharing on issues related to asylum seekers and immigration.&lt;/p&gt; &lt;p&gt;(Sec. 303) This section requires the State Department to periodically brief Congress on the process of its negotiations pursuant to the previous section of this bill.&lt;/p&gt; &lt;p&gt;TITLE IV--ENSURING UNITED FAMILIES AT THE BORDER&lt;/p&gt; &lt;p&gt;(Sec. 401) This section statutorily establishes that there is no presumption that an alien child (other than an unaccompanied child) should not be detained for immigration purposes. &lt;/p&gt; &lt;p&gt;Specifically, the section states that the detention of such minors shall be governed by specified sections of the Immigration and Nationality Act and not any other provision of law, judicial ruling, or settlement agreement.&lt;/p&gt; &lt;p&gt;(A 1997 settlement agreement, commonly known as the &lt;i&gt;Flores&lt;/i&gt; agreement, imposes requirements relating to the treatment of detained alien minors, including requiring such minors to be released or placed in a nonsecure facility after a certain amount of time in detention.)&lt;/p&gt; &lt;p&gt;If an adult enters the United States unlawfully with their child, DHS must detain the adult and child together if the only criminal charge against the adult is for unlawful entry.&lt;/p&gt; &lt;p&gt;This section also prohibits states from imposing licensing requirements on immigration detention facilities used to detain minors or families with minors. &lt;/p&gt; &lt;p&gt;TITLE V--PROTECTION OF CHILDREN&lt;/p&gt; &lt;p&gt;(Sec. 502) This section modifies the treatment of unaccompanied alien children, including by requiring DHS to remove such children, with some exceptions, from the United States.&lt;/p&gt; &lt;p&gt;Current law authorizes DHS to remove an unaccompanied alien child to their country of nationality or last habitual residence if that country is next to the United States. This section (1) eliminates the requirement that the country is next to the United States; and (2) requires DHS to remove the child, whereas currently DHS is authorized to do so.&lt;/p&gt; &lt;p&gt;This section also authorizes immigration officers to permit such a child to withdraw their application for admission into the United States even if the child is unable to make an independent decision to withdraw the application.&lt;/p&gt; &lt;p&gt;This section also establishes and modifies deadlines for the handling of unaccompanied alien children. For example, if the child is a victim of a severe form of human trafficking or has a credible fear of persecution, the child must be placed in formal removal proceedings and have a hearing before an immigration judge within 14 days of screening.&lt;/p&gt; &lt;p&gt;Furthermore, before DHS places an unaccompanied alien child with an individual, the Department of Health and Human Services must provide DHS with certain information about the individual, including the individual's social security number and immigration status. DHS must initiate removal proceedings if the individual is unlawfully present. &lt;/p&gt; &lt;p&gt;(Sec. 503) This section tightens the eligibility requirements for Special Immigrant Juvenile visas (immigrant visas for qualifying non-U.S. nationals under 21 years of age who are in the United States and have been abused, abandoned, or neglected by a parent). &lt;/p&gt; &lt;p&gt;Currently, an otherwise eligible individual may qualify for the visa if the individual cannot reunite with one or both parents due to abuse, neglect, or abandonment (i.e., an individual may qualify even if reunification with one parent is possible). Under this section, an individual shall not qualify for the visa if reunification is possible with any parent or legal guardian. &lt;/p&gt; &lt;p&gt;TITLE VI--VISA OVERSTAYS PENALTIES&lt;/p&gt; &lt;p&gt;(Sec. 601) This section increases the civil penalties for unlawful entry into the United States and establishes criminal penalties for overstaying a visa.&lt;/p&gt; &lt;p&gt;An individual apprehended while unlawfully entering the United States shall be subject to a fine of at least $500 and up to $1,000 (currently at least $50 and up to $250).&lt;/p&gt; &lt;p&gt;If an individual overstays a visa (or otherwise fails to comply with the conditions of a visa) for 10 days or more, on first offense the individual shall be subject to fines or imprisonment for up to six months, or both. For subsequent violations, the individual shall be subject to fines or imprisonment of up to two years, or both. &lt;/p&gt; &lt;p&gt;TITLE VII--IMMIGRATION PAROLE REFORM&lt;/p&gt; &lt;p&gt;(Sec. 701) This section limits the authority of DHS to grant parole (temporary admission into the United States for urgent humanitarian reasons or significant public benefit that is granted on a case-by-case basis).&lt;/p&gt; &lt;p&gt;Under this section, DHS may not grant parole based on eligibility criteria describing an entire class of potential parole recipients. &lt;/p&gt; &lt;p&gt;This section restricts DHS from granting parole to non-U.S. nationals who are already in the United States, with specified exceptions, such as for certain individuals who already have an approved petition for a family-sponsored visa and are the spouse or child of an active duty member of the Armed Forces.&lt;/p&gt; &lt;p&gt;The section further restricts the authority of DHS to grant parole, including by limiting (1) what constitutes granting parole on a case-by-case basis, (2) the authority to grant parole to purposes laid out in the section, and (3) the length of the parole period that may be granted to an individual.&lt;/p&gt; &lt;p&gt;(Sec. 702) This title takes effect 30 days after enactment of this bill, with specified exceptions.&lt;/p&gt; &lt;p&gt;(Sec. 703) This section authorizes persons (individuals or entities), states, and local governments to sue the federal government for failing to comply with this title's requirements if the person or government bringing the lawsuit suffered at least $1,000 of financial harm as a result of the failure.&lt;/p&gt;</text>
+        </cdata>
+      </summary>
+    </summaries>
+    <title>Continuing Appropriations and Border Security Enhancement Act, 2024</title>
+    <titles>
+      <item>
+        <titleType>Display Title</titleType>
+        <titleTypeCode>45</titleTypeCode>
+        <title>Continuing Appropriations and Border Security Enhancement Act, 2024</title>
+        <updateDate>2024-07-24T15:20:28Z</updateDate>
+      </item>
+      <item>
+        <titleType>Short Title(s) as Introduced</titleType>
+        <titleTypeCode>101</titleTypeCode>
+        <title>Continuing Appropriations and Border Security Enhancement Act, 2024</title>
+        <updateDate>2024-05-24T13:36:32Z</updateDate>
+        <billTextVersionName>Introduced in House</billTextVersionName>
+        <billTextVersionCode>IH</billTextVersionCode>
+      </item>
+      <item>
+        <titleType>Short Title(s) as Introduced for portions of this bill</titleType>
+        <titleTypeCode>106</titleTypeCode>
+        <title>Continuing Appropriations Act, 2024</title>
+        <updateDate>2024-05-24T13:36:32Z</updateDate>
+        <billTextVersionName>Introduced in House</billTextVersionName>
+        <billTextVersionCode>IH</billTextVersionCode>
+      </item>
+      <item>
+        <titleType>Official Title as Introduced</titleType>
+        <titleTypeCode>6</titleTypeCode>
+        <title>Making continuing appropriations for fiscal year 2024, and for other purposes.</title>
+        <updateDate>2024-03-18T21:25:20Z</updateDate>
+        <billTextVersionName>Introduced in House</billTextVersionName>
+        <billTextVersionCode>IH</billTextVersionCode>
+      </item>
+    </titles>
+    <amendments>
+      <amendment>
+        <number>486</number>
+        <congress>118</congress>
+        <type>HAMDT</type>
+        <description>Pursuant to the provisions of H. Res. 741, the amendments printed in House Report 118-230 are considered adopted.</description>
+        <updateDate>2025-05-13T11:07:17Z</updateDate>
+        <latestAction>
+          <actionDate>2023-09-29</actionDate>
+          <text>On agreeing to the Rules amendment (A001) Agreed to without objection.</text>
+        </latestAction>
+        <sponsors>
+          <item>
+            <name>Rules Committee</name>
+          </item>
+        </sponsors>
+        <submittedDate>2023-09-29T04:00:00Z</submittedDate>
+        <chamber>House of Representatives</chamber>
+        <amendedBill>
+          <congress>118</congress>
+          <type>HR</type>
+          <originChamber>House</originChamber>
+          <originChamberCode>H</originChamberCode>
+          <number>5525</number>
+          <title>Continuing Appropriations and Border Security Enhancement Act, 2024</title>
+          <updateDateIncludingText>2025-05-27</updateDateIncludingText>
+        </amendedBill>
+        <actions>
+          <count>7</count>
+          <actions>
+            <item>
+              <actionDate>2023-09-29</actionDate>
+              <text>On agreeing to the Rules amendment (A001) Agreed to without objection.</text>
+              <type/>
+              <actionCode>72500</actionCode>
+              <sourceSystem>
+                <code>9</code>
+                <name>Library of Congress</name>
+              </sourceSystem>
+            </item>
+            <item>
+              <actionDate>2023-09-29</actionDate>
+              <text>Amendment reported by the House Committee on Rules.</text>
+              <type>NotUsed</type>
+              <actionCode>71500</actionCode>
+              <sourceSystem>
+                <code>9</code>
+                <name>Library of Congress</name>
+              </sourceSystem>
+              <committees>
+                <item>
+                  <systemCode>hsru00</systemCode>
+                  <name>Rules Committee</name>
+                </item>
+              </committees>
+            </item>
+            <item>
+              <actionDate>2023-09-29</actionDate>
+              <text>House amendment considered as adopted: On agreeing to the Rules amendment (A001) Agreed to without objection.</text>
+              <type/>
+              <actionCode>72500</actionCode>
+              <sourceSystem>
+                <code>9</code>
+                <name>Library of Congress</name>
+              </sourceSystem>
+            </item>
+            <item>
+              <actionDate>2023-09-29</actionDate>
+              <text>House amendment offered/reported by: Amendment reported by the House Committee on Rules.</text>
+              <type>NotUsed</type>
+              <actionCode>71500</actionCode>
+              <sourceSystem>
+                <code>9</code>
+                <name>Library of Congress</name>
+              </sourceSystem>
+              <committees>
+                <item>
+                  <systemCode>hsru00</systemCode>
+                  <name>Rules Committee</name>
+                </item>
+              </committees>
+            </item>
+            <item>
+              <actionDate>2023-09-29</actionDate>
+              <text>House amendment offered</text>
+              <type>Floor</type>
+              <actionCode>71000</actionCode>
+              <sourceSystem>
+                <code>9</code>
+                <name>Library of Congress</name>
+              </sourceSystem>
+              <committees>
+                <item>
+                  <systemCode>hsru00</systemCode>
+                  <name>Rules Committee</name>
+                </item>
+              </committees>
+            </item>
+            <item>
+              <actionDate>2023-09-29</actionDate>
+              <text>House amendment offered</text>
+              <type>Floor</type>
+              <actionCode>71000</actionCode>
+              <sourceSystem>
+                <code>9</code>
+                <name>Library of Congress</name>
+              </sourceSystem>
+            </item>
+            <item>
+              <actionDate>2023-09-29</actionDate>
+              <text>House amendment agreed to: On agreeing to the Rules amendment (A001) Agreed to without objection.</text>
+              <type>Floor</type>
+              <actionCode>72000</actionCode>
+              <sourceSystem>
+                <code>9</code>
+                <name>Library of Congress</name>
+              </sourceSystem>
+            </item>
+          </actions>
+        </actions>
+      </amendment>
+    </amendments>
+    <textVersions>
+      <item>
+        <type>Introduced in House</type>
+        <date>2023-09-18T04:00:00Z</date>
+        <formats>
+          <item>
+            <url>https://www.govinfo.gov/content/pkg/BILLS-118hr5525ih/xml/BILLS-118hr5525ih.xml</url>
+          </item>
+        </formats>
+      </item>
+    </textVersions>
+    <latestAction>
+      <actionDate>2023-09-29</actionDate>
+      <text>Motion to reconsider laid on the table Agreed to without objection.</text>
+      <actionTime>13:51:45</actionTime>
+    </latestAction>
+  </bill>
+  <dublinCore xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:format>text/xml</dc:format>
+    <dc:language>EN</dc:language>
+    <dc:rights>Pursuant to Title 17 Section 105 of the United States Code, this file is not subject to copyright protection and is in the public domain.</dc:rights>
+    <dc:contributor>Congressional Research Service, Library of Congress</dc:contributor>
+    <dc:description>This file contains bill summaries and statuses for federal legislation. A bill summary describes the most significant provisions of a piece of legislation and details the effects the legislative text may have on current law and federal programs. Bill summaries are authored by the Congressional Research Service (CRS) of the Library of Congress. As stated in Public Law 91-510 (2 USC 166 (d)(6)), one of the duties of CRS is "to prepare summaries and digests of bills and resolutions of a public general nature introduced in the Senate or House of Representatives". For more information, refer to the User Guide that accompanies this file.</dc:description>
+  </dublinCore>
+</billStatus>

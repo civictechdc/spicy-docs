@@ -86,9 +86,9 @@ CONGRESS_BILLS = table_contract(
             "rollup acquires once per law, so filling it here would fetch every PLAW twice or read another "
             "table's output, which the one-pass rule forbids."
         ),
-        "stage": "Interpreted legislative stage of the latest action any stage rule classified.",
+        "stage": "Interpreted legislative stage, including failed/vetoed outcomes; enacted law is terminal.",
         "stage_rule": "Which stage rule fired, or NULL when no rule fired and the default stood.",
-        "stage_matcher": "The exact matcher string within that rule that matched.",
+        "stage_matcher": "The matched text pattern, publisher code or vote-result reading used by the named rule.",
         "stage_action_index": "Position in the publisher's action list of the action the stage was read from.",
         "stage_action_date": "Date of the action the stage was read from.",
         "stage_source_text": "The full action text the stage rule matched against, never shortened.",
@@ -152,9 +152,9 @@ BILL_ACTIONS = table_contract(
         "source_system_name": "Name of the system that reported the action.",
         "recorded_vote_count": "How many recordedVote entries this action carries.",
         "is_latest_action": ("True on the one actions[] entry the publisher's separate latestAction element names."),
-        "stage": "Stage this one action's text classifies as, which makes the bill's stage auditable action by action.",
+        "stage": "Stage this one action's qualified code and text classify as, including failed/vetoed outcomes.",
         "stage_rule": "Which stage rule fired on this action, or NULL when none did.",
-        "stage_matcher": "The exact matcher string within that rule that matched this action's text.",
+        "stage_matcher": "The matched text pattern, publisher code or vote-result reading used by the named rule.",
     },
 )
 

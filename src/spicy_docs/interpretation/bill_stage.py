@@ -1,25 +1,24 @@
-"""Legislative stage and signing date from a bill's actions.
+"""Legislative stage and signing date from a bill's retained actions.
 
-Reads a bill's ``<actions>`` (each action's text exactly as published, its
-``actionCode``, ``type`` and ``actionDate``) and its ``<laws>`` entries, and
-returns one rung of a seven-rung stage ladder plus one signing date, each
-carrying the rule that produced it and the action it came from. ``STAGES`` is
-display order and ``STAGE_RULES`` is precedence -- two different orders that
-disagree, so neither may be read as the other. ``infer_stage`` returns the
-stage of the latest action any rule classifies (by date, then position, so
-publisher order does not matter), except that enactment is terminal because
-becoming law happens once; action text is read untruncated, and the signing
-date comes from the ``laws`` entry plus the publisher's own became-law code
-rather than a keyword scan of prose, because codes beat prose in both
-directions.
+The progress ladder keeps its existing keys. Failed passage and veto are
+separate outcomes, not positions on that ladder. The latest classified action
+wins, except that enactment is terminal and a veto remains until enactment is
+recorded. Full source text, matched rule, and action location stay inspectable.
+
+The unitedstates/congress action tests supplied independent veto, failed-vote,
+and resolution cases; see docs/sources/bill-stage.md for source pins and the
+bounded BILLSTATUS comparison. Only narrowly qualified publisher codes override
+prose: the executive E30000 code occurs on both signatures and vetoes.
 """
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, replace
 
 DEFAULT_STAGE = "introduced"
+LAW_STAGE = "law"
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,9 +37,16 @@ STAGES: tuple[Stage, ...] = (
     Stage("other_chamber", "Other chamber", "Other"),
     Stage("conference", "Conference", "Conf"),
     Stage("presented", "Presented to President", "Pres"),
-    Stage("law", "Signed into law", "Law"),
+    Stage("law", "Became law", "Law"),
 )
 STAGE_KEYS: tuple[str, ...] = tuple(stage.key for stage in STAGES)
+# These have no numerical progress value: a failed vote may later pass, and a
+# veto may be overridden. Callers can display their labels beside the ladder.
+OUTCOME_STAGES: tuple[Stage, ...] = (
+    Stage("failed", "Passage failed", "Failed"),
+    Stage("vetoed", "Vetoed", "Veto"),
+)
+_OUTCOME_KEYS = frozenset(stage.key for stage in OUTCOME_STAGES)
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,21 +59,21 @@ class StageRule:
 
 # Order is load-bearing and each comment says why, as the original did.
 STAGE_RULES: tuple[StageRule, ...] = (
-    # First: "public law" is a substring of many action texts that also carry
-    # an earlier stage's wording.
+    # An enactment statement is checked at the start of the action below;
+    # mentioning another public law or ordering a public print is not enactment.
     StageRule(
         "law",
         (
-            "public law",
-            "public print",
             "became public law",
+            "became private law",
+            "became law without",
             "signed by president",
             "approved by president",
         ),
     ),
     StageRule(
         "presented",
-        ("enrolled", "presented to president", "sent to the president", "transmitted to president"),
+        ("presented to president", "sent to the president", "transmitted to president"),
     ),
     StageRule(
         "conference",
@@ -88,15 +94,16 @@ STAGE_RULES: tuple[StageRule, ...] = (
         "passed_chamber",
         (
             "engrossed",
+            "enrolled",
             "passed house",
             "passed senate",
             "passed/agreed to",
-            "on passage",
+            "on passage passed",
+            "on passage agreed",
             "agreed to in house",
             "agreed to in senate",
             "passed by recorded vote",
             "passed by voice vote",
-            "failed of passage",
         ),
     ),
     StageRule(
@@ -104,7 +111,6 @@ STAGE_RULES: tuple[StageRule, ...] = (
         (
             "received in the senate",
             "received in the house",
-            "referred",
             "placed on calendar",
             "placed on the union calendar",
             "placed on senate legislative calendar",
@@ -112,12 +118,11 @@ STAGE_RULES: tuple[StageRule, ...] = (
             "held at the desk",
             "motion to proceed",
             "cloture",
-            "star print",
         ),
     ),
     # Before "introduced": "reported" can appear alongside "introduced" and is
     # the more advanced stage.
-    StageRule("committee", ("reported", "ordered to be reported", "markup")),
+    StageRule("committee", ("reported", "ordered to be reported", "markup", "referred")),
     StageRule("introduced", ("introduced",)),
 )
 
@@ -184,45 +189,108 @@ def _action_date(action: object) -> str | None:
     return value if isinstance(value, str) else None
 
 
+_VETO_PREFIXES = ("vetoed by president", "pocket vetoed by president")
+# Match the vote being decided, not a procedural motion or a quoted bill.
+_PASSAGE_VOTE = re.compile(
+    r"^(?:on passage\b|on motion to suspend the rules and (?:pass|agree to)\b|"
+    r"on (?:agreeing to|adoption of) (?:the )?(?:resolution|concurrent resolution)\b)",
+    re.IGNORECASE,
+)
+_VOTE_FAILED = re.compile(r"\b(?:failed|rejected|not agreed to)\b", re.IGNORECASE)
+_VOTE_PASSED = re.compile(r"\b(?:passed|agreed to)\b", re.IGNORECASE)
+
+
 def infer_stage_from_text(text: str | None) -> StageFinding:
-    """Match one action text -- or one version-type string -- against the rules in order."""
+    """Classify an action or version description, retaining explicit non-progress outcomes."""
     if not text:
         return StageFinding(DEFAULT_STAGE, None, None, text, None, None)
-    lowered = text.lower()
+    lowered = text.lower().strip()
+    for prefix in _VETO_PREFIXES:
+        if lowered.startswith(prefix):
+            return StageFinding("vetoed", "vetoed", prefix, text, None, None)
+    passage_vote = _PASSAGE_VOTE.search(lowered)
+    failed = lowered.startswith("failed of passage") or (passage_vote and _VOTE_FAILED.search(lowered))
+    if failed:
+        stage = "vetoed" if "veto" in lowered or "objections of the president" in lowered else "failed"
+        return StageFinding(stage, "failed_passage", "failed passage vote", text, None, None)
+    if passage_vote and _VOTE_PASSED.search(lowered):
+        return StageFinding("passed_chamber", "passed_chamber", "successful passage vote", text, None, None)
+    # These actions describe a rule or a procedural question, not passage of
+    # this bill. Upstream distinguishes vote-aux actions for the same reason.
+    if lowered.startswith(("rule ", "on motion to recommit", "on motion to commit")):
+        return StageFinding(DEFAULT_STAGE, None, None, text, None, None)
     for rule in STAGE_RULES:
         for matcher in rule.matchers:
-            if matcher in lowered:
+            if matcher in lowered and (rule.stage != "law" or lowered.startswith(matcher)):
                 return StageFinding(rule.stage, rule.stage, matcher, text, None, None)
     return StageFinding(DEFAULT_STAGE, None, None, text, None, None)
 
 
-LAW_STAGE = "law"
+# The passage and presentation rows of ``bill_actions.BILLSTATUS_ACTION_CODES``
+# (passed/agreed to in House or Senate; presented to President).
+_QUALIFIED_ACTION_CODES = {
+    "8000": "passed_chamber",
+    "17000": "passed_chamber",
+    "28000": "presented",
+    "E20000": "presented",
+}
 
 
-def infer_stage(actions: Iterable[object]) -> StageFinding:
+def infer_stage_from_action(action: object) -> StageFinding:
+    """Read qualified BILLSTATUS codes, then the action's complete text.
+
+    The GPO guide warns that action codes were reused. E30000 is deliberately
+    absent here: real veto and signature records both carry it. Failed/veto
+    text wins over a contradictory passage code. Unknown codes fall back to
+    text and do not manufacture a known event.
+    """
+    finding = infer_stage_from_text(_action_text(action))
+    code = _field(action, "action_code", "actionCode")
+    if _is_became_law(action):
+        matcher = code or _field(action, "action_type", "type")
+        return replace(finding, stage=LAW_STAGE, rule="became_law_code", matcher=str(matcher))
+    if finding.stage in _OUTCOME_KEYS:
+        return finding
+    stage = _QUALIFIED_ACTION_CODES.get(code) if isinstance(code, str) else None
+    return finding if stage is None else replace(finding, stage=stage, rule="action_code", matcher=code)
+
+
+def infer_stage(actions: Iterable[object], *, newest_first: bool = False) -> StageFinding:
     """Return the stage of the latest action any rule classifies.
 
     ``actions`` holds ``BillAction`` records, mappings shaped like published
     action rows, or bare action-text strings, and text is read whole. "Latest"
-    is ``(actionDate, position)``, so a newest-first publisher list and a
-    chronological caller list give the same answer and an undated action never
-    outranks a dated one; an action no rule classifies leaves the stage alone,
-    and enactment is the one terminal rung.
+    is the later ``actionDate``, then the later place in the list; an undated
+    action never outranks a dated one. A BILLSTATUS list runs newest first, so
+    its caller passes ``newest_first=True`` and a day's first classified action
+    is that day's latest. The list's order, not ``actionTime``, orders one
+    day's actions: the publisher's order already follows the stated times and
+    places the untimed Library of Congress actions among them, where the time
+    alone would put a timed House vote after the untimed Senate receipt that
+    followed it. Measured on the live ``bill_actions`` generation
+    (``c28ed5b1…``, 930,779 actions, 2026-09-28): no adjacent pair runs
+    forward in date, and none of 106,013 same-day timed pairs runs forward in
+    time (receipt ``unitedstates-reuse-20260928/release-0.51.0/stage-replay/``).
+    An action no rule classifies leaves the stage alone, enactment is terminal,
+    and a veto remains until enactment is recorded.
     """
     latest: tuple[tuple[str, int], StageFinding] | None = None
     enacted: tuple[tuple[str, int], StageFinding] | None = None
+    vetoed: tuple[tuple[str, int], StageFinding] | None = None
     for position, action in enumerate(actions):
-        finding = infer_stage_from_text(_action_text(action))
+        finding = infer_stage_from_action(action)
         if finding.rule is None:
             continue
         date = _action_date(action)
         located = replace(finding, action_index=position, action_date=date)
-        key = (date or "", position)
+        key = (date or "", -position if newest_first else position)
         if located.stage == LAW_STAGE and (enacted is None or key > enacted[0]):
             enacted = (key, located)
+        if located.stage == "vetoed" and (vetoed is None or key > vetoed[0]):
+            vetoed = (key, located)
         if latest is None or key > latest[0]:
             latest = (key, located)
-    chosen = enacted or latest
+    chosen = enacted or vetoed or latest
     return chosen[1] if chosen else StageFinding(DEFAULT_STAGE, None, None, None, None, None)
 
 
@@ -307,6 +375,7 @@ __all__ = [
     "BECAME_PUBLIC_LAW_ACTION_TYPE",
     "DEFAULT_STAGE",
     "LAW_STAGE",
+    "OUTCOME_STAGES",
     "SIGNED_DATE_RULES",
     "STAGES",
     "STAGE_KEYS",
@@ -316,6 +385,7 @@ __all__ = [
     "StageFinding",
     "StageRule",
     "infer_stage",
+    "infer_stage_from_action",
     "infer_stage_from_text",
     "signed_date",
     "stage_index",

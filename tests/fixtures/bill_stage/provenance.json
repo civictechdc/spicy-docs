@@ -1,0 +1,36 @@
+{
+  "retrieved_at": "2026-09-28",
+  "transformation": "None. Exact official BILLSTATUS bytes. Selected for veto, same-day resolution, and failed-passage regressions.",
+  "files": [
+    {
+      "file": "BILLSTATUS-111hjres64.xml",
+      "url": "https://www.govinfo.gov/bulkdata/BILLSTATUS/111/hjres/BILLSTATUS-111hjres64.xml",
+      "congress": 111,
+      "bill_type": "hjres",
+      "number": 64,
+      "bytes": 20504,
+      "sha256": "72918f989f468f236cfb291ce62fc197c377df833c4778262c66455bf4723023",
+      "expected_stage": "vetoed"
+    },
+    {
+      "file": "BILLSTATUS-118hres5.xml",
+      "url": "https://www.govinfo.gov/bulkdata/BILLSTATUS/118/hres/BILLSTATUS-118hres5.xml",
+      "congress": 118,
+      "bill_type": "hres",
+      "number": 5,
+      "bytes": 28298,
+      "sha256": "4991bf9435f46d67b69842ceaa1cfb365c7eaa578289106c58bbc0af2149faac",
+      "expected_stage": "passed_chamber"
+    },
+    {
+      "file": "BILLSTATUS-118hr5525.xml",
+      "url": "https://www.govinfo.gov/bulkdata/BILLSTATUS/118/hr/BILLSTATUS-118hr5525.xml",
+      "congress": 118,
+      "bill_type": "hr",
+      "number": 5525,
+      "bytes": 64430,
+      "sha256": "dd16353bca7654f588ac8d02533e4738ad94c329e715185c638ee876d6e7a17f",
+      "expected_stage": "failed"
+    }
+  ]
+}

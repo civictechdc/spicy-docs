@@ -26,6 +26,7 @@
 - [Regulations.gov](sources/regulations-gov.md)
 - [GAO pages](sources/gao.md)
 - [Congressional bills](sources/congress-bills.md)
+- [Bill stages](sources/bill-stage.md): source-backed passage, veto and enactment interpretation with retained action evidence.
 - [CFR/eCFR XML](sources/cfr.md)
 - [eCFR authority notes and source metadata](sources/ecfr-authority.md)
 - [CFR agencies and subject index](sources/cfr-roster-index.md)

@@ -530,7 +530,7 @@ def build_bill_family(
     )
 
     # 2. The three bill-level findings, each carrying its own provenance.
-    stage = bill_stage.infer_stage(status.actions)
+    stage = bill_stage.infer_stage(status.actions, newest_first=True)
     signing = bill_stage.signed_date(status)
     money = money_bills.classify_money_bill(
         title=status.title,
@@ -565,7 +565,7 @@ def build_bill_family(
                 action,
                 action_index=index,
                 is_latest=index == latest,
-                stage=bill_stage.infer_stage_from_text(action.text),
+                stage=bill_stage.infer_stage_from_action(action),
             ),
         )
 

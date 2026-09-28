@@ -1217,6 +1217,15 @@ def test_an_enacted_bill_carries_its_law_number_and_its_signing_provenance() -> 
     assert row["stage"] == "law"
 
 
+def test_action_rows_read_the_same_qualified_codes_as_the_bill_row() -> None:
+    """The became-law code stands on its own; E30000, carried by signatures and vetoes alike, defers to text."""
+    status = status_for("status-119s5.xml", BillIdentity(119, "s", 5))
+    rows = family(BillFamilyCapture(status=status, observed_at=OBSERVED_AT), diff=False).bill_actions
+    by_code = {row["action_code"]: row for row in rows if row["action_code"]}
+    assert (by_code["36000"]["stage"], by_code["36000"]["stage_rule"]) == ("law", "became_law_code")
+    assert (by_code["E30000"]["stage_rule"], by_code["E30000"]["stage_matcher"]) == ("law", "signed by president")
+
+
 PRINTING_TABLES = (
     "bill_versions",
     "bill_sections",

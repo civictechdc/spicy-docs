@@ -1,27 +1,27 @@
-"""Bill-stage inference: the ported stage cases, the ladder, and the two corrections the port makes.
+"""Legislative events, independent source cases, and display-progress boundaries."""
 
-Pins each rule's stage in published order, the stage ladder and its progress
-values, the fold that takes the latest classified action regardless of list
-order, and the two fixes: untruncated action text and a signed date read from
-the coded became-law action rather than the latest action.
-"""
+import json
+from pathlib import Path
 
 import pytest
 
 from spicy_docs.interpretation.bill_stage import (
+    OUTCOME_STAGES,
+    STAGE_KEYS,
     STAGE_RULES,
     STAGES,
     infer_stage,
+    infer_stage_from_action,
     infer_stage_from_text,
     signed_date,
     stage_index,
     stage_progress,
 )
-from spicy_docs.sources.congress.bill_status import BillAction
+from spicy_docs.sources.congress.bill_status import BillAction, BillIdentity, parse_bill_status
 
-# Every case from BillTrax/src/lib/congress-api.test.ts, which tested
-# inferStageFromAction and nothing else. Version-agnostic: each is action or
-# version-type prose, matched by the same rules through the same entry point.
+# Cases originally ported from BillTrax/src/lib/congress-api.test.ts. Failed
+# passage, enrollment and reprinting now follow the observed event rather than
+# preserve the original false success labels; see docs/sources/bill-stage.md.
 PORTED_CASES = [
     (None, "introduced"),
     ("", "introduced"),
@@ -35,11 +35,11 @@ PORTED_CASES = [
     ("Introduced in House", "introduced"),
     ("Became Public Law; previously engrossed", "law"),
     ("Conference report H. Rept. 119-200 filed.", "conference"),
-    ("Message on Senate action sent to the House. (Enrolled.)", "presented"),
+    ("Message on Senate action sent to the House. (Enrolled.)", "passed_chamber"),
     ("Message on House action received in Senate and at desk: House requests a conference.", "conference"),
     ("Returned to House from Senate with amendments.", "conference"),
     ("Senate insisted on its amendment.", "conference"),
-    ("Failed of passage in House.", "passed_chamber"),
+    ("Failed of passage in House.", "failed"),
     ("Agreed to in House without objection.", "passed_chamber"),
     ("Passed by recorded vote: 240 - 190.", "passed_chamber"),
     ("Held at the desk.", "other_chamber"),
@@ -53,7 +53,7 @@ PORTED_CASES = [
         "Cloture on the motion to proceed to the measure not invoked in Senate by Yea-Nay Vote. 54 - 45.",
         "other_chamber",
     ),
-    ("Star Print ordered on the bill.", "other_chamber"),
+    ("Star Print ordered on the bill.", "introduced"),
     ("Approved by President.", "law"),
     ("Became Public Law No: 119-86.", "law"),
 ]
@@ -99,7 +99,7 @@ def test_rule_order_is_the_published_order() -> None:
 def test_finding_names_the_rule_and_the_matcher() -> None:
     """A finding names the rule and matcher that fired and echoes the source text."""
     finding = infer_stage_from_text("Became Public Law No: 119-12.")
-    assert (finding.rule, finding.matcher) == ("law", "public law")
+    assert (finding.rule, finding.matcher) == ("law", "became public law")
     assert finding.source_text == "Became Public Law No: 119-12."
 
 
@@ -142,15 +142,13 @@ def test_infer_stage_reads_actions_whole_and_names_the_action() -> None:
     assert finding.source_text == LONG_ACTION
 
 
-# The fold is the stage of the latest classified action. Display order must
-# never stand in for progress: "referred" is a matcher of other_chamber, whose
-# display index (3) is above committee (1) and passed_chamber (2), and every
-# bill's introduction is a referral.
+# The fold is the stage of the latest classified action. Referrals establish
+# committee consideration, not a transition to the other chamber.
 REFERRAL = "Referred to the House Committee on Ways and Means."
 FOLD_CASES = [
     (("Introduced in House", REFERRAL, "Reported by the Committee on Ways and Means. H. Rept. 119-101."), "committee"),
     (("Introduced in House", REFERRAL, "Passed House by recorded vote: 217-212."), "passed_chamber"),
-    (("Introduced in House", REFERRAL), "other_chamber"),
+    (("Introduced in House", REFERRAL), "committee"),
 ]
 
 
@@ -162,25 +160,23 @@ def test_the_fold_takes_the_latest_classified_action(actions: tuple[str, ...], e
 
 def test_display_order_is_not_progress_order() -> None:
     """``other_chamber`` outranks ``committee`` and ``passed_chamber`` in display order,
-    and a referral alone reads as ``other_chamber``.
+    while a referral alone establishes committee consideration.
     """
     # The disagreement the fold must not read as a ladder.
     assert stage_index("other_chamber") > stage_index("committee")
     assert stage_index("other_chamber") > stage_index("passed_chamber")
-    assert infer_stage_from_text(REFERRAL).stage == "other_chamber"
+    assert infer_stage_from_text(REFERRAL).stage == "committee"
 
 
 def test_an_unclassified_action_leaves_the_stage_alone() -> None:
     """An action no rule matches does not change the stage set by earlier classified actions."""
     actions = ("Introduced in House", REFERRAL, "Sponsor's remarks inserted in the Record.")
-    assert infer_stage(actions).stage == "other_chamber"
+    assert infer_stage(actions).stage == "committee"
 
 
 def test_enactment_is_terminal_and_a_later_star_print_does_not_demote_it() -> None:
-    """A public law stays the stage even though a later star print classifies as ``other_chamber``."""
-    # A star print is not an unclassified action: "star print" is a matcher of
-    # other_chamber, so only the terminal-law rule protects the bill here.
-    assert infer_stage_from_text("Star Print ordered on the bill.").stage == "other_chamber"
+    """A public law stays enacted; a later reprint supplies no new legislative stage."""
+    assert infer_stage_from_text("Star Print ordered on the bill.").rule is None
     actions = (
         {"text": "Introduced in House", "actionDate": "2025-01-03"},
         {"text": "Became Public Law No: 119-21.", "actionDate": "2025-07-04"},
@@ -273,3 +269,154 @@ def test_a_public_law_without_a_coded_action_keeps_the_number_and_names_the_outc
     assert finding.signed_date is None
     assert finding.public_law_number == "119-21"
     assert finding.rule == "public_law_without_became_law_action"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Public Print",
+        "Star Print ordered on the bill.",
+        "Rule H. Res. 456 passed House.",
+        "On motion to recommit Failed by the Yeas and Nays: 210 - 218.",
+        "DEBATE - The House proceeded with one hour of debate on the question on passage.",
+        "A report discussing Public Law 118-5 and signed by President statements.",
+    ],
+)
+def test_printing_other_bills_and_procedural_votes_do_not_establish_success(text):
+    assert infer_stage_from_text(text).rule is None
+
+
+def test_an_executive_code_does_not_turn_a_real_veto_into_enactment():
+    finding = infer_stage_from_action({"text": "Vetoed by President.", "actionCode": "E30000"})
+    assert finding.stage == "vetoed"
+
+
+@pytest.mark.parametrize(
+    ("action", "expected"),
+    [
+        ({"actionCode": "36000"}, ("law", "became_law_code", "36000")),
+        ({"actionCode": "E40000"}, ("law", "became_law_code", "E40000")),
+        ({"type": "BecameLaw"}, ("law", "became_law_code", "BecameLaw")),
+        ({"actionCode": "8000"}, ("passed_chamber", "action_code", "8000")),
+        ({"actionCode": "17000"}, ("passed_chamber", "action_code", "17000")),
+        ({"actionCode": "28000"}, ("presented", "action_code", "28000")),
+        ({"actionCode": "E20000"}, ("presented", "action_code", "E20000")),
+        # An unknown code manufactures nothing; the text decides.
+        ({"actionCode": "H11100", "text": REFERRAL}, ("committee", "committee", "referred")),
+        ({"actionCode": "H8D000"}, ("introduced", None, None)),
+    ],
+)
+def test_only_qualified_publisher_codes_supply_an_event(action, expected):
+    """The guide's enactment, passage and presentation codes stand on their own; other codes defer to text."""
+    finding = infer_stage_from_action({"text": "Recorded action.", **action})
+    assert (finding.stage, finding.rule, finding.matcher) == expected
+
+
+@pytest.mark.parametrize(
+    ("text", "stage"),
+    [
+        (
+            "On motion to suspend the rules and pass the bill, as amended Agreed to by the Yeas and Nays: 400 - 20.",
+            "passed_chamber",
+        ),
+        (
+            "On motion to suspend the rules and agree to the resolution Failed by the Yeas and Nays: 250 - 170.",
+            "failed",
+        ),
+        ("On passage Passed by recorded vote: 220 - 207 (Roll no. 123).", "passed_chamber"),
+        ("On agreeing to the resolution Agreed to by voice vote.", "passed_chamber"),
+        ("Failed of passage in Senate over veto by Yea-Nay Vote. 54 - 45.", "vetoed"),
+    ],
+)
+def test_explicit_vote_results_decide_passage(text, stage):
+    """A passage vote is read by its stated result, suspension votes included."""
+    assert infer_stage_from_text(text).stage == stage
+
+
+@pytest.mark.parametrize("text", ["Vetoed by President.", "Pocket Vetoed by President."])
+def test_a_veto_names_the_phrase_it_matched(text):
+    finding = infer_stage_from_text(text)
+    assert (finding.stage, finding.matcher) == ("vetoed", text.lower().rstrip("."))
+
+
+def test_failure_can_be_reconsidered_but_an_incomplete_override_keeps_the_veto():
+    failed = {
+        "text": "On motion to suspend the rules and pass the bill Failed by the Yeas and Nays: 200 - 230.",
+        "actionDate": "2023-09-18",
+    }
+    assert infer_stage([failed]).stage == "failed"
+    assert (
+        infer_stage([failed, {"text": "Passed House by voice vote.", "actionDate": "2023-12-11"}]).stage
+        == "passed_chamber"
+    )
+    actions = [
+        {"text": "Vetoed by President.", "actionDate": "2020-12-23"},
+        {"text": "Passed House over veto.", "actionDate": "2020-12-28"},
+    ]
+    assert infer_stage(actions).stage == "vetoed"
+    actions.append({"text": "Became Public Law No: 116-283.", "actionDate": "2021-01-01"})
+    assert infer_stage(actions).stage == "law"
+
+
+SAME_DAY_CASES = [
+    # Introduction and referral share a date and neither states a time.
+    (("Introduced in House", REFERRAL), "committee"),
+    # A timed House vote, then the untimed Senate receipt that followed it.
+    (
+        (
+            {"text": "Passed House by recorded vote: 217-212.", "actionTime": "14:10:59"},
+            {"text": "Received in the Senate."},
+        ),
+        "other_chamber",
+    ),
+    # An untimed introduction, then a timed agreement.
+    (
+        (
+            {"text": "Introduced in House"},
+            {"text": "On agreeing to the resolution Agreed to by voice vote.", "actionTime": "19:08:48"},
+        ),
+        "passed_chamber",
+    ),
+]
+
+
+@pytest.mark.parametrize(("chronological", "expected"), SAME_DAY_CASES)
+def test_one_days_actions_follow_the_list_order_the_caller_declares(chronological, expected):
+    """The same day's actions are ordered by the list, read in the direction the caller states."""
+    actions = [
+        {"actionDate": "2023-01-09", **action}
+        if isinstance(action, dict)
+        else {"text": action, "actionDate": "2023-01-09"}
+        for action in chronological
+    ]
+    assert infer_stage(actions).stage == expected
+    assert infer_stage(actions[::-1], newest_first=True).stage == expected
+    # Read the wrong way round, the earliest action wins: the direction is the caller's to state.
+    assert infer_stage(actions[::-1]).stage != expected
+
+
+@pytest.mark.parametrize("stage", ["failed", "vetoed"])
+def test_non_progress_outcomes_have_labels_but_no_false_progress_percentage(stage):
+    assert stage in {item.key for item in OUTCOME_STAGES}
+    assert stage not in STAGE_KEYS
+    assert stage_index(stage) == -1
+    with pytest.raises(ValueError, match="unknown stage"):
+        stage_progress(stage)
+
+
+def test_explicit_failure_beats_a_contradictory_passage_code():
+    finding = infer_stage_from_action({"text": "Failed of passage in House.", "actionCode": "8000"})
+    assert finding.stage == "failed"
+
+
+_SOURCE_CASES = Path(__file__).parent / "fixtures" / "bill_stage"
+
+
+@pytest.mark.parametrize("case", json.loads((_SOURCE_CASES / "provenance.json").read_text())["files"])
+def test_official_billstatus_event_histories(case):
+    status = parse_bill_status(
+        (_SOURCE_CASES / case["file"]).read_bytes(),
+        identity=BillIdentity(case["congress"], case["bill_type"], case["number"]),
+    )
+    assert infer_stage(status.actions, newest_first=True).stage == case["expected_stage"]
+    assert infer_stage(reversed(status.actions)).stage == case["expected_stage"]

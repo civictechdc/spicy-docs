@@ -182,10 +182,11 @@ ever actually carried; no live comparison of the two orders has been run (see
 
 `STAGES` is display order, not progress order, and `stage_index` and
 `stage_progress` answer only "where does this rung get drawn". They cannot say
-which of two stages is further along: `referred` maps to `other_chamber`,
-which is drawn after `committee` and `passed_chamber` although every bill's
-introduction is a referral. `infer_stage` therefore folds by recency, not by
-rung.
+which of two stages is further along: a referral in the second chamber reads
+`committee`, drawn before the `other_chamber` rung the bill already reached,
+and the `failed` and `vetoed` outcomes (`OUTCOME_STAGES`) have no rung at all.
+`infer_stage` therefore folds by recency, not by rung; see
+[bill stages](sources/bill-stage.md).
 
 `release_matching` cannot tell a bill mentioned in passing from the bill a
 release is about; it reports the first bill named and which field named it, so

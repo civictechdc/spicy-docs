@@ -253,8 +253,8 @@ def test_every_public_law_spelling_is_the_became_public_law_phrase() -> None:
     ("phrase", "stage", "matcher"),
     [
         ("ordered favorably reported", "committee", "reported"),
-        ("referred", "other_chamber", "referred"),
-        ("became Public Law", "law", "public law"),
+        ("referred", "committee", "referred"),
+        ("became Public Law", "law", "became public law"),
         # The print writes "passed the House"; the sealed matcher is "passed
         # house". One word apart, and the rung is unreachable because of it --
         # recorded NULL rather than closed by widening STAGE_RULES.
