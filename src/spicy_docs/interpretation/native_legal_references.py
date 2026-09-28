@@ -15,6 +15,7 @@ and ``json_column``'s spelling move published values (``docs/decisions.md``); wh
 from __future__ import annotations
 
 import copy
+import itertools
 import re
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
@@ -125,13 +126,19 @@ def interpret_native_reference(row: Mapping[str, str | None]) -> NativeReference
     return NativeReferenceReading(status, candidates, text_sha256)
 
 
+def _keeps(outcome: Mapping[str, object], field: str, value: object) -> bool:
+    """Whether ``outcome`` holds ``field`` as ``value`` with its type: ``True`` is not ``1``, nor ``125`` ``125.0``."""
+    return field in outcome and type(outcome[field]) is type(value) and outcome[field] == value
+
+
 def interpret_native_references(rows: Sequence[Row], *, resolve: TargetLookup) -> list[Row]:
     """Complete shaped observation rows: read each, look every candidate up in one ``resolve`` call, spell the rest.
 
     One lookup for the whole run, so a distinct target key is read once however many observations name it, and the
     host's bounds apply to the run as they did before the reading moved here. ``resolve`` receives a deep copy of the
     candidates, so it cannot change what they are checked against, and must return one outcome per candidate, in order,
-    each keeping every field of its candidate; anything else refuses. Two rows naming one observation (one
+    each keeping every field of its candidate, type included; anything else refuses, and no more than one outcome past
+    the candidates is read. Two rows naming one observation (one
     ``scope_id`` and ``occurrence_index``) refuse before the lookup, since their candidates would share their keys.
     ``target_candidates_json`` is :func:`json_column`'s spelling, and each completed row is checked against the
     contract.
@@ -149,9 +156,10 @@ def interpret_native_references(rows: Sequence[Row], *, resolve: TargetLookup) -
         for row, reading in zip(rows, readings, strict=True)
         if reading.text_sha256 is not None
     }
-    outcomes = list(resolve(copy.deepcopy(candidates), texts))
+    # One outcome past the candidates is enough to refuse, so an endless lookup refuses instead of running on.
+    outcomes = list(itertools.islice(resolve(copy.deepcopy(candidates), texts), len(candidates) + 1))
     if len(outcomes) != len(candidates) or any(
-        any(field not in outcome or outcome[field] != value for field, value in candidate.items())
+        any(not _keeps(outcome, field, value) for field, value in candidate.items())
         for outcome, candidate in zip(outcomes, candidates, strict=True)
     ):
         raise TableContractError(

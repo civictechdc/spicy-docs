@@ -3272,7 +3272,9 @@ column, spelled `value/1`, and each observation's `scope_id` references it.
   read once and the host's bounds apply per run. Every row therefore carries
   a lookup outcome.
 - The lookup is given a deep copy of the candidates, and each outcome must keep
-  every field of its candidate, in candidate order, or the run refuses. So a
+  every field of its candidate, type included (`true` is not `1`, nor `125`
+  `125.0`), in candidate order, or the run refuses. No more than one outcome
+  past the candidates is read, so an endless lookup refuses rather than runs. So a
   lookup that sorts, pops or rekeys the list it was given, or returns a
   candidate with another `target_key` or `document_key`, cannot move a
   candidate into another row or change what it names. Two rows naming one

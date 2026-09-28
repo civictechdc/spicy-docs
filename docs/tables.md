@@ -1098,8 +1098,9 @@ record key or locator, an input or manifest digest not spelled `sha256:` plus
 edition or eCFR title, an unknown family, and an eCFR text observation other
 than AUTH or SOURCE. The reading refuses a run with two rows naming one
 observation, and a target lookup that loses, adds, reorders or changes a
-candidate: the lookup gets a deep copy, and each outcome must keep every field
-of its candidate. The CFR scanner's own `EcfrAuthorityScan.input_sha256` is
+candidate: the lookup gets a deep copy, each outcome must keep every field of
+its candidate with its type, and no more than one outcome past the candidates
+is read. The CFR scanner's own `EcfrAuthorityScan.input_sha256` is
 bare hex, so a caller prefixes it; it is never a published column.
 
 **Measured on the published generation.** On 2026-09-28 the fork's

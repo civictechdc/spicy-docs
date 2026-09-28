@@ -2,6 +2,7 @@
 
 import hashlib
 import io
+import itertools
 import json
 import zipfile
 from pathlib import Path
@@ -336,6 +337,12 @@ def _rekey_in_place(candidates, texts):
         lambda candidates, texts: [{k: v for k, v in c.items() if k != "matched_text"} for c in candidates],
         lambda candidates, texts: [dict(c) for c in reversed(candidates)],
         lambda candidates, texts: [dict(c) for c in candidates][:-1],
+        lambda candidates, texts: [{**c, "target_resolved": 1} if "target_resolved" in c else c for c in candidates],
+        lambda candidates, texts: [
+            {**c, "span_start": float(c["span_start"])} if "span_start" in c else c for c in candidates
+        ],
+        lambda candidates, texts: itertools.cycle(candidates),
+        lambda candidates, texts: [*candidates, dict(candidates[0])],
     ],
     ids=[
         "sort-in-place",
@@ -346,11 +353,16 @@ def _rekey_in_place(candidates, texts):
         "drop-a-field",
         "reversed-copy",
         "one-short",
+        "true-as-1",
+        "int-as-float",
+        "endless",
+        "one-extra",
     ],
 )
 def test_a_lookup_that_moves_loses_or_rewrites_a_candidate_refuses(lookup) -> None:
     """A lookup gets copies, so mutating them in place changes nothing it is checked against, and every outcome must
-    keep its candidate's fields: which candidate it is, and which row it lands in, are never the lookup's to choose."""
+    keep its candidate's fields, type included: which candidate it is, and which row it lands in, are never the
+    lookup's to choose. At most one outcome past the candidates is read, so an endless lookup refuses."""
     rows = _looked_up_rows()
     readings = [interpret_native_reference(row) for row in rows]
     with pytest.raises(TableContractError, match="one outcome per candidate"):
