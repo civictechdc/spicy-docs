@@ -105,6 +105,18 @@ totals blocks, and every `recorded-vote`:
 | legislator element text | display name | `MemberVote.name` |
 | `recorded-vote/vote` | spelled vote | `MemberVote.vote` (raw), `.vote_normalized` (see below) |
 
+A Committee of the Whole vote states `<committee>U.S. House of Representatives</committee>`
+where every other vote states `<chamber>`, so its `chamber_raw` is `None`, and
+it lists the five non-voting delegates and the Resident Commissioner with
+`@state` `XX`, which `MemberVote.state` and `member_votes.state` keep as
+stated. Over all 1,241 roll calls of the 118th Congress (fetched from the
+Clerk 2026-09-28; receipt
+`~/Work/corpora/fork-execution-2026-09-21/cbo-112-113/clerk-xx.json`), 538
+state `<committee>`, every one an `On Agreeing to the Amendment` recorded
+vote on which all six carry `XX`; the other 703 state `<chamber>` and list
+none of them. A byte count, a plain XML walk and `parse_clerk_vote` agree on
+every file.
+
 **Senate LIS** (`parse_senate_vote`) -- every top-level field, `count`,
 `tie_breaker`, `document`, `amendment`, and every `member`:
 

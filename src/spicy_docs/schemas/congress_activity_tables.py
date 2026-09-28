@@ -196,7 +196,13 @@ MEMBER_VOTES = table_contract(
         "lis_id": "The voting member's Senate LIS id, which only the Senate file carries.",
         "member_name": "The member's name exactly as the roll-call source spells it.",
         "party": "The member's party as the roll-call source states it.",
-        "state": "The member's state as the roll-call source states it.",
+        "state": (
+            "The member's state as the roll-call source states it. On a House row `XX` is the Clerk's marking for "
+            "the five non-voting delegates and the Resident Commissioner, seen only on Committee of the Whole "
+            "amendment votes: in the 118th Congress all six carry it on 538 of 1,241 roll calls, each an amendment "
+            "vote whose file names a committee rather than the House as the voting body, and none appears on any "
+            "other. Kept as stated, not mapped to a territory."
+        ),
         "position": "The member's position exactly as the publisher spelled it (Yea, Aye, Not Voting...).",
         "position_normalized": "That position folded onto yea, nay, present or not_voting; NULL for a named candidate choice.",
         "vote_date": "The chamber's literal date; sorts as text, not by time (see roll_call_votes `vote_day`).",

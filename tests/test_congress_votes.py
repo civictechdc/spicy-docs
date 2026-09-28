@@ -221,6 +221,21 @@ def test_clerk_fixture_matches_the_measured_2026_09_18_shape():
     assert vote.congress_year is None and vote.tie_breaker is None and vote.vote_title is None
 
 
+def test_the_clerk_xx_state_is_kept_and_the_contract_says_what_it_marks():
+    """The Clerk writes XX for the delegates and the Resident Commissioner on Committee of the Whole amendment
+    votes (538 of the 118th's 1,241 roll calls, receipt ``fork-execution-2026-09-21/cbo-112-113/clerk-xx.json``);
+    the reader keeps it verbatim. Synthetic edit: Adams's ``NC`` in the pinned 119th file becomes ``XX``."""
+    from spicy_docs.schemas import MEMBER_VOTES
+
+    stated = b'<legislator name-id="A000370" sort-field="Adams" unaccented-name="Adams" party="D" state="NC"'
+    assert CLERK_FIXTURE.count(stated) == 1
+    vote = parse_clerk_vote(CLERK_FIXTURE.replace(stated, stated.replace(b'"NC"', b'"XX"')), CLERK_LOCATOR)
+    assert {member.bioguide_id: member.state for member in vote.member_votes}["A000370"] == "XX"
+    description = MEMBER_VOTES.descriptions["state"]
+    assert "`XX` is the Clerk's marking for the five non-voting delegates and the Resident Commissioner" in description
+    assert "Committee of the Whole amendment votes" in description and "538 of 1,241 roll calls" in description
+
+
 def test_clerk_fixture_members_carry_every_legislator_attribute():
     """Clerk members carry every legislator attribute, with a null LIS id and normalized vote counts that sum to the
     tallies.
