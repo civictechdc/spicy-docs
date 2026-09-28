@@ -205,3 +205,37 @@ date belong to the later interval, but the policy is not a new source fact.
 Overlaps, gaps, missing ends and contradictory assertions remain visible.
 A current roster cannot fill historical unknowns. Local source/projection tests
 do not establish publication or a rebuilt member-vote-party dataset.
+
+## Read social accounts and district offices
+
+The same acquirer can now capture an explicit companion file:
+
+```python
+with LegislatorsAcquirer(budget=budget) as source:
+    social = source.acquire_companion("social-media")
+    offices = source.acquire_companion("district-offices")
+
+record = social.file.by_bioguide["W000805"]
+print(record.raw_json)  # exact original record JSON, including unknown fields
+```
+
+`parse_legislator_companion` also accepts already-retained JSON bytes. Each
+result names its dataset and input SHA-256; each record keeps its position,
+literal Bioguide ID, and exact JSON substring. Offices, coordinates, phone
+strings, and unknown social platforms survive without normalization. Retain the
+capture bytes and observation time as with the current/historical files.
+
+These are community-maintained assertions. Join them to member records by
+Bioguide ID; preserve unmatched IDs and distinguish an absent member record
+from an empty office list. A missing social entry does not prove the member has
+no social account. The reader does not fetch profile URLs, geocode addresses,
+or infer current officeholding. Executive officeholders use a different record
+shape and are not silently read as legislators.
+
+The 2026-09-28 live qualification and unmatched-ID receipts are in the workspace
+`docs/unitedstates-review-2026-09-28/validation/legislative/` review. Native
+selected records are retained beside the existing legislator fixtures.
+
+```sh
+uv run --frozen pytest -q tests/test_legislators.py tests/test_legislator_companions.py
+```

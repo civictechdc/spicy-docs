@@ -1,0 +1,18 @@
+{
+  "observed_at": "2026-09-28T17:31:10.372666+00:00",
+  "transformation": "Exact W000805 record substring in a new JSON array",
+  "datasets": [
+    {
+      "dataset": "social-media",
+      "url": "https://unitedstates.github.io/congress-legislators/legislators-social-media.json",
+      "sha256": "sha256:c6eca1fcdb3a89901335eed51ca061daa4b60ad3243969a127e913bb9657fbc5",
+      "bytes": 143981
+    },
+    {
+      "dataset": "district-offices",
+      "url": "https://unitedstates.github.io/congress-legislators/legislators-district-offices.json",
+      "sha256": "sha256:8d698e92f8ebae3bdd387bfef239584164160e59d444ba1cbff46f32aa450f59",
+      "bytes": 473843
+    }
+  ]
+}

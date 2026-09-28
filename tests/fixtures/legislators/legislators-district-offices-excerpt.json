@@ -1,0 +1,66 @@
+[
+{
+    "id": {
+      "bioguide": "W000805",
+      "govtrack": 412321,
+      "thomas": "01897"
+    },
+    "offices": [
+      {
+        "id": "W000805-abingdon",
+        "address": "180 W. Main St.",
+        "suite": "Room 235",
+        "city": "Abingdon",
+        "state": "VA",
+        "zip": "24210",
+        "latitude": 36.7095562,
+        "longitude": -81.9767798,
+        "phone": "276-628-8158"
+      },
+      {
+        "id": "W000805-norfolk",
+        "address": "101 W. Main St.",
+        "suite": "Suite 7771",
+        "city": "Norfolk",
+        "state": "VA",
+        "zip": "23510",
+        "latitude": 36.8461399,
+        "longitude": -76.293138,
+        "phone": "757-441-3079"
+      },
+      {
+        "id": "W000805-richmond",
+        "address": "919 E. Main St.",
+        "suite": "Suite 630",
+        "city": "Richmond",
+        "state": "VA",
+        "zip": "23219",
+        "latitude": 37.5374358,
+        "longitude": -77.4362913,
+        "phone": "804-775-2314"
+      },
+      {
+        "id": "W000805-roanoke",
+        "address": "120 Luck Avenue, SW",
+        "suite": "Suite 108",
+        "city": "Roanoke",
+        "state": "VA",
+        "zip": "24011",
+        "latitude": 37.2697035,
+        "longitude": -79.943316,
+        "phone": "540-857-2676"
+      },
+      {
+        "id": "W000805-vienna",
+        "address": "8150 Leesburg Pike",
+        "suite": "Suite 700",
+        "city": "Vienna",
+        "state": "VA",
+        "zip": "22182",
+        "latitude": 38.9164603,
+        "longitude": -77.2266338,
+        "phone": "703-442-0670"
+      }
+    ]
+  }
+]

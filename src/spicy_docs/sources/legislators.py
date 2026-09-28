@@ -28,9 +28,9 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date
 from types import MappingProxyType
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
-from spicy_docs.reading.json_input import load_bounded_json
+from spicy_docs.reading.json_input import load_bounded_json, read_json_records
 from spicy_docs.reading.literal_dates import literal_date_status
 from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.source_acquirer import (
@@ -51,6 +51,7 @@ if TYPE_CHECKING:
 
 LEGISLATORS_CURRENT_URL = "https://unitedstates.github.io/congress-legislators/legislators-current.json"
 LEGISLATORS_HISTORICAL_URL = "https://unitedstates.github.io/congress-legislators/legislators-historical.json"
+LEGISLATORS_COMPANION_URL = "https://unitedstates.github.io/congress-legislators/legislators-{dataset}.json"
 
 # Measured 2026-09-19: current is 1,468,926 bytes / 539 records; historical is
 # 13,483,039 bytes / 12,231 records (522,454 JSON nodes). Defaults keep
@@ -68,6 +69,7 @@ _MAX_JSON_DEPTH = 16
 MEDIA_TYPES = ("application/json",)
 
 _LIS_ID = re.compile(r"S\d{3}")
+_BIOGUIDE_ID = re.compile(r"[A-Z]\d{6}")
 # Congressional: office letter, decade digit, state postal abbreviation, 5-digit sequence (e.g. S8WA00194).
 _FEC_CONGRESSIONAL_ID = re.compile(r"[HS]\d[A-Z]{2}\d{5}")
 # Presidential: no state, so no letters after the office letter (e.g. P80003023).
@@ -415,6 +417,95 @@ def parse_legislators(body: bytes, *, max_bytes: int, max_records: int = DEFAULT
     )
 
 
+LegislatorCompanionKind = Literal["social-media", "district-offices"]
+_COMPANION_FIELDS = {"social-media": "social", "district-offices": "offices"}
+
+
+@dataclass(frozen=True, slots=True)
+class LegislatorCompanionRecord:
+    """One file-local observation, with exact record JSON and a literal Bioguide ID.
+
+    Do not infer current officeholding or discard IDs absent from another file.
+    File snapshots can differ, and social records can include former members.
+    """
+
+    bioguide: str
+    source_record_index: int
+    raw_json: str
+
+
+@dataclass(frozen=True, slots=True)
+class LegislatorCompanionFile:
+    dataset: LegislatorCompanionKind
+    records: tuple[LegislatorCompanionRecord, ...]
+    by_bioguide: Mapping[str, LegislatorCompanionRecord]
+    input_sha256: str
+
+
+def parse_legislator_companion(
+    body: bytes,
+    *,
+    dataset: LegislatorCompanionKind,
+    max_bytes: int,
+    max_records: int = DEFAULT_MAX_RECORDS,
+) -> LegislatorCompanionFile:
+    """Read the published social-account or district-office JSON file.
+
+    The complete source record survives byte for byte, including unknown fields,
+    offices, phone strings, zero coordinates, and absent versus explicit null.
+    Only file shape and the join key are qualified here; a URL is not fetched,
+    and an address is not geocoded or promoted to an official-source assertion.
+    """
+    if dataset not in _COMPANION_FIELDS:
+        raise LegislatorsSourceError("dataset must be social-media or district-offices")
+    if type(max_records) is not int or not 1 <= max_records <= MAX_RECORDS_CAP:
+        raise LegislatorsSourceError(f"max_records must be a positive integer no greater than {MAX_RECORDS_CAP}")
+    if type(max_bytes) is not int or not 1 <= max_bytes <= MAX_CURRENT_BYTES:
+        raise LegislatorsSourceError(f"max_bytes must be a positive integer no greater than {MAX_CURRENT_BYTES}")
+    parsed = read_json_records(
+        body,
+        source=f"community legislators {dataset}",
+        error_type=LegislatorsSourceError,
+        number_policy="finite-float",
+        max_bytes=max_bytes,
+        max_nodes=_MAX_JSON_NODES,
+        max_depth=_MAX_JSON_DEPTH,
+    )
+    if not isinstance(parsed.value, list):
+        raise LegislatorsSourceError("community legislators companion file must be a JSON list")
+    if len(parsed.value) > max_records:
+        raise LegislatorsSourceError(f"community legislators companion file exceeds max_records ({max_records})")
+    records = []
+    by_bioguide = {}
+    for index, (row, span) in enumerate(zip(parsed.value, parsed.records, strict=True)):
+        if not isinstance(row, dict) or not isinstance(row.get("id"), dict):
+            raise LegislatorsSourceError(f"community legislators companion record {index} needs an id object")
+        bioguide = row["id"].get("bioguide")
+        if not isinstance(bioguide, str) or not _BIOGUIDE_ID.fullmatch(bioguide):
+            raise LegislatorsSourceError(f"community legislators companion record {index} needs a Bioguide ID")
+        field = _COMPANION_FIELDS[dataset]
+        value = row.get(field)
+        if dataset == "social-media":
+            valid = isinstance(value, dict)
+        else:
+            valid = isinstance(value, list) and all(isinstance(office, dict) for office in value)
+        if not valid:
+            raise LegislatorsSourceError(f"community legislators companion record {index} has invalid {field}")
+        if bioguide in by_bioguide:
+            raise LegislatorsSourceError(
+                f"community legislators companion record {index} repeats bioguide {bioguide!r}"
+            )
+        record = LegislatorCompanionRecord(bioguide, index, body[span.byte_start : span.byte_end].decode("utf-8"))
+        records.append(record)
+        by_bioguide[bioguide] = record
+    return LegislatorCompanionFile(
+        dataset,
+        tuple(records),
+        MappingProxyType(by_bioguide),
+        "sha256:" + hashlib.sha256(body).hexdigest(),
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class LegislatorsBudget:
     max_requests: int
@@ -438,8 +529,16 @@ class LegislatorsAcquisition:
     budget: LegislatorsBudget
 
 
+@dataclass(frozen=True, slots=True)
+class LegislatorCompanionAcquisition:
+    file: LegislatorCompanionFile
+    capture: CapturedBodyResponse
+    request_count: int
+    budget: LegislatorsBudget
+
+
 class LegislatorsAcquirer(SourceAcquirer):
-    """Keyless capture of the two community legislators crosswalk files.
+    """Keyless capture of community legislator crosswalks and companion files.
 
     Neither route needs a credential; GitHub Pages can still answer 401/403
     (for example when rate limited), so this stays a ``keyless`` acquirer
@@ -476,16 +575,24 @@ class LegislatorsAcquirer(SourceAcquirer):
     def budget(self) -> LegislatorsBudget:
         return self._budget
 
-    def _acquire(self, url: str, operation: str, max_bytes: int) -> LegislatorsAcquisition:
+    def _capture[Parsed](
+        self, url: str, operation: str, max_bytes: int, parse: Callable[[bytes, int], Parsed]
+    ) -> tuple[Parsed, CapturedBodyResponse]:
+        """One keyless capture of a community file; a 401/403 is ``LegislatorsRefusedError``."""
         with named_challenge(url, error_type=LegislatorsRefusedError, context_key="legislators_acquisition"):
-            legislators_file, capture = self.capture_validated(
+            return self.capture_validated(
                 url,
                 media_types=MEDIA_TYPES,
-                parse=lambda response, allowance: parse_legislators(response.body, max_bytes=allowance),
+                parse=lambda response, allowance: parse(response.body, allowance),
                 max_bytes=max_bytes,
                 unavailable=LegislatorsUnavailableError,
                 context={"operation": operation, "url": url},
             )
+
+    def _acquire(self, url: str, operation: str, max_bytes: int) -> LegislatorsAcquisition:
+        legislators_file, capture = self._capture(
+            url, operation, max_bytes, lambda body, allowance: parse_legislators(body, max_bytes=allowance)
+        )
         return LegislatorsAcquisition(legislators_file, capture, self.request_count, self.budget)
 
     def acquire_current(self, *, max_bytes: int | None = None) -> LegislatorsAcquisition:
@@ -514,3 +621,20 @@ class LegislatorsAcquirer(SourceAcquirer):
         """
         limit = narrow_byte_limit(self.budget.max_historical_bytes, max_bytes)
         return self._acquire(LEGISLATORS_HISTORICAL_URL, "historical", limit)
+
+    def acquire_companion(
+        self,
+        dataset: LegislatorCompanionKind,
+        *,
+        max_bytes: int | None = None,
+    ) -> LegislatorCompanionAcquisition:
+        """Capture one explicit companion dataset under the same request/byte budget."""
+        if dataset not in _COMPANION_FIELDS:
+            raise LegislatorsSourceError("dataset must be social-media or district-offices")
+        parsed, capture = self._capture(
+            LEGISLATORS_COMPANION_URL.format(dataset=dataset),
+            dataset,
+            narrow_byte_limit(self.budget.max_bytes, max_bytes),
+            lambda body, allowance: parse_legislator_companion(body, dataset=dataset, max_bytes=allowance),
+        )
+        return LegislatorCompanionAcquisition(parsed, capture, self.request_count, self.budget)

@@ -64,3 +64,12 @@ Refusal tests in `tests/test_legislators.py` mutate a small
 synthetic-but-realistic record (`base_row()`), not these excerpts, so a
 shape violation is isolated to exactly the field under test; see that
 module's docstring.
+
+## Companion observations, 2026-09-28
+
+`legislators-social-media-excerpt.json` and
+`legislators-district-offices-excerpt.json` retain the exact `W000805` record
+substring from each GitHub Pages JSON response, surrounded by a new array.
+The upstream records are community assertions, not independently verified
+account ownership or office locations. The source response pins are in
+`companion-provenance.json`; only the selected record is retained here.
