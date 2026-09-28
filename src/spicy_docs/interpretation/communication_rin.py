@@ -19,10 +19,11 @@ it cannot disagree with it.
 
 from __future__ import annotations
 
-import hashlib
 import re
 from collections.abc import Sequence
 from dataclasses import dataclass
+
+from spicy_docs.schemas.tables import digest
 
 #: The label the scalar requires directly before a listed RIN, searched with its end at the RIN's first character.
 RIN_LABEL = re.compile(r"RIN:?\s*\Z")
@@ -39,7 +40,7 @@ RIN_OCCURRENCE_RULE = "report_nature/shared_rin/2"
 
 def field_digest(report_nature: str) -> str:
     """The digest an occurrence carries of the field it was read from: ``sha256:`` and the UTF-8 bytes' hex digest."""
-    return "sha256:" + hashlib.sha256(report_nature.encode()).hexdigest()
+    return digest(report_nature)
 
 
 @dataclass(frozen=True, slots=True)
@@ -120,17 +121,18 @@ def rin_from_report_nature(
 
     A host that publishes both columns passes the list it already read as
     ``occurrences``, so the shared reader runs once per field rather than
-    twice. Each occurrence must carry this field's digest, or the call refuses
-    with ``ValueError``: a list read from another field would name a RIN this
-    one does not state.
+    twice. Each occurrence must carry this field's digest and name
+    :data:`RIN_OCCURRENCE_RULE`, or the call refuses with ``ValueError``: a
+    list read from another field would name a RIN this one does not state, and
+    one read under an earlier rule is re-read, not reused.
     """
     if occurrences is None:
         occurrences = rin_occurrences_from_report_nature(report_nature)  # refuses a non-string first
     elif report_nature is not None and not isinstance(report_nature, str):
         raise TypeError(f"report_nature must be a string or None, not {type(report_nature).__name__}")
     elif occurrences:
-        digest = None if report_nature is None else field_digest(report_nature)
-        if any(occurrence.field_sha256 != digest for occurrence in occurrences):
+        stated = None if report_nature is None else field_digest(report_nature)
+        if any(o.field_sha256 != stated or o.rule != RIN_OCCURRENCE_RULE for o in occurrences):
             raise ValueError("RIN occurrences were read from another report nature, or under an earlier rule")
     text = report_nature or ""
     for occurrence in occurrences:

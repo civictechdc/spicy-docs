@@ -18,7 +18,6 @@ provider may accept a schema and answer around it.
 
 from __future__ import annotations
 
-import hashlib
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -32,6 +31,7 @@ from spicy_docs.interpretation.model_call import (
     answer_shape_block,
     require_fields,
 )
+from spicy_docs.schemas.tables import digest
 
 #: v3 (2026-09-20): the ``sectionId`` field says which part of the bracketed
 #: line it wants. Under ``v2`` it asked for "the bracketed id, copied exactly
@@ -149,7 +149,7 @@ def build_prompt(sections: Sequence[ClassifiableSection]) -> str:
 
 def prompt_hash(prompt: str) -> str:
     """``sha256:`` and the hex digest of the exact prompt, the spelling every published digest uses."""
-    return "sha256:" + hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+    return digest(prompt)
 
 
 #: A wrapping the reader accepts and the prompt does not ask for. Not a guess

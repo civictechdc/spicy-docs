@@ -16,6 +16,7 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from types import MappingProxyType
+from typing import overload
 
 #: One published row of an untyped contract: the contract's columns, each already a string or NULL.
 type Row = dict[str, str | None]
@@ -122,6 +123,15 @@ def joined(parts: Iterable[str]) -> str:
     return UNIT_SEPARATOR.join(parts)
 
 
+def bytes_digest(data: bytes) -> str:
+    """``sha256:`` plus the hex digest of ``data``: the one spelling of every published digest."""
+    return "sha256:" + hashlib.sha256(data).hexdigest()
+
+
+@overload
+def digest(value: str) -> str: ...
+@overload
+def digest(value: None) -> None: ...
 def digest(value: str | None) -> str | None:
     """``sha256:`` plus the hex digest of ``value``'s UTF-8 bytes, or NULL.
 
@@ -129,9 +139,7 @@ def digest(value: str | None) -> str | None:
     so a digest this layer computes and one a capture carries are comparable
     without either side being reformatted.
     """
-    if value is None:
-        return None
-    return "sha256:" + hashlib.sha256(value.encode("utf-8")).hexdigest()
+    return None if value is None else bytes_digest(value.encode("utf-8"))
 
 
 #: The member-key spelling of a one-column identity: the value itself.
@@ -474,6 +482,7 @@ __all__ = [
     "TableContractError",
     "bill_congress",
     "bill_id",
+    "bytes_digest",
     "digest",
     "flag",
     "joined",

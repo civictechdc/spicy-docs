@@ -10,10 +10,10 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict
-from hashlib import sha256
 from typing import Any
 
 from spicy_docs.schemas.senate_expenditure_tables import page_context, parse_amount
+from spicy_docs.schemas.tables import bytes_digest
 
 
 def review_pages(body: bytes, *, pages: Sequence[int], source_page_offset: int = 0) -> dict[str, Any]:
@@ -35,7 +35,7 @@ def review_pages(body: bytes, *, pages: Sequence[int], source_page_offset: int =
         or source_page_offset < 0
     ):
         raise ValueError("review needs distinct positive pages and a nonnegative source offset")
-    result: dict[str, Any] = {"input_sha256": "sha256:" + sha256(body).hexdigest(), "pages": {}}
+    result: dict[str, Any] = {"input_sha256": bytes_digest(body), "pages": {}}
     with pymupdf.open(stream=body, filetype="pdf") as document:
         if max(pages) > len(document):
             raise ValueError("review page is outside the retained PDF")

@@ -38,7 +38,6 @@ Recovery follows the package's fetcher rules (``AGENTS.md``):
 4. Reasons are scrubbed before they are truncated, logged, or retained.
 """
 
-import hashlib
 import random
 import re
 import time
@@ -63,6 +62,7 @@ from loguru import logger
 from tqdm import tqdm
 
 from spicy_docs.schemas import RecordType
+from spicy_docs.schemas.tables import bytes_digest
 from spicy_docs.sources.base import Reader
 from spicy_docs.transport.credentials import (
     ACCESS_REFUSED_STATUSES,
@@ -1430,5 +1430,5 @@ def fetch_derived_text(
     for record in comment.attachments:
         content = _pinned_get(s3_resource, bucket, record.key, record.etag, record.size, max_bytes=max_bytes).content
         text = content.decode("utf-8", "replace")
-        fetched.append(replace(record, sha256="sha256:" + hashlib.sha256(content).hexdigest(), text=text))
+        fetched.append(replace(record, sha256=bytes_digest(content), text=text))
     return replace(comment, attachments=tuple(fetched))

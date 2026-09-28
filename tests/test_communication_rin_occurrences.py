@@ -142,3 +142,7 @@ def test_a_host_passes_the_list_it_read_and_gets_the_same_scalar():
     legacy = [replace(item, field_sha256=item.field_sha256.removeprefix("sha256:")) for item in same]
     with pytest.raises(ValueError, match="earlier rule"):
         rin_from_report_nature("(RIN: 1004-AF39)", occurrences=legacy)
+    # The rule is checked too, not only the spelling it changed: a list naming the earlier rule is refused as such.
+    earlier = [replace(item, rule="report_nature/shared_rin") for item in same]
+    with pytest.raises(ValueError, match="earlier rule"):
+        rin_from_report_nature("(RIN: 1004-AF39)", occurrences=earlier)

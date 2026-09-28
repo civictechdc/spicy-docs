@@ -19,7 +19,6 @@ while a diff of only ``unchanged`` items returns ``None``, the same contract
 
 from __future__ import annotations
 
-import hashlib
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -33,6 +32,7 @@ from spicy_docs.interpretation.model_call import (
     answer_shape_block,
     require_fields,
 )
+from spicy_docs.schemas.tables import digest
 from spicy_docs.sources.congress.bill_status import BillIdentity
 
 #: v2 (2026-09-19): the prompt names the keys the reader requires. See the
@@ -268,9 +268,8 @@ def display_number(identity: BillIdentity) -> str:
 
 
 def content_hash(text: str) -> str:
-    """Hash of the version text, which is what a cached summary is keyed on, in :func:`schemas.tables.digest`'s
-    ``sha256:`` spelling."""
-    return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
+    """Hash of the version text, which is what a cached summary is keyed on: :func:`schemas.tables.digest`."""
+    return digest(text)
 
 
 def build_prompt(version: BillVersionText) -> str:
