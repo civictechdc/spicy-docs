@@ -385,7 +385,8 @@ invented for either.
 - **`record_issues`** is keyed `(volume, issue)` and doubles as the
   legislative-day calendar: `chambers` is derived from the detail's section
   names by the map's rule (`House Section`, `Senate Section`), and
-  `package_id` from the whole-issue link's file stem.
+  `package_id` from the file stem of the whole-issue link for part 1
+  (`entire_issue_url_stem/2`; a later book's `-bk{N}` stem names no package).
 - **`treaties`** carries `package_id` by the map's `CDOC-{c}tdoc{n}` rule on an
   unpartitioned treaty; **`nominations`** is keyed `(congress, citation)`.
 

@@ -3276,3 +3276,53 @@ already retained -- the granule body and its own MODS or its issue's package
 MODS, from the [GovInfo body routes](sources/govinfo-bodies.md) -- and makes no
 request. Which granules to read, and where the turns are published, stay with
 the host.
+
+## A Record issue's package id is its first book's stem
+
+2026-09-28, from the independent review of the Congressional Record speech-turn
+adapter. `record_issues.package_id` is the GovInfo CREC package an issue is
+published as, the id the speech-turn adapter's `package_id` joins on. The rule
+came from the [legislative data map](research/legislative-data-map-2026-09-18.md)'s
+`record→package` edge and landed with the index tables (`c3b1d42`): the
+issue's own whole-issue link names the package by its file stem, so no package
+id is inferred from a date. That reason stands.
+
+What was wrong is which link. An issue printed in several books lists one PDF
+per book in `fullIssue.entireIssue`, each with its `part`; a later book's stem
+is `-bk{N}` of the same package, and the list is not in part order. The rule
+read the first link, so an issue whose later book was listed first published a
+package id GovInfo does not have. `entire_issue_url_stem/2` reads the link
+whose `part` is `1`, and is NULL where the detail lists no part 1 or lists it
+under two stems. The map's own sample showed it: its 18 of 20, with issues
+205 and 208 failing on HTTP 404, were two of the seven rows below.
+
+### Published values that change
+
+Measured on the live generation (`record-issues` family, artifact
+`sha256:7bb2005c62c489cff55f53a80f53e0b904703a70a92ff55ddd9c966c3022f81f`,
+`record_issues.parquet` `sha256:da41732c…c82f`), fetched and re-shaped from
+each row's own `entire_issue_json` on 2026-09-28. Every row has a detail, and
+every detail lists exactly one part-1 link. 361 rows keep their `package_id`.
+Seven change, and for each the keyed GovInfo package summary of the published
+id answers 404 while the new id's answers 200 with a title naming the same
+volume and issue:
+
+| Volume | Issue | Date | Published `package_id` | Becomes |
+| --- | --- | --- | --- | --- |
+| 171 | 45 | 2025-03-11 | `CREC-2025-03-11-bk2` | `CREC-2025-03-11` |
+| 171 | 57 | 2025-03-31 | `CREC-2025-03-31-bk2` | `CREC-2025-03-31` |
+| 171 | 86 | 2025-05-21 | `CREC-2025-05-21-bk2` | `CREC-2025-05-21` |
+| 171 | 174 | 2025-10-21 | `CREC-2025-10-21-bk2` | `CREC-2025-10-21` |
+| 171 | 205 | 2025-12-08 | `CREC-2025-12-08-bk2` | `CREC-2025-12-08` |
+| 171 | 208 | 2025-12-10 | `CREC-2025-12-10-bk2` | `CREC-2025-12-10` |
+| 172 | 5 | 2026-01-08 | `CREC-2026-01-08-bk3` | `CREC-2026-01-08` |
+
+`package_id_rule` moves from `entire_issue_url_stem` to
+`entire_issue_url_stem/2` on every row with a package id, because values changed
+under the rule. The identity `(volume, issue)` and every other column are
+unchanged. A host sees the new values when it re-shapes an issue: spicy-regs
+reads only the details its published table lacks and merges on `update_date`
+(`build_index_table`), so a held issue keeps its old row until its detail is
+read again or the table is rebuilt. Receipt:
+`~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/review-fixes/record-issues/`
+(`measure.py`, `measure.json`, `changed.csv`, the package summaries).

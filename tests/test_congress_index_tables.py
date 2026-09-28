@@ -384,6 +384,49 @@ def test_a_record_issue_names_the_chambers_that_met_and_its_package() -> None:
     assert unread["package_id"] is None and unread["sections_json"] is None
 
 
+def _books(*parts: tuple[str | None, str]) -> dict:
+    """A detail whose ``fullIssue.entireIssue`` lists these ``(part, file stem)`` PDFs in this order."""
+    base = "https://www.congress.gov/119/crec/2025/03/11/171/45/"
+    return {
+        "fullIssue": {
+            "entireIssue": [
+                {"type": "PDF", "url": f"{base}{stem}.pdf", **({} if part is None else {"part": part})}
+                for part, stem in parts
+            ],
+            "sections": [],
+        }
+    }
+
+
+@pytest.mark.parametrize(
+    ("parts", "package_id"),
+    [
+        # Issue 171/45 as the live detail lists it: book 2 first. GovInfo has no
+        # CREC-2025-03-11-bk2 (its summary answers 404) and holds issue 45 as
+        # CREC-2025-03-11 (docs/decisions.md, 2026-09-28).
+        ((("2", "CREC-2025-03-11-bk2"), ("1", "CREC-2025-03-11")), "CREC-2025-03-11"),
+        # Issue 172/5: three books, part 1 in the middle.
+        ((("3", "CREC-2026-01-08-bk3"), ("1", "CREC-2026-01-08"), ("2", "CREC-2026-01-08-bk2")), "CREC-2026-01-08"),
+        # A split day is its own package, its stem the suffixed id.
+        ((("1", "CREC-2025-03-11-i46"),), "CREC-2025-03-11-i46"),
+        # No part 1, or part 1 under two stems: not guessed.
+        ((("2", "CREC-2025-03-11-bk2"),), None),
+        (((None, "CREC-2025-03-11"),), None),
+        ((("1", "CREC-2025-03-11"), ("1", "CREC-2025-03-12")), None),
+    ],
+)
+def test_a_record_issue_package_is_its_part_one_books_stem(
+    parts: tuple[tuple[str | None, str], ...], package_id: str | None
+) -> None:
+    """Later books are ``-bk{N}`` files of the same package and can be listed first, so part 1 is read by its part."""
+    row = shape_record_issue({}, _books(*parts))
+    assert (row["package_id"], row["package_id_rule"]) == (
+        package_id,
+        None if package_id is None else PACKAGE_ID_RULE_RECORD,
+    )
+    assert PACKAGE_ID_RULE_RECORD == "entire_issue_url_stem/2"
+
+
 def test_a_treaty_resolves_to_its_cdoc_package() -> None:
     """The map's ``treaty→cdoc`` edge (2 of 2 live): treaty 119-2 is ``CDOC-119tdoc2``."""
     listed = _listing("congress-treaty-list.json")["treaties"][0]
