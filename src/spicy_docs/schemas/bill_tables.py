@@ -444,7 +444,10 @@ BILL_COSPONSORS = table_contract(
         "state": "State as the cosponsor entry states it.",
         "district": "District as the cosponsor entry states it.",
         "source_path": "XPath to the occurrence in the retained XML.",
-        "source_xml": "Reserialized source item preserving other fields; original bytes are pinned separately.",
+        "source_xml": (
+            "The cosponsor item's markup exactly as the publisher wrote it, from <item> through </item>, cut from "
+            "the input bytes input_sha256 pins; it keeps every field, including those no column reads."
+        ),
     },
 )
 

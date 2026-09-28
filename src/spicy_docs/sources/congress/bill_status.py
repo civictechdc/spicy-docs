@@ -9,12 +9,12 @@ from __future__ import annotations
 import hashlib
 import re
 from dataclasses import dataclass
-from xml.etree.ElementTree import Element, tostring
+from xml.etree.ElementTree import Element
 
 from rulespec_artifacts import canonical_json_bytes
 
 from spicy_docs.reading.literal_dates import literal_date_status
-from spicy_docs.reading.xml import parse_xml
+from spicy_docs.reading.xml import parse_xml, parse_xml_with_spans
 
 BILL_TYPES = frozenset({"hr", "s", "hjres", "sjres", "hconres", "sconres", "hres", "sres"})
 BILLSTATUS_BULKDATA = "https://www.govinfo.gov/bulkdata/BILLSTATUS"
@@ -191,9 +191,9 @@ class BillCosponsor:
     """One source occurrence, with literal dates and flags rather than inferred membership.
 
     None is an absent element; an empty element is an empty string. source_xml
-    is the item's own markup reserialized, without the whitespace that follows
-    it in the list, and not the original bytes; input_sha256 on BillStatus pins
-    those bytes. A positive ``sponsorshipWithdrawnDate`` is kept as stated: the
+    is the item's own markup exactly as the publisher wrote it, from ``<item>``
+    through ``</item>``, sliced from the input bytes input_sha256 on BillStatus
+    pins. A positive ``sponsorshipWithdrawnDate`` is kept as stated: the
     retained 119 S 1224 fixture carries one, and 243 of the 506,301 entries in
     five bulk zips did in the PR #4 review's sweep (2026-09-27). Its status
     property reports the calendar spelling, not a confirmed withdrawal.
@@ -351,6 +351,10 @@ def select_bill_xml(status: BillStatus, package_id: str) -> tuple[BillTextVersio
     return matches[0]
 
 
+#: The elements whose markup ``BillCosponsor.source_xml`` keeps.
+_COSPONSOR_ITEM = ("billStatus", "bill", "cosponsors", "item")
+
+
 def _xml_root(body: bytes, max_bytes: int, *, allow_external_doctype: bool = False) -> Element:
     return parse_xml(
         body,
@@ -463,20 +467,19 @@ _COSPONSOR_FIELDS = (
 )
 
 
-def _cosponsor(item: Element) -> BillCosponsor:
-    """One ``<cosponsors>`` item, with the item's own markup as ``source_xml``.
+def _cosponsor(item: Element, body: bytes, spans: dict[Element, tuple[int, int]]) -> BillCosponsor:
+    """One ``<cosponsors>`` item, with the item's own markup as ``source_xml``: the publisher's bytes, sliced.
 
-    ``tostring`` also serializes an element's ``tail``, the whitespace between
-    this item and the next (or ``</cosponsors>``), so 0.50.0 published that
-    whitespace at the end of every row's ``source_xml``: 506,301 of 506,301
-    entries in the PR #4 review's corpus. The tail is not part of the item: it
-    is set aside for the serialization and put back.
+    Through 0.50.1 this was ``tostring(item)``, which re-spelled what it
+    serialized (``<middleName/>`` as ``<middleName />``), carried the item's
+    tail until 0.50.1 set it aside, and cost about 11 microseconds an entry.
+    The span comes from the parse itself (``parse_xml_with_spans``).
     """
-    tail, item.tail = item.tail, None
+    start, end = spans[item]
     try:
-        source_xml = tostring(item, encoding="unicode")
-    finally:
-        item.tail = tail
+        source_xml = body[start:end].decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise BillSourceError("BILLSTATUS cosponsor markup is not UTF-8") from error
     return BillCosponsor(*(_text(item, name) for name in _COSPONSOR_FIELDS), source_xml=source_xml)
 
 
@@ -657,7 +660,9 @@ def parse_bill_status(body: bytes, *, identity: BillIdentity, max_bytes: int = D
     policy-area fields, and a 1.0.0 name under any other version all refuse.
     """
     _validated_identity(identity)
-    root = _xml_root(body, max_bytes)
+    root, spans = parse_xml_with_spans(
+        body, path=_COSPONSOR_ITEM, max_bytes=max_bytes, error_type=BillSourceError, label="bill XML"
+    )
     if root.tag != "billStatus":
         raise BillSourceError("BILLSTATUS XML root is unsupported")
     bill = _one(root, "bill", required=True)
@@ -699,7 +704,7 @@ def parse_bill_status(body: bytes, *, identity: BillIdentity, max_bytes: int = D
         sponsors=tuple(
             BillSponsor(_text(item, "bioguideId"), _text(item, "fullName")) for item in _items(bill, "sponsors")
         ),
-        cosponsors=tuple(_cosponsor(item) for item in cosponsors),
+        cosponsors=tuple(_cosponsor(item, body, spans) for item in cosponsors),
         text_versions=tuple(_text_version(item, identity) for item in _items(bill, "textVersions")),
         laws=tuple(BillLaw(_text(item, "number"), _text(item, "type")) for item in _items(bill, "laws")),
         committees=tuple(_committee(item) for item in committees),
