@@ -8,7 +8,8 @@ from pathlib import Path
 import pytest
 
 from spicy_docs.interpretation.communication_rin import (
-    REPORT_NATURE_RIN,
+    RIN_LABEL,
+    RinFinding,
     rin_from_report_nature,
     rin_occurrences_from_report_nature,
 )
@@ -75,26 +76,31 @@ def test_native_multi_rin_shaper_roundtrip():
 
 #: Report natures from the fork's ``house_communications`` (read 2026-09-27; receipt
 #: ``fork-execution-2026-09-21/spicy-docs-0501/rin-agreement/``), each cut to the RIN clause, then the scalar's RIN and
-#: the listed RINs. The en-dash row is a constructed control: no retained report nature spells one.
+#: the listed RINs. The en-dash row and the last three are constructed: the review of 0.50.1 found the three inputs on
+#: which 0.50.0's own scalar pattern read a RIN the list does not.
 AGREEMENT = [
     ("(RIN: 2125-AF80; 2130-AD05; 2132-AB51)", "2125-AF80", ["2125-AF80", "2130-AD05", "2132-AB51"]),  # 119-EC-4554
     ("(RIN: 3084-AB60) (RIN: 3084-AB72) (RIN: 3084-AB74)", "3084-AB60", ["3084-AB60", "3084-AB72", "3084-AB74"]),
-    ("AD 2025-11-01] (RIN: 2120-Aa64) received June 9, 2025.", None, ["2120-AA64"]),  # 119-EC-1209
+    ("AD 2025-11-01] (RIN: 2120-Aa64) received June 9, 2025.", "2120-AA64", ["2120-AA64"]),  # 119-EC-1209
     ("[CMS-1849-F and CMS-0062-F] (RINs: 0938-AV79 and 0938-AV44) received", None, ["0938-AV79", "0938-AV44"]),
     ("Major final rule - Regulation Identification Number 0910-AJ05 Medical Devices", None, ["0910-AJ05"]),
     ("AD 2026-01-08] (IRN: 2120-AA64) received January 29, 2026.", None, ["2120-AA64"]),  # 119-EC-2773
+    ("see 1004-AF39 and (RIN: 1004-AF40)", "1004-AF40", ["1004-AF39", "1004-AF40"]),
     ("[Docket No.: 241212-0326] (RIN: 0648-XE368) received", None, []),  # 119-EC-1226
-    ("A rule (RIN 2060\u2013AV12).", None, ["2060-AV12"]),
+    ("A rule (RIN 2060\u2013AV12).", "2060-AV12", ["2060-AV12"]),
     ("A damaged RIN (RIN: 1625-AAOO) and a placeholder (RIN 2060-XXXX).", None, []),
+    ("(RIN2060-AV12)", None, []),
+    ("(RIN: 2060-AV12\u2013A)", None, []),
+    ("(RIN: 2060-AV12/2060-AV13)", None, []),
 ]
 
 
 @pytest.mark.parametrize(("nature", "scalar", "listed"), AGREEMENT, ids=lambda value: str(value)[:24])
-def test_the_list_and_the_scalar_differ_only_in_label_dashes_and_case(nature, scalar, listed):
-    """The scalar is the first RIN a label immediately precedes; the list folds dashes and case and needs no label.
+def test_the_scalar_is_the_first_listed_rin_the_label_directly_precedes(nature, scalar, listed):
+    """The list needs no label; the scalar is the first listed occurrence a ``RIN`` label directly precedes.
 
-    Where the scalar reads a RIN, an occurrence at the same span holds the same value; every listed RIN is a
-    published key, so a longer token or a damaged RIN is in neither.
+    So the list holds every scalar RIN at the scalar's span, by construction; every listed RIN is a published key, so a
+    longer token, a damaged RIN or one the shared reader does not separate is in neither.
     """
     finding = rin_from_report_nature(nature)
     occurrences = rin_occurrences_from_report_nature(nature)
@@ -103,9 +109,12 @@ def test_the_list_and_the_scalar_differ_only_in_label_dashes_and_case(nature, sc
     for occurrence in occurrences:
         assert re.fullmatch(PUBLISHED_RIN, occurrence.rin)
         assert nature[occurrence.span_start : occurrence.span_end] == occurrence.matched_text
-    if scalar is not None:
-        match = REPORT_NATURE_RIN.search(nature)
-        assert any(
-            (occurrence.rin, occurrence.span_start, occurrence.span_end) == (scalar, match.start(1), match.end(1))
-            for occurrence in occurrences
-        )
+    labelled = [o for o in occurrences if RIN_LABEL.search(nature, 0, o.span_start)]
+    if scalar is None:
+        assert finding == RinFinding(None, "unmatched", None)
+        assert not labelled
+    else:
+        first = labelled[0]
+        assert finding.rin == first.rin
+        assert finding.matched_text.startswith("RIN") and finding.matched_text.endswith(first.matched_text)
+        assert nature[first.span_end - len(finding.matched_text) : first.span_end] == finding.matched_text

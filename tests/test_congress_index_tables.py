@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from spicy_docs.interpretation.communication_rin import REPORT_NATURE_RIN, RinFinding, rin_from_report_nature
+from spicy_docs.interpretation.communication_rin import RIN_LABEL_RULE, RinFinding, rin_from_report_nature
 from spicy_docs.schemas import TABLE_CONTRACTS
 from spicy_docs.schemas.committee_report_tables import COMMITTEE_REPORTS, HEARING_TRANSCRIPTS
 from spicy_docs.schemas.congress_index_tables import (
@@ -72,6 +72,8 @@ REPORT_NATURES = [
     ("A rule (RIN:1004-AF39) with no space.", "1004-AF39", "RIN:1004-AF39"),
     ("An EPA notice (FRL No. 13314-01-OCSPP), which is not a RIN.", None, None),
     ("a lowercase label (rin: 1004-af39) is not the publisher's spelling.", None, None),
+    # A lower-case RIN under the label (119-EC-1209 prints 2120-Aa64) folds to the key and keeps its printing.
+    ("(RIN: 2120-Aa64) received June 9, 2025.", "2120-AA64", "RIN: 2120-Aa64"),
     # 119-EC-1226's report nature: NOAA's five-character suffix is outside the published shape, and 0.50.0 read
     # its first eight characters as the RIN 0648-XE36.
     (
@@ -86,7 +88,7 @@ REPORT_NATURES = [
 def test_the_rin_rule_reads_what_the_map_measured(nature: str, rin: str | None, matched: str | None) -> None:
     """The RIN rule returns the RIN with its label rule, or an unmatched finding."""
     finding = rin_from_report_nature(nature)
-    assert finding == RinFinding(rin, "report_nature_rin_label" if rin else "unmatched", matched)
+    assert finding == RinFinding(rin, RIN_LABEL_RULE if rin else "unmatched", matched)
 
 
 def test_a_missing_report_nature_is_unmatched_not_an_error() -> None:
@@ -96,9 +98,9 @@ def test_a_missing_report_nature_is_unmatched_not_an_error() -> None:
         rin_from_report_nature(3133)  # type: ignore[arg-type]
 
 
-def test_the_rule_is_the_maps_own_pattern() -> None:
-    """The measured label over the one published RIN shape; the map tool now reads this same compiled rule."""
-    assert REPORT_NATURE_RIN.pattern == r"RIN:?\s*(\d{4}-[A-Z]{2}\d{2})(?![A-Za-z0-9_-])"
+def test_the_rule_is_named_by_its_version() -> None:
+    """0.50.1 moved the rule: the scalar is the first labelled occurrence of the shared rin rule, not its own pattern."""
+    assert RIN_LABEL_RULE == "report_nature_rin_label/2"
 
 
 def test_the_captured_communication_carries_the_bridge_on_one_row() -> None:
@@ -109,7 +111,7 @@ def test_the_captured_communication_carries_the_bridge_on_one_row() -> None:
     assert row["communication_id"] == "119-ec-4752"
     assert row["is_rulemaking"] == "true"
     assert row["rin"] == "3133-AF97"
-    assert row["rin_rule"] == "report_nature_rin_label"
+    assert row["rin_rule"] == "report_nature_rin_label/2"
     assert row["referral_system_code"] == "hsba00"
     assert row["referral_date"] == "2026-09-17"
     assert row["matching_requirement_number"] == "8070"

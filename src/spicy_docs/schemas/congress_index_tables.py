@@ -87,10 +87,19 @@ HOUSE_COMMUNICATIONS = table_contract(
         "matching_requirement_number": "Number of the first House reporting requirement the communication matches.",
         "matching_requirement_count": "How many requirements the detail lists; every one is in matching_requirements_json.",
         "matching_requirements_json": "Every matching requirement the detail lists, as a JSON array of numbers. NULL where no detail was read.",
-        "rin": "The Regulation Identifier Number read from report_nature, where the rule found one.",
+        "rin": (
+            "The Regulation Identifier Number read from report_nature, where the rule found one: the first "
+            "occurrence in rin_occurrences_json that a RIN label directly precedes, as its published key."
+        ),
         "rin_occurrences_json": "All interpreted RIN occurrences supplied by the consumer, with exact field spans and digest. NULL means unread; [] means the supplied field was read and contained no RIN.",
-        "rin_rule": "Which RIN rule fired (`report_nature_rin_label`), or `unmatched`; NULL where the rule was not run.",
-        "rin_matched_text": "The exact text the RIN rule matched, so a false positive is readable from the row.",
+        "rin_rule": (
+            "Which RIN rule fired (`report_nature_rin_label/2`), or `unmatched`; NULL where the rule was not run. "
+            "Rows read before 0.50.1 name `report_nature_rin_label`, the older pattern."
+        ),
+        "rin_matched_text": (
+            "The exact text the RIN rule matched, the label and the RIN as printed, so a false positive is "
+            "readable from the row."
+        ),
         "update_date": (
             "The publisher's updateDate; the merge prefers the larger value, except across source_route, "
             "where a `congress-gov-detail` row always wins."

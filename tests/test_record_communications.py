@@ -114,7 +114,7 @@ def test_the_rin_rule_this_repository_already_owns_reads_a_reconstructed_subject
     entries = numbered("CREC-2016-02-12-pt1-PgH815-4")
     found = rin_from_report_nature(entries[4329].report_nature)
     assert found.rin == "1218-AC97"
-    assert found.rule == "report_nature_rin_label"
+    assert found.rule == "report_nature_rin_label/2"
     assert rin_from_report_nature(entries[4350].report_nature).rin is None
 
 

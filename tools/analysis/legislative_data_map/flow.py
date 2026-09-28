@@ -13,7 +13,7 @@ from urllib.parse import urlencode, urlsplit
 
 import httpx
 
-from spicy_docs.interpretation.communication_rin import REPORT_NATURE_RIN
+from spicy_docs.interpretation.communication_rin import rin_from_report_nature
 from spicy_docs.reading.paged_json import PagedJsonReader, PagedJsonSourceError
 from spicy_docs.reading.xml import parse_xml
 from spicy_docs.transport.credentials import CredentialRefusedError, scrub_credential
@@ -1169,14 +1169,14 @@ def measure_flow(
         """The first sampled communication that is a rulemaking with a RIN, else the first."""
         details = communication_details()
         return next(
-            (d for d in details if REPORT_NATURE_RIN.search(str(d.get("reportNature", "")))),
+            (d for d in details if rin_from_report_nature(str(d.get("reportNature", ""))).rin),
             details[0] if details else {},
         )
 
     def communication_typing() -> tuple[bool, str]:
         details = communication_details()
         rulemaking = sum(1 for d in details if str(d.get("isRulemaking")) == "True")
-        with_rin = sum(1 for d in details if REPORT_NATURE_RIN.search(str(d.get("reportNature", ""))))
+        with_rin = sum(1 for d in details if rin_from_report_nature(str(d.get("reportNature", ""))).rin)
         referred = sum(1 for d in details if d.get("committees"))
         required = sum(1 for d in details if d.get("matchingRequirements"))
         dated = sum(1 for d in details if d.get("congressionalRecordDate"))
@@ -1207,10 +1207,9 @@ def measure_flow(
 
     def communication_federal_register() -> tuple[bool, str]:
         detail = house_communication()
-        match = REPORT_NATURE_RIN.search(str(detail.get("reportNature", "")))
-        if not match:
+        rin = rin_from_report_nature(str(detail.get("reportNature", ""))).rin
+        if rin is None:
             return False, f"EC {detail.get('number')} states no RIN"
-        rin = match[1]
         query = urlencode({"conditions[regulation_id_number]": rin, "per_page": 5, "fields[]": "regulation_id_numbers"})
         capture = probe.get(
             f"https://www.federalregister.gov/api/v1/documents.json?{query}",
