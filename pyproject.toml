@@ -83,16 +83,20 @@ deltatrack = { git = "https://github.com/civictechdc/DeltaTrack", rev = "c636448
 # somebody else's package at worst. And a wheel built from upstream main
 # (`84a5af4`) ships only the top-level package: `congressionalrecord.govinfo`,
 # the parser the adapter imports, is not in it. The fork's `spicy-docs-pin`
-# branch carries two changes offered upstream: unitedstates/congressional-record#92
-# (package discovery, a speaker line indented up to three spaces, and
-# `parse_status`/`parse_error` so a partial parse is not reported as complete)
-# and #93 (the dependencies the parser imports, with the PostgreSQL writer's
-# behind a `postgres` extra this repository does not install), plus a fork-only
-# commit pinning the build backend so a vendored wheel is reproducible. The
-# revision is a full commit sha so the resolved tree is the one tested. When
-# upstream merges both and publishes a release, drop this source and pin it;
+# branch carries the changes offered upstream in unitedstates/congressional-record
+# #92 (package discovery, a speaker line indented up to three spaces, and
+# `parse_status`/`parse_error` so a partial parse is not reported as complete),
+# #93 (the dependencies the non-PostgreSQL modules import, with the PostgreSQL
+# writer's behind a `postgres` extra this repository does not install) and #94
+# (per-document `item_types`, real `None` for absent values, `CRParseError` for
+# a header cut short or astray, an accessId index read once per MODS), with
+# #90's speaker pattern (jutton1:fix-text-mislabeling) merged in; plus two
+# fork-only commits, one pinning the build backend so a vendored wheel is
+# reproducible and one pruning the tests from the sdist. The revision is a
+# full commit sha so the resolved tree is the one tested. When upstream merges
+# them and publishes a release, drop this source and pin it;
 # `docs/sources/congressional-record-speeches.md` says how.
-congressionalrecord = { git = "https://github.com/mikewolfd/congressional-record", rev = "6bb521b11b498f2e8dbac614a4394c703c6773ac" }
+congressionalrecord = { git = "https://github.com/mikewolfd/congressional-record", rev = "3715651a4780d49eecd2dff9f936349c5963f01d" }
 
 [tool.pytest.ini_options]
 # Default checks stay offline. Opt in to live services or httpfs explicitly.

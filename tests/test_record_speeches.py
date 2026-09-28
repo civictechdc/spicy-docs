@@ -4,13 +4,16 @@ Upstream's own suite tests its segmentation. These test what this repository
 adds around it: bounded UTF-8 inputs, refusals in this package's terms, a
 partial parse reported as partial, and a line span for every item, checked
 against the fixtures with a line test written independently of upstream's
-patterns. The expected readings are the 2026-09-28 review's
+patterns. The expected readings are the parser's at ``PARSER_PIN``. They began
+as the 2026-09-28 review's
 (``docs/unitedstates-review-2026-09-28/validation/legal-record/current-record-probe.json``
-in the workspace), reproduced here through the adapter.
+in the workspace); moving the pin to #94 and #90 changed only the speaker of a
+rule or title, now ``None`` where it was the string ``"None"``.
 """
 
 from __future__ import annotations
 
+import copy
 import socket
 import sys
 import tomllib
@@ -42,12 +45,9 @@ utf8_locale = pytest.mark.skipif(
     record_speeches.locale.getpreferredencoding(False).lower().replace("-", "") != "utf8",
     reason="the encoding cases are stated for a UTF-8 locale, which upstream's text-mode open() then reads",
 )
-# Upstream calls ``find(text=...)`` (cr_parser.py:239), which bs4 4.13+ deprecates, and reads
-# MODS with bs4's HTML parser, which warns on a document with an XML declaration (a granule's own).
-pytestmark = [
-    pytest.mark.filterwarnings("ignore:The 'text' argument to find:DeprecationWarning"),
-    pytest.mark.filterwarnings("ignore:It looks like you're using an HTML parser to parse an XML document"),
-]
+# Upstream reads MODS with bs4's HTML parser (cr_parser.py:90), which warns on a document with an
+# XML declaration (a granule's own).
+pytestmark = pytest.mark.filterwarnings("ignore:It looks like you're using an HTML parser to parse an XML document")
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "tests" / "fixtures" / "record_speeches"
@@ -121,7 +121,7 @@ def test_kiggans_one_minute_is_one_speech_beside_an_item_upstream_leaves_unknown
     assert [(item.kind, item.turn, item.speaker, item.speaker_bioguide) for item in document.items] == [
         ("Unknown", None, "Unknown", None),
         ("speech", 0, "Mrs. KIGGANS of Virginia", "K000399"),
-        ("linebreak", None, "None", None),
+        ("linebreak", None, None, None),
     ]
     assert document.items[0].text.startswith("  (Mrs. KIGGANS of Virginia asked and was given permission")
     assert "speaker_bioguide" not in document.items[0].source_item
@@ -134,7 +134,7 @@ def test_the_pledge_is_procedural_with_no_person_id() -> None:
     assert document.parse_status == "complete"
     assert [(item.kind, item.speaker, item.speaker_bioguide) for item in document.items] == [
         ("speech", "The SPEAKER pro tempore", None),
-        ("linebreak", "None", None),
+        ("linebreak", None, None),
     ]
     assert document.title == "PLEDGE OF ALLEGIANCE"
 
@@ -184,7 +184,7 @@ def test_a_granule_of_a_suffixed_issue_reads_under_its_packages_id() -> None:
     assert [(item.kind, item.speaker, item.speaker_bioguide) for item in document.items] == [
         ("speech", "Mr. THUNE", "T000250"),
         ("speech", "The ACTING PRESIDENT pro tempore", None),
-        ("linebreak", "None", None),
+        ("linebreak", None, None),
     ]
 
 
@@ -423,24 +423,6 @@ def test_the_first_item_is_never_moved_off_that_line(monkeypatch: pytest.MonkeyP
 
 
 @needs_parser
-def test_the_string_none_bioguide_is_none(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Upstream writes ``"None"`` for a member the MODS gives no bioguide id; the item says ``None``."""
-    from congressionalrecord.govinfo import cr_parser
-
-    original = cr_parser.crItem
-
-    def unstated(parser: object) -> object:
-        made = original(parser)
-        if made.item["kind"] == "speech":
-            made.item["speaker_bioguide"] = "None"
-        return made
-
-    monkeypatch.setattr(cr_parser, "crItem", unstated)
-    speech = next(item for item in _read(KIGGANS).items if item.kind == "speech")
-    assert (speech.speaker_bioguide, speech.source_item["speaker_bioguide"]) == (None, "None")
-
-
-@needs_parser
 def test_a_parser_without_parse_status_refuses(monkeypatch: pytest.MonkeyPatch) -> None:
     """An installed build lacking the fork's completion field cannot show a partial parse, so it is refused."""
     from congressionalrecord.govinfo import cr_parser
@@ -469,16 +451,6 @@ def test_a_skipped_line_that_carries_text_is_reported() -> None:
     (index,) = document.unaccounted_lines
     assert document.source_lines[index] == f"{marker} and a sentence"
     assert all("and a sentence" not in item.text for item in document.items)
-
-
-@needs_parser
-def test_a_header_upstream_does_not_match_is_reported_and_holds_no_page() -> None:
-    """With no header read, the volume line belongs to nothing, and there is no page to compare."""
-    body = _body(KIGGANS).replace(b"Number 146 (", b"No. 146 (", 1)
-    document = _read(KIGGANS, body)
-    assert (document.header, document.parse_status) == (None, "complete")
-    assert document.unaccounted_lines == (1,)
-    assert document.source_lines[1].startswith("[Congressional Record Volume 172, No. 146")
 
 
 @needs_parser
@@ -516,20 +488,53 @@ def test_a_granule_absent_from_the_mods_refuses_by_name() -> None:
 
 
 @needs_parser
+def test_a_body_upstream_cannot_read_refuses_rather_than_raising_upstreams_error() -> None:
+    """No ``<pre>``: upstream's own exception reaches the caller as a refusal naming the granule."""
+    with pytest.raises(RecordSpeechesError, match=f"could not read granule {KIGGANS}: AttributeError") as caught:
+        _read(KIGGANS, b"<html><body>no preformatted text</body></html>")
+    assert isinstance(caught.value.__cause__, AttributeError)
+
+
+def _truncated_after_volume_line() -> bytes:
+    """The Kiggans body cut off at the end of its volume line, as a short retained body would be."""
+    body = _body(KIGGANS)
+    return body[: body.index(b"\n[House]")]
+
+
+@needs_parser
 @pytest.mark.parametrize(
-    ("body", "raised"),
+    ("body", "stated"),
     [
-        (b"<html><body>no preformatted text</body></html>", "AttributeError"),
-        (
-            b"<html><body><pre>\n[Congressional Record Volume 172, Number 146 (Wednesday, September 16, 2026)]</pre>",
-            "StopIteration",
-        ),
+        (_truncated_after_volume_line, "ends before its header's chamber line"),
+        (lambda: _body(KIGGANS).replace(b"Number 146 (", b"No. 146 (", 1), "the header's volume line does not match"),
     ],
+    ids=["cut-short", "astray"],
 )
-def test_a_body_upstream_cannot_read_refuses_rather_than_raising_upstreams_error(body: bytes, raised: str) -> None:
-    """No ``<pre>``, or a header cut short: upstream's own exception reaches the caller as a refusal naming the granule."""
-    with pytest.raises(RecordSpeechesError, match=f"could not read granule {KIGGANS}: {raised}"):
-        _read(KIGGANS, body)
+def test_a_header_upstream_cannot_read_refuses_through_its_named_error(body: object, stated: str) -> None:
+    """Upstream raises ``CRParseError`` for a header cut short or astray; the refusal wraps it and says which."""
+    from congressionalrecord.govinfo import cr_parser
+
+    with pytest.raises(
+        RecordSpeechesError, match=f"granule {KIGGANS} has no header the parser can read: .*{stated}"
+    ) as caught:
+        _read(KIGGANS, body())
+    assert isinstance(caught.value.__cause__, cr_parser.CRParseError)
+
+
+@needs_parser
+def test_a_parser_that_returns_no_header_refuses(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The pin refuses an unreadable header itself, so a build that returns none is not this pin, and refuses."""
+    from congressionalrecord.govinfo import cr_parser
+
+    original = cr_parser.ParseCRFile.write_header
+
+    def headless(self: object) -> None:
+        original(self)
+        self.crdoc["header"] = False
+
+    monkeypatch.setattr(cr_parser.ParseCRFile, "write_header", headless)
+    with pytest.raises(RecordSpeechesError, match=f"read no header for {KIGGANS}"):
+        _read(KIGGANS)
 
 
 @needs_parser
@@ -688,14 +693,30 @@ def test_the_pin_constant_is_the_revision_pyproject_pins_and_the_lock_resolves()
 
 
 @needs_parser
-def test_upstream_shares_its_speaker_pattern_across_documents_so_parses_are_serialized() -> None:
-    """The reason for the lock: upstream's line-kind table is one class-level dict each parse rewrites."""
+def test_a_parse_leaves_the_class_line_kind_table_unchanged() -> None:
+    """Upstream copies ``item_types`` per document, so parsing writes no speaker pattern into the class's table."""
     from congressionalrecord.govinfo import cr_parser
 
-    _read(KIGGANS)
-    assert "KIGGANS" in cr_parser.ParseCRFile.item_types["speech"]["patterns"][0]
-    _read(PLEDGE)
-    assert "KIGGANS" not in cr_parser.ParseCRFile.item_types["speech"]["patterns"][0]
+    table = cr_parser.ParseCRFile.item_types
+    before = copy.deepcopy(table)
+    for granule in GRANULES:
+        _read(granule)
+        assert cr_parser.ParseCRFile.item_types is table
+        assert table == before
+
+
+@needs_parser
+def test_documents_with_different_speaker_lists_read_correctly_in_sequence() -> None:
+    """Kiggans, then the Senate granule, then Kiggans again: each reads its own MODS speakers, and the first read recurs."""
+    kiggans = _read(KIGGANS)
+    senate = _read(SENATE)
+    assert [(item.speaker, item.speaker_bioguide) for item in kiggans.items if item.kind == "speech"] == [
+        ("Mrs. KIGGANS of Virginia", "K000399")
+    ]
+    senate_speakers = {item.speaker for item in senate.items if item.kind == "speech"}
+    assert "Mrs. KIGGANS of Virginia" not in senate_speakers
+    assert {"Mr. GRASSLEY", "Mr. THUNE", "Mr. SCHUMER"} <= senate_speakers
+    assert _read(KIGGANS) == kiggans
 
 
 @needs_parser

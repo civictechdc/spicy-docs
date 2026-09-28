@@ -3246,8 +3246,15 @@ and adds `parse_status`/`parse_error`, and
 [#93](https://github.com/unitedstates/congressional-record/pull/93), which
 declares what the package's non-PostgreSQL modules import (the parser, the
 downloader and the schema) and moves the PostgreSQL writer's dependencies
-behind a `postgres` extra this repository does not install; a fork-only commit
-pins the build backend so a vendored wheel is reproducible.
+behind a `postgres` extra this repository does not install. After the
+adapter's review it also carries
+[#94](https://github.com/unitedstates/congressional-record/pull/94) -- a
+line-kind table per document, `None` for absent values, `CRParseError` for an
+unreadable header, an accessId index -- and merges
+[#90](https://github.com/unitedstates/congressional-record/pull/90)'s speaker
+pattern, so the adapter no longer serializes parses or maps `"None"` strings.
+Fork-only commits pin the build backend so a vendored wheel is reproducible
+and prune the tests from the sdist.
 The adapter refuses a build that does not report completion, so the pin cannot
 silently regress to one that hides a partial parse.
 
@@ -3265,8 +3272,8 @@ installs only what those modules import, with `beautifulsoup4` held at the
 version the `html` extra pins; the source page lists the clean-install set and
 what a host that vendors the wheels declares.
 
-**When to drop the source.** When upstream merges #92 and #93 and publishes a
-release, delete the `[tool.uv.sources]` entry and pin that release in the
+**When to drop the source.** When upstream merges #92, #93, #94 and #90 and
+publishes a release, delete the `[tool.uv.sources]` entry and pin that release in the
 extra. Until then the git revision names a commit on a fork branch; move it
 only with `PARSER_PIN` and the lock, which a test holds together, and rebuild
 the vendored wheel by the rule on the source page.

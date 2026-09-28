@@ -2,7 +2,7 @@
   "retrieval_receipt": "~/Work/corpora/supply-2026-09-02/receipts/unitedstates-legal-record-2026-09-28/record-inputs/",
   "sources_list": "docs/unitedstates-review-2026-09-28/validation/legal-record/current-record-sources.json (spicy-stack workspace)",
   "excerpt_receipt": "~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/excerpt/",
-  "excerpt_check": "Upstream at 7949151e, and again at 6bb521b1, parsed each body against the full MODS and against the excerpt; the crdoc, speaker table and lines_remaining were equal for all three granules (excerpt/compare-full-vs-excerpt*.txt), and the adapter's documents differed only in mods_sha256 (compare-adapter-full-vs-excerpt.txt, granule-mods/compare-adapter-6bb521b.txt).",
+  "excerpt_check": "Upstream at 7949151e, at 6bb521b1 and at 3715651a parsed each body against the full MODS and against the excerpt; the crdoc, speaker table and lines_remaining were equal for all three granules (excerpt/compare-full-vs-excerpt*.txt), and the adapter's documents differed only in mods_sha256 (compare-adapter-full-vs-excerpt.txt, granule-mods/compare-adapter-6bb521b.txt; at 3715651a, review-fixes/repin-3715651a/excerpt-check/excerpt-check.txt).",
   "fixtures": [
     {
       "fixture": "CREC-2026-09-16-pt1-PgH5835-8.htm",

@@ -32,17 +32,20 @@ for item in document.items:
     print(item.item_index, item.kind, item.turn, item.speaker, item.speaker_bioguide, item.line_start, item.line_end)
 ```
 
-**Each granule's own MODS is the cheap path**: one small document per granule
-(a few kilobytes), the one `acquire_granule` retains, read as above.
+**Each granule's own MODS is the small-document path**: one document of a few
+kilobytes per granule, the one `acquire_granule` retains, read as above.
 **The issue's package MODS is the batch path**: parse it once with
 `read_record_issue(mods, max_mods_bytes=...)` and read each granule with
 `issue.speeches(granule_html, granule_id, max_html_bytes=...)`. Upstream parses
-a MODS with BeautifulSoup, measured on 2026-09-28 at 0.4-0.7 s and about 55 MB
-retained for the 3.6 MB CREC-2026-09-16 package MODS, and finds each granule's
-record by scanning the whole parsed MODS for its accessId, so on the package
-path every granule pays a scan of every element and a whole issue costs
-O(granules x elements). That lookup cost is upstream's until its accessId index
-lands; a fork fix is in progress.
+a MODS with BeautifulSoup (0.4-0.7 s and about 55 MB retained for the 3.6 MB
+CREC-2026-09-16 package MODS, measured 2026-09-28) and indexes its accessIds in
+the same pass, so each granule is a dictionary lookup plus its own lines, and a
+whole issue costs one read of its MODS, linear in its elements, plus its
+granules' lines. Measured at the pin over the review's 523 real granules of
+four issues against their package MODS: 1.81 s to read and index the four
+MODS, then a median of 0.59 ms a granule, against 6.11 ms when upstream
+scanned the whole MODS per granule (`measurements.txt` in
+`~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/pin-3715651a/`).
 
 Without the extra, the module still imports; `parser_available()` answers
 whether it is installed, and every reading refuses with the install command.
@@ -118,14 +121,16 @@ granule's MODS record, unmodified, the items, `source_lines`,
 Each `RecordSpeechItem` carries upstream's `kind`, `speaker` exactly as upstream
 spelled it, `speaker_bioguide`, `text`, `turn` (speech items only), the line
 span and `source_item`, the whole item upstream emitted as a read-only mapping.
-Upstream spells an absent bioguide id and an unmatched search title as the
-string `"None"`; `speaker_bioguide` and `doc_title` read those as `None`.
+An item no line kind matched has kind and speaker `"Unknown"`; a kind that
+names no speaker (a rule, a title) has speaker `None`, and an absent bioguide
+id or unmatched search title is `None`, as upstream returns them.
 
 ### Line spans
 
 Upstream records no source position, so the adapter locates each item.
 `source_lines` is the granule's `<pre>` text as upstream's own reader split it,
-up to the last line it read. `line_start` and `line_end` are 0-based, inclusive
+up to the last line it read; that reader first folds a line-leading `<bullet>`
+and the whitespace around it into one space. `line_start` and `line_end` are 0-based, inclusive
 indexes into it.
 
 - The first item starts on the line where upstream's title scan stopped,
@@ -147,15 +152,14 @@ The same coverage is checked on every read, and reported rather than refused,
 so a partial parse keeps its items. `unaccounted_lines` is the 0-based indexes
 into `source_lines` of every line that is none of:
 
-- a header line, when upstream matched the header;
+- a header line (upstream refuses a header it cannot read);
 - a blank or title line its title scan read before the first item;
 - a text line of a located item;
 - a whole whitespace-only line, `{time}` stamp or `[[Page]]` marker.
 
 Upstream's skip patterns match only a line's start, so a skipped line that
-carries text after its marker is text no item holds; it is listed, as are a
-header upstream did not match, the lines of unlocated items and the line a
-partial parse failed on. A caller that needs the whole granule requires
+carries text after its marker is text no item holds; it is listed, as are the
+lines of unlocated items and the line a partial parse failed on. A caller that needs the whole granule requires
 `parse_status == "complete"` and an empty `unaccounted_lines`. Over the 535 real
 granules of the replay above, every one is complete and none lists a line.
 
@@ -167,8 +171,9 @@ granules of the replay above, every one is complete and none lists a line.
   `False`. A partial parse is never reported as complete, and a parser build
   that does not report completion at all refuses.
 - **Every upstream failure is a `RecordSpeechesError` naming the granule**:
-  a granule absent from the MODS, a body with no `<pre>` block, a header too
-  short to read.
+  a granule absent from the MODS, a body with no `<pre>` block, and a header
+  cut short or astray, which upstream raises as `CRParseError` and the refusal
+  wraps, saying which header line failed.
 - **Granule ids must be this issue's.** The id becomes the file name upstream
   reads the accessId from, up to the first dot, so an id with a dot, a path
   separator or another date's prefix refuses.
@@ -179,12 +184,12 @@ granules of the replay above, every one is complete and none lists a line.
   that granule; the adapter refuses when the header's first page, or for front
   matter its section, differs, and refuses an id that names neither. Every
   granule accessId in the review's retained package MODS names one, and all 535
-  real granules' headers agree with their ids. A header upstream did not match
-  states no page; its lines are then in `unaccounted_lines`.
+  real granules' headers agree with their ids.
 
-Parses run one at a time. Upstream keeps its line-kind table on the class and
-writes each document's speaker pattern into it (`cr_parser.py:259`), which its
-item builder reads mid-parse, so two threads would read each other's speakers.
+Parses may run concurrently: upstream copies its line-kind table per document,
+so a parse writes its speaker pattern into its own copy and the class's table
+stays as it was; a test reads granules with different speaker tables from
+several threads and gets what it gets one at a time.
 
 ## What this does not establish
 
@@ -194,9 +199,11 @@ item builder reads mid-parse, so two threads would read each other's speakers.
   has none. Nothing here resolves a person.
 - **Segmentation accuracy across the corpus.** The fixtures pin a few
   granules, and the replay reads 535 from 1996 to 2026 complete with every line
-  accounted for. That shows every line landed in some item, not that each item's kind is
-  right: upstream's rules are line patterns, and how often they misclassify a
-  line in other eras is not measured here.
+  accounted for. That shows every line landed in some item, not that each
+  item's kind is right. At the pin, the speaker pattern matched 768 of the 772
+  hand-labelled speech starts in PR #90's 250 labelled windows (99.5%,
+  precision 99.6%; `measurements.txt` in `~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/pin-3715651a/`); upstream's rules are line
+  patterns, and other kinds and eras are not measured here.
 - **Completeness of a partial parse.** Its items are the ones before the
   failure; the rest of the granule was not read.
 - **Acquisition.** The adapter parses bytes a caller retained; identity of the
@@ -210,8 +217,8 @@ branch `spicy-docs-pin`, at the commit `PARSER_PIN` names in
 `sources/congress/record_speeches.py`, and `beautifulsoup4==4.14.3`, the version
 the `html` extra pins and the gate tests; without the pin a host resolves
 whatever is newest (spicy-regs resolved 4.15.0 in the review's simulation).
-Over upstream `84a5af4` the fork branch carries two changes offered upstream and
-one that stays on the fork:
+Over upstream `84a5af4` the fork branch carries three changes offered upstream,
+one upstream pull request merged in, and two commits that stay on the fork:
 
 - [unitedstates/congressional-record#92](https://github.com/unitedstates/congressional-record/pull/92)
   ships the `govinfo` subpackage and SQL files in the wheel, admits a speaker
@@ -226,9 +233,20 @@ one that stays on the fork:
   `uv sync --frozen --no-dev --extra record-speeches` on 2026-09-28 added
   `congressionalrecord`, `beautifulsoup4`, `soupsieve`, `lxml`, `urllib3`,
   `certifi` and `pydantic` with its three dependencies, and none of the
-  PostgreSQL stack, `numpy` or `requests`.
-- A fork-only commit pins the build backend to `setuptools==84.0.0`, so the
-  wheel a host vendors is reproducible.
+  PostgreSQL stack, `numpy` or `requests` (re-run at this pin).
+- [unitedstates/congressional-record#94](https://github.com/unitedstates/congressional-record/pull/94)
+  copies the line-kind table per document instead of writing each document's
+  speaker pattern into the class's, returns `None` rather than the string
+  `"None"` for an absent value, raises `CRParseError` for a header cut short or
+  astray, and indexes a MODS's accessIds once instead of scanning the whole
+  MODS per granule.
+- [unitedstates/congressional-record#90](https://github.com/unitedstates/congressional-record/pull/90)
+  (jutton1, `fix-text-mislabeling`), merged in: a wider speaker pattern and
+  `<bullet>` folding. On the review's 523 real granules its only change to the
+  items was the whitespace of three items in two documents (`measurements.txt`
+  in `pin-3715651a/`).
+- Fork-only commits pin the build backend to `setuptools==84.0.0`, so the
+  wheel a host vendors is reproducible, and prune the tests from the sdist.
 
 The reasons for a fork are recorded under
 ["congressionalrecord is a pinned fork dependency, not a port"](../decisions.md#congressionalrecord-is-a-pinned-fork-dependency-not-a-port).
@@ -246,19 +264,21 @@ The reasons for a fork are recorded under
 4. `uv build --wheel`, with the build backend the branch pins.
 
 Nothing else moves the digest. For the pin as of 2026-09-28 that is
-`SOURCE_DATE_EPOCH=1790623777`, giving a 24,814-byte, 23-file wheel with sha256
-`b5fd928072ec1fc38d5a82842b622fb55ab14bcc18b9ca576bee1731855fc897`, identical
-from two separate archives (receipt
-`~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/`,
-with `SHA256SUMS`). The same archive built under `umask 002` gives
-`e8adfa11b055c53c6629ee212b9cb6aafa177079ff634e566868df2060715401`
-(`review-fixes/wheel-umask/` beside it), and without the variable the zip
+`SOURCE_DATE_EPOCH=1790630841`, giving a 26,308-byte, 23-file wheel with sha256
+`abb9a47cfae7991c01258da76427092b05290f572489278ff09a0fe79a73cbe2`, identical
+from separate archives built by the fork's owner and again for this repository
+(receipts `pin-3715651a/`, with `SHA256SUMS`, and
+`review-fixes/repin-3715651a/wheel/`, under
+`~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/`).
+Under `umask 002` the previous pin's archive gave
+`e8adfa11b055c53c6629ee212b9cb6aafa177079ff634e566868df2060715401` instead of
+its `b5fd9280…` (`review-fixes/wheel-umask/`), and without the variable the zip
 timestamps, and so the digest, change per checkout.
 
 **Move the pin** by changing the revision in `pyproject.toml` and `PARSER_PIN`
 together, running `uv lock`, rebuilding the wheel by the rule above, recording
 its digest here, and running this guide's tests.
-**When upstream merges #92 and #93 and publishes a release**, delete the
+**When upstream merges #92, #93, #94 and #90 and publishes a release**, delete the
 `congressionalrecord` entry from `[tool.uv.sources]`, pin the release in the
 extra, and replace `PARSER_PIN` and its lockstep test with the release version.
 
@@ -283,20 +303,16 @@ records how it was built.
 
 ### To raise upstream
 
-Not patched here; file:line is at the pin.
+Still true at the pin (file:line there); the adapter works around both.
 
-- **`find(text=...)` is deprecated** in BeautifulSoup 4.13 and later
-  (`cr_parser.py:239`); a release that removes `text` breaks the accessId
-  lookup. `string=` is the replacement.
-- **Shared class state.** `gen_file_metadata` writes the document's speaker
-  pattern into the class-level `item_types` (`cr_parser.py:259`), so parses are
-  not thread-safe. The adapter serializes them.
-- **Sentinel strings.** A missing bioguide id, member attribute or search
-  title is the string `"None"` (`cr_parser.py:143-154`, `:250`), not `None`.
-- **A short body raises `StopIteration`** out of `get_header`
-  (`cr_parser.py:295-322`) rather than a parse error.
-- **The `Issues` project URL** misspells the organization (`unitestates`,
-  `pyproject.toml:35`).
+- **Files are read in the locale's encoding.** Both `open()` calls pass no
+  encoding (`cr_parser.py:89`, `:342`), so the same bytes read differently
+  under another locale. The adapter writes in that encoding and proves the
+  read-back (Input shape, above).
+- **MODS is read with BeautifulSoup's HTML parser** (`cr_parser.py:90`), which
+  lower-cases element names and warns on a document with an XML declaration,
+  as a granule's own MODS has. Upstream looks its tags up lower-cased, so it
+  reads correctly; the warning is filtered in the tests.
 
 ## Fixtures
 

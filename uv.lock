@@ -136,7 +136,7 @@ wheels = [
 [[package]]
 name = "congressionalrecord"
 version = "2.3.0"
-source = { git = "https://github.com/mikewolfd/congressional-record?rev=6bb521b11b498f2e8dbac614a4394c703c6773ac#6bb521b11b498f2e8dbac614a4394c703c6773ac" }
+source = { git = "https://github.com/mikewolfd/congressional-record?rev=3715651a4780d49eecd2dff9f936349c5963f01d#3715651a4780d49eecd2dff9f936349c5963f01d" }
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "certifi" },
@@ -1252,7 +1252,7 @@ requires-dist = [
     { name = "beautifulsoup4", marker = "extra == 'html'", specifier = "==4.14.3" },
     { name = "beautifulsoup4", marker = "extra == 'record-speeches'", specifier = "==4.14.3" },
     { name = "boto3", marker = "extra == 'acquisition'" },
-    { name = "congressionalrecord", marker = "extra == 'record-speeches'", git = "https://github.com/mikewolfd/congressional-record?rev=6bb521b11b498f2e8dbac614a4394c703c6773ac" },
+    { name = "congressionalrecord", marker = "extra == 'record-speeches'", git = "https://github.com/mikewolfd/congressional-record?rev=3715651a4780d49eecd2dff9f936349c5963f01d" },
     { name = "deltatrack", marker = "extra == 'bill-diff'", git = "https://github.com/civictechdc/DeltaTrack?rev=c636448ba08d55bba7cb8c884aad0f5ac1ccf2f6" },
     { name = "duckdb", marker = "extra == 'courtlistener-local'", specifier = ">=1.5.5,<2" },
     { name = "httpx", marker = "extra == 'acquisition'" },

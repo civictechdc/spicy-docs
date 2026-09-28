@@ -14,12 +14,10 @@ one small document per granule (a few kilobytes), which is what
 ``GovInfoBodyAcquirer.acquire_granule`` retains. The batch path is the issue's
 package MODS: :func:`read_record_issue` parses it once and
 :meth:`RecordIssue.speeches` reads each granule against it. Upstream parses a
-MODS with BeautifulSoup (measured 2026-09-28: 0.4-0.7 s for the 3.6 MB
-CREC-2026-09-16 package MODS) and finds a granule's record by scanning the
-whole parsed MODS for its accessId, so on the package path every granule pays
-a scan of every element, and an issue of G granules costs O(G x elements).
-That lookup cost is upstream's until its accessId index lands; a fork fix is in
-progress.
+MODS with BeautifulSoup and indexes its accessIds in the same pass, so a whole
+issue costs one read of its MODS, linear in its elements, then a dictionary
+lookup and the granule's own lines per granule; the source page has the
+measurement.
 """
 
 from __future__ import annotations
@@ -27,7 +25,6 @@ from __future__ import annotations
 import hashlib
 import locale
 import re
-import threading
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -45,7 +42,7 @@ from spicy_docs.sources.govinfo.mods import RETAINED_MODS_MAX_ELEMENTS, GovInfoM
 from spicy_docs.transport.source_acquirer import check_payload
 
 #: The fork commit ``pyproject.toml`` pins and ``uv.lock`` resolves; a test holds the three together.
-PARSER_PIN = "6bb521b11b498f2e8dbac614a4394c703c6773ac"
+PARSER_PIN = "3715651a4780d49eecd2dff9f936349c5963f01d"
 EXTRA_REQUIRED = (
     "Congressional Record speech turns need the 'record-speeches' extra: uv sync --frozen --extra record-speeches"
 )
@@ -68,15 +65,10 @@ _HEADER_PAGE = re.compile(r"(?P<section>[A-Z]+)(?P<number>[0-9]+)(?:-[A-Z]*[0-9]
 _DROPPED_LINE = re.compile(r"\s+|\s*\{time\}\s+[0-9]{4}\s*|\s*\[\[Page [A-Z]*[0-9]+\]\]\s*")
 # What upstream raises from a document it cannot read: a missing accessId
 # (RuntimeError), a missing <pre>, searchTitle or granuleClass (AttributeError),
-# a body too short for its header (StopIteration), an unmatched date or time
-# (AttributeError, TypeError, ValueError, LookupError). Named rather than
-# ``Exception``, so a failure of any other kind propagates as itself.
-_UPSTREAM_FAILURES = (AttributeError, LookupError, RuntimeError, StopIteration, TypeError, ValueError)
-# Upstream keeps its line-kind table on the class and writes each document's
-# speaker pattern into it (cr_parser.py:259), which crItem then reads while it
-# parses (subclasses.py:21-26). Two parses in two threads would read each
-# other's speakers, so one parse runs at a time.
-_PARSE_LOCK = threading.Lock()
+# a header cut short or astray (CRParseError, a ValueError), an unmatched date
+# or time (AttributeError, TypeError, ValueError, LookupError). Named rather
+# than ``Exception``, so a failure of any other kind propagates as itself.
+_UPSTREAM_FAILURES = (AttributeError, LookupError, RuntimeError, TypeError, ValueError)
 
 
 class RecordSpeechesError(ValueError):
@@ -110,18 +102,14 @@ def _frozen(value: object) -> Any:
     return value
 
 
-def _stated(value: object) -> Any:
-    """Upstream spells an absent value as the string ``"None"``; this is ``None`` for both spellings."""
-    return None if value is None or value == "None" else value
-
-
 @dataclass(frozen=True, slots=True)
 class RecordSpeechItem:
     """One item upstream emitted, with the source lines it came from.
 
-    ``speaker`` is upstream's value exactly, including its ``"Unknown"`` and
-    ``"None"`` placeholders; ``speaker_bioguide`` is the id the MODS states for
-    that speaker, ``None`` where it states none. ``turn`` is upstream's speech
+    ``speaker`` is upstream's value exactly: ``"Unknown"`` on an item no line
+    kind matched, and ``None`` on a kind that names no speaker (a rule, a
+    title). ``speaker_bioguide`` is the id the MODS states for that speaker,
+    ``None`` where it states none. ``turn`` is upstream's speech
     counter and ``None`` on every other kind. ``source_item`` is the whole item
     as upstream emitted it.
 
@@ -135,7 +123,7 @@ class RecordSpeechItem:
     item_index: int
     kind: str
     turn: int | None
-    speaker: str
+    speaker: str | None
     speaker_bioguide: str | None
     text: str | None
     line_start: int | None
@@ -151,20 +139,20 @@ class RecordSpeechDocument:
     ``parse_status`` is upstream's own: ``partial`` means an item raised, the
     items before it are kept, and ``parse_error`` holds the exception's type,
     message and the line being read. ``lines_exhausted`` says whether upstream
-    read to the end of the text. ``header`` is upstream's header mapping, or
-    ``None`` where the granule's first lines did not match it; ``vol``, ``num``,
-    ``chamber``, ``pages`` and ``extension`` read from it. ``related_*`` are the
-    bill, law, U.S. Code and Statutes at Large references upstream read from
-    the granule's MODS record, unmodified. ``source_lines`` is the granule's
-    ``<pre>`` text split the way upstream split it, up to the last line it read.
+    read to the end of the text. ``header`` is upstream's header mapping (a
+    header it cannot read refuses); ``vol``, ``num``, ``chamber``, ``pages`` and
+    ``extension`` read from it. ``related_*`` are the bill, law, U.S. Code and
+    Statutes at Large references upstream read from the granule's MODS record,
+    unmodified. ``source_lines`` is the granule's ``<pre>`` text split the way
+    upstream split it, up to the last line it read; upstream first folds a
+    line-leading ``<bullet>`` and the whitespace around it into one space.
 
     ``unaccounted_lines`` indexes the lines of ``source_lines`` nothing here
-    accounts for: not the header upstream read, not its title, not a line of a
-    located item's text, and not a whole whitespace-only, ``{time}`` or
-    ``[[Page]]`` line. A header upstream did not match, the lines of unlocated
-    items, the line a partial parse failed on and a skipped line that carried
-    text all land here, so a caller that needs the whole granule reads
-    ``parse_status == "complete"`` and an empty tuple.
+    accounts for: not the header, not the title, not a line of a located item's
+    text, and not a whole whitespace-only, ``{time}`` or ``[[Page]]`` line. The
+    lines of unlocated items, the line a partial parse failed on and a skipped
+    line that carried text land here, so a caller that needs the whole granule
+    reads ``parse_status == "complete"`` and an empty tuple.
     """
 
     granule_id: str
@@ -172,7 +160,7 @@ class RecordSpeechDocument:
     parse_status: str
     parse_error: Mapping[str, object] | None
     lines_exhausted: bool
-    header: Mapping[str, object] | None
+    header: Mapping[str, object]
     title: str | None
     doc_title: str | None
     related_bills: tuple[Mapping[str, object], ...]
@@ -187,7 +175,7 @@ class RecordSpeechDocument:
     parser_pin: str
 
     def _header(self, key: str) -> Any:
-        return None if self.header is None else self.header.get(key)
+        return self.header.get(key)
 
     @property
     def vol(self) -> str | None:
@@ -237,7 +225,7 @@ def _write_for_upstream(path: Path, text: str, *, label: str) -> None:
     except UnicodeEncodeError as error:
         raise RecordSpeechesError(f"{label} cannot be written in the locale encoding {encoding}") from error
     try:
-        # No encoding and no newline argument: upstream's own call (cr_parser.py:18 and :277).
+        # No encoding and no newline argument: upstream's own call (cr_parser.py:89 and :342).
         with open(path) as readback:
             unchanged = readback.read() == text
     except UnicodeDecodeError:
@@ -301,11 +289,10 @@ def _mods_identity(mods: bytes, *, max_bytes: int) -> tuple[PackageIdentity, str
 def _line_recording(parse_file: Any) -> Any:
     """Upstream's file parser, recording the lines it reads and the line its first item starts on.
 
-    Every hook calls upstream's own method and only watches it: ``read_htm_file``
+    Both hooks call upstream's own method and only watch it: ``read_htm_file``
     is upstream's reader, so the lines are the ones it split rather than a
-    second reading; ``get_header`` consumes the header lines, matched or not;
-    and ``get_title`` is where upstream stops consuming title lines -- the line
-    it stopped on is the first item's first line.
+    second reading, and ``get_title`` is where upstream stops consuming header
+    and title lines -- the line it stopped on is the first item's first line.
     """
 
     class LineRecordingParse(parse_file):
@@ -314,11 +301,6 @@ def _line_recording(parse_file: Any) -> Any:
             for line in super().read_htm_file():
                 self.lines_read.append(line)
                 yield line
-
-        def get_header(self) -> Any:
-            header = super().get_header()
-            self.header_end = len(self.lines_read)
-            return header
 
         def get_title(self) -> Any:
             title = super().get_title()
@@ -371,31 +353,24 @@ def _locate(
 
 
 def _unaccounted(
-    lines: Sequence[str],
-    spans: Sequence[tuple[int, ...] | None],
-    *,
-    header_end: int,
-    header_read: bool,
-    first_item_line: int | None,
+    lines: Sequence[str], spans: Sequence[tuple[int, ...] | None], first_item_line: int | None
 ) -> tuple[int, ...]:
     """The lines no header, title or located item accounts for, in one pass over ``lines``.
 
-    Before the first item, the header lines count only when upstream read them
-    as its header, and the lines its title scan consumed are blank or title.
-    From the first item on, a line counts when it is a text line of a located
-    item or a whole whitespace-only, ``{time}`` or ``[[Page]]`` line
-    (``_DROPPED_LINE``). So the lines of unlocated items, the line a partial
-    parse failed on and a skipped line that carried text are unaccounted.
+    Every line before the first item is the header upstream read (it refuses
+    one it cannot) or a blank or title line its title scan read. From the first
+    item on, a line counts when it is a text line of a located item or a whole
+    whitespace-only, ``{time}`` or ``[[Page]]`` line (``_DROPPED_LINE``). So the
+    lines of unlocated items, the line a partial parse failed on and a skipped
+    line that carried text are unaccounted.
     """
-    missing = [index for index in range(header_end) if not header_read and lines[index] != ""]
     text_lines = {position for span in spans if span is not None for position in span}
     start = len(lines) if first_item_line is None else first_item_line
-    missing.extend(
+    return tuple(
         index
         for index in range(start, len(lines))
         if index not in text_lines and _DROPPED_LINE.fullmatch(lines[index]) is None
     )
-    return tuple(missing)
 
 
 class RecordIssue:
@@ -426,7 +401,7 @@ class RecordIssue:
         if self.granule_id is not None and value != self.granule_id:
             raise RecordSpeechesError(f"granule {value} is not the granule this MODS describes, {self.granule_id}")
         # Upstream takes the accessId it looks up from the file name, up to the
-        # first dot (cr_parser.py:525); a dotted id would be looked up truncated.
+        # first dot (cr_parser.py:580); a dotted id would be looked up truncated.
         if "." in value:
             raise RecordSpeechesError(f"granule {value} contains a dot, which the parser cannot address")
         page = _GRANULE_PAGE.search(value)
@@ -441,19 +416,23 @@ class RecordIssue:
         )
         granule, page = self._granule_id(granule_id)
         text = _decoded(body, label=_HTML_LABEL)
-        parser_class = _line_recording(_parser_module().ParseCRFile)
+        cr_parser = _parser_module()
+        parser_class = _line_recording(cr_parser.ParseCRFile)
         with TemporaryDirectory(prefix="spicy-docs-record-speeches-") as directory:
             path = Path(directory) / f"{granule}.htm"
             _write_for_upstream(path, text, label=_HTML_LABEL)
-            with _PARSE_LOCK:
-                try:
-                    parser = parser_class(str(path), self._directory)
-                except _UPSTREAM_FAILURES as error:
-                    if isinstance(error, RuntimeError) and str(error) == f"{granule} doesn't have accessid tag":
-                        raise RecordSpeechesError(f"granule {granule} is not in the {self.package_id} MODS") from error
+            try:
+                parser = parser_class(str(path), self._directory)
+            except _UPSTREAM_FAILURES as error:
+                if isinstance(error, RuntimeError) and str(error) == f"{granule} doesn't have accessid tag":
+                    raise RecordSpeechesError(f"granule {granule} is not in the {self.package_id} MODS") from error
+                if isinstance(error, cr_parser.CRParseError):
                     raise RecordSpeechesError(
-                        f"the parser could not read granule {granule}: {type(error).__name__}: {error}"
+                        f"granule {granule} has no header the parser can read: {error}"
                     ) from error
+                raise RecordSpeechesError(
+                    f"the parser could not read granule {granule}: {type(error).__name__}: {error}"
+                ) from error
         return self._document(parser, granule, page, body)
 
     def _document(self, parser: Any, granule: str, page: re.Match[str], body: bytes) -> RecordSpeechDocument:
@@ -484,7 +463,7 @@ class RecordIssue:
                 kind=item["kind"],
                 turn=item["turn"] if item["kind"] == "speech" else None,
                 speaker=item["speaker"],
-                speaker_bioguide=_stated(item.get("speaker_bioguide")),
+                speaker_bioguide=item.get("speaker_bioguide"),
                 text=item["text"],
                 line_start=None if span is None else span[0],
                 line_end=None if span is None else span[-1],
@@ -499,22 +478,16 @@ class RecordIssue:
             parse_status=status,
             parse_error=None if error is None else _frozen(error),
             lines_exhausted=not parser.lines_remaining,
-            header=_frozen(header) if header else None,
+            header=_frozen(header),
             title=crdoc.get("title"),
-            doc_title=_stated(crdoc.get("doc_title")),
+            doc_title=crdoc.get("doc_title"),
             related_bills=_frozen(crdoc.get("related_bills", ())),
             related_laws=_frozen(crdoc.get("related_laws", ())),
             related_usc=_frozen(crdoc.get("related_usc", ())),
             related_statute=_frozen(crdoc.get("related_statute", ())),
             items=items,
             source_lines=lines,
-            unaccounted_lines=_unaccounted(
-                lines,
-                spans,
-                header_end=parser.header_end,
-                header_read=bool(header),
-                first_item_line=parser.first_item_line,
-            ),
+            unaccounted_lines=_unaccounted(lines, spans, parser.first_item_line),
             html_sha256="sha256:" + hashlib.sha256(body).hexdigest(),
             mods_sha256=self.mods_sha256,
             parser_pin=PARSER_PIN,
@@ -525,12 +498,12 @@ def _check_page(granule: str, page: re.Match[str], header: object) -> None:
     """Refuse a body whose header starts on another page than the granule id names.
 
     Upstream never compares the two, so a body retained under the wrong id
-    would read as that granule. A front-matter id names only its section. A
-    header upstream did not match states no page; its lines are then in
-    ``unaccounted_lines``.
+    would read as that granule. A front-matter id names only its section.
+    Upstream refuses a header it cannot read, so a build that returns none is
+    refused here too.
     """
     if not isinstance(header, Mapping):
-        return
+        raise RecordSpeechesError(f"the installed parser read no header for {granule}; {EXTRA_REQUIRED}")
     pages = header.get("pages")
     stated = _HEADER_PAGE.fullmatch(pages) if isinstance(pages, str) else None
     if (

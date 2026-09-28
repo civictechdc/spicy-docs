@@ -71,13 +71,22 @@ Kept relatedItems are joined by the whitespace the original puts between two
 of them. Nothing inside a kept span is edited, so some identifiers in the
 package metadata name constituents the excerpt no longer carries.
 
-**Why the excerpt is enough.** Upstream reads the MODS root once, to find the
-`accessId` equal to the granule's id; everything else it reads is inside that
-element's parent. Run at the pin against the full MODS and against the excerpt,
-upstream's document, speaker table and completion flag were equal for all
-three granules, and the adapter's documents differed only in `mods_sha256`.
-The cutting and comparison scripts and their output are retained under
-`~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/excerpt/`.
+**Why the excerpt is enough.** Upstream finds the `accessId` equal to the
+granule's id (by an index of the MODS's accessIds, built once); everything else
+it reads is inside that element's parent. Run against the full MODS and against
+the excerpt, upstream's document, speaker table and completion flag were equal
+for all three granules, and the adapter's documents differed only in
+`mods_sha256`, at the first pin and again at the current one. The cutting and
+comparison scripts and their output are retained under
+`~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/excerpt/`
+and, for the current pin, `review-fixes/repin-3715651a/excerpt-check/` beside it.
+
+**Expectations are the parser's at `PARSER_PIN`.** The tests' readings were
+re-derived from the pinned parser each time the pin moved. Moving it to
+`3715651` (#94 and #90) changed one field of the adapter's output on these
+fixtures: `speaker` on rules and titles, and in `source_item`, is `None` where
+it was the string `"None"`; items, kinds, texts, spans, `unaccounted_lines` and
+every other field are unchanged (`review-fixes/repin-3715651a/fixture-compare/`).
 
 Offline fixtures establish behavior for these shapes. They establish neither
 coverage of other eras nor the parser's accuracy across the Record.
