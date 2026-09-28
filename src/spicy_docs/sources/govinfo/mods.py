@@ -12,6 +12,11 @@ from spicy_docs.reading.xml_tree import XmlTreeElement, read_xml_tree
 
 MODS_NAMESPACE = "http://www.loc.gov/mods/v3"
 DEFAULT_MAX_ELEMENTS = 100_000
+#: The element bound for a MODS a caller retained from GovInfo's routes: the
+#: body routes' validators and the Record speech adapter read under it. A
+#: daily Record issue's package MODS is the largest such record (the 3.6 MB
+#: CREC-2026-09-16 holds 35,978 elements, measured 2026-09-28).
+RETAINED_MODS_MAX_ELEMENTS = 200_000
 
 
 class GovInfoModsError(ValueError):

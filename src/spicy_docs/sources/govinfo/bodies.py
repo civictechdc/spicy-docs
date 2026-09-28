@@ -29,6 +29,7 @@ from spicy_docs.sources.govinfo.discovery import API
 from spicy_docs.sources.govinfo.error_page import check_not_error_page
 from spicy_docs.sources.govinfo.mods import (
     MODS_NAMESPACE,
+    RETAINED_MODS_MAX_ELEMENTS,
     GovInfoModsError,
     GovInfoModsPackage,
     ModsRecord,
@@ -1287,7 +1288,7 @@ def validate_package_mods(
     package: PackageIdentity | str,
     final_url: str,
     max_bytes: int,
-    max_elements: int = 200_000,
+    max_elements: int = RETAINED_MODS_MAX_ELEMENTS,
 ) -> PackageModsIdentity:
     """Prove every package-level ``accessId`` and read the renditions it states.
 
@@ -1491,7 +1492,7 @@ def validate_granule_mods(
     granule_id: str,
     final_url: str,
     max_bytes: int,
-    max_elements: int = 200_000,
+    max_elements: int = RETAINED_MODS_MAX_ELEMENTS,
 ) -> GranuleModsIdentity:
     """Prove the granule's own accessId and its host package's, then read its offered renditions.
 
