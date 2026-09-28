@@ -83,6 +83,7 @@ leave a gap.
 | `amendment` | `amendment/{congress}` | `amendments` | yes | yes (measured 2026-09-23) | `congress-amendment-list.json` |
 | `committee-bills` | `committee/{chamber}/{code}/bills` | `("committee-bills", "bills")` (nested; see below) | no (measured) | yes (measured) | `congress-committee-bills-list.json` |
 | `bill-actions` | `bill/{congress}/{type}/{number}/actions` | `actions` | no (measured) | no (measured) | `congress-bill-actions-list.json` |
+| `bill-detail` | `bill/{congress}/{type}/{number}` | `bill` (one record, a bare object) | no (structural) | no (structural) | `congress-bill-detail-113-hr-2810.json` |
 | `nomination` | `nomination/{congress}` | `nominations` | no | yes (default) | `congress-nomination-list.json` |
 | `hearing` | `hearing/{congress}` | `hearings` | no | yes (default) | `congress-hearing-list.json` |
 | `hearing-detail` | `hearing/{congress}/{chamber}/{number}` | `hearing` (one record, a bare object) | no (n/a) | no (n/a) | `congress-hearing-detail.json` |

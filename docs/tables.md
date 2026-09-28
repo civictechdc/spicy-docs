@@ -45,7 +45,7 @@ table's columns.
 | `bill_committees` | One row per committee or subcommittee a bill reached, as its BILLSTATUS document names it. | `bill_id`, `system_code` | `snapshot_update_date` | `interpretation.bill_family` |
 | `bill_publisher_summaries` | One row per CRS summary the publisher states on a bill, at the version and action it describes. | `bill_id`, `summary_version_code`, `action_date` | `update_date` | `interpretation.bill_family` |
 | `bill_cosponsors` | One cosponsor occurrence in one retained BILLSTATUS observation. | `bill_id`, `input_sha256`, `cosponsor_index` | none | `interpretation.bill_family` |
-| `cbo_cost_estimates` | One row per bill and CBO publication the bill's BILLSTATUS document names as a cost estimate of it. | `bill_id`, `publication_id` | `pub_date` | `interpretation.bill_family` |
+| `cbo_cost_estimates` | One row per bill and CBO publication the bill's BILLSTATUS document, or its Congress.gov bill record, names as a cost estimate of it. | `bill_id`, `publication_id` | `pub_date` | `interpretation.bill_family` |
 | `bill_versions` | One row per printing of a bill, per source that supplied it. | `bill_id`, `version_code`, `source` | `version_date` | `interpretation.bill_family` |
 | `bill_sections` | One row per content-bearing node of one bill version, in document order. | `bill_id`, `version_code`, `source`, `seq` | `version_date` | `interpretation.bill_family` |
 | `section_diffs` | One row per compared pair of consecutive printings of one bill. | `bill_id`, `from_version_code`, `from_source`, `to_version_code`, `to_source` | `to_version_date` | `interpretation.bill_family` |
@@ -260,6 +260,10 @@ published:
 7. `section_classifications` and `bill_summaries`, where a printing carries bill
    text;
 8. `diff_summaries`, from the comparisons step 6 already has in hand.
+
+The one exception is the 112th-113th `cbo_cost_estimates` rows, whose
+BILLSTATUS states none: `build_congress_api_cost_estimates` shapes them from a
+Congress.gov bill record, through the same fold and shaper as step 3.
 
 Per bill with A actions, C committees, K cosponsor entries, V versions and S
 sections per version, steps 1 to 5 are O(A + C + K + V + ΣS) with no re-parsing. Step 6 diffs V−1 pairs,
@@ -920,6 +924,16 @@ is a new table rather than columns appended to `congress_bills`.
   blocks, 14,845 absent, zero empty and zero unexpected; none establishes
   whether an unlisted estimate exists. Unkeyable populated items still produce
   family refusals naming the rule, host and path shape, without the URL.
+- **The 112th-113th rows come from Congress.gov, `source` `congress_api`.**
+  BILLSTATUS states no estimate for those Congresses — no item in 12,299 and
+  10,637 documents of every bill type, where the 111th's state 2,156 — while
+  Congress.gov's bill record lists them. CBO's keyless per-Congress feed names
+  the bills to ask about (769 and 851, from 944 and 1,117 items), one keyed
+  request each, and each record's list goes through the same fold and shaper
+  with its own `committeeReports` as the citations
+  ([decision](decisions.md#the-112th-113th-cbo-index-comes-from-congressgov-for-the-bills-cbos-feed-names)).
+  A 112th-113th bill with no row was not named by that feed or had nothing
+  listed; it is not established as unscored.
 - **`report_citation_count` is the text route's reachability, per row.** 883 of
   the 1,368 scored bills (64.5%) have a committee report at all; the Senate
   shortfall is structural, since 155 of 395 scored Senate bills were reported

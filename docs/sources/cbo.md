@@ -17,7 +17,9 @@ longer depend on it:
   `description` of every estimate, two requests per Congress and type.
   `cbo_cost_estimates` hosts it ([tables](../tables.md#the-cbo-cost-estimate-is-an-index-here-and-a-span-there)),
   and the `publication_id` it parses out of each url is the same key this
-  feed's own `<Link>` states, so the two join.
+  feed's own `<Link>` states, so the two join. **Except the 112th and 113th**,
+  whose BILLSTATUS states no estimate; there this feed names the bills and
+  Congress.gov's bill record supplies the estimates ([below](#the-feed-names-the-112th-113th-bills-to-ask-congressgov-about)).
 - **The letter text is reprinted verbatim in the bill's committee report**, for
   the 883 of 1,368 scored bills of the 118th (64.5%) that have one;
   `committee_reports` carries its span.
@@ -28,6 +30,56 @@ See [the routes measurement](../research/cbo-cost-estimate-routes-2026-09-20.md)
 and [what landed](../research/cbo-cost-estimates-build-2026-09-20.md). This
 feed remains the route to CBO's *own* spelling of the measure, which no GovInfo
 route states.
+
+## The feed names the 112th-113th bills to ask Congress.gov about
+
+GovInfo's BILLSTATUS states no `<cboCostEstimates>` item for the 112th or
+113th Congress: none in 12,299 and 10,637 documents of every bill type (one
+113th document, H.R. 4200, has an empty element), where the 111th's state
+2,156 items in 902 documents. Congress.gov's bill record lists them, one keyed
+request per bill. So, as the owner decided on 2026-09-28, this feed's
+`Bill_Number` names the bills, and only those are asked about, under
+`cbo_cost_estimates.source` `congress_api`.
+
+`feed_item_bills(congress, bill_number)` reads a `Bill_Number` as a measure
+type's abbreviation words, each ended by a period, a space or both, then the
+number, in the feed's own Congress. Every form in the 112th-113th and
+116th-119th feeds is that shape: `H.R. 8`, `S. 2241`, `H. J. Res. 48`,
+`H.J.Res. 124`, `S.J.Res. 44`, `H.Con.Res. 103`, `H.R.681`, `S.  1591`,
+`H.r. 4679`. No item names more than one bill. An empty `Bill_Number` names no
+bill, and anything else refuses with `CboBillNumberError` and its shape: a bare
+number (117th `700`), an amendment (116th `S.A. 948`), trailing text (119th
+`H.R. 7529,`) or a list. `cbo_feed_bills(feed, congress)` maps a whole feed,
+sorted, keeping each bill's publication ids and counting the items that name
+none.
+
+| Congress | Items | Bills | Items naming a bill | Empty `Bill_Number` | Refused |
+| --- | --- | --- | --- | --- | --- |
+| 112 | 944 | 769 | 852 | 92 | 0 |
+| 113 | 1,117 | 851 | 931 | 186 | 0 |
+
+The two agree. Of 36 feed bills sampled on Congress.gov, stratified by type and
+spelling, all 43 feed items are in the record's list, every listed estimate is
+a feed item naming that bill, and titles and descriptions are equal (the API
+ends ten descriptions in a newline the feed trims). An empty `Bill_Number` can
+still title a bill: 61 and 170 such items lead with one, and 44 and 137 of
+those bills no `Bill_Number` names. They are not asked about. None of the six
+sampled lists an estimate on Congress.gov, and neither do four reported 113th
+bills no item names. Receipt, with the 46 keyed requests and every script:
+`~/Work/corpora/fork-execution-2026-09-21/cbo-112-113/`.
+
+Harvest with the listing client's key, budget and resume rules
+(`sources/congress/bill_cbo_estimates.py`); the feed requests are keyless:
+
+```sh
+uv run --frozen python -m spicy_docs.sources.congress.bill_cbo_estimates \
+  --congress 112 --congress 113 --output cbo-112-113.jsonl --env-file .env
+```
+
+Each JSONL row keeps the record's exact bytes, keyless locator, digest and the
+feed publications that named the bill; a rerun asks only bills without an `ok`
+row. `build_congress_api_cost_estimates(read_bill_detail(body, identity))`
+shapes a row's estimates.
 
 ## What answers, and what does not
 
@@ -215,10 +267,10 @@ keeps the vocabulary reading of this publisher; this module is the acquisition.
 
 ## Change and check
 
-Owner: [`cbo.py`](../../src/spicy_docs/sources/cbo.py).
+Owners: [`cbo.py`](../../src/spicy_docs/sources/cbo.py) and, for the Congress.gov route, [`bill_cbo_estimates.py`](../../src/spicy_docs/sources/congress/bill_cbo_estimates.py).
 
 ```sh
-uv run --frozen pytest -q tests/test_cbo.py
+uv run --frozen pytest -q tests/test_cbo.py tests/test_bill_cbo_estimates.py
 ```
 
 The qualification tests read the receipt directory outside this repository and
