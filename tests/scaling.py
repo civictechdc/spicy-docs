@@ -8,9 +8,11 @@ time. Two guards make either unit trustworthy:
 
 - each measurement repeats the read until the smaller input costs at least ``MIN_SMALL_SECONDS`` of CPU, because a
   0.06 ms read held to a 1 ms floor asserted only that the larger one took under 8 ms;
-- a read of the larger input that spends ``OVERRUN`` times its allowance of CPU stops at once and fails, because the
-  cubic regression these tests guard against took 713 s to fail a plain loop. A CPU-time timer signal interrupts
-  Python code and the regular-expression engine alike.
+- a measurement of the larger input that spends ``OVERRUN`` times the CPU ``bound`` allows it stops at once and
+  fails, because the cubic regression these tests guard against took 713 s to fail a plain loop. A CPU-time timer
+  signal interrupts Python code and the regular-expression engine alike. Twice the bound leaves a linear reader
+  four times its measured CPU (3.5-4.2 times the smaller read under load 60-78, against 16), and stops the cubic
+  mutant, whose smaller read alone takes seconds, after one larger read's allowance rather than five whole reads.
 """
 
 from __future__ import annotations
@@ -28,7 +30,7 @@ from collections.abc import Callable
 #: The least CPU a measurement of the smaller input spends; the read repeats until it does.
 MIN_SMALL_SECONDS = 5e-3
 #: A read of the larger input may spend this many times ``bound`` times the smaller one's CPU before it is stopped.
-OVERRUN = 4
+OVERRUN = 2
 #: Interleaved measurements of each input; the least of each counts, so a burst on one run drops out.
 RUNS = 5
 
@@ -119,8 +121,9 @@ def assert_scales(read: Callable[[str], object], small: str, large: str, *, boun
     The least of ``RUNS`` interleaved measurements of each, each ``repeats`` reads long, with the cyclic collector
     paused. A measurement of ``large`` that spends ``OVERRUN * bound`` times the smaller one's CPU fails at once.
     """
-    read(small)  # a first read compiles and caches what later ones reuse
-    one = min(_cost(read, small, 1)[1] for _ in range(3))
+    one = _cost(read, small, 1)[1]  # a first read also compiles and caches what later ones reuse
+    if one < MIN_SMALL_SECONDS:  # a slow first read already says one read is enough; a fast one may be noise
+        one = min(_cost(read, small, 1)[1] for _ in range(3))
     repeats = max(1, math.ceil(MIN_SMALL_SECONDS / max(one, 1e-7)))
     least_small = least_large = math.inf
     enabled = gc.isenabled()
