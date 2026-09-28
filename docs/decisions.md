@@ -3088,3 +3088,133 @@ edited here):
   repair reads.
 - Its GAO target build labels the page read
   `gao-qualified-page-heading-publication-block/1`; see above.
+
+## 0.51.0 reads failed and vetoed bills in publisher order, two more citation spellings and two new sources
+
+2026-09-28. Four groups from the unitedstates reuse review
+(`docs/unitedstates-review-2026-09-28/` in the spicy-stack workspace), each
+reviewed independently before release: bill-stage corrections, two citation
+spellings, the administration-policy statements reader over a bounded YAML
+loader, and the Inspector General archive metadata reader. Receipts, under
+`~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/`:
+`release-0.51.0/` (stage and citation replays, gate log, wheel) and `sap/`
+(the administration-policy archive replay).
+
+The owner's decisions of 2026-09-28:
+
+- Bill stage and the citation spellings ship now.
+- Same-day actions follow the publisher's list order in this release, not a
+  later one (the review found the defect; see below).
+- The administration-policy reader ships; its spicy-regs table is the bills
+  lane's next item.
+- The Inspector General archive reader ships: an IG reports table starts in
+  the bills lane.
+- The legislator-companion and historical-statute readers have no consumer.
+  They wait on the tagged branch `unitedstates-spare-readers-20260928`, not
+  main, until a consumer names them.
+- The Congressional Record parser is being forked under mikewolfd, with an
+  upstream PR and a separate adapter branch; nothing of it is in this release.
+
+### Published values that change
+
+`congress_bills.stage` and its provenance columns, and `bill_actions.stage`,
+change on the next rebuild of each bill. Measured on live `congress_bills`,
+artifact sha256:6b8ce7a2bf9a240078ba4cd438e151fe43594a4fdb10369af3ece42f6cd5c063,
+queried 2026-09-28 through the fork MCP, by the 0.50.1 matcher that fired:
+
+- 421,465 rows; 248,469 have NULL stage (every bill before the 108th
+  Congress; pre-existing, unrelated to this change);
+- 48,941 rows staged `other_chamber` by the matcher `referred` become
+  `committee`;
+- 194 rows staged by `star print` lose that stage (no rule fires on the
+  action; the bill's stage comes from its latest action a rule does read);
+- 56 rows staged `law` by the bare substring `public law` are re-read (the
+  rule now needs the action to start with an enactment phrase);
+- 11 rows staged `passed_chamber` by `failed of passage` become `failed`, or
+  `vetoed` where the failed vote was an override: the replay below reads all
+  11 as `vetoed`;
+- 45 rows staged `passed_chamber` by `on passage` now depend on the vote's
+  result text;
+- 0 rows were staged `law` by `public print`, so the headline bug of the review
+  has no live incidence.
+
+The whole column, replayed (`release-0.51.0/stage-replay/`): the live
+bill-family generation `c28ed5b1…` (the same 421,465 bills and the same counts
+above) folded through the 0.50.1 rules reproduces every published `stage`,
+`stage_rule`, `stage_matcher` and `stage_action_index` on all 172,991 bills with
+actions. The rules as first reviewed change 50,762 of them. With publisher-order
+ties, which this release ships, 154,374 change. The 0.50.1 fold read the
+newest-first BILLSTATUS list as chronological, so a day's oldest action won a
+same-day tie: 93,075 of the 98,768 bills published as `introduced` were referred
+to committee the same day. The largest moves, live to 0.51.0:
+
+| From | To | Bills |
+| --- | --- | --- |
+| `introduced` | `committee` | 92,981 |
+| `other_chamber` | `committee` | 49,264 |
+| `committee` | `other_chamber` | 5,682 |
+| `introduced` | `passed_chamber` | 4,884 |
+| `introduced` | `other_chamber` | 610 |
+| `passed_chamber` | `other_chamber` | 341 |
+| `committee` | `passed_chamber` | 181 |
+| `passed_chamber` | `failed` | 126 |
+
+After it, 265 bills read `introduced`, 182 `failed` and 43 `vetoed`; the full
+transition table is `transitions-live-to-0.51.0.csv`. Across the live
+`bill_actions` rows no adjacent pair runs forward in date and none of 106,013
+same-day timed pairs runs forward in time, which is why the list's order, not
+`actionTime`, orders a day.
+
+`bill_committee_actions.sealed_stage` reads print phrases through the same text
+rules: `referred` becomes `committee`, and the became-law matcher is
+`became public law`.
+
+`document_citations` gains the two spellings on the next read of a document.
+Replayed over the parsing survey's 60,000 Federal Register texts
+(`release-0.51.0/citation-replay/`): 61 new findings (3 `usc_section`, 58
+`cfr_section`), none lost; each is a section or part the text states.
+
+### Review fixes folded in
+
+- Same-day actions follow publisher order: `infer_stage(actions, *,
+  newest_first=False)`, and `bill_family` passes `True`. The time key the
+  first draft used would have put a timed House vote after the untimed Senate
+  receipt that followed it.
+- A pocket veto records `pocket vetoed by president` as its matcher; the code
+  map is one module constant and the code is read once per action.
+- The `stage_matcher` contract text names vote-result readings too, and
+  `docs/interpretation.md` no longer says a referral reads `other_chamber`.
+- The section-first U.S.C. pattern sat between `_USC_CODE_FORMS` and its doc
+  comment; both patterns now cite the survey replay.
+- The YAML loader refuses explicit `!!timestamp`, `!!binary`, `!!set`,
+  `!!omap` and `!!pairs` tags, so a tagged date cannot come back as a date;
+  aliases are named as aliases.
+- The Inspector General reader checks the caller's locator before the body.
+- Tests added for every qualified code and unknown codes, suspension and
+  override votes, the `bill_family` action rows, the YAML tags and missing
+  extra, the policy budget caps and the `AdministrationPolicyRefused` type.
+
+### What an importer must change
+
+- The stage vocabulary gains `failed` and `vetoed` (`OUTCOME_STAGES`).
+  `stage_index` returns -1 and `stage_progress` raises `ValueError` for them;
+  a fixed allowlist of stage values must add both.
+- `STAGES`' label for `law` is **Became law**, not "Signed into law" (it covers
+  a veto override). No repository in the stack reads the label.
+- `stage_matcher` can hold a publisher code (`36000`, `8000`, ...) or a
+  vote-result reading (`failed passage vote`, `successful passage vote`), not
+  only a text pattern; `stage_rule` adds `failed_passage`, `vetoed`,
+  `action_code` and `became_law_code`.
+- `infer_stage` takes `newest_first`; a caller passing a BILLSTATUS list in
+  publisher order must pass `True`. `infer_stage_from_action` is new and is
+  what `bill_family` uses for both tables.
+- The `stage` and `stage_matcher` contract descriptions changed in both
+  `congress_bills` and `bill_actions` (`schemas/bill_tables.py`), so spicy-regs
+  regenerates its dictionary.
+- spicy-regs suppresses `stage_changed` activity events for the generation that
+  adopts 0.51.0 (owner decision): they are rule changes, not legislative
+  events, and the replay above would otherwise emit one for each re-read bill.
+- Citation rules `usc_section` and `cfr_section` are version 004; the rule-set
+  digest is `5609cfaab8bb`.
+- The `yaml` extra (`PyYAML>=6,<7`) exists; the administration-policy reader
+  needs it with `acquisition`.
