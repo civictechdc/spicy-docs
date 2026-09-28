@@ -471,7 +471,7 @@ _COSPONSOR_FIELDS = (
 def _cosponsor(item: Element, body: bytes, spans: dict[Element, tuple[int, int]]) -> BillCosponsor:
     """One ``<cosponsors>`` item, with the item's own markup as ``source_xml``: the publisher's bytes, sliced.
 
-    Until this branch it was ``tostring(item)``, which re-spelled what it
+    Through 0.51.0 it was ``tostring(item)``, which re-spelled what it
     serialized (``<middleName/>`` as ``<middleName />``), carried the item's
     tail until 0.50.1 set it aside, and cost about 11 microseconds an entry.
     The span comes from the parse itself (``parse_xml_with_spans``), which

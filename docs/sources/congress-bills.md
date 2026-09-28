@@ -65,8 +65,8 @@ the item's own markup, the publisher's bytes from its `<item>` to its
 (`reading.xml.parse_xml_with_spans`, which refuses a document in any encoding
 but UTF-8) rather than reserialized
 ([decision](../decisions.md#a-cosponsors-source_xml-is-the-publishers-bytes)).
-0.50.0 also kept the whitespace that follows the item in the list, and until
-this change a self-closed element was re-spelled with a space.
+0.50.0 also kept the whitespace that follows the item in the list, and through
+0.51.0 a self-closed element was re-spelled with a space.
 `BillStatus.input_sha256` pins the original bytes; retain them with the
 acquisition capture.
 
