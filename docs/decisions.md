@@ -3267,10 +3267,18 @@ column, spelled `value/1`, and each observation's `scope_id` references it.
 - Whether a typed target is held is the host's lookup in the tables it selected.
   That lookup runs DuckDB over the host's own Parquet (spicy-regs
   `citation_resolution.resolve_citations`), which a stdlib leaf and a pure
-  reading cannot do. So `interpret_native_references` takes it as `resolve`: one
-  call for the whole run, as before, so each distinct key is read once and the
-  host's bounds apply per run. Each outcome must keep its candidate's
-  `occurrence_key` and order, or the run refuses.
+  reading cannot do. So `interpret_native_references` requires it as
+  `resolve`: one call for the whole run, as before, so each distinct key is
+  read once and the host's bounds apply per run. Every `/002` row therefore
+  carries a lookup outcome.
+- The lookup is given a deep copy of the candidates, and each outcome must keep
+  every field of its candidate, in candidate order, or the run refuses. So a
+  lookup that sorts, pops or rekeys the list it was given, or returns a
+  candidate with another `target_key` or `document_key`, cannot move a
+  candidate into another row or change what it names. Two rows naming one
+  observation (one `scope_id` and `occurrence_index`, differing only in
+  `input_sha256`) refuse before the lookup, since their candidates would share
+  keys.
 
 **The rule version stays `native-legal-reference/002`.** The reading, the
 shapes and every value it types are unchanged. `NATIVE_LEGAL_REFERENCE_RULE`
@@ -3308,8 +3316,11 @@ resolver copied unmodified as the lookup:
   and `source_family` filled, the three reading columns NULL until
   `interpret_native_references` fills them.
 - They refuse with `TableContractError`, still a `ValueError`. They also refuse
-  two inputs they accepted: an input digest not spelled `sha256:` plus 64
-  lowercase hex, and an empty-string edition.
+  three inputs they accepted: an input digest not spelled `sha256:` plus 64
+  lowercase hex, an empty-string edition, and an empty-string eCFR title.
+- Their `observation` parameters are typed by `Protocol`s naming the fields
+  each reads (`UsCodeReferenceObservation`, `TextObservation`,
+  `EcfrNoteObservation`); the scanners' observations satisfy them unchanged.
 - New: `interpretation.native_legal_references`, `shape_native_reference_read`
   and `NATIVE_LEGAL_REFERENCE_RULE`. `TABLE_CONTRACTS` holds two more
   contracts. `schemas.tables.digest` is typed by overload, so a `str` argument

@@ -1317,8 +1317,8 @@ def _native_reference_cases() -> list[ShapedCase]:
     """Every observation of the two retained fragments shaped and read, each fragment's read row, then the published rows.
 
     A shaped row's scope is rebuilt from a preimage written here and its input digest from the fixture's bytes; a
-    published row keeps the footer's column order, so a column the contract moves fails the round-trip. The fragments
-    are read with no target lookup, which no fixture here can stand in for.
+    published row keeps the footer's column order, so a column the contract moves fails the round-trip. The fragments'
+    targets are looked up by a stub, since no fixture here holds a target table.
     """
     from spicy_docs.interpretation.native_legal_references import interpret_native_references
     from spicy_docs.schemas.native_reference_rows import (
@@ -1329,6 +1329,7 @@ def _native_reference_cases() -> list[ShapedCase]:
     )
     from spicy_docs.sources.cfr.authority import scan_ecfr_authority_notes
     from spicy_docs.sources.uscode.references import scan_uscode_references
+    from tests.test_native_reference_rows import no_target_tables
 
     cases: list[ShapedCase] = []
     for source_family, fixture, record, preimage, scan, callbacks in (
@@ -1359,7 +1360,7 @@ def _native_reference_cases() -> list[ShapedCase]:
             return lambda observation: rows.append(shaper(observation, occurrence_index=len(rows), **context))
 
         scan(body, **{name: admit(shaper) for name, shaper in callbacks.items()})
-        read = interpret_native_references(rows)
+        read = interpret_native_references(rows, resolve=no_target_tables)
         cases += [_case("native_legal_references", row, (scope, input_sha256, str(i))) for i, row in enumerate(read)]
         row = shape_native_reference_read(
             source_family=source_family,

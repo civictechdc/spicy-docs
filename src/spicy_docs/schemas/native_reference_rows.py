@@ -10,7 +10,8 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import asdict
+from collections.abc import Mapping, Sequence
+from typing import Protocol
 
 from spicy_docs.schemas.tables import (
     AT_JOINED_KEY,
@@ -30,6 +31,50 @@ _SHA256 = re.compile(r"sha256:[0-9a-f]{64}")
 #: The rule both tables' ``rule_version`` names: the scanners' selected shapes and
 #: ``interpretation.native_legal_references``' reading. A change to either that moves a published value moves it.
 NATIVE_LEGAL_REFERENCE_RULE = "native-legal-reference/002"
+
+
+class _Element(Protocol):
+    """The fields a shaper reads of a scanner's ``reading.xml_observations.XmlElement``."""
+
+    @property
+    def tag(self) -> str: ...
+    @property
+    def attributes(self) -> Mapping[str, str]: ...
+    @property
+    def source_xpath(self) -> str: ...
+
+
+class _Observation(Protocol):
+    """The fields every shaper reads of a scanner observation: the element and its ancestry, root first."""
+
+    @property
+    def element(self) -> _Element: ...
+    @property
+    def ancestors(self) -> Sequence[_Element]: ...
+
+
+class UsCodeReferenceObservation(_Observation, Protocol):
+    """What :func:`shape_uscode_reference` reads of a ``sources.uscode.references.UsCodeReference``."""
+
+    @property
+    def href(self) -> str | None: ...
+
+
+class TextObservation(_Observation, Protocol):
+    """What :func:`shape_uscode_source_credit` reads of a ``UsCodeSourceCredit``: its complete text."""
+
+    @property
+    def text(self) -> str: ...
+
+
+class EcfrNoteObservation(TextObservation, Protocol):
+    """What :func:`shape_ecfr_note` reads of a ``sources.cfr.authority.EcfrTextObservation``."""
+
+    @property
+    def text_runs(self) -> Sequence[str]: ...
+    @property
+    def nearest_part(self) -> _Element | None: ...
+
 
 #: The shapes each family's scanner selects, and the ones it knowingly leaves out, in the order a read row lists them.
 _READ_SHAPES: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
@@ -82,7 +127,10 @@ NATIVE_LEGAL_REFERENCE_READS = table_contract(
             "list of every form the scanner cannot read."
         ),
         "manifest_sha256": "`sha256:` digest of the selection manifest that named this input and any target pins.",
-        "rule_version": "The rule this read ran under, the same as its observation rows'; comparable for equality only.",
+        "rule_version": (
+            f"`{NATIVE_LEGAL_REFERENCE_RULE}` (`NATIVE_LEGAL_REFERENCE_RULE`): the rule this read ran under, the same "
+            "as its observation rows'; comparable for equality only."
+        ),
     },
 )
 
@@ -158,32 +206,39 @@ NATIVE_LEGAL_REFERENCES = table_contract(
             "unsupported href has none."
         ),
         "rule_version": (
-            "`native-legal-reference/002`: the scanners' selected shapes and the reading this row was produced "
-            "under, comparable for equality only."
+            f"`{NATIVE_LEGAL_REFERENCE_RULE}` (`NATIVE_LEGAL_REFERENCE_RULE`): the scanners' selected shapes and the "
+            "reading this row was produced under, comparable for equality only."
         ),
     },
 )
 
 
 def _check_input(
-    *, source_record_key: str, source_locator: str, input_sha256: str, edition: str | None, **counts: int
+    *,
+    source_record_key: str,
+    source_locator: str,
+    input_sha256: str,
+    edition: str | None,
+    title: str | None = None,
+    **counts: int,
 ) -> None:
     """Refuse, as :class:`TableContractError`, what a row would publish wrongly: a blank record key or locator, an input
-    digest not spelled ``sha256:`` plus 64 lowercase hex, an edition that is neither ``None`` nor a non-empty string,
-    and a count or ordinal that is negative or not an int."""
+    digest not spelled ``sha256:`` plus 64 lowercase hex, an edition or title that is neither ``None`` nor a non-empty
+    string, and a count or ordinal that is negative or not an int."""
     if not source_record_key or not source_locator:
         raise TableContractError("native reference projection requires a source record key and locator")
     if not isinstance(input_sha256, str) or _SHA256.fullmatch(input_sha256) is None:
         raise TableContractError(f"input_sha256 must be spelled sha256: plus 64 lowercase hex, not {input_sha256!r}")
-    if edition is not None and (not isinstance(edition, str) or not edition):
-        raise TableContractError("edition must be a non-empty string or None")
+    for name, stated in (("edition", edition), ("title", title)):
+        if stated is not None and (not isinstance(stated, str) or not stated):
+            raise TableContractError(f"{name} must be a non-empty string or None")
     for name, value in counts.items():
         if type(value) is not int or value < 0:
             raise TableContractError(f"{name} must be a nonnegative integer")
 
 
 def _observation_row(
-    observation: object,
+    observation: _Observation,
     *,
     source_family: str,
     observation_kind: str,
@@ -194,7 +249,7 @@ def _observation_row(
     edition: str | None,
     href: str | None = None,
     note_text: str | None = None,
-    text_runs: tuple[str, ...] | None = None,
+    text_runs: Sequence[str] | None = None,
     cfr_title: str | None = None,
     cfr_part: str | None = None,
 ) -> Row:
@@ -207,9 +262,10 @@ def _observation_row(
         source_locator=source_locator,
         input_sha256=input_sha256,
         edition=edition,
+        title=cfr_title,
         occurrence_index=occurrence_index,
     )
-    element = observation.element
+    element, ancestors = observation.element, observation.ancestors
     row: Row = {
         "scope_id": native_reference_scope_id(source_family, source_record_key, edition),
         "source_family": source_family,
@@ -220,8 +276,13 @@ def _observation_row(
         "occurrence_index": text(occurrence_index),
         "source_path": element.source_xpath,
         "element_tag": element.tag,
-        "attributes_json": json_column(element.attributes),
-        "ancestors_json": json_column([asdict(item) for item in observation.ancestors]),
+        "attributes_json": json_column(dict(element.attributes)),
+        "ancestors_json": json_column(
+            [
+                {"attributes": dict(item.attributes), "source_xpath": item.source_xpath, "tag": item.tag}
+                for item in ancestors
+            ]
+        ),
         "observation_kind": observation_kind,
         "href": href,
         "text": note_text,
@@ -237,7 +298,7 @@ def _observation_row(
 
 
 def shape_uscode_reference(
-    observation: object,
+    observation: UsCodeReferenceObservation,
     *,
     source_record_key: str,
     input_sha256: str,
@@ -260,7 +321,7 @@ def shape_uscode_reference(
 
 
 def shape_uscode_source_credit(
-    observation: object,
+    observation: TextObservation,
     *,
     source_record_key: str,
     input_sha256: str,
@@ -283,7 +344,7 @@ def shape_uscode_source_credit(
 
 
 def shape_ecfr_note(
-    observation: object,
+    observation: EcfrNoteObservation,
     *,
     source_record_key: str,
     input_sha256: str,
@@ -294,7 +355,7 @@ def shape_ecfr_note(
 ) -> Row:
     """Keep AUTH and SOURCE roles, literal text and ancestry; infer no title from a fragment.
 
-    title and edition must come from separately checked capture metadata.
+    title and edition must come from separately checked capture metadata; an empty one refuses.
     PARAUTH/SECAUTH remain unsupported; a citation parser's partial findings
     belong beside this complete note rather than replacing its source text.
     """
@@ -373,6 +434,9 @@ __all__ = [
     "NATIVE_LEGAL_REFERENCES",
     "NATIVE_LEGAL_REFERENCE_READS",
     "NATIVE_LEGAL_REFERENCE_RULE",
+    "EcfrNoteObservation",
+    "TextObservation",
+    "UsCodeReferenceObservation",
     "native_reference_scope_id",
     "shape_ecfr_note",
     "shape_native_reference_read",

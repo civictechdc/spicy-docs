@@ -32,6 +32,14 @@ FIXTURES = Path(__file__).parent / "fixtures"
 READING_COLUMNS = ("interpretation_status", "target_candidates_json", "rule_version")
 
 
+def no_target_tables(candidates: list[dict[str, object]], texts: dict[tuple[str, str], str]) -> list[dict[str, object]]:
+    """A stub lookup for a fixture with no target tables: every candidate unchanged, marked as never looked up."""
+    return [
+        {**candidate, "target_status": "not_checked", "reason": "no_target_tables_in_fixture"}
+        for candidate in candidates
+    ]
+
+
 def _published() -> dict[str, list[dict[str, Any]]]:
     return json.loads((FIXTURES / "native_legal_references/published-rows.json").read_text(encoding="utf-8"))
 
@@ -255,14 +263,112 @@ def test_a_note_is_read_for_its_citations_and_a_part_stays_a_part() -> None:
     assert _reading(observation_kind="source_note", text="Unrelated prose.").status == "no_qualified_text_findings"
 
 
-def test_a_lookup_that_loses_or_reorders_a_candidate_refuses() -> None:
-    rows = [row for row in _usc01_rows() if row["occurrence_index"] in {"1", "3"}]
-    assert [json.loads(row["target_candidates_json"] or "[]") for row in interpret_native_references(rows)] == [
-        list(interpret_native_reference(row).candidates) for row in rows
+def _looked_up_rows() -> list[dict[str, Any]]:
+    """Three href rows with one candidate each and a source credit with several, from the published archive."""
+    rows = _usc01_rows()
+    single = [row for row in rows if len(interpret_native_reference(row).candidates) == 1][:3]
+    several = next(row for row in rows if len(interpret_native_reference(row).candidates) > 1)
+    return [*single, several]
+
+
+def _sort_in_place(candidates, texts):
+    candidates.sort(key=lambda candidate: candidate["occurrence_key"], reverse=True)
+    return candidates
+
+
+def _pop_in_place(candidates, texts):
+    candidates.pop(0)
+    return candidates
+
+
+def _rekey_in_place(candidates, texts):
+    for candidate in candidates:
+        candidate["occurrence_key"] = "x"
+    return candidates
+
+
+@pytest.mark.parametrize(
+    "lookup",
+    [
+        _sort_in_place,
+        _pop_in_place,
+        _rekey_in_place,
+        lambda candidates, texts: [{**c, "target_key": "WRONG"} for c in candidates],
+        lambda candidates, texts: [{**c, "document_key": "WRONG"} for c in candidates],
+        lambda candidates, texts: [{k: v for k, v in c.items() if k != "matched_text"} for c in candidates],
+        lambda candidates, texts: [dict(c) for c in reversed(candidates)],
+        lambda candidates, texts: [dict(c) for c in candidates][:-1],
+    ],
+    ids=[
+        "sort-in-place",
+        "pop-in-place",
+        "rekey-in-place",
+        "new-target-key",
+        "new-document-key",
+        "drop-a-field",
+        "reversed-copy",
+        "one-short",
+    ],
+)
+def test_a_lookup_that_moves_loses_or_rewrites_a_candidate_refuses(lookup) -> None:
+    """A lookup gets copies, so mutating them in place changes nothing it is checked against, and every outcome must
+    keep its candidate's fields: which candidate it is, and which row it lands in, are never the lookup's to choose."""
+    rows = _looked_up_rows()
+    readings = [interpret_native_reference(row) for row in rows]
+    with pytest.raises(TableContractError, match="one outcome per candidate"):
+        interpret_native_references(rows, resolve=lookup)
+    assert [interpret_native_reference(row) for row in rows] == readings
+    control = interpret_native_references(rows, resolve=lambda candidates, texts: [dict(c) for c in candidates])
+    assert [json.loads(row["target_candidates_json"] or "") for row in control] == [
+        list(reading.candidates) for reading in readings
     ]
-    for lookup in (lambda candidates, texts: candidates[:1], lambda candidates, texts: candidates[::-1]):
-        with pytest.raises(TableContractError, match="one outcome per candidate"):
-            interpret_native_references(rows, resolve=lookup)
+
+
+def test_the_lookup_is_required_so_every_row_carries_its_outcome() -> None:
+    import inspect
+
+    parameter = inspect.signature(interpret_native_references).parameters["resolve"]
+    assert parameter.kind is inspect.Parameter.KEYWORD_ONLY and parameter.default is inspect.Parameter.empty
+
+
+def test_two_rows_naming_one_observation_refuse_before_the_lookup() -> None:
+    """Their identities differ in input_sha256 alone, so both are keyable, but their candidates would share keys."""
+    (row,) = _looked_up_rows()[:1]
+    twin = {**row, "input_sha256": "sha256:" + "1" * 64}
+    asked = []
+    with pytest.raises(TableContractError, match="two rows name observation"):
+        interpret_native_references([row, twin], resolve=lambda candidates, texts: asked.append(1) or candidates)
+    assert asked == []
+
+
+def test_each_note_is_hashed_once_and_its_digest_reused(monkeypatch: pytest.MonkeyPatch) -> None:
+    from spicy_docs.interpretation import native_legal_references as reading
+
+    rows = _looked_up_rows()
+    hashed: list[str] = []
+
+    def counted(value):
+        hashed.append(value)
+        return json_column(value)  # any stable spelling; only the count matters here
+
+    monkeypatch.setattr(reading, "digest", counted)
+    texts_seen: list[dict] = []
+    interpret_native_references(rows, resolve=lambda candidates, texts: texts_seen.append(texts) or candidates)
+    notes = [row["text"] for row in rows if row["observation_kind"] != "native_reference"]
+    assert hashed == notes and len(notes) == 1
+    assert list(texts_seen[0].values()) == [json_column(notes[0])]
+
+
+def test_every_rule_version_is_the_rule_constant_its_descriptions_name() -> None:
+    from spicy_docs.schemas.native_reference_rows import NATIVE_LEGAL_REFERENCE_RULE
+
+    for contract in (NATIVE_LEGAL_REFERENCES, NATIVE_LEGAL_REFERENCE_READS):
+        sentence = contract.descriptions["rule_version"]
+        assert f"`{NATIVE_LEGAL_REFERENCE_RULE}`" in sentence and "`NATIVE_LEGAL_REFERENCE_RULE`" in sentence
+    rows = interpret_native_references(_looked_up_rows(), resolve=no_target_tables)
+    assert {row["rule_version"] for row in rows} == {NATIVE_LEGAL_REFERENCE_RULE}
+    published = _published()
+    assert {row["rule_version"] for table in published.values() for row in table} == {NATIVE_LEGAL_REFERENCE_RULE}
 
 
 def test_the_read_rows_are_the_published_read_rows() -> None:
@@ -382,6 +488,17 @@ def test_an_ecfr_heading_is_not_a_note() -> None:
     )
     with pytest.raises(TableContractError, match="AUTH and SOURCE"):
         shape_ecfr_note(headings[0], **_GOOD)
+
+
+def test_an_ecfr_note_refuses_an_empty_title_as_it_refuses_an_empty_edition() -> None:
+    notes = []
+    scan_ecfr_authority_notes(
+        (FIXTURES / "cfr/ecfr-authority-title1-part18.xml").read_bytes(), on_authority=notes.append
+    )
+    assert shape_ecfr_note(notes[0], **_GOOD, title="1")["cfr_title"] == "1"
+    assert shape_ecfr_note(notes[0], **_GOOD)["cfr_title"] is None
+    with pytest.raises(TableContractError, match="title must be a non-empty string or None"):
+        shape_ecfr_note(notes[0], **_GOOD, title="")
 
 
 @pytest.mark.parametrize(

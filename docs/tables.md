@@ -1079,9 +1079,10 @@ last three columns NULL, and `interpretation.native_legal_references`'
 - `rule_version`: `NATIVE_LEGAL_REFERENCE_RULE`.
 
 The lookup is the one thing the host supplies. It reads the host's own tables,
-so it arrives as `resolve` and runs once per run. `shape_native_reference_read`
-shapes the read row, and the host keeps the manifest, the pins, the evidence,
-the scan loop and the choice of which scopes a run replaces.
+so it arrives as the required `resolve` and runs once per run.
+`shape_native_reference_read` shapes the read row, and the host keeps the
+manifest, the pins, the evidence, the scan loop and the choice of which scopes
+a run replaces.
 
 **Identity.** An observation is `(scope_id, input_sha256, occurrence_index)`,
 spelled `at-joined/1`: two `sha256:` digests and a decimal ordinal, none of
@@ -1094,10 +1095,12 @@ which rows are current.
 **What a shaper refuses.** Each refusal is a `TableContractError`: a blank
 record key or locator, an input or manifest digest not spelled `sha256:` plus
 64 lowercase hex, a negative or non-int ordinal or count, an empty-string
-edition, an unknown family, and an eCFR text observation other than AUTH or
-SOURCE. A target lookup that loses, adds or reorders a candidate refuses the
-run. The CFR scanner's own `EcfrAuthorityScan.input_sha256` is bare hex, so a
-caller prefixes it; it is never a published column.
+edition or eCFR title, an unknown family, and an eCFR text observation other
+than AUTH or SOURCE. The reading refuses a run with two rows naming one
+observation, and a target lookup that loses, adds, reorders or changes a
+candidate: the lookup gets a deep copy, and each outcome must keep every field
+of its candidate. The CFR scanner's own `EcfrAuthorityScan.input_sha256` is
+bare hex, so a caller prefixes it; it is never a published column.
 
 **Measured on the published generation.** On 2026-09-28 the fork's
 `native-legal-references` generation `sha256:53755e3e…` held 881 observations
