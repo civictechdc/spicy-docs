@@ -29,10 +29,10 @@ from spicy_docs.schemas.tables import (
 _SHA256 = re.compile(r"sha256:[0-9a-f]{64}")
 
 #: The rule both tables' ``rule_version`` names: the scanners' selected shapes and
-#: ``interpretation.native_legal_references``' own reading (which hrefs it types, which citation kinds it reads, how it
-#: states a status). A change to either that moves a published value moves it. The citation rules the reading calls
-#: version themselves on each text candidate (``derivation_version``), so their changes move that field, not this one.
-NATIVE_LEGAL_REFERENCE_RULE = "native-legal-reference/002"
+#: ``interpretation.native_legal_references``' reading, including the citation rules it calls. Any change among them
+#: that moves a published value moves it. ``/003`` since citation rules 004 re-versioned text candidates (spicy-docs
+#: 0.51.0) and ``json_column`` re-spelled ``target_candidates_json``; ``/002`` rows were read by spicy-regs.
+NATIVE_LEGAL_REFERENCE_RULE = "native-legal-reference/003"
 
 
 class _Element(Protocol):

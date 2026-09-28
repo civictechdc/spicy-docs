@@ -47,8 +47,9 @@ and paths.
   `target_candidates_json`, whose en dash the host wrote literally;
 - for every row, that the reading reproduces its status, rule version and
   typed candidates from the row's own observation columns. The rows were read
-  under citation rules 003; a `usc_section` or `cfr_section` candidate re-read
-  names its current rule's version instead, which moves on eCFR note 0 alone.
+  under rule `native-legal-reference/002` and citation rules 003; re-read, a row
+  names `/003`, and a `usc_section` or `cfr_section` candidate names its current
+  rule's version, which moves on eCFR note 0 alone.
 
 They do not establish that a key is unique or that every live row fits; those
 were checked over both whole objects (see

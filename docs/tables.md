@@ -1108,17 +1108,21 @@ and 2 reads. Its footers and its publication index list exactly the contracts'
 columns, all VARCHAR. No identity component was NULL, empty or held `@`, and
 all 881 member keys were distinct and split back into their components.
 
-The run was rebuilt from its retained manifest and inputs: shaped and read
-here, with the host's own resolver, copied unmodified, as the lookup.
-- 836 observations equal the published rows on all 20 columns.
-- 14 differ only in `target_candidates_json`'s spelling. The host wrote a
+The run was rebuilt on 0.51.0 from its retained manifest and inputs: shaped
+and read here, with the host's own resolver, copied unmodified, as the lookup.
+The owner accepted the result as one republish
+([decision](decisions.md#the-native-legal-reference-tables-have-contracts-and-an-observation-is-spelled-at-joined1)):
+- Every row of both tables names `native-legal-reference/003` where the
+  published row names `/002`, because the values below move.
+- Besides that, 836 observations equal the published rows on the other 19
+  columns.
+- 14 differ also in `target_candidates_json`'s spelling. The host wrote a
   source credit's en dash literally, and `json_column` escapes it, with the
-  same JSON; the owner accepted that one-time change
-  ([decision](decisions.md#the-native-legal-reference-tables-have-contracts-and-an-observation-is-spelled-at-joined1)).
-- 31 eCFR notes differ only in candidates' `derivation_version`: 0.51.0 moved
-  the `usc_section` and `cfr_section` citation rules from 003 to 004, and each
-  text candidate names its own rule's version. `rule_version` does not move.
-- Both read rows equal the published ones on all 13 columns.
+  same JSON.
+- 31 eCFR notes differ also in candidates' `derivation_version`: 0.51.0 moved
+  the `usc_section` and `cfr_section` citation rules from 003 to 004, and 51
+  text candidates name their rule's new version.
+- Both read rows equal the published ones on the other 12 columns.
 
 The digest columns (`scope_id`, `input_sha256`, `manifest_sha256`) are all
 spelled `sha256:`. Receipts:

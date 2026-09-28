@@ -16,6 +16,7 @@ from spicy_docs.interpretation.native_legal_references import (
 from spicy_docs.schemas import TABLE_CONTRACTS, TableContractError
 from spicy_docs.schemas.native_reference_rows import (
     NATIVE_LEGAL_REFERENCE_READS,
+    NATIVE_LEGAL_REFERENCE_RULE,
     NATIVE_LEGAL_REFERENCES,
     native_reference_scope_id,
     shape_ecfr_note,
@@ -144,10 +145,14 @@ def _usc01_rows() -> list[dict[str, str | None]]:
     return rows
 
 
+#: The rule the fixture's rows were published under, when spicy-regs read them. Re-read, every row of both tables names
+#: ``NATIVE_LEGAL_REFERENCE_RULE``, ``/003`` (``docs/decisions.md``).
+_PUBLISHED_RULE = "native-legal-reference/002"
+
 #: The citation rules that moved after the fixture's rows were published, from the version they name to the one a
 #: re-read names: 0.51.0 took ``usc_section`` and ``cfr_section`` from 003 to 004. A text candidate carries its own
 #: rule's version, so re-read it names 004 and is otherwise the published candidate; over all 881 live rows that is 51
-#: candidates in 31 eCFR notes, and nothing else moved (``docs/decisions.md``).
+#: candidates in 31 eCFR notes, and no other candidate field moved (``docs/decisions.md``).
 _MOVED_CITATION_RULES = {"usc_section": ("003", "004"), "cfr_section": ("003", "004")}
 
 
@@ -198,8 +203,9 @@ def test_the_shaped_and_read_us_code_rows_are_the_published_rows() -> None:
     """The published rows came from the archive's own ``usc01.xml``: shaping and the reading reproduce every column.
 
     A shaped row holds the reading's three columns NULL and every other column as published. Completed, it is the
-    published row on all of them, ``target_candidates_json`` spelled by ``json_column``: that re-spells only source
-    credit 94's, whose ``Pub. L. 104–199`` the host wrote with a literal en dash.
+    published row on all of them but two: ``rule_version`` names ``/003``, and ``target_candidates_json`` is spelled
+    by ``json_column``, which re-spells only source credit 94's, whose ``Pub. L. 104–199`` the host wrote with a literal
+    en dash.
     """
     shaped = {row["occurrence_index"]: row for row in _usc01_rows()}
     published = [row for row in _published()["native_legal_references"] if row["source_family"] == "uscode"]
@@ -213,10 +219,10 @@ def test_the_shaped_and_read_us_code_rows_are_the_published_rows() -> None:
         assert [shaped_row[c] for c in READING_COLUMNS] == [None, None, None]
     completed = interpret_native_references(mine, resolve=_replayed_lookup(published))
     respelled = []
+    moved = ("target_candidates_json", "rule_version")
     for row, done in zip(published, completed, strict=True):
-        assert {c: done[c] for c in row if c != "target_candidates_json"} == {
-            c: row[c] for c in row if c != "target_candidates_json"
-        }
+        assert {c: done[c] for c in row if c not in moved} == {c: row[c] for c in row if c not in moved}
+        assert (row["rule_version"], done["rule_version"]) == (_PUBLISHED_RULE, NATIVE_LEGAL_REFERENCE_RULE)
         read_now = [_as_read_now(candidate) for candidate in json.loads(row["target_candidates_json"] or "")]
         assert done["target_candidates_json"] == json_column(read_now)
         if done["target_candidates_json"] != row["target_candidates_json"]:
@@ -235,7 +241,7 @@ def test_the_reading_reproduces_each_published_rows_reading() -> None:
     moved = []
     for row, done in zip(published, completed, strict=True):
         assert done["interpretation_status"] == row["interpretation_status"]
-        assert done["rule_version"] == row["rule_version"]
+        assert (row["rule_version"], done["rule_version"]) == (_PUBLISHED_RULE, NATIVE_LEGAL_REFERENCE_RULE)
         candidates = json.loads(row["target_candidates_json"] or "")
         assert json.loads(done["target_candidates_json"] or "") == [_as_read_now(c) for c in candidates]
         moved += [(row["source_family"], row["occurrence_index"]) for c in candidates if _as_read_now(c) != c]
@@ -392,19 +398,20 @@ def test_each_note_is_hashed_once_and_its_digest_reused(monkeypatch: pytest.Monk
 
 
 def test_every_rule_version_is_the_rule_constant_its_descriptions_name() -> None:
-    from spicy_docs.schemas.native_reference_rows import NATIVE_LEGAL_REFERENCE_RULE
-
     for contract in (NATIVE_LEGAL_REFERENCES, NATIVE_LEGAL_REFERENCE_READS):
         sentence = contract.descriptions["rule_version"]
         assert f"`{NATIVE_LEGAL_REFERENCE_RULE}`" in sentence and "`NATIVE_LEGAL_REFERENCE_RULE`" in sentence
     rows = interpret_native_references(_looked_up_rows(), resolve=no_target_tables)
     assert {row["rule_version"] for row in rows} == {NATIVE_LEGAL_REFERENCE_RULE}
+    # The published rows predate the move; the rule moved because their values do.
     published = _published()
-    assert {row["rule_version"] for table in published.values() for row in table} == {NATIVE_LEGAL_REFERENCE_RULE}
+    assert {row["rule_version"] for table in published.values() for row in table} == {_PUBLISHED_RULE}
+    assert NATIVE_LEGAL_REFERENCE_RULE == "native-legal-reference/003"
 
 
 def test_the_read_rows_are_the_published_read_rows() -> None:
-    """The U.S. Code read from the archive's own bytes and count; the eCFR read from its published values."""
+    """The U.S. Code read from the archive's own bytes and count; the eCFR read from its published values. Each is the
+    published row under the current rule."""
     body = _usc01()
     published = {row["source_family"]: row for row in _published()["native_legal_reference_reads"]}
     manifest = published["uscode"]["manifest_sha256"]
@@ -416,11 +423,14 @@ def test_the_read_rows_are_the_published_read_rows() -> None:
         manifest_sha256=manifest,
         **_USC01_CONTEXT,
     )
-    assert list(usc.items()) == list(published["uscode"].items())
+    republished = {family: {**row, "rule_version": NATIVE_LEGAL_REFERENCE_RULE} for family, row in published.items()}
+    assert {row["rule_version"] for row in published.values()} == {_PUBLISHED_RULE}
+    assert list(usc.items()) == list(republished["uscode"].items())
     ecfr = published["ecfr"]
     stated = ("source_family", "source_record_key", "edition", "input_sha256", "source_locator", "manifest_sha256")
     counts = {"source_bytes": int(ecfr["source_bytes"] or ""), "occurrence_count": int(ecfr["occurrence_count"] or "")}
-    assert list(shape_native_reference_read(**{c: ecfr[c] for c in stated}, **counts).items()) == list(ecfr.items())
+    ecfr_read = shape_native_reference_read(**{c: ecfr[c] for c in stated}, **counts)
+    assert list(ecfr_read.items()) == list(republished["ecfr"].items())
 
 
 @pytest.mark.parametrize(

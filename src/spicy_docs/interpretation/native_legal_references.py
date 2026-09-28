@@ -7,9 +7,9 @@ for its kinds, and each finding is a partial reading beside the complete text, n
 typed target is held anywhere is the host's lookup in the tables it selected, supplied to
 :func:`interpret_native_references` as ``resolve``; nothing here reads a table.
 
-Moved from spicy-regs' ``transforms/native_legal_references.py`` (``_interpret``, read at its ``fork/main``
-``63a18d7``), where it ran under the same ``native-legal-reference/002`` rule, so every value it publishes is the one
-already published.
+Moved unchanged from spicy-regs' ``transforms/native_legal_references.py`` (``_interpret``, read at its ``fork/main``
+``63a18d7``), where it ran under ``native-legal-reference/002``. The rule is ``/003`` here because citation rules 004
+and ``json_column``'s spelling move published values (``docs/decisions.md``); what the reading types is unchanged.
 """
 
 from __future__ import annotations

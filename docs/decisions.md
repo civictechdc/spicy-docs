@@ -3269,8 +3269,8 @@ column, spelled `value/1`, and each observation's `scope_id` references it.
   `citation_resolution.resolve_citations`), which a stdlib leaf and a pure
   reading cannot do. So `interpret_native_references` requires it as
   `resolve`: one call for the whole run, as before, so each distinct key is
-  read once and the host's bounds apply per run. Every `/002` row therefore
-  carries a lookup outcome.
+  read once and the host's bounds apply per run. Every row therefore carries
+  a lookup outcome.
 - The lookup is given a deep copy of the candidates, and each outcome must keep
   every field of its candidate, in candidate order, or the run refuses. So a
   lookup that sorts, pops or rekeys the list it was given, or returns a
@@ -3280,13 +3280,20 @@ column, spelled `value/1`, and each observation's `scope_id` references it.
   `input_sha256`) refuse before the lookup, since their candidates would share
   keys.
 
-**The rule version stays `native-legal-reference/002`.** The reading, the
-shapes and every value it types are unchanged. `NATIVE_LEGAL_REFERENCE_RULE`
-now names it, for both tables. It versions this package's own reading: which
-hrefs it types, which citation kinds it reads, and how it states a status. The
-citation rules the reading calls version themselves on each text candidate
-(`derivation_rule`, `derivation_version`), as every citation here does, so a
-citation rule's change moves that field, not this one.
+**The rule version moves to `native-legal-reference/003`, because published
+values move.** `NATIVE_LEGAL_REFERENCE_RULE` names it for both tables. It
+versions the scanners' selected shapes and the reading, including the citation
+rules the reading calls, so any change among them that moves a published value
+moves it. Two such changes land in this republish, which the owner accepted as
+one (2026-09-28): `json_column` re-spells 14 `target_candidates_json` values,
+and citation rules 004 re-version 51 text candidates in 31 eCFR notes, both
+below. The href typing, the kinds read, the shapes and the status vocabulary
+did not change. `/002` names the rows spicy-regs read before the reading moved
+here. The review of the rebased branch found the version move owed after a
+first draft of this entry had kept `/002` on the ground that each candidate
+names its own citation rule's version. That still holds, but a row-level
+version that stays put while the row's value moves would tell a reader that
+nothing changed.
 
 **One published value changes, by spelling only: `target_candidates_json` is
 `json_column`'s.** The host wrote it with non-ASCII characters literal. The
@@ -3317,14 +3324,17 @@ caller prefixes it; it is never published.
 observations, 2 reads) was measured on 2026-09-28. Both footers and the
 publication index list exactly the contracts' columns, all VARCHAR, and every
 member key spells, is distinct and splits back into its components. The run was
-then rebuilt from its retained manifest and inputs, with the host's own
-resolver copied unmodified as the lookup:
-- 836 observations equal the published rows on all 20 columns;
-- 14 differ only in the re-spelled `target_candidates_json` above;
-- 31 differ only in the 51 candidate versions 0.51.0's citation rules move;
-- both read rows equal the published ones on all 13 columns.
+then rebuilt on 0.51.0 from its retained manifest and inputs, with the host's
+own resolver copied unmodified as the lookup:
+- every row of both tables names `native-legal-reference/003` where the
+  published row names `/002`;
+- besides that, 836 observations equal the published rows on the other 19
+  columns;
+- 14 differ also in the re-spelled `target_candidates_json` above;
+- 31 differ also in the 51 candidate versions citation rules 004 move;
+- both read rows equal the published ones on the other 12 columns.
 
-Before 0.51.0 the same rebuild gave 867 equal rows and the same 14.
+No row differs in any other way.
 
 **What changes for an importer.**
 - The three observation shapers return every contract column in order: `scope_id`
@@ -3340,6 +3350,11 @@ Before 0.51.0 the same rebuild gave 867 equal rows and the same 14.
   and `NATIVE_LEGAL_REFERENCE_RULE`. `TABLE_CONTRACTS` holds two more
   contracts. `schemas.tables.digest` is typed by overload, so a `str` argument
   types as `str`; its behavior is unchanged.
+
+**What the first republish changes.** Every row of both tables, in
+`rule_version`; 14 `target_candidates_json` values by spelling; and 51
+candidates' `derivation_version` in 31 of them. Nothing else, by the rebuild
+above.
 
 **What spicy-regs must change to adopt it.** Read at its `fork/main`
 (`c2cd4a5`, whose native files equal `63a18d7`'s); nothing there is changed
