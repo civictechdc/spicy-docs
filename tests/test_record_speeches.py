@@ -517,6 +517,37 @@ def test_an_id_or_header_without_a_page_number_is_held_to_its_section(
         assert issue.speeches(_body(granule), renamed, max_html_bytes=BOUND).pages == _read(granule).pages
 
 
+@needs_parser
+@pytest.mark.parametrize(
+    ("body", "granule", "stated"),
+    [
+        (ERA_1994, KIGGANS, "volume 140, number 36"),
+        (PLEDGE, "CREC-2026-09-16-pt1-PgH-FrontMatter", "volume 172, number 147"),
+    ],
+    ids=["1994-body-under-a-2026-id", "next-issues-body-under-a-front-matter-id"],
+)
+def test_a_body_of_another_issue_refuses_under_this_granules_mods(body: str, granule: str, stated: str) -> None:
+    """Held only to the section, a body of another issue passes the page check; its volume and number do not.
+
+    One front-matter id is in two packages (CREC-2025-03-11-pt1-PgS-FrontMatter, Nos. 45 and 46), so the id alone
+    cannot tell the two bodies apart. Upstream reads the MODS record's own volume and number from its searchTitle.
+    """
+    issue = read_record_issue(_own_mods_renamed(KIGGANS, granule), max_mods_bytes=BOUND)
+    with pytest.raises(
+        RecordSpeechesError,
+        match=f"granule {granule}'s MODS record is volume 172, number 146, but its body's header states {stated}",
+    ):
+        issue.speeches(_body(body), granule, max_html_bytes=BOUND)
+
+
+@needs_parser
+def test_a_mods_record_that_states_no_issue_leaves_the_header_uncompared() -> None:
+    """A searchTitle without the volume suffix gives upstream no volume or number, so the check has none to hold."""
+    untitled = _own_mods_renamed(KIGGANS, KIGGANS).replace(b"; Congressional Record Vol. 172, No. 146<", b"<", 1)
+    document = read_record_issue(untitled, max_mods_bytes=BOUND).speeches(_body(KIGGANS), KIGGANS, max_html_bytes=BOUND)
+    assert (document.parse_status, document.doc_title, document.vol, document.num) == ("complete", None, "172", "146")
+
+
 # --- refusals ------------------------------------------------------------------
 
 

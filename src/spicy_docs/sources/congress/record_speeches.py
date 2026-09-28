@@ -489,7 +489,7 @@ class RecordIssue:
         if (status == "partial") != isinstance(error, Mapping):
             raise RecordSpeechesError(f"the parser reports {status} for {granule} with parse_error {error!r}")
         header = crdoc.get("header")
-        _check_page(granule, page, header)
+        _check_header(granule, page, header, (parser.cr_vol, parser.cr_num))
         patterns = tuple(parser.skip_items)
 
         def skipped(line: str) -> bool:
@@ -535,17 +535,27 @@ class RecordIssue:
         )
 
 
-def _check_page(granule: str, page: re.Match[str], header: object) -> None:
-    """Refuse a body whose header starts on another page than the granule id names.
+def _check_header(granule: str, page: re.Match[str], header: object, issue: tuple[object, object]) -> None:
+    """Refuse a body whose header starts on another page than the id names, or is of another issue than its MODS.
 
-    Upstream never compares the two, so a body retained under the wrong id
-    would read as that granule. Where the id names only its section, or the
-    header states no page number (as in 1994), only the section is compared.
-    Upstream refuses a header it cannot read, so a build that returns none is
-    refused here too.
+    Upstream compares neither, so a body retained under the wrong id would
+    read as that granule. Where the id names only its section, or the header
+    states no page number (as in 1994), only the section is compared. The
+    volume and number are compared with the ones upstream read from the
+    granule's MODS record (``issue``), unless it states none: one granule id
+    can be in two packages (CREC-2025-03-11-pt1-PgS-FrontMatter is in No. 45
+    and No. 46), and only the number tells their bodies apart. Upstream
+    refuses a header it cannot read, so a build that returns none is refused
+    here too.
     """
     if not isinstance(header, Mapping):
         raise RecordSpeechesError(f"the installed parser read no header for {granule}; {EXTRA_REQUIRED}")
+    stated_issue = (header.get("vol"), header.get("num"))
+    if issue != (None, None) and stated_issue != issue:
+        raise RecordSpeechesError(
+            f"granule {granule}'s MODS record is volume {issue[0]}, number {issue[1]}, "
+            f"but its body's header states volume {stated_issue[0]}, number {stated_issue[1]}"
+        )
     pages = header.get("pages")
     stated = _HEADER_PAGE.fullmatch(pages) if isinstance(pages, str) else None
     if (

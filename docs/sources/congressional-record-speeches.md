@@ -177,8 +177,9 @@ granules of the replay above, every one is complete and none lists a line.
 - **Granule ids must be this issue's.** The id becomes the file name upstream
   reads the accessId from, up to the first dot, so an id with a dot, a path
   separator or another date's prefix refuses.
-- **The body's header must start on the id's page.** Upstream never compares
-  them, so a body retained under the wrong id would read as that granule.
+- **The body's header must start on the id's page, in the MODS record's
+  issue.** Upstream compares neither, so a body retained under the wrong id
+  would read as that granule.
   - *Page.* A granule id names its first page (`-PgH5835-8` starts on H5835)
     or only its section: front matter (`-PgH-FrontMatter`) and, in 1994, a
     section's first granule (`-PgH`, `-PgD`). The adapter refuses when the
@@ -191,6 +192,11 @@ granules of the replay above, every one is complete and none lists a line.
     granules of CREC-1994-03-25 read complete held to their section
     (`rereview-fixes/replay/` under
     `~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/`).
+  - *Issue.* The header's volume and number must equal the ones upstream reads
+    from the granule's MODS record (its searchTitle); a record that states none
+    is not compared. One granule id can be in two packages with different
+    bodies (CREC-2025-03-11-pt1-PgS-FrontMatter is in No. 45 and in No. 46),
+    and held to its section only, either body would read under either MODS.
 
 Parses may run concurrently: upstream copies its line-kind table per document,
 so a parse writes its speaker pattern into its own copy and the class's table
