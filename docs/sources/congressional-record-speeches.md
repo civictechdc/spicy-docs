@@ -197,11 +197,23 @@ granules of the replay above, every one is complete and none lists a line.
     is not compared. One granule id can be in two packages with different
     bodies (CREC-2025-03-11-pt1-PgS-FrontMatter is in No. 45 and in No. 46),
     and held to its section only, either body would read under either MODS.
+  - *What it cannot see:* another granule that starts on the same page of the
+    same issue. 418 of the 523 granules of the review's four issues share
+    their first page, or front matter its section, with another granule of
+    their issue (`rereview-fixes/replay/shared_pages.txt`); the Kiggans body
+    reads complete under `-PgH5835-7`, with no bioguide id for her because
+    that record does not name her. That a body is its id's is the
+    [GovInfo body routes'](govinfo-bodies.md) to prove.
 
-Parses may run concurrently: upstream copies its line-kind table per document,
-so a parse writes its speaker pattern into its own copy and the class's table
-stays as it was; a test reads granules with different speaker tables from
-several threads and gets what it gets one at a time.
+Parses may run concurrently. Upstream writes each document's speaker pattern
+from its MODS into the line-kind table that document reads, and the pin copies
+the table per document, so another document read meanwhile leaves it as it was.
+A test reads a granule whose speaker only its MODS names while another granule
+is read between that write and its items, and gets its reading alone; with one
+shared table the speech folds into the item before it. The speaker list alone
+decides a speech rarely: on the review's 535 real granules and the 250
+labelled documents, #90's general pattern matched the first line of all 22,030
+speech items without it (`rereview-fixes/mods-only-speakers/`).
 
 ## What this does not establish
 

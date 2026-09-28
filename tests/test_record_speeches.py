@@ -20,7 +20,6 @@ import sys
 import tomllib
 from collections import Counter
 from collections.abc import Iterator
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from pathlib import Path
 
@@ -480,10 +479,19 @@ def test_a_skipped_line_that_carries_text_is_reported() -> None:
 
 
 @needs_parser
-def test_a_body_whose_header_names_another_page_refuses() -> None:
+def test_a_body_whose_header_names_another_section_refuses() -> None:
     """The 09-17 MODS holds both granules, so only the header shows the House body is not the Senate granule."""
     with pytest.raises(RecordSpeechesError, match=f"granule {SENATE} names page S4765, but .* pages 'H5987'"):
         parse_record_speeches(_body(PLEDGE), _mods(SENATE), SENATE, max_html_bytes=BOUND, max_mods_bytes=BOUND)
+
+
+@needs_parser
+def test_a_body_whose_header_names_another_page_of_the_section_refuses() -> None:
+    """The Kiggans body starts on H5835, so it is not the granule that starts on H5836."""
+    other = "CREC-2026-09-16-pt1-PgH5836"
+    issue = read_record_issue(_own_mods_renamed(KIGGANS, other), max_mods_bytes=BOUND)
+    with pytest.raises(RecordSpeechesError, match=f"granule {other} names page H5836, but .* pages 'H5835'"):
+        issue.speeches(_body(KIGGANS), other, max_html_bytes=BOUND)
 
 
 @needs_parser
@@ -778,27 +786,56 @@ def test_a_parse_leaves_the_class_line_kind_table_unchanged() -> None:
         assert table == before
 
 
+def _speaker_only_the_mods_names() -> tuple[bytes, bytes]:
+    """The Kiggans body and her own MODS with the speaker spelled ``Mr. de LUGO`` in both.
+
+    #90's speaker pattern takes a surname of capitals after an optional
+    capitalized particle, so a lower-case ``de`` puts the line outside it: only
+    the MODS speaker list, which upstream writes into the line-kind table per
+    document, makes it a speech.
+    """
+    body = _body(KIGGANS).replace(b"  Mrs. KIGGANS of Virginia. Mr. Speaker", b"  Mr. de LUGO. Mr. Speaker", 1)
+    mods = (FIXTURES / GRANULE_MODS[1]).read_bytes()
+    return body, mods.replace(b">Mrs. KIGGANS of Virginia</name>", b">Mr. de LUGO</name>", 1)
+
+
 @needs_parser
-def test_documents_with_different_speaker_lists_read_correctly_in_sequence() -> None:
-    """Kiggans, then the Senate granule, then Kiggans again: each reads its own MODS speakers, and the first read recurs."""
-    kiggans = _read(KIGGANS)
-    senate = _read(SENATE)
-    assert [(item.speaker, item.speaker_bioguide) for item in kiggans.items if item.kind == "speech"] == [
-        ("Mrs. KIGGANS of Virginia", "K000399")
+def test_a_read_interrupted_by_another_keeps_the_speaker_only_its_mods_names(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Another document read between this one's table write and its items leaves this reading as it was alone.
+
+    That is the interleaving two threads can produce. Upstream copies the table
+    per document; were it the class's, the Senate read would replace the speaker
+    pattern and this speech would fold into the item before it, as it does when
+    the MODS does not name the speaker.
+    """
+    from congressionalrecord.govinfo import cr_parser
+
+    body, mods = _speaker_only_the_mods_names()
+    issue = read_record_issue(mods, max_mods_bytes=BOUND)
+    alone = issue.speeches(body, KIGGANS, max_html_bytes=BOUND)
+    assert [(item.kind, item.speaker, item.speaker_bioguide) for item in alone.items] == [
+        ("Unknown", "Unknown", None),
+        ("speech", "Mr. de LUGO", "K000399"),
+        ("linebreak", None, None),
     ]
-    senate_speakers = {item.speaker for item in senate.items if item.kind == "speech"}
-    assert "Mrs. KIGGANS of Virginia" not in senate_speakers
-    assert {"Mr. GRASSLEY", "Mr. THUNE", "Mr. SCHUMER"} <= senate_speakers
-    assert _read(KIGGANS) == kiggans
+    unnamed = read_record_issue((FIXTURES / GRANULE_MODS[1]).read_bytes(), max_mods_bytes=BOUND)
+    assert [item.kind for item in unnamed.speeches(body, KIGGANS, max_html_bytes=BOUND).items] == [
+        "Unknown",
+        "linebreak",
+    ]
 
+    original = cr_parser.ParseCRFile.gen_file_metadata
+    others: list[RecordSpeechDocument | None] = []
 
-@needs_parser
-def test_concurrent_reads_equal_sequential_reads() -> None:
-    """Granules with different speaker tables, read from several threads, read as they do one at a time."""
-    expected = {granule: _read(granule) for granule in GRANULES}
-    with ThreadPoolExecutor(max_workers=6) as pool:
-        results = list(pool.map(lambda granule: (granule, _read(granule)), GRANULES * 8))
-    assert all(document == expected[granule] for granule, document in results)
+    def interrupted(parser: object) -> None:
+        original(parser)
+        if not others:
+            others.append(None)
+            others[0] = _read(SENATE)
+
+    monkeypatch.setattr(cr_parser.ParseCRFile, "gen_file_metadata", interrupted)
+    assert issue.speeches(body, KIGGANS, max_html_bytes=BOUND) == alone
+    assert others and others[0] is not None and others[0].granule_id == SENATE
 
 
 class _SharedTable:
