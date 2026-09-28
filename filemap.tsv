@@ -118,7 +118,7 @@ src/spicy_docs/interpretation/bill_summaries.py	Plain-language summaries: one bi
 src/spicy_docs/interpretation/cbo_estimates.py	Whether a committee report reprints the CBO cost-estimate letter, where it is, and why it is not.	src
 src/spicy_docs/interpretation/citation_grammar.py	One home for CFR and legal-authority citation grammars.	src
 src/spicy_docs/interpretation/citations.py	What one document's text cites, as named rules over the normalized text.	src
-src/spicy_docs/interpretation/communication_rin.py	Read the RIN a House executive communication states in its report nature.	src
+src/spicy_docs/interpretation/communication_rin.py	Read the RINs a House executive communication states in its report nature.	src
 src/spicy_docs/interpretation/gemini_call.py	Adapter: a Gemini client as the ``ModelCall`` seam the model-backed modules take.	src
 src/spicy_docs/interpretation/hearing_bill_links.py	Which bills a hearing was held on, per source, with the rule that said so.	src
 src/spicy_docs/interpretation/identifier_shapes.py	Catalog identifier shapes: RIN, Federal Register documents, dockets.	src
