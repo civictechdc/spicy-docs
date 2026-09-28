@@ -24,8 +24,10 @@ from spicy_docs.schemas.cost_estimate_tables import (
     BILLSTATUS_BULK,
     CBO_FEED,
     ESTIMATE_SOURCES,
+    FOUND_BY,
     PUBLICATION_ID_RULE,
     SOURCE_PRECEDENCE,
+    TITLE_BILL_ID_RULE,
     fold_cbo_cost_estimates,
     merge_cbo_cost_estimates,
     publication_id,
@@ -374,24 +376,27 @@ def test_an_unsealed_source_is_refused() -> None:
 
 
 def test_the_contract_names_both_routes_and_what_a_112th_113th_absence_means() -> None:
-    """The sealed vocabulary only grows, and the text says which source each row came from, that BILLSTATUS names no
-    estimate in the 112th-113th, and that a missing row there is not an unscored bill."""
+    """The sealed vocabularies only grow, in their published order, and the text says which source each row came
+    from, that the feed is read for every Congress and merged, that BILLSTATUS names no estimate in the 112th-113th,
+    and that a missing row there is not an unscored bill."""
     assert ESTIMATE_SOURCES == ("billstatus_bulk", "congress_api", "cbo_feed")
     assert (BILLSTATUS_BULK, CBO_FEED) == ("billstatus_bulk", "cbo_feed")
-    assert "or for the 112th-113th, whose BILLSTATUS names none, CBO's per-Congress feed" in CBO_COST_ESTIMATES.grain
+    assert FOUND_BY == ("billstatus", "bill_number", "title", "title_law")
+    assert "CBO's per-Congress feed, read for every Congress and merged" in CBO_COST_ESTIMATES.grain
     source = CBO_COST_ESTIMATES.descriptions["source"]
+    assert "The feed is read for every Congress" in source and "an estimate no BILLSTATUS record lists" in source
     assert "BILLSTATUS states no estimate for the 112th-113th" in source
     assert "never established as unscored" in source and "`congress_api` is reserved" in source
     stated_count = CBO_COST_ESTIMATES.descriptions["stated_count"]
     assert "from the 112th on" not in stated_count and "the 112th-113th's state none" in stated_count
     assert "title_bill_id names the bill the estimate scores" in CBO_COST_ESTIMATES.descriptions["bill_id"]
-    assert CBO_COST_ESTIMATES.columns[-2:] == ("title_bill_id", "found_by")
+    assert CBO_COST_ESTIMATES.columns[-3:] == ("title_bill_id", "found_by", "title_bill_id_rule")
     assert "Congress.gov" not in " ".join((CBO_COST_ESTIMATES.grain, *CBO_COST_ESTIMATES.descriptions.values()))
 
 
-# --- the 112th-113th feed route -----------------------------------------------------
+# --- the feed route -----------------------------------------------------------------
 
-#: Seven real items of the 112th feed, re-keyed; ``tests/fixtures/cbo/README.md``.
+#: Ten real items of the 112th feed, re-keyed; ``tests/fixtures/cbo/README.md``.
 FEED_112 = parse_cbo_cost_estimates_feed(
     (Path(__file__).parent / "fixtures" / "cbo" / "cbo-112congress-cost-estimates.excerpt.xml").read_bytes()
 )
@@ -408,6 +413,8 @@ def test_the_feed_route_shapes_rows_through_the_fold_with_feed_dates_and_billsta
         ("112-hr-1707", "43626"),
         ("112-hr-3082", "22065"),
         ("112-hr-4402", "43585"),
+        ("112-s-1065", "42930"),
+        ("112-s-1065", "43482"),
         ("112-s-3240", "43273"),
         ("112-s-3240", "43280"),
         ("112-s-3240", "43405"),
@@ -420,6 +427,9 @@ def test_the_feed_route_shapes_rows_through_the_fold_with_feed_dates_and_billsta
         "1",
     )
     assert [rows[("112-s-3240", p)]["estimate_index"] for p in ("43273", "43280", "43405")] == ["0", "1", "2"]
+    # S. 1065: 43482 is dated 2012-01-01 and 42930 2012-01-18, so oldest first is not publication-id order.
+    assert [rows[("112-s-1065", p)]["estimate_index"] for p in ("43482", "42930")] == ["0", "1"]
+    assert {row["title_bill_id_rule"] for row in rows.values()} == {TITLE_BILL_ID_RULE} == {"cbo_title_citation/1"}
     assert (first["report_citation_count"], json.loads(first["report_citations_json"])[0]["number"]) == ("1", "203")
     assert first["description"] == "As introduced in the United States Senate on May 24, 2012"
     by_title = rows[("112-hr-4402", "43585")]
@@ -489,6 +499,10 @@ def test_a_title_leading_with_a_public_law_names_the_bill_the_host_says_enacted_
     assert refusal.identity == ("112-hr-3082", "22065") and "law_bills" in refusal.reason
     refused = build_cbo_feed_cost_estimates(FEED_112, 112, law_bills={"112-public-8": "not a bill"}).refusals
     assert [(r.identity, "not-a-bill-id" in r.reason) for r in refused] == [(("112", "22098"), True)]
+    # A law is enacted from a bill of its own Congress: the feed's own wrong number, offered as the law's bill, refuses.
+    other = build_cbo_feed_cost_estimates(FEED_112, 112, law_bills={"111-public-322": "112-hr-3082"})
+    assert [(r.identity, "other-congress" in r.reason) for r in other.refusals] == [(("112-hr-3082", "22065"), True)]
+    assert "22065" not in {r["publication_id"] for r in other.cbo_cost_estimates}
 
 
 def test_title_bill_id_is_filled_on_billstatus_rows_too() -> None:
@@ -562,6 +576,26 @@ def test_a_merge_keeps_billstatus_over_the_feed_then_the_larger_pub_date() -> No
     assert merge_cbo_cost_estimates([feed_later, newer, row("cbo_feed", None)]) == (newer,)
     with pytest.raises(TableContractError, match="source must be one of"):
         merge_cbo_cost_estimates([row("scraped", None)])
+
+
+def test_one_publication_under_two_bills_publishes_both_rows_through_the_merge() -> None:
+    """22065, CBO's estimate of P.L. 111-322: the 112th feed files it under Bill_Number H.R. 3082, the 112th's, and
+    the 111th's H.R. 3082 BILLSTATUS lists it, twice, on http and https (retained BILLSTATUS-111-hr.zip). The identity
+    is (bill_id, publication_id), so the merge keeps both, and title_bill_id names the bill scored on each."""
+    title = "P.L. 111-322, the Continuing Appropriations and Surface Transportation Extensions Act, 2011"
+    text = "CBO estimate of the Act providing funding for discretionary activities through March 4, 2011"
+    stated = (
+        CboCostEstimate("2011-03-07T06:00:00Z", title, "http://www.cbo.gov/publication/22065", f"<p>{text}</p>"),
+        CboCostEstimate("2011-03-07T06:00:00Z", title, "https://www.cbo.gov/publication/22065", text),
+    )
+    law_bills = {"111-public-322": "111-hr-3082"}
+    (entry,), _ = fold_cbo_cost_estimates(stated)
+    billstatus = shape_cbo_cost_estimate(BillIdentity(111, "hr", 3082), entry, title_bill_id="111-hr-3082")
+    feed = build_cbo_feed_cost_estimates(FEED_112, 112, law_bills=law_bills).cbo_cost_estimates
+    merged = merge_cbo_cost_estimates([billstatus, *feed])
+    both = [(r["bill_id"], r["source"], r["title_bill_id"]) for r in merged if r["publication_id"] == "22065"]
+    assert both == [("111-hr-3082", "billstatus_bulk", "111-hr-3082"), ("112-hr-3082", "cbo_feed", "111-hr-3082")]
+    assert len(merged) == len(feed) + 1
 
 
 # --- the family pass ----------------------------------------------------------------

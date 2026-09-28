@@ -1701,8 +1701,8 @@ FILLED_BY: dict[str, tuple[str, ...]] = {
         "interpretation/hearing_bill_links.py",
         "sources/congress/house_committee_repository.py",
     ),
-    # B4: the index CBO's own wall denies, read keyless out of BILLSTATUS, and for the 112th-113th out of CBO's own
-    # per-Congress feed.
+    # B4: the index CBO's own wall denies, read keyless out of BILLSTATUS and out of CBO's own per-Congress feed, which
+    # a host reads for every Congress and merges.
     "cbo_cost_estimates": (
         "schemas/cost_estimate_tables.py",
         "sources/congress/bill_status.py",

@@ -32,12 +32,14 @@ is that Congress to date, newest first, and an observation, never a catalog; a
 Congress with no file answers 404 with a Drupal HTML page, which is
 requested-empty, not absence.
 
-The feed is also the only route to the 112th-113th estimates, whose
-BILLSTATUS states none: ``cbo_feed_bills`` maps each item to the bill its
+The feed is also a row route, read for every Congress: the only one for the
+112th-113th, whose BILLSTATUS states no estimate, and elsewhere the estimates
+no BILLSTATUS record lists. ``cbo_feed_bills`` maps each item to the bill its
 ``Bill_Number`` (or, where that is empty, its title) names, and
 ``interpretation.bill_family.build_cbo_feed_cost_estimates`` shapes the rows,
-``source`` ``cbo_feed``. Congress.gov's bill record lists the same items,
-regrouped by the same ``Bill_Number``, so it is not a second route.
+``source`` ``cbo_feed``, which a host merges with BILLSTATUS's. Congress.gov's
+bill record lists the same items, regrouped by the same ``Bill_Number``, so it
+is not a second route.
 
 Byte counts, digests and the measurements behind every claim:
 ``docs/sources/cbo.md`` and the receipts named above.
@@ -56,6 +58,7 @@ from urllib.parse import urlsplit
 
 from spicy_docs.reading.pdf_bytes import check_pdf_bytes
 from spicy_docs.reading.xml import scan_xml
+from spicy_docs.schemas.cost_estimate_tables import FOUND_BY_BILL_NUMBER, FOUND_BY_TITLE, FOUND_BY_TITLE_LAW
 from spicy_docs.schemas.law_tables import law_id
 from spicy_docs.sources.congress.bill_status import BILL_TYPES, BillIdentity
 from spicy_docs.transport.captured import CapturedBodyResponse
@@ -260,11 +263,12 @@ class _FeedScan:
 
 
 class CboFeedBillError(CboSourceError):
-    """A feed item names a bill no rule maps: ``field`` is ``bill_number`` or ``title``, ``shape`` how it failed.
+    """A feed item names a bill no rule maps: ``field`` is ``bill_number``, ``title`` or ``law_bills``, ``shape`` how.
 
     A ``Bill_Number``'s shape is its spelling with every digit run as ``N``; a
-    title's is ``two-citations``, ``not-at-start`` or ``unknown-form``.  Neither
-    copies more than that of the publisher's text.
+    title's is ``two-citations``, ``not-at-start`` or ``unknown-form``; the
+    host's law map's is ``not-a-bill-id`` or ``other-congress``.  None copies
+    more than that of the publisher's text.
     """
 
     def __init__(self, field: str, shape: str) -> None:
@@ -381,17 +385,6 @@ def title_citation(congress: int, title: str) -> BillIdentity | PublicLawCitatio
     return bills.pop()
 
 
-def title_bills(congress: int, title: str) -> tuple[BillIdentity, ...]:
-    """The bill a title leads with (:func:`title_citation`), for an item whose ``Bill_Number`` is empty.
-
-    61 of the 112th's 92 such items and 170 of the 113th's 186 lead with one.
-    A title leading with a public law names no bill by itself: its bill is
-    the host's laws table's to say.
-    """
-    cited = title_citation(congress, title)
-    return (cited,) if isinstance(cited, BillIdentity) else ()
-
-
 #: A host's map from a public law's ``laws.law_id`` (``111-public-322``) to the ``bill_id`` that enacted it
 #: (``111-hr-3082``), read from its ``laws`` table; spicy-docs reads no table itself.
 LawBills = Mapping[str, str]
@@ -401,7 +394,10 @@ _BILL_ID = re.compile(r"(?P<congress>[1-9][0-9]*)-(?P<type>[a-z]+)-(?P<number>[1
 def law_bill(law_bills: LawBills, law: PublicLawCitation) -> BillIdentity | None:
     """The bill the host's laws table says enacted ``law``, or ``None`` where the map has no entry.
 
-    A value that is not a ``bill_id`` (``112-hjres-48``) refuses with
+    A value that is no ``bill_id`` (``hr-1363``, or ``112-house-1363``, whose
+    type is none) refuses as ``not-a-bill-id``, and a bill of another Congress
+    than the law's (``112-hr-3082`` for P.L. 111-322) as ``other-congress``: a
+    law is enacted from a bill of its own Congress.  Either is
     :class:`CboFeedBillError`, field ``law_bills``: the host's map is wrong, and
     no bill is guessed from it.
     """
@@ -411,31 +407,23 @@ def law_bill(law_bills: LawBills, law: PublicLawCitation) -> BillIdentity | None
     match = _BILL_ID.fullmatch(stated) if isinstance(stated, str) else None
     if match is None or match["type"] not in BILL_TYPES:
         raise CboFeedBillError("law_bills", "not-a-bill-id")
-    return BillIdentity(int(match["congress"]), match["type"], int(match["number"]))
-
-
-#: How a feed item names its bill, the ``found_by`` a row publishes: its ``Bill_Number``; where that is empty, the
-#: citation its title leads with; or the law its title leads with, through the host's laws table.
-FOUND_BY_BILL_NUMBER, FOUND_BY_TITLE, FOUND_BY_TITLE_LAW = "bill_number", "title", "title_law"
+    if int(match["congress"]) != law.congress:
+        raise CboFeedBillError("law_bills", "other-congress")
+    return BillIdentity(law.congress, match["type"], int(match["number"]))
 
 
 @dataclass(frozen=True, slots=True)
 class CboFeedBill:
-    """One bill a feed names, the publication ids of the items naming it in feed order, and how it was found.
+    """One bill a feed names, the publication ids of the items naming it in feed order, and how each named it.
 
-    ``found_by`` is how each of those items names the bill, in the same order
-    (``bill_number``, ``title`` or ``title_law``), and ``found_by_bill`` the
-    strongest of them: ``bill_number`` when any item's ``Bill_Number`` names
-    the bill, else ``title``, else ``title_law``.
+    ``found_by`` is each item's way, in the same order: ``bill_number``,
+    ``title`` or ``title_law`` (``schemas.cost_estimate_tables.FOUND_BY``),
+    which the bill's row for that item publishes.
     """
 
     identity: BillIdentity
     publication_ids: tuple[str, ...]
     found_by: tuple[str, ...]
-
-    @property
-    def found_by_bill(self) -> str:
-        return next(way for way in (FOUND_BY_BILL_NUMBER, FOUND_BY_TITLE, FOUND_BY_TITLE_LAW) if way in self.found_by)
 
 
 @dataclass(frozen=True, slots=True)

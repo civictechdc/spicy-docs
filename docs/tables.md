@@ -45,7 +45,7 @@ table's columns.
 | `bill_committees` | One row per committee or subcommittee a bill reached, as its BILLSTATUS document names it. | `bill_id`, `system_code` | `snapshot_update_date` | `interpretation.bill_family` |
 | `bill_publisher_summaries` | One row per CRS summary the publisher states on a bill, at the version and action it describes. | `bill_id`, `summary_version_code`, `action_date` | `update_date` | `interpretation.bill_family` |
 | `bill_cosponsors` | One cosponsor occurrence in one retained BILLSTATUS observation. | `bill_id`, `input_sha256`, `cosponsor_index` | none | `interpretation.bill_family` |
-| `cbo_cost_estimates` | One row per bill and CBO publication a source names as a cost estimate of it: the bill's own BILLSTATUS document, or for the 112th-113th, whose BILLSTATUS names none, CBO's per-Congress feed. | `bill_id`, `publication_id` | `pub_date` | `interpretation.bill_family` |
+| `cbo_cost_estimates` | One row per bill and CBO publication a source names as a cost estimate of it: the bill's own BILLSTATUS document or CBO's per-Congress feed, read for every Congress and merged, the bill's own record winning where both name one bill and publication. | `bill_id`, `publication_id` | `pub_date` | `interpretation.bill_family` |
 | `bill_versions` | One row per printing of a bill, per source that supplied it. | `bill_id`, `version_code`, `source` | `version_date` | `interpretation.bill_family` |
 | `bill_sections` | One row per content-bearing node of one bill version, in document order. | `bill_id`, `version_code`, `source`, `seq` | `version_date` | `interpretation.bill_family` |
 | `section_diffs` | One row per compared pair of consecutive printings of one bill. | `bill_id`, `from_version_code`, `from_source`, `to_version_code`, `to_source` | `to_version_date` | `interpretation.bill_family` |
@@ -261,9 +261,12 @@ published:
    text;
 8. `diff_summaries`, from the comparisons step 6 already has in hand.
 
-The one exception is the 112th-113th `cbo_cost_estimates` rows, whose
-BILLSTATUS states none: `build_cbo_feed_cost_estimates` shapes them from CBO's
-per-Congress feed, through the same fold and shaper as step 3.
+The one exception is the `cbo_cost_estimates` rows CBO's per-Congress feed
+states, which a host builds for every Congress with
+`build_cbo_feed_cost_estimates`, through the same fold and shaper as step 3,
+and merges with step 3's (`merge_cbo_cost_estimates`): all of the
+112th-113th's, whose BILLSTATUS states none, and elsewhere the estimates no
+BILLSTATUS record lists.
 
 Per bill with A actions, C committees, K cosponsor entries, V versions and S
 sections per version, steps 1 to 5 are O(A + C + K + V + ΣS) with no re-parsing. Step 6 diffs V−1 pairs,
@@ -924,24 +927,31 @@ is a new table rather than columns appended to `congress_bills`.
   blocks, 14,845 absent, zero empty and zero unexpected; none establishes
   whether an unlisted estimate exists. Unkeyable populated items still produce
   family refusals naming the rule, host and path shape, without the URL.
-- **The 112th-113th rows come from CBO's own feed, `source` `cbo_feed`.**
-  BILLSTATUS states no estimate for those Congresses — no item in 12,299 and
+- **CBO's own feed is read for every Congress, `source` `cbo_feed`.**
+  BILLSTATUS states no estimate for the 112th-113th — no item in 12,299 and
   10,637 documents of every bill type, where the 111th's state 2,156. CBO's
-  keyless per-Congress feed names 813 and 988 bills (44 and 137 only by the
-  citation a blank `Bill_Number` item's title leads with), and
-  `build_cbo_feed_cost_estimates` shapes 913 and 1,101 rows through the same
+  keyless per-Congress feed names 813 and 988 bills there (44 and 137 only by
+  the citation a blank `Bill_Number` item's title leads with), and
+  `build_cbo_feed_cost_estimates` shapes 914 and 1,101 rows through the same
   fold, with the report citations of each bill's own BILLSTATUS record
-  ([decision](decisions.md#the-112th-113th-cbo-index-comes-from-cbos-own-feed)).
-  A 112th-113th bill with no row was named by no feed item; it is not
-  established as unscored. Where both routes ever state one bill and
-  publication, `merge_cbo_cost_estimates` keeps the BILLSTATUS row.
+  ([decision](decisions.md#cbos-own-feed-is-read-for-every-congress)). A
+  112th-113th bill with no row was named by no feed item; it is not
+  established as unscored. A host builds feed rows for every Congress and
+  merges them: `merge_cbo_cost_estimates` keeps the BILLSTATUS row where both
+  state one bill and publication, so elsewhere the feed adds the 31 estimates
+  of the 108th-119th no BILLSTATUS record lists, and every BILLSTATUS row stays
+  as it was. One publication can stand under two bills, and then both rows
+  publish (22065 under the 111th's and the 112th's H.R. 3082).
 - **`title_bill_id` exposes a wrong number.** Every row names the bill its own
   title leads with; where that differs from `bill_id`, `bill_id` is a numbering
   error and `title_bill_id` the bill scored: 5 BILLSTATUS rows and 5 feed rows
   over the 108th-119th. A title leading with a public law names the law's bill
   through the host's `laws` map (`law_bills`); with it 3 more rows differ, the
   112th feed's P.L. 111-322 filed under the wrong Congress's H.R. 3082 among
-  them, and without it the column is NULL.
+  them, and without it the column is NULL. A bill citation reads in the row's
+  own Congress, so the column cannot show a link to the same number in another
+  Congress (115 H.R. 1422's BILLSTATUS lists the 113th's estimate 52538).
+  `title_bill_id_rule` names the rule that read it, `cbo_title_citation/1`.
 - **`found_by` says how the row reached its bill:** `billstatus` (the bill's
   own record), or on a feed row `bill_number`, `title` or `title_law`, the
   last a blank item titled by a law whose bill the host's `laws` map names

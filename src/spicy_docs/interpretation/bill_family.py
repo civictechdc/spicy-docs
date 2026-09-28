@@ -742,9 +742,12 @@ def build_cbo_feed_cost_estimates(
 ) -> BillFamilyTables:
     """``cbo_cost_estimates`` rows for every bill one Congress's CBO feed names, and what it refused.
 
-    The 112th-113th route (their BILLSTATUS states no estimate), ``source``
-    ``cbo_feed``, through the same fold, refusals and shaper as
-    :func:`build_bill_family`'s.  ``report_citations`` maps a bill to its own
+    The feed route, ``source`` ``cbo_feed``, for every Congress, through the
+    same fold, refusals and shaper as :func:`build_bill_family`'s; a host
+    merges the two with ``merge_cbo_cost_estimates``, which keeps the bill's
+    own BILLSTATUS row where both state one, so the feed supplies the
+    112th-113th, whose BILLSTATUS states none, and elsewhere the estimates no
+    BILLSTATUS record lists.  ``report_citations`` maps a bill to its own
     BILLSTATUS ``<committeeReports>`` citations; a bill it does not name
     publishes NULL there.  A bill's items are ordered oldest first, then by
     publication id, because the feed is newest first and its order within one

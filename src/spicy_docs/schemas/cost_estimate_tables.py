@@ -1,10 +1,11 @@
 """``cbo_cost_estimates``: CBO's cost-estimate index as a bill's record or CBO's own feed states it, because CBO's own
 site is behind a bot wall ([routes](../../../docs/research/cbo-cost-estimate-routes-2026-09-20.md)).
 
-Two routes state it, named in ``source``: the same BILLSTATUS document the bill family reads, and, for the 112th-113th,
-whose BILLSTATUS states none, CBO's keyless per-Congress feed (``interpretation.bill_family.
-build_cbo_feed_cost_estimates``).  A bill absent here is never scored, not yet linked or, in the 112th-113th, named by
-no feed item -- no count taken from this table is a CBO production rate -- and the sibling
+Two routes state it, named in ``source``: the same BILLSTATUS document the bill family reads, and CBO's keyless
+per-Congress feed (``interpretation.bill_family.build_cbo_feed_cost_estimates``), which a host reads for every Congress
+and merges (``merge_cbo_cost_estimates``): all of the 112th-113th's rows, whose BILLSTATUS states none, and elsewhere the
+estimates no BILLSTATUS record lists.  A bill absent here is never scored, not yet linked or named by neither route --
+no count taken from this table is a CBO production rate -- and the sibling
 ``congress_bills.cbo_cost_estimates_outcome`` preserves the BILLSTATUS route's unread, populated and requested-empty
 observations.  ``title_bill_id`` names the bill each estimate's own title leads with, which is how a wrong number shows.
 The letter's text is not here: it is reprinted in the bill's committee report, and its span lands on
@@ -70,7 +71,8 @@ _REPORT_TYPE_BY_CHAMBER = {"H": "hrpt", "S": "srpt"}
 #: 112th-113th lists are CBO's feed regrouped by ``Bill_Number``, CBO's wrong
 #: numbers included, so it states nothing the feed does not (independent
 #: review, 2026-09-28).  ``cbo_feed`` is CBO's own keyless per-Congress feed,
-#: the route for the 112th-113th, whose BILLSTATUS states no estimate.
+#: read for every Congress: the only route for the 112th-113th, whose
+#: BILLSTATUS states no estimate, and elsewhere the estimates BILLSTATUS omits.
 ESTIMATE_SOURCES: tuple[str, ...] = ("billstatus_bulk", "congress_api", "cbo_feed")
 BILLSTATUS_BULK = "billstatus_bulk"
 CBO_FEED = "cbo_feed"
@@ -81,17 +83,27 @@ CBO_FEED = "cbo_feed"
 SOURCE_PRECEDENCE: tuple[str, ...] = (BILLSTATUS_BULK, "congress_api", CBO_FEED)
 #: How the source linked an estimate to ``bill_id``, published as ``found_by``.  Sealed and additions-only:
 #: ``billstatus`` on every ``billstatus_bulk`` row, and on a ``cbo_feed`` row the feed item's ``Bill_Number``, the
-#: citation a blank item's title leads with, or the law it leads with through the host's laws table
-#: (``sources.cbo.FOUND_BY_*`` spell the three).
-FOUND_BY_BILLSTATUS = "billstatus"
-FOUND_BY: tuple[str, ...] = (FOUND_BY_BILLSTATUS, "bill_number", "title", "title_law")
+#: citation a blank item's title leads with, or the law it leads with through the host's laws table.  The one spelling
+#: of each: ``sources.cbo`` imports these.
+FOUND_BY_BILLSTATUS, FOUND_BY_BILL_NUMBER, FOUND_BY_TITLE, FOUND_BY_TITLE_LAW = (
+    "billstatus",
+    "bill_number",
+    "title",
+    "title_law",
+)
+FOUND_BY: tuple[str, ...] = (FOUND_BY_BILLSTATUS, FOUND_BY_BILL_NUMBER, FOUND_BY_TITLE, FOUND_BY_TITLE_LAW)
+#: The rule ``title_bill_id`` is read by, recorded on every row as ``publication_id_rule`` records its own: the
+#: citation an estimate's title leads with (``sources.cbo.title_citation``), a public law through the host's laws
+#: table.  Versioned because the grammar is ours and moves: a host tells rows read under an older one by this.
+TITLE_BILL_ID_RULE = "cbo_title_citation/1"
 
 CBO_COST_ESTIMATES = table_contract(
     "cbo_cost_estimates",
     references=(Reference(("bill_id",), "congress_bills", ("bill_id",)),),
     grain=(
         "One row per bill and CBO publication a source names as a cost estimate of it: the bill's own BILLSTATUS "
-        "document, or for the 112th-113th, whose BILLSTATUS names none, CBO's per-Congress feed."
+        "document or CBO's per-Congress feed, read for every Congress and merged, the bill's own record winning "
+        "where both name one bill and publication."
     ),
     identity=("bill_id", "publication_id"),
     version_column="pub_date",
@@ -109,7 +121,10 @@ CBO_COST_ESTIMATES = table_contract(
         "publication_id": (
             "CBO's own publication number, parsed from the stated url by the `cbo_publication_url` rule and "
             "part of this row's identity.  This is the key CBO's per-Congress feed also states, so that feed's "
-            "own spelling of the measure, which no GovInfo route gives, joins here."
+            "own spelling of the measure, which no GovInfo route gives, joins here.  It is not unique alone: where "
+            "the routes file one estimate under two bills, both rows publish -- CBO's feed files 22065, its "
+            "estimate of P.L. 111-322, under the 112th's H.R. 3082 and the 111th's H.R. 3082 BILLSTATUS lists it "
+            "-- and title_bill_id names the bill it scores."
         ),
         "pub_date": (
             "The publisher's pubDate for this estimate; the merge prefers the larger value.  It is when CBO "
@@ -129,17 +144,22 @@ CBO_COST_ESTIMATES = table_contract(
         "source": (
             "Which route stated the element: `billstatus_bulk` for GovInfo's keyless BILLSTATUS bulk zip, "
             "`cbo_feed` for CBO's keyless per-Congress feed; `congress_api` is reserved and no route produces "
-            "it.  Sealed and additions-only.  BILLSTATUS states no estimate for the 112th-113th (none in 12,299 "
-            "and 10,637 documents), so their rows are `cbo_feed`; there a bill without a row is one no feed item "
-            "names, never established as unscored.  Where two routes state one bill and publication, a merge "
-            "keeps `billstatus_bulk`, the bill's own record (merge_cbo_cost_estimates)."
+            "it.  Sealed and additions-only.  The feed is read for every Congress.  BILLSTATUS states no estimate "
+            "for the 112th-113th (none in 12,299 and 10,637 documents), so their rows are `cbo_feed`, and there a "
+            "bill without a row is one no feed item names, never established as unscored.  Elsewhere a merge "
+            "keeps `billstatus_bulk`, the bill's own record, where both routes state one bill and publication "
+            "(merge_cbo_cost_estimates), so a `cbo_feed` row there is an estimate no BILLSTATUS record lists: 31 "
+            "over the 108th-111th and 114th-119th (2026-09-28), among them the 111th's H.R. 1, H.R. 3200 and "
+            "two of H.R. 3590, and the 110th's P.L. 110-50."
         ),
         "estimate_index": (
             "Zero-based position, in the list the row was read from, of the item this row states: the first one "
             "naming this publication on https, else the first one naming it.  A BILLSTATUS list keeps the "
             "publisher's order, which is a fact nothing here re-sorts.  A `cbo_feed` row's list is the feed items "
             "naming the bill, oldest first and then by publication id, because the feed runs newest first and "
-            "its order within one Date changes between captures."
+            "its order within one Date changes between captures.  Each route's list is its own, so on a bill both "
+            "routes give rows (8 over the 108th-119th, 2026-09-28) a `billstatus_bulk` and a `cbo_feed` row can "
+            "share one index."
         ),
         "stated_count": (
             "How many items in this bill's list name this publication, which is one estimate stated that many "
@@ -183,13 +203,22 @@ CBO_COST_ESTIMATES = table_contract(
             "and 5 feed rows by bill titles -- four of CBO's own wrong numbers on both, 112 H.R. 1707 for S. 1707 "
             "on the feed, and 114 H.R. 3347 on BILLSTATUS, whose record lists CBO's estimate of H.R. 3447 -- and, "
             "with a law map, 2 more on both (P.L. 119-21's estimates filed under H. Con. Res. 14) and 1 more on "
-            "the feed (P.L. 111-322 filed under the 112th's H.R. 3082, its bill's number in the 111th)."
+            "the feed (P.L. 111-322 filed under the 112th's H.R. 3082, its bill's number in the 111th).  A bill "
+            "citation reads in the row's own Congress, so this cannot show a link to the same number in another "
+            "Congress: 115 H.R. 1422's BILLSTATUS lists 52538, CBO's estimate of the 113th's H.R. 1422, and this "
+            "reads 115-hr-1422; that pub_date, 2013-04-22, precedes the 115th.  title_bill_id_rule names the rule."
         ),
         "found_by": (
             "How the source linked this estimate to bill_id: `billstatus` (the bill's own BILLSTATUS record lists "
             "it), or on a `cbo_feed` row `bill_number` (the item's Bill_Number), `title` (the citation a blank "
             "item's title leads with) or `title_law` (the public law a blank item's title leads with, through the "
             "host's laws table: the 110th's P.L. 110-50 and the 112th's P.L. 112-8).  Sealed and additions-only."
+        ),
+        "title_bill_id_rule": (
+            "The rule that read title_bill_id, on every row, a NULL title_bill_id included (the rule ran and named "
+            "no bill): `cbo_title_citation/1`, the bill or public law the estimate's title leads with, a law "
+            "through the host's laws table.  The grammar is this package's and moves; the version says which one "
+            "read the row."
         ),
     },
 )
@@ -347,6 +376,7 @@ def shape_cbo_cost_estimate(
         "publication_id_rule": PUBLICATION_ID_RULE,
         "title_bill_id": text(title_bill_id),
         "found_by": found_by,
+        "title_bill_id_rule": TITLE_BILL_ID_RULE,
     }
 
 
@@ -381,9 +411,13 @@ __all__ = [
     "ESTIMATE_SOURCES",
     "FOUND_BY",
     "FOUND_BY_BILLSTATUS",
+    "FOUND_BY_BILL_NUMBER",
+    "FOUND_BY_TITLE",
+    "FOUND_BY_TITLE_LAW",
     "PUBLICATION_ID_RULE",
     "REPORT_CITATION_RULE",
     "SOURCE_PRECEDENCE",
+    "TITLE_BILL_ID_RULE",
     "FoldedEstimate",
     "fold_cbo_cost_estimates",
     "merge_cbo_cost_estimates",
