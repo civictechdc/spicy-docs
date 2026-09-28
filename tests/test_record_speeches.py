@@ -8,7 +8,8 @@ patterns. The expected readings are the parser's at ``PARSER_PIN``. They began
 as the 2026-09-28 review's
 (``docs/unitedstates-review-2026-09-28/validation/legal-record/current-record-probe.json``
 in the workspace); moving the pin to #94 and #90 changed only the speaker of a
-rule or title, now ``None`` where it was the string ``"None"``.
+rule or title, now ``None`` where it was the string ``"None"``, and moving it to
+``ee5ba237`` only the 1995 fixture's line of prose after a page marker.
 """
 
 from __future__ import annotations
@@ -61,7 +62,9 @@ SUFFIXED = "CREC-2025-03-11-pt1-PgS1677-4"
 SUFFIXED_PACKAGE = "CREC-2025-03-11-i46"
 # A 1994 granule: its header states [Page H], no page number, and its id's 10 orders the section's granules.
 ERA_1994 = "CREC-1994-03-25-pt1-PgH10"
-GRANULES = (KIGGANS, PLEDGE, SENATE, SUFFIXED, ERA_1994)
+# A 1995 granule with a line of prose that a page marker opens: "[[Page S573]] not have, he said: ..."
+ERA_1995 = "CREC-1995-01-06-pt1-PgS572-2"
+GRANULES = (KIGGANS, PLEDGE, SENATE, SUFFIXED, ERA_1994, ERA_1995)
 # Kiggans's own MODS: the keyless metadata route, and the keyed route acquire_granule retains.
 GRANULE_MODS = ("CREC-2026-09-16-pt1-PgH5835-8.granule-mods.xml", "CREC-2026-09-16-pt1-PgH5835-8.granule-mods-api.xml")
 
@@ -71,8 +74,8 @@ def _body(granule: str) -> bytes:
 
 
 def _mods(granule: str) -> bytes:
-    """The suffixed or 1994 granule's own MODS, else its issue's MODS excerpt, named by the id's first 15 characters."""
-    if granule in (SUFFIXED, ERA_1994):
+    """The suffixed, 1994 or 1995 granule's own MODS, else its issue's MODS excerpt, named by the id's first 15 characters."""
+    if granule in (SUFFIXED, ERA_1994, ERA_1995):
         return (FIXTURES / f"{granule}.granule-mods-api.xml").read_bytes()
     return (FIXTURES / f"{granule[:15]}.mods.excerpt.xml").read_bytes()
 
@@ -92,10 +95,20 @@ def _read(granule: str, body: bytes | None = None) -> RecordSpeechDocument:
     )
 
 
-def _dropped(line: str) -> bool:
-    """A line upstream leaves out of an item's text, spelled with str methods rather than its patterns."""
-    stripped = line.strip()
-    return (line != "" and stripped == "") or stripped.startswith(("{time}", "[[Page "))
+def _kept(line: str) -> str | None:
+    """What of a line after an item's first upstream keeps, spelled with str methods rather than its patterns.
+
+    ``None`` for a whitespace-only line or a bare page marker or time stamp; the
+    rest of a line such a marker opens; else the line.
+    """
+    stripped = line.lstrip()
+    if stripped.startswith("[[Page ") and "]]" in stripped:
+        rest = stripped.split("]]", 1)[1]
+    elif line[:1].isspace() and stripped.startswith("{time}"):
+        rest = stripped.removeprefix("{time}").lstrip()[4:]
+    else:
+        return None if line and not stripped else line
+    return rest if rest.strip() else None
 
 
 @pytest.fixture(autouse=True)
@@ -245,11 +258,11 @@ def test_every_item_is_located_on_the_lines_its_text_came_from(granule: str) -> 
             ), header
         else:
             assert item.line_start > previous
-            assert all(_dropped(line) for line in lines[previous + 1 : item.line_start])
+            assert all(_kept(line) is None for line in lines[previous + 1 : item.line_start])
         assert item.line_end >= item.line_start
         kept = [
             lines[item.line_start],
-            *(line for line in lines[item.line_start + 1 : item.line_end + 1] if not _dropped(line)),
+            *(text for line in lines[item.line_start + 1 : item.line_end + 1] if (text := _kept(line)) is not None),
         ]
         assert "\n".join(kept) == item.text
         previous = item.line_end
@@ -264,7 +277,7 @@ def test_the_senate_spans_step_over_page_markers_and_blank_lines() -> None:
         "page" if line.strip().startswith("[[Page ") else "blank"
         for item in document.items
         for line in document.source_lines[item.line_start + 1 : item.line_end + 1]
-        if _dropped(line)
+        if _kept(line) is None
     )
     assert inside == {"page": 9, "blank": 3}
 
@@ -421,7 +434,7 @@ def test_an_item_whose_text_is_printed_only_further_on_is_unlocated_and_so_is_ev
     assert all(item.line_start is None and item.line_end is None for item in document.items[2:])
     # The unlocated items' lines are reported, apart from whole dropped lines.
     after = range(document.items[1].line_end + 1, len(document.source_lines))
-    assert document.unaccounted_lines == tuple(i for i in after if not _dropped(document.source_lines[i]))
+    assert document.unaccounted_lines == tuple(i for i in after if _kept(document.source_lines[i]) is not None)
     assert document.unaccounted_lines
 
 
@@ -467,15 +480,27 @@ def test_a_parser_without_parse_status_refuses(monkeypatch: pytest.MonkeyPatch) 
 
 
 @needs_parser
-def test_a_skipped_line_that_carries_text_is_reported() -> None:
-    """Upstream skips any line that starts like a page marker; the text after the marker is not in any item."""
+def test_prose_a_page_marker_opens_is_text_located_on_the_markers_line() -> None:
+    """The 1995 body's "[[Page S573]] not have, he said" keeps its prose in Mr. SIMON's speech, on that line."""
+    document = _read(ERA_1995)
+    assert (document.parse_status, document.pages, document.unaccounted_lines) == ("complete", "S572-S573", ())
+    (marker,) = [index for index, line in enumerate(document.source_lines) if line.startswith("[[Page S573]] ")]
+    (speech,) = [item for item in document.items if item.kind == "speech"]
+    assert (speech.speaker, speech.speaker_bioguide, speech.coordinates_status) == ("Mr. SIMON", "S000423", LOCATED)
+    assert speech.line_start < marker <= speech.line_end
+    assert " not have, he said: ``There are projects that cannot be " in speech.text.split("\n")
+
+
+@needs_parser
+def test_text_after_any_page_marker_is_kept_and_located() -> None:
+    """Words after a marker that opens a Senate line join the item's text; nothing is left unaccounted."""
     marker = next(line for line in _read(SENATE).source_lines if line.startswith("[[Page "))
     document = _read(SENATE, _body(SENATE).replace(marker.encode(), marker.encode() + b" and a sentence", 1))
-    assert document.parse_status == "complete"
+    assert (document.parse_status, document.unaccounted_lines) == ("complete", ())
     assert {item.coordinates_status for item in document.items} == {LOCATED}
-    (index,) = document.unaccounted_lines
-    assert document.source_lines[index] == f"{marker} and a sentence"
-    assert all("and a sentence" not in item.text for item in document.items)
+    (holder,) = [item for item in document.items if " and a sentence" in item.text.split("\n")]
+    index = document.source_lines.index(f"{marker} and a sentence")
+    assert holder.line_start < index <= holder.line_end
 
 
 @needs_parser
@@ -873,7 +898,7 @@ def test_a_git_install_of_another_fork_commit_refuses_naming_both(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, install_record: None
 ) -> None:
     """Every fork revision installs as 2.3.0, so the commit a git install records is what tells them apart."""
-    other = "6bb521b11b498f2e8dbac614a4394c703c6773ac"  # the previous pin, which still returned the string "None"
+    other = "6bb521b11b498f2e8dbac614a4394c703c6773ac"  # an earlier pin, which still returned the string "None"
     _installed_as(
         monkeypatch,
         tmp_path,

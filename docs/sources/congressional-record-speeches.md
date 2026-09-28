@@ -41,7 +41,7 @@ a MODS with BeautifulSoup (0.4-0.7 s and about 55 MB retained for the 3.6 MB
 CREC-2026-09-16 package MODS, measured 2026-09-28) and indexes its accessIds in
 the same pass, so each granule is a dictionary lookup plus its own lines, and a
 whole issue costs one read of its MODS, linear in its elements, plus its
-granules' lines. Measured at the pin over the review's 523 real granules of
+granules' lines. Measured at `3715651a` over the review's 523 real granules of
 four issues against their package MODS: 1.81 s to read and index the four
 MODS, then a median of 0.59 ms a granule, against 6.11 ms when upstream
 scanned the whole MODS per granule (`measurements.txt` in
@@ -136,9 +136,12 @@ indexes into it.
 - The first item starts on the line where upstream's title scan stopped,
   observed from upstream's own run, not inferred.
 - Every later line is found in order and never backtracking, passing over only
-  the lines upstream drops from an item's text: whitespace-only lines, `{time}`
-  stamps and `[[Page]]` markers. A span therefore contains the item's lines and
-  any dropped lines between them.
+  the lines upstream drops from an item's text: whitespace-only lines and bare
+  `{time}` stamps and `[[Page]]` markers. A line such a marker opens is text:
+  upstream keeps the rest of it, from the space after the marker (GovInfo's
+  1995 text has `[[Page S573]] not have, he said: ...`), and the adapter finds
+  that rest on the marker's line. A span therefore contains the item's lines
+  and any dropped lines between them.
 - An item whose lines are not found that way is `unlocated`, with both
   coordinates `None`, and so is every item after it. A span is never guessed.
 
@@ -155,13 +158,16 @@ into `source_lines` of every line that is none of:
 - a header line (upstream refuses a header it cannot read);
 - a blank or title line its title scan read before the first item;
 - a text line of a located item;
-- a whole whitespace-only line, `{time}` stamp or `[[Page]]` marker.
+- a whitespace-only line, or a bare `{time}` stamp or `[[Page]]` marker.
 
-Upstream's skip patterns match only a line's start, so a skipped line that
-carries text after its marker is text no item holds; it is listed, as are the
-lines of unlocated items and the line a partial parse failed on. A caller that needs the whole granule requires
+The lines of unlocated items and the line a partial parse failed on are
+listed. A caller that needs the whole granule requires
 `parse_status == "complete"` and an empty `unaccounted_lines`. Over the 535 real
-granules of the replay above, every one is complete and none lists a line.
+granules of the replay above, the 250 labelled documents and all 129 of
+CREC-1994-03-25, every one is complete and none lists a line
+(`rereview-fixes/repin-ee5ba237/replay/`). At the previous pin, which dropped a
+marker's line whole, three 1995 documents listed the 19 lines of prose a
+marker opened.
 
 ### Partial parses and refusals
 
@@ -224,10 +230,13 @@ speech items without it (`rereview-fixes/mods-only-speakers/`).
 - **Segmentation accuracy across the corpus.** The fixtures pin a few
   granules, and the replays read 535 from 1996 to 2026 and all 129 of
   CREC-1994-03-25 complete with every line accounted for. That shows every
-  line landed in some item, not that each item's kind is right. At the pin, the speaker pattern matched 768 of the 772
-  hand-labelled speech starts in PR #90's 250 labelled windows (99.5%,
-  precision 99.6%; `measurements.txt` in `~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/pin-3715651a/`); upstream's rules are line
-  patterns, and other kinds and eras are not measured here.
+  line landed in some item, not that each item's kind is right. At the pin,
+  as at `3715651a`, the speaker pattern matched 768 of the 772 hand-labelled
+  speech starts in PR #90's 250 labelled windows (99.5%, precision 99.6%;
+  `measurements.txt` in
+  `~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/pin-ee5ba237/`);
+  upstream's rules are line patterns, and other kinds and eras are not measured
+  here.
 - **Completeness of a partial parse.** Its items are the ones before the
   failure; the rest of the granule was not read.
 - **Acquisition.** The adapter parses bytes a caller retained; identity of the
@@ -262,8 +271,9 @@ one upstream pull request merged in, and two commits that stay on the fork:
   copies the line-kind table per document instead of writing each document's
   speaker pattern into the class's, returns `None` rather than the string
   `"None"` for an absent value, raises `CRParseError` for a header cut short or
-  astray, and indexes a MODS's accessIds once instead of scanning the whole
-  MODS per granule.
+  astray, indexes a MODS's accessIds once instead of scanning the whole MODS
+  per granule, and keeps the prose after a `[[Page]]` marker that opens a line
+  rather than dropping the line.
 - [unitedstates/congressional-record#90](https://github.com/unitedstates/congressional-record/pull/90)
   (jutton1, `fix-text-mislabeling`), merged in: a wider speaker pattern and
   `<bullet>` folding. On the review's 523 real granules its only change to the
@@ -299,11 +309,11 @@ host's lock stand behind.
 4. `uv build --wheel`, with the build backend the branch pins.
 
 Nothing else moves the digest. For the pin as of 2026-09-28 that is
-`SOURCE_DATE_EPOCH=1790630841`, giving a 26,308-byte, 23-file wheel with sha256
-`abb9a47cfae7991c01258da76427092b05290f572489278ff09a0fe79a73cbe2`, identical
+`SOURCE_DATE_EPOCH=1790637801`, giving a 26,555-byte, 23-file wheel with sha256
+`67d5d355fa50ad31d21ae5146ac0266b755a36b85cc23ce6de5fc3c637879e25`, identical
 from separate archives built by the fork's owner and again for this repository
-(receipts `pin-3715651a/`, with `SHA256SUMS`, and
-`review-fixes/repin-3715651a/wheel/`, under
+(receipts `pin-ee5ba237/`, with `SHA256SUMS`, and
+`rereview-fixes/repin-ee5ba237/wheel/`, under
 `~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/`).
 Under `umask 002` the previous pin's archive gave
 `e8adfa11b055c53c6629ee212b9cb6aafa177079ff634e566868df2060715401` instead of

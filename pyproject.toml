@@ -89,14 +89,15 @@ deltatrack = { git = "https://github.com/civictechdc/DeltaTrack", rev = "c636448
 # #93 (the dependencies the non-PostgreSQL modules import, with the PostgreSQL
 # writer's behind a `postgres` extra this repository does not install) and #94
 # (per-document `item_types`, real `None` for absent values, `CRParseError` for
-# a header cut short or astray, an accessId index read once per MODS), with
+# a header cut short or astray, an accessId index read once per MODS, and the
+# prose after a `[[Page]]` marker that opens a line kept as text), with
 # #90's speaker pattern (jutton1:fix-text-mislabeling) merged in; plus two
 # fork-only commits, one pinning the build backend so a vendored wheel is
 # reproducible and one pruning the tests from the sdist. The revision is a
 # full commit sha so the resolved tree is the one tested. When upstream merges
 # them and publishes a release, drop this source and pin it;
 # `docs/sources/congressional-record-speeches.md` says how.
-congressionalrecord = { git = "https://github.com/mikewolfd/congressional-record", rev = "3715651a4780d49eecd2dff9f936349c5963f01d" }
+congressionalrecord = { git = "https://github.com/mikewolfd/congressional-record", rev = "ee5ba237b7db90bbf8a8fa438f2eb68a0077d973" }
 
 [tool.pytest.ini_options]
 # Default checks stay offline. Opt in to live services or httpfs explicitly.

@@ -74,6 +74,24 @@ NICKLES and Mrs. KASSEBAUM with their MODS-stated bioguide ids, and a presiding
 officer's turn with none. Its volume 140, No. 36 is also what tells it from a
 body of another issue filed under a 2026 id.
 
+**A 1995 granule, whole.** GovInfo's 1995 text opens some lines of prose with a
+page marker: `[[Page S573]] not have, he said: ...`. Both files were retrieved
+2026-09-28 by `retrieve.py` through `GovInfoBodyAcquirer.acquire_granule`
+(keyed summary and MODS, the key in the `X-Api-Key` header only; keyless body),
+in
+`~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/rereview-fixes/fixture-1995/`
+beside its `receipt.json`, and are committed unedited; the body equals the
+re-review's separate keyless GET of the same URL:
+
+| Fixture | Route | Bytes | SHA-256 |
+| --- | --- | --- | --- |
+| `CREC-1995-01-06-pt1-PgS572-2.htm` | keyless `content/pkg/CREC-1995-01-06/html/CREC-1995-01-06-pt1-PgS572-2.htm` | 2,043 | `36aab96a…3c8` |
+| `CREC-1995-01-06-pt1-PgS572-2.granule-mods-api.xml` | keyed `packages/CREC-1995-01-06/granules/CREC-1995-01-06-pt1-PgS572-2/mods` | 7,647 | `de8e2968…fc6` |
+
+It pins that the prose after the marker is text of Mr. SIMON's speech
+(bioguide `S000423`), located on the marker's line, with nothing unaccounted,
+and a line-leading `<bullet>`.
+
 **The package MODS are excerpts, not captures.** The originals are 3,645,061 bytes
 (`CREC-2026-09-16`, SHA-256 `1aea2f0c…c1b`) and 993,858 bytes
 (`CREC-2026-09-17`, `257ff371…ecb`), too large to commit. Each excerpt keeps:
@@ -98,7 +116,8 @@ for all three granules, and the adapter's documents differed only in
 `mods_sha256`, at the first pin and again at the current one. The cutting and
 comparison scripts and their output are retained under
 `~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/excerpt/`
-and, for the current pin, `review-fixes/repin-3715651a/excerpt-check/` beside it.
+and, for `3715651` and the current pin, `review-fixes/repin-3715651a/excerpt-check/` and
+`rereview-fixes/repin-ee5ba237/excerpt-check/` beside it.
 
 **Expectations are the parser's at `PARSER_PIN`.** The tests' readings were
 re-derived from the pinned parser each time the pin moved. Moving it to
@@ -106,6 +125,9 @@ re-derived from the pinned parser each time the pin moved. Moving it to
 fixtures: `speaker` on rules and titles, and in `source_item`, is `None` where
 it was the string `"None"`; items, kinds, texts, spans, `unaccounted_lines` and
 every other field are unchanged (`review-fixes/repin-3715651a/fixture-compare/`).
+Moving it to `ee5ba237` changed only the 1995 fixture: its recovered line joins
+Mr. SIMON's `text` and `source_item`, and its `unaccounted_lines` goes from one
+line to none (`rereview-fixes/repin-ee5ba237/fixture-compare/`).
 
 Offline fixtures establish behavior for these shapes. They establish neither
 coverage of other eras nor the parser's accuracy across the Record.

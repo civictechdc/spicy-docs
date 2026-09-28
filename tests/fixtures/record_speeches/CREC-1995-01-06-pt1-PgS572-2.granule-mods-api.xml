@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?><mods xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.loc.gov/mods/v3" version="3.3" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-3.xsd" ID="id-CREC-1995-01-06-pt1-PgS572-2">
+    <name type="corporate">
+        <namePart>United States Government Publishing Office</namePart>
+        <role>
+            <roleTerm authority="marcrelator" type="text">publisher</roleTerm>
+            <roleTerm authority="marcrelator" type="code">pbl</roleTerm>
+        </role>
+        <role>
+            <roleTerm authority="marcrelator" type="text">distributor</roleTerm>
+            <roleTerm authority="marcrelator" type="code">dst</roleTerm>
+        </role>
+    </name>
+    <name type="corporate">
+        <namePart>United States</namePart>
+        <namePart>Congress</namePart>
+        <role>
+            <roleTerm authority="marcrelator" type="text">author</roleTerm>
+            <roleTerm authority="marcrelator" type="code">aut</roleTerm>
+        </role>
+        <description>Government Organization</description>
+    </name>
+    <typeOfResource>text</typeOfResource>
+    <genre authority="marcgt">government publication</genre>
+    <language>
+        <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+    </language>
+    <extension>
+        <collectionCode>CREC</collectionCode>
+        <category>Proceedings of Congress and General Congressional Publications</category>
+        <waisDatabaseName>1995_record</waisDatabaseName>
+        <branch>legislative</branch>
+        <dateIngested>2010-08-25</dateIngested>
+    </extension>
+    <titleInfo>
+        <title>PERES ON DESALINATION</title>
+        <partName>Senate</partName>
+    </titleInfo>
+    <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CREC-1995-01-06/html/CREC-1995-01-06-pt1-PgS572-2.htm">
+        <identifier type="FDsys Unique ID">D09002ee1d90e029c</identifier>
+    </relatedItem>
+    <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CREC-1995-01-06/pdf/CREC-1995-01-06-pt1-PgS572-2.pdf">
+        <identifier type="FDsys Unique ID">D09002ee1d90e02d5</identifier>
+    </relatedItem>
+    <identifier type="congressional record citation">141 Cong. Rec. S572</identifier>
+    <identifier type="uri">https://www.govinfo.gov/app/details/CREC-1995-01-06/CREC-1995-01-06-pt1-PgS572-2</identifier>
+    <identifier type="former granule identifier">cr06ja95-38</identifier>
+    <location>
+        <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CREC-1995-01-06/CREC-1995-01-06-pt1-PgS572-2</url>
+        <url access="raw object" displayLabel="PDF rendition">https://www.govinfo.gov/content/pkg/CREC-1995-01-06/pdf/CREC-1995-01-06-pt1-PgS572-2.pdf</url>
+        <url access="raw object" displayLabel="HTML rendition">https://www.govinfo.gov/content/pkg/CREC-1995-01-06/html/CREC-1995-01-06-pt1-PgS572-2.htm</url>
+    </location>
+    <physicalDescription>
+        <extent>2 p.</extent>
+    </physicalDescription>
+    <part type="article">
+        <extent unit="pages">
+            <start>S572</start>
+            <end>S573</end>
+        </extent>
+    </part>
+    <name type="personal">
+        <namePart>Paul Simon</namePart>
+        <affiliation>United States Senate</affiliation>
+        <role>
+            <roleTerm type="text">speaking</roleTerm>
+        </role>
+        <description>United States Congress Member</description>
+    </name>
+    <identifier type="preferred citation">141 Cong. Rec. S572</identifier>
+    <extension>
+        <searchTitle>PERES ON DESALINATION; Congressional Record Vol. 141, No. 3</searchTitle>
+        <granuleClass>SENATE</granuleClass>
+        <accessId>CREC-1995-01-06-pt1-PgS572-2</accessId>
+        <subGranuleClass>ALLOTHER</subGranuleClass>
+        <pagePrefix>S</pagePrefix>
+        <bookNumber>1</bookNumber>
+        <chamber>SENATE</chamber>
+        <granuleDate>1995-01-06</granuleDate>
+        <legislativeDay>1995-01-05</legislativeDay>
+        <hasInsertedComments>true</hasInsertedComments>
+        <congMember bioGuideId="S000423" chamber="S" congress="104" party="D" role="SPEAKING" state="IL">
+                                    
+            <name type="parsed">Mr. SIMON</name>
+                                    
+            <name type="authority-fnf">Paul Simon</name>
+                                    
+            <name type="authority-lnf">Simon, Paul</name>
+                                    
+            <name type="authority-other">Paul Martin Simon</name>
+                                
+        </congMember>
+    </extension>
+    <relatedItem type="host" ID="P0b002ee180452b96">
+        <titleInfo>
+            <title>Congressional Record</title>
+            <partNumber>Vol. 141, no. 3</partNumber>
+        </titleInfo>
+        <location>
+            <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CREC-1995-01-06</url>
+            <url displayLabel="PDF rendition" access="raw object">https://www.govinfo.gov/content/pkg/CREC-1995-01-06/pdf/CREC-1995-01-06.pdf</url>
+        </location>
+        <part type="issue">
+            <extent unit="pages">
+                <start>H147</start>
+                <end>H147</end>
+            </extent>
+            <extent unit="pages">
+                <start>S529</start>
+                <end>S608</end>
+            </extent>
+            <extent unit="pages">
+                <start>D17</start>
+                <end>D20</end>
+            </extent>
+        </part>
+        <originInfo>
+            <publisher>U.S. Government Printing Office</publisher>
+            <dateIssued encoding="w3cdtf">1995-01-06</dateIssued>
+            <issuance>continuing</issuance>
+            <frequency authority="marcfrequency">daily</frequency>
+        </originInfo>
+        <physicalDescription>
+            <note type="source content type">deposited</note>
+            <digitalOrigin>born digital</digitalOrigin>
+            <extent>86 digital object pages</extent>
+        </physicalDescription>
+        <classification authority="sudocs">X 1.1/A:</classification>
+        <classification authority="sudocs">X/A.</classification>
+        <identifier type="uri">https://www.govinfo.gov/app/details/CREC-1995-01-06</identifier>
+        <identifier type="local">P0b002ee180452b96</identifier>
+        <identifier type="stock number">752-002-00000-2</identifier>
+        <identifier type="ILS system id">000568013</identifier>
+        <identifier type="former package identifier">cr06ja95</identifier>
+        <recordInfo>
+            <recordContentSource authority="marcorg">DGPO</recordContentSource>
+            <recordCreationDate encoding="w3cdtf">2010-08-25</recordCreationDate>
+            <recordChangeDate encoding="w3cdtf">2025-10-24</recordChangeDate>
+            <recordIdentifier source="DGPO">CREC-1995-01-06</recordIdentifier>
+            <recordOrigin>machine generated</recordOrigin>
+            <languageOfCataloging>
+                <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+            </languageOfCataloging>
+        </recordInfo>
+        <accessCondition type="GPO scope determination">fdlp</accessCondition>
+        <extension>
+            <docClass>CREC</docClass>
+            <accessId>CREC-1995-01-06</accessId>
+            <volume>141</volume>
+            <issue>3</issue>
+            <congress>104</congress>
+            <session>1</session>
+            <bookCount>1</bookCount>
+        </extension>
+    </relatedItem>
+</mods>

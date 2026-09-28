@@ -2,7 +2,7 @@
   "retrieval_receipt": "~/Work/corpora/supply-2026-09-02/receipts/unitedstates-legal-record-2026-09-28/record-inputs/",
   "sources_list": "docs/unitedstates-review-2026-09-28/validation/legal-record/current-record-sources.json (spicy-stack workspace)",
   "excerpt_receipt": "~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/excerpt/",
-  "excerpt_check": "Upstream at 7949151e, at 6bb521b1 and at 3715651a parsed each body against the full MODS and against the excerpt; the crdoc, speaker table and lines_remaining were equal for all three granules (excerpt/compare-full-vs-excerpt*.txt), and the adapter's documents differed only in mods_sha256 (compare-adapter-full-vs-excerpt.txt, granule-mods/compare-adapter-6bb521b.txt; at 3715651a, review-fixes/repin-3715651a/excerpt-check/excerpt-check.txt).",
+  "excerpt_check": "Upstream at 7949151e, at 6bb521b1 and at 3715651a parsed each body against the full MODS and against the excerpt; the crdoc, speaker table and lines_remaining were equal for all three granules (excerpt/compare-full-vs-excerpt*.txt), and the adapter's documents differed only in mods_sha256 (compare-adapter-full-vs-excerpt.txt, granule-mods/compare-adapter-6bb521b.txt; at 3715651a, review-fixes/repin-3715651a/excerpt-check/excerpt-check.txt; at ee5ba237, rereview-fixes/repin-ee5ba237/excerpt-check/excerpt-check.txt).",
   "fixtures": [
     {
       "fixture": "CREC-2026-09-16-pt1-PgH5835-8.htm",
@@ -148,6 +148,26 @@
       "sha256": "3f5049b19223827100585b95924f589c0b65515a661773d060197f6358983a46",
       "transformation": "None; the whole response body.",
       "pins": "The granule's own MODS for a 1994 granule: <start>H</start> with no page number, and a searchTitle stating Vol. 140, No. 36."
+    },
+    {
+      "fixture": "CREC-1995-01-06-pt1-PgS572-2.htm",
+      "source_url": "https://www.govinfo.gov/content/pkg/CREC-1995-01-06/html/CREC-1995-01-06-pt1-PgS572-2.htm",
+      "retrieved": "2026-09-28T23:31:01.064125Z",
+      "route": "GovInfoBodyAcquirer.acquire_granule's keyless HTML rendition",
+      "bytes": 2043,
+      "sha256": "36aab96ada6df808446745699cf1766245384f9b9f1a365ce9f1e77f959a53c8",
+      "transformation": "None; the whole response body.",
+      "pins": "A 1995 granule whose line '[[Page S573]] not have, he said: ...' opens with a page marker: the prose after it is text of Mr. SIMON's speech (S000423), located on the marker's line, with nothing unaccounted; and a line-leading <bullet>."
+    },
+    {
+      "fixture": "CREC-1995-01-06-pt1-PgS572-2.granule-mods-api.xml",
+      "source_url": "https://api.govinfo.gov/packages/CREC-1995-01-06/granules/CREC-1995-01-06-pt1-PgS572-2/mods",
+      "retrieved": "2026-09-28T23:31:00.864782Z",
+      "route": "GovInfoBodyAcquirer.acquire_granule's keyed MODS route; the credential travelled in the X-Api-Key header only",
+      "bytes": 7647,
+      "sha256": "de8e296824c2fe5d28c1e03a264ff257a0922aef7f5edc9ab66d783dbeda1fc6",
+      "transformation": "None; the whole response body.",
+      "pins": "The granule's own MODS for the 1995 granule: Mr. SIMON with bioGuideId S000423, and a searchTitle stating Vol. 141, No. 3."
     }
   ],
   "granule_mods_receipt": "~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/granule-mods/",
@@ -155,5 +175,7 @@
   "suffixed_receipt": "~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/review-fixes/suffixed-fixture/",
   "suffixed_check": "Retrieved 2026-09-28 by retrieve.py through GovInfoBodyAcquirer.acquire_granule (keyed summary and MODS, keyless body; receipt.json). The body equals a separate keyless GET of the same URL. The adapter reads it complete with nothing unaccounted, and 535 real granules of six issues, twelve of them in CREC-2025-01-03-v171 and CREC-2025-03-11-i46, read complete against both MODS routes (real-replay/).",
   "era_1994_receipt": "~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/rereview-fixes/fixture-1994/",
-  "era_1994_check": "Retrieved 2026-09-28 by retrieve.py through GovInfoBodyAcquirer.acquire_granule (keyed summary and MODS, keyless body; receipt.json). The body equals a separate keyless GET of the same URL (rereview-fixes/replay-1994/html/), and every granule of CREC-1994-03-25 reads against the package MODS (rereview-fixes/replay/)."
+  "era_1994_check": "Retrieved 2026-09-28 by retrieve.py through GovInfoBodyAcquirer.acquire_granule (keyed summary and MODS, keyless body; receipt.json). The body equals a separate keyless GET of the same URL (rereview-fixes/replay-1994/html/), and every granule of CREC-1994-03-25 reads against the package MODS (rereview-fixes/replay/).",
+  "era_1995_receipt": "~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/rereview-fixes/fixture-1995/",
+  "era_1995_check": "Retrieved 2026-09-28 by retrieve.py through GovInfoBodyAcquirer.acquire_granule (keyed summary and MODS, keyless body; receipt.json). The body equals the re-review's separate keyless GET (record-speeches-review/rereview/labelled/docs/). At ee5ba237 every item is located and nothing is unaccounted; at 3715651a the marker's line was unaccounted (rereview-fixes/repin-ee5ba237/fixture-compare/)."
 }

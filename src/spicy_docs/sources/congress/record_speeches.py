@@ -45,7 +45,7 @@ from spicy_docs.sources.govinfo.mods import RETAINED_MODS_MAX_ELEMENTS, GovInfoM
 from spicy_docs.transport.source_acquirer import check_payload
 
 #: The fork commit ``pyproject.toml`` pins and ``uv.lock`` resolves; a test holds the three together.
-PARSER_PIN = "3715651a4780d49eecd2dff9f936349c5963f01d"
+PARSER_PIN = "ee5ba237b7db90bbf8a8fa438f2eb68a0077d973"
 EXTRA_REQUIRED = (
     "Congressional Record speech turns need the 'record-speeches' extra: uv sync --frozen --extra record-speeches"
 )
@@ -64,11 +64,13 @@ _GRANULE_PAGE = re.compile(r"-Pg(?P<section>[A-Z]+)(?:(?P<number>[0-9]+)|-FrontM
 # or only the section (``H``), as throughout the 1994 issues retained: GovInfo
 # states no page number there, and an id's number orders its section's granules.
 _HEADER_PAGE = re.compile(r"(?P<section>[A-Z]+)(?P<number>[0-9]+)?(?:-[A-Z]*[0-9]+)?")
-# A line upstream leaves out of an item's text, read whole: a whitespace-only
-# line, a ``{time}`` stamp or a ``[[Page]]`` marker. Upstream's own skip
-# patterns match only a line's start, so a skipped line carrying more than the
-# marker is text it dropped, and it is reported, not accounted for.
-_DROPPED_LINE = re.compile(r"\s+|\s*\{time\}\s+[0-9]{4}\s*|\s*\[\[Page [A-Z]*[0-9]+\]\]\s*")
+# A line upstream leaves out of an item's text entirely, read whole: a
+# whitespace-only line, or a ``{time}`` stamp or ``[[Page]]`` marker with only
+# whitespace after it. Upstream matches its skip patterns at a line's start and
+# keeps what follows the marker as text (the pin's ``crItem.text_of``): GovInfo's
+# 1995 text opens some lines of prose with a page marker. Such a line is text,
+# located like any other, so it is never accounted for as dropped.
+_DROPPED_LINE = re.compile(r"\s+|\s+\{time\}\s+[0-9]{4}\s*|\s*\[\[Page [A-Z]*[0-9]+\]\]\s*")
 # What upstream raises from a document it cannot read: a missing accessId
 # (RuntimeError), a missing <pre>, searchTitle or granuleClass (AttributeError),
 # a header cut short or astray (CRParseError, a ValueError), an unmatched date
@@ -149,10 +151,12 @@ class RecordSpeechItem:
     as upstream emitted it.
 
     ``line_start``/``line_end`` are 0-based, inclusive indexes into
-    :attr:`RecordSpeechDocument.source_lines`. Upstream drops whitespace-only,
-    ``{time}`` and ``[[Page]]`` lines from an item's text, so the span can hold
-    lines the text does not; every other line in it is a line of the text, in
-    order. Both are ``None`` when ``coordinates_status`` is ``unlocated``.
+    :attr:`RecordSpeechDocument.source_lines`. Upstream leaves whitespace-only
+    lines and bare ``{time}`` and ``[[Page]]`` lines out of an item's text, and
+    of a line such a marker opens keeps the rest, so the span can hold lines
+    the text does not; every other line in it gives a line of the text, in
+    order, whole or after its marker. Both are ``None`` when
+    ``coordinates_status`` is ``unlocated``.
     """
 
     item_index: int
@@ -184,10 +188,10 @@ class RecordSpeechDocument:
 
     ``unaccounted_lines`` indexes the lines of ``source_lines`` nothing here
     accounts for: not the header, not the title, not a line of a located item's
-    text, and not a whole whitespace-only, ``{time}`` or ``[[Page]]`` line. The
-    lines of unlocated items, the line a partial parse failed on and a skipped
-    line that carried text land here, so a caller that needs the whole granule
-    reads ``parse_status == "complete"`` and an empty tuple.
+    text, and not a whitespace-only line or a bare ``{time}`` or ``[[Page]]``
+    line. The lines of unlocated items and the line a partial parse failed on
+    land here, so a caller that needs the whole granule reads
+    ``parse_status == "complete"`` and an empty tuple.
     """
 
     granule_id: str
@@ -346,24 +350,32 @@ def _line_recording(parse_file: Any) -> Any:
 
 
 def _span(
-    lines: Sequence[str], wanted: Sequence[str], cursor: int, *, skipped: Callable[[str], bool], exact: bool
+    lines: Sequence[str],
+    wanted: Sequence[str],
+    cursor: int,
+    *,
+    text_of: Callable[[str], str | None],
+    exact: bool,
 ) -> tuple[int, ...] | None:
     """The positions of ``wanted``'s lines from ``cursor`` on, passing over only lines upstream drops, or ``None``.
 
-    Upstream builds an item from the line that ended the previous one and then
-    every following line up to the next break, dropping the lines its skip
-    patterns match. So between two lines of one item, and between one item's
-    last line and the next item's first, only dropped lines can occur. A
-    dropped line is decided by its content alone, so no dropped line equals a
-    kept one and the first equal line is the one upstream read. ``exact`` holds
-    the first item to the line upstream's title scan stopped on.
+    Upstream builds an item from the line that ended the previous one, as it
+    is, and then every following line up to the next break as ``text_of``
+    gives it: the line; the rest of it after a ``{time}`` or ``[[Page]]``
+    marker at its start, from the space after the marker; or nothing, when
+    only whitespace is left. So between two lines of one item, and between one
+    item's last line and the next item's first, only dropped lines can occur.
+    A dropped line is decided by its content alone, so no dropped line gives a
+    kept one and the first line that gives the wanted text is the one upstream
+    read. ``exact`` holds the first item to the line upstream's title scan
+    stopped on.
     """
     position = cursor
     found: list[int] = []
-    for line in wanted:
-        while not exact and position < len(lines) and lines[position] != line and skipped(lines[position]):
+    for index, line in enumerate(wanted):
+        while not exact and position < len(lines) and lines[position] != line and text_of(lines[position]) is None:
             position += 1
-        if position == len(lines) or lines[position] != line:
+        if position == len(lines) or (lines[position] if index == 0 else text_of(lines[position])) != line:
             return None
         found.append(position)
         exact = False
@@ -372,7 +384,10 @@ def _span(
 
 
 def _locate(
-    lines: Sequence[str], items: Sequence[Mapping[str, Any]], anchor: int | None, skipped: Callable[[str], bool]
+    lines: Sequence[str],
+    items: Sequence[Mapping[str, Any]],
+    anchor: int | None,
+    text_of: Callable[[str], str | None],
 ) -> list[tuple[int, ...] | None]:
     """Each item's text-line positions, in order and never backtracking; once one is not found, none after it is guessed."""
     spans: list[tuple[int, ...] | None] = []
@@ -381,7 +396,7 @@ def _locate(
         text = item.get("text")
         span = None
         if cursor is not None and isinstance(text, str):
-            span = _span(lines, text.split("\n"), cursor, skipped=skipped, exact=index == 0)
+            span = _span(lines, text.split("\n"), cursor, text_of=text_of, exact=index == 0)
         spans.append(span)
         cursor = None if span is None else span[-1] + 1
     return spans
@@ -394,10 +409,10 @@ def _unaccounted(
 
     Every line before the first item is the header upstream read (it refuses
     one it cannot) or a blank or title line its title scan read. From the first
-    item on, a line counts when it is a text line of a located item or a whole
-    whitespace-only, ``{time}`` or ``[[Page]]`` line (``_DROPPED_LINE``). So the
-    lines of unlocated items, the line a partial parse failed on and a skipped
-    line that carried text are unaccounted.
+    item on, a line counts when it is a text line of a located item, or a
+    whitespace-only line or a bare ``{time}`` or ``[[Page]]`` line
+    (``_DROPPED_LINE``). So the lines of unlocated items and the line a partial
+    parse failed on are unaccounted.
     """
     text_lines = {position for span in spans if span is not None for position in span}
     start = len(lines) if first_item_line is None else first_item_line
@@ -492,12 +507,18 @@ class RecordIssue:
         _check_header(granule, page, header, (parser.cr_vol, parser.cr_num))
         patterns = tuple(parser.skip_items)
 
-        def skipped(line: str) -> bool:
-            return any(re.match(pattern, line) for pattern in patterns)
+        def text_of(line: str) -> str | None:
+            """What of a line upstream keeps in an item's text: the pin's ``crItem.text_of``, over its own patterns."""
+            for pattern in patterns:
+                match = re.match(pattern, line)
+                if match:
+                    rest = line[match.end() :]
+                    return rest if rest.strip() else None
+            return line
 
         lines = tuple(parser.lines_read)
         content = crdoc["content"]
-        spans = _locate(lines, content, parser.first_item_line, skipped)
+        spans = _locate(lines, content, parser.first_item_line, text_of)
         items = tuple(
             RecordSpeechItem(
                 item_index=index,
