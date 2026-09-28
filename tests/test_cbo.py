@@ -592,11 +592,25 @@ def test_a_feed_maps_to_a_sorted_bill_set_marked_by_how_each_was_found():
         )
         + b"</response>"
     )
-    named = cbo_feed_bills(parse_cbo_cost_estimates_feed(body), 113)
-    assert [(b.identity, b.publication_ids, b.found_by) for b in named.bills] == [
-        (BillIdentity(113, "hjres", 59), ("62001", "62004"), "bill_number"),
-        (BillIdentity(113, "hr", 9), ("62006",), "title"),
-        (BillIdentity(113, "s", 12), ("62002", "62007"), "bill_number"),
+    feed = parse_cbo_cost_estimates_feed(body)
+    named = cbo_feed_bills(feed, 113)
+    assert [(b.identity, b.publication_ids, b.found_by, b.found_by_bill) for b in named.bills] == [
+        (BillIdentity(113, "hjres", 59), ("62001", "62004"), ("bill_number", "bill_number"), "bill_number"),
+        (BillIdentity(113, "hr", 9), ("62006",), ("title",), "title"),
+        (BillIdentity(113, "s", 12), ("62002", "62007"), ("bill_number", "title"), "bill_number"),
     ]
     assert (named.congress, named.unnamed, named.public_law) == (113, 1, 1)
     assert named.refused == (("62005", "bill_number", "S.A. N"), ("62008", "title", "not-at-start"))
+    # With the host's laws map the law-titled item names its bill, found as title_law; a law the map lacks does not.
+    mapped = cbo_feed_bills(feed, 113, law_bills={"112-public-8": "112-hr-1363"})
+    assert [(b.identity, b.found_by) for b in mapped.bills if b.found_by_bill == "title_law"] == [
+        (BillIdentity(112, "hr", 1363), ("title_law",))
+    ]
+    assert (mapped.unnamed, mapped.public_law) == (1, 0)
+    assert cbo_feed_bills(feed, 113, law_bills={}).public_law == 1
+    for wrong in ("H.R. 1363", "112-house-1363"):  # a citation, and a bill_id's shape with no bill type
+        assert cbo_feed_bills(feed, 113, law_bills={"112-public-8": wrong}).refused[-1] == (
+            "62009",
+            "law_bills",
+            "not-a-bill-id",
+        )

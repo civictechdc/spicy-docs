@@ -79,6 +79,12 @@ CBO_FEED = "cbo_feed"
 #: publisher's statement about that bill, and the feed is CBO's list of its
 #: work, so BILLSTATUS wins whatever either's ``pub_date`` says.
 SOURCE_PRECEDENCE: tuple[str, ...] = (BILLSTATUS_BULK, "congress_api", CBO_FEED)
+#: How the source linked an estimate to ``bill_id``, published as ``found_by``.  Sealed and additions-only:
+#: ``billstatus`` on every ``billstatus_bulk`` row, and on a ``cbo_feed`` row the feed item's ``Bill_Number``, the
+#: citation a blank item's title leads with, or the law it leads with through the host's laws table
+#: (``sources.cbo.FOUND_BY_*`` spell the three).
+FOUND_BY_BILLSTATUS = "billstatus"
+FOUND_BY: tuple[str, ...] = (FOUND_BY_BILLSTATUS, "bill_number", "title", "title_law")
 
 CBO_COST_ESTIMATES = table_contract(
     "cbo_cost_estimates",
@@ -93,7 +99,8 @@ CBO_COST_ESTIMATES = table_contract(
         "bill_id": (
             "The bill the source attached this estimate to, as published, keyed the way congress_bills.bill_id is: "
             "the bill whose BILLSTATUS record lists it (`billstatus_bulk`), or the bill CBO's feed item names by "
-            "Bill_Number or, where that is empty, by the citation its title leads with (`cbo_feed`).  Where "
+            "Bill_Number or, where that is empty, by the citation its title leads with or by the bill the host's "
+            "laws table says enacted the law it leads with (`cbo_feed`; found_by says which).  Where "
             "title_bill_id differs, this number is wrong and title_bill_id names the bill the estimate scores."
         ),
         "congress": "The numbered Congress the bill belongs to.",
@@ -177,6 +184,12 @@ CBO_COST_ESTIMATES = table_contract(
             "on the feed, and 114 H.R. 3347 on BILLSTATUS, whose record lists CBO's estimate of H.R. 3447 -- and, "
             "with a law map, 2 more on both (P.L. 119-21's estimates filed under H. Con. Res. 14) and 1 more on "
             "the feed (P.L. 111-322 filed under the 112th's H.R. 3082, its bill's number in the 111th)."
+        ),
+        "found_by": (
+            "How the source linked this estimate to bill_id: `billstatus` (the bill's own BILLSTATUS record lists "
+            "it), or on a `cbo_feed` row `bill_number` (the item's Bill_Number), `title` (the citation a blank "
+            "item's title leads with) or `title_law` (the public law a blank item's title leads with, through the "
+            "host's laws table: the 110th's P.L. 110-50 and the 112th's P.L. 112-8).  Sealed and additions-only."
         ),
     },
 )
@@ -291,6 +304,7 @@ def shape_cbo_cost_estimate(
     report_citations: Iterable[object] | None = (),
     source: str = BILLSTATUS_BULK,
     title_bill_id: str | None = None,
+    found_by: str = FOUND_BY_BILLSTATUS,
 ) -> Row:
     """One ``cbo_cost_estimates`` row from one folded estimate of one bill.
 
@@ -308,6 +322,10 @@ def shape_cbo_cost_estimate(
     """
     if source not in ESTIMATE_SOURCES:
         raise TableContractError(f"cbo_cost_estimates source must be one of {', '.join(ESTIMATE_SOURCES)}")
+    if found_by not in FOUND_BY or (found_by == FOUND_BY_BILLSTATUS) != (source == BILLSTATUS_BULK):
+        raise TableContractError(
+            "cbo_cost_estimates found_by must be billstatus on a BILLSTATUS row and a feed way else"
+        )
     estimate = folded.estimate
     citations = None if report_citations is None else [report_citation_parts(c) for c in report_citations]
     return {
@@ -328,6 +346,7 @@ def shape_cbo_cost_estimate(
         "report_citations_json": None if citations is None else json_column(citations),
         "publication_id_rule": PUBLICATION_ID_RULE,
         "title_bill_id": text(title_bill_id),
+        "found_by": found_by,
     }
 
 
@@ -360,6 +379,8 @@ __all__ = [
     "CBO_COST_ESTIMATES",
     "CBO_FEED",
     "ESTIMATE_SOURCES",
+    "FOUND_BY",
+    "FOUND_BY_BILLSTATUS",
     "PUBLICATION_ID_RULE",
     "REPORT_CITATION_RULE",
     "SOURCE_PRECEDENCE",

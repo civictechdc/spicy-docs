@@ -46,7 +46,7 @@ Byte counts, digests and the measurements behind every claim:
 from __future__ import annotations
 
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -56,7 +56,8 @@ from urllib.parse import urlsplit
 
 from spicy_docs.reading.pdf_bytes import check_pdf_bytes
 from spicy_docs.reading.xml import scan_xml
-from spicy_docs.sources.congress.bill_status import BillIdentity
+from spicy_docs.schemas.law_tables import law_id
+from spicy_docs.sources.congress.bill_status import BILL_TYPES, BillIdentity
 from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.source_acquirer import (
     SourceAcquirer,
@@ -391,18 +392,50 @@ def title_bills(congress: int, title: str) -> tuple[BillIdentity, ...]:
     return (cited,) if isinstance(cited, BillIdentity) else ()
 
 
+#: A host's map from a public law's ``laws.law_id`` (``111-public-322``) to the ``bill_id`` that enacted it
+#: (``111-hr-3082``), read from its ``laws`` table; spicy-docs reads no table itself.
+LawBills = Mapping[str, str]
+_BILL_ID = re.compile(r"(?P<congress>[1-9][0-9]*)-(?P<type>[a-z]+)-(?P<number>[1-9][0-9]*)")
+
+
+def law_bill(law_bills: LawBills, law: PublicLawCitation) -> BillIdentity | None:
+    """The bill the host's laws table says enacted ``law``, or ``None`` where the map has no entry.
+
+    A value that is not a ``bill_id`` (``112-hjres-48``) refuses with
+    :class:`CboFeedBillError`, field ``law_bills``: the host's map is wrong, and
+    no bill is guessed from it.
+    """
+    stated = law_bills.get(law_id(law.congress, "public", law.number))
+    if stated is None:
+        return None
+    match = _BILL_ID.fullmatch(stated) if isinstance(stated, str) else None
+    if match is None or match["type"] not in BILL_TYPES:
+        raise CboFeedBillError("law_bills", "not-a-bill-id")
+    return BillIdentity(int(match["congress"]), match["type"], int(match["number"]))
+
+
+#: How a feed item names its bill, the ``found_by`` a row publishes: its ``Bill_Number``; where that is empty, the
+#: citation its title leads with; or the law its title leads with, through the host's laws table.
+FOUND_BY_BILL_NUMBER, FOUND_BY_TITLE, FOUND_BY_TITLE_LAW = "bill_number", "title", "title_law"
+
+
 @dataclass(frozen=True, slots=True)
 class CboFeedBill:
     """One bill a feed names, the publication ids of the items naming it in feed order, and how it was found.
 
-    ``found_by`` is ``bill_number`` when any item's ``Bill_Number`` names the
-    bill, else ``title``: the bill is named only by an item whose
-    ``Bill_Number`` is empty and whose title leads with its citation.
+    ``found_by`` is how each of those items names the bill, in the same order
+    (``bill_number``, ``title`` or ``title_law``), and ``found_by_bill`` the
+    strongest of them: ``bill_number`` when any item's ``Bill_Number`` names
+    the bill, else ``title``, else ``title_law``.
     """
 
     identity: BillIdentity
     publication_ids: tuple[str, ...]
-    found_by: str
+    found_by: tuple[str, ...]
+
+    @property
+    def found_by_bill(self) -> str:
+        return next(way for way in (FOUND_BY_BILL_NUMBER, FOUND_BY_TITLE, FOUND_BY_TITLE_LAW) if way in self.found_by)
 
 
 @dataclass(frozen=True, slots=True)
@@ -411,7 +444,8 @@ class CboFeedBills:
 
     ``unnamed`` counts the items whose ``Bill_Number`` is empty and whose title
     leads with no citation, and ``public_law`` those whose title leads with a
-    public law, which names no bill here; ``refused`` holds
+    public law the host's map did not name a bill for (every one, without a
+    map); ``refused`` holds
     ``(publication_id, field, shape)`` for every item
     :class:`CboFeedBillError` refused.  Sorted, because a feed's order within
     one ``Date`` differs between captures whose items are identical.
@@ -424,39 +458,49 @@ class CboFeedBills:
     public_law: int = 0
 
 
-def cbo_feed_bills(feed: CboCostEstimatesFeed, congress: int) -> CboFeedBills:
+def cbo_feed_bills(feed: CboCostEstimatesFeed, congress: int, *, law_bills: LawBills | None = None) -> CboFeedBills:
     """Map every item of one Congress's feed to its bills, in one pass; refusals are counted, never dropped.
 
     An item's ``Bill_Number`` is read when it states one and its title only
     when it does not, so a title never overrides the publisher's own number.
+    A blank item whose title leads with a public law names the bill
+    ``law_bills``, the host's laws table, says enacted it (``title_law``: the
+    110th's P.L. 110-50, the 112th's P.L. 112-8); without the map, or where it
+    has no entry, it is counted as ``public_law`` and names none.
     """
-    named: dict[BillIdentity, list[str]] = {}
-    by_number: set[BillIdentity] = set()
+    named: dict[BillIdentity, list[tuple[str, str]]] = {}
     unnamed = public_law = 0
     refused: list[tuple[str, str, str]] = []
     for item in feed.items:
-        cited: BillIdentity | PublicLawCitation | None = None
+        way = FOUND_BY_BILL_NUMBER
         try:
             if item.bill_number is not None:
                 bills = feed_item_bills(congress, item.bill_number)
-                by_number.update(bills)
             else:
                 cited = title_citation(congress, item.title)
-                bills = (cited,) if isinstance(cited, BillIdentity) else ()
+                way = FOUND_BY_TITLE
+                if isinstance(cited, PublicLawCitation):
+                    enacted = None if law_bills is None else law_bill(law_bills, cited)
+                    if enacted is None:
+                        bills = ()
+                        public_law += 1
+                    else:
+                        bills, way = (enacted,), FOUND_BY_TITLE_LAW
+                elif cited is None:
+                    bills = ()
+                    unnamed += 1
+                else:
+                    bills = (cited,)
         except CboFeedBillError as error:
             refused.append((item.publication_id, error.field, error.shape))
             continue
-        if isinstance(cited, PublicLawCitation):
-            public_law += 1
-        elif not bills:
-            unnamed += 1
         for bill in bills:
-            named.setdefault(bill, []).append(item.publication_id)
+            named.setdefault(bill, []).append((item.publication_id, way))
     ordered = sorted(named, key=lambda bill: (bill.bill_type, bill.number))
     return CboFeedBills(
         congress,
         tuple(
-            CboFeedBill(bill, tuple(named[bill]), "bill_number" if bill in by_number else "title") for bill in ordered
+            CboFeedBill(bill, tuple(p for p, _ in named[bill]), tuple(w for _, w in named[bill])) for bill in ordered
         ),
         unnamed,
         tuple(refused),

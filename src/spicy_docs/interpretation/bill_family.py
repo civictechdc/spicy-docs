@@ -71,19 +71,21 @@ from spicy_docs.schemas.cost_estimate_tables import (
     BILLSTATUS_BULK,
     CBO_COST_ESTIMATES,
     CBO_FEED,
+    FOUND_BY_BILLSTATUS,
     PUBLICATION_ID_RULE,
     fold_cbo_cost_estimates,
     publication_id,
     shape_cbo_cost_estimate,
 )
-from spicy_docs.schemas.law_tables import law_id
 from spicy_docs.schemas.tables import Row, TableContract, TableContractError, bill_id, joined
 from spicy_docs.sources.cbo import (
     CboCostEstimatesFeed,
     CboFeedBillError,
     CboSourceError,
+    LawBills,
     cbo_feed_bills,
     feed_item_pub_date,
+    law_bill,
     title_citation,
 )
 from spicy_docs.sources.congress.bill_status import BillIdentity, CboCostEstimate
@@ -660,11 +662,6 @@ def build_bill_family(
     )
 
 
-#: A host's map from a public law's ``laws.law_id`` (``111-public-322``) to the ``bill_id`` that enacted it
-#: (``111-hr-3082``), from its ``laws`` table; spicy-docs reads no table itself.
-LawBills = Mapping[str, str]
-
-
 def _title_bill_id(congress: int, title: object, law_bills: LawBills | None) -> str | None:
     """The bill an estimate's title leads with, keyed as ``bill_id`` is, or ``None``.
 
@@ -682,10 +679,11 @@ def _title_bill_id(congress: int, title: object, law_bills: LawBills | None) -> 
         return bill_id(cited)
     if cited is None or law_bills is None:
         return None
-    enacted = law_bills.get(law_id(cited.congress, "public", cited.number))
-    if enacted is not None and (not isinstance(enacted, str) or not enacted):
-        raise TableContractError("law_bills must map a law_id to a nonempty bill_id")
-    return enacted
+    try:
+        enacted = law_bill(law_bills, cited)
+    except CboFeedBillError as error:
+        raise TableContractError(str(error)) from error
+    return None if enacted is None else bill_id(enacted)
 
 
 def _cost_estimate_rows(
@@ -696,6 +694,7 @@ def _cost_estimate_rows(
     admit: _Admitter,
     source: str = BILLSTATUS_BULK,
     law_bills: LawBills | None = None,
+    found_by: Sequence[str] | None = None,
 ) -> list[Row]:
     """One bill's ``cbo_cost_estimates`` rows from one document's estimate list, whichever route stated it.
 
@@ -703,7 +702,10 @@ def _cost_estimate_rows(
     publication twice on some bills and that is one estimate; a url outside the
     measured /publication/{id} shape cannot be keyed and is refused by name
     rather than published unidentified.  Each row also names the bill its
-    title leads with, which is how a CBO numbering error shows.
+    title leads with, which is how a CBO numbering error shows, and how the
+    source linked it to the bill: ``found_by`` holds each estimate's way, in
+    the estimates' order (a feed's), and ``None`` means the bill's own
+    BILLSTATUS record.
     """
     key = bill_id(identity)
     rows: list[Row] = []
@@ -723,6 +725,7 @@ def _cost_estimate_rows(
                     report_citations=citations,
                     source=source,
                     title_bill_id=_title_bill_id(identity.congress, getattr(entry.estimate, "title", None), law_bills),
+                    found_by=FOUND_BY_BILLSTATUS if found_by is None else found_by[entry.estimate_index],
                 ),
                 entry,
             ),
@@ -748,9 +751,11 @@ def build_cbo_feed_cost_estimates(
     ``Date`` changes between captures.  An item no rule maps to a bill, or
     whose ``Date`` names no instant, is a named refusal.  ``law_bills``, the
     host's map from a public law to its bill, lets a title leading with a law
-    name that bill in ``title_bill_id``.  Linear in the items.
+    name that bill: in ``title_bill_id`` on every row, and as the bill of a
+    blank item titled only by the law (``found_by`` ``title_law``).  Linear in
+    the items.
     """
-    named = cbo_feed_bills(feed, congress)
+    named = cbo_feed_bills(feed, congress, law_bills=law_bills)
     admit = _Admitter()
     for publication, field, shape in named.refused:
         admit.refuse(
@@ -767,11 +772,18 @@ def build_cbo_feed_cost_estimates(
             admit.refuse(CBO_COST_ESTIMATES.name, (str(congress), item.publication_id), f"cbo_feed_date: {error}")
     rows: list[Row] = []
     for bill in named.bills:
+        ways = dict(zip(bill.publication_ids, bill.found_by, strict=True))
         dated = sorted((dates[p], int(p), items[p]) for p in bill.publication_ids if p in dates)
         estimates = [CboCostEstimate(date, item.title, item.link, item.description) for date, _, item in dated]
         citations = None if report_citations is None else report_citations.get(bill.identity)
         rows += _cost_estimate_rows(
-            bill.identity, estimates, report_citations=citations, admit=admit, source=CBO_FEED, law_bills=law_bills
+            bill.identity,
+            estimates,
+            report_citations=citations,
+            admit=admit,
+            source=CBO_FEED,
+            law_bills=law_bills,
+            found_by=[ways[item.publication_id] for _, _, item in dated],
         )
     return BillFamilyTables(cbo_cost_estimates=tuple(rows), refusals=tuple(admit.refusals))
 

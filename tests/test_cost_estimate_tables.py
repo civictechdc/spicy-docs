@@ -385,7 +385,7 @@ def test_the_contract_names_both_routes_and_what_a_112th_113th_absence_means() -
     stated_count = CBO_COST_ESTIMATES.descriptions["stated_count"]
     assert "from the 112th on" not in stated_count and "the 112th-113th's state none" in stated_count
     assert "title_bill_id names the bill the estimate scores" in CBO_COST_ESTIMATES.descriptions["bill_id"]
-    assert CBO_COST_ESTIMATES.columns[-1] == "title_bill_id"
+    assert CBO_COST_ESTIMATES.columns[-2:] == ("title_bill_id", "found_by")
     assert "Congress.gov" not in " ".join((CBO_COST_ESTIMATES.grain, *CBO_COST_ESTIMATES.descriptions.values()))
 
 
@@ -437,6 +437,39 @@ def test_title_bill_id_names_the_bill_a_title_leads_with_and_exposes_a_wrong_num
     assert rows["22065"]["title_bill_id"] is None  # "P.L. 111-322, ...": a law, and no host map to its bill
 
 
+def test_a_blank_item_titled_by_a_public_law_has_a_row_only_through_the_hosts_laws() -> None:
+    """The 110th's P.L. 110-50 and the 112th's P.L. 112-8 have an empty Bill_Number and a title that leads with the
+    law. With the host's laws map each is a row of the bill that enacted it (retained BILLSTATUS: 110 S. 966, 112
+    H.R. 1363), found_by title_law; without it each is counted as public_law and has no row."""
+    feed_110 = parse_cbo_cost_estimates_feed(
+        (FIXTURES.parent / "cbo" / "cbo-110congress-cost-estimates.excerpt.xml").read_bytes()
+    )
+    law_bills = {"110-public-50": "110-s-966", "112-public-8": "112-hr-1363"}
+    for feed, congress, key in ((feed_110, 110, ("110-s-966", "19115")), (FEED_112, 112, ("112-hr-1363", "22098"))):
+        bare = build_cbo_feed_cost_estimates(feed, congress)
+        assert key[1] not in {r["publication_id"] for r in bare.cbo_cost_estimates} and bare.refusals == ()
+        rows = {
+            CBO_COST_ESTIMATES.key(r): r
+            for r in build_cbo_feed_cost_estimates(feed, congress, law_bills=law_bills).cbo_cost_estimates
+        }
+        row = CBO_COST_ESTIMATES.checked(rows[key])
+        assert (row["found_by"], row["title_bill_id"], row["source"]) == ("title_law", key[0], "cbo_feed")
+    by_way = {
+        r["publication_id"]: r["found_by"] for r in build_cbo_feed_cost_estimates(FEED_112, 112).cbo_cost_estimates
+    }
+    assert (by_way["43626"], by_way["43585"]) == ("bill_number", "title")
+
+
+def test_found_by_is_billstatus_on_the_bills_own_record_and_a_feed_way_on_a_feed_row() -> None:
+    parsed = status("BILLSTATUS-118hr801", HR801)
+    family = build_bill_family(BillFamilyCapture(status=parsed, versions=()), engine=ENGINE, diff=False)
+    assert family.cbo_cost_estimates[0]["found_by"] == "billstatus"
+    (entry,), _ = fold_cbo_cost_estimates(parsed.cbo_cost_estimates)
+    for source, way in (("cbo_feed", "billstatus"), ("billstatus_bulk", "title"), ("cbo_feed", "guessed")):
+        with pytest.raises(TableContractError, match="found_by"):
+            shape_cbo_cost_estimate(HR801, entry, source=source, found_by=way)
+
+
 def test_a_title_leading_with_a_public_law_names_the_bill_the_host_says_enacted_it() -> None:
     """CBO filed its estimate of P.L. 111-322 under the 112th's H.R. 3082, the enacting bill's number in the 111th.
     With the host's laws map (retained 111th BILLSTATUS H.R. 3082 states that law) title_bill_id names the 111th
@@ -454,6 +487,8 @@ def test_a_title_leading_with_a_public_law_names_the_bill_the_host_says_enacted_
     assert "22065" not in {r["publication_id"] for r in tables.cbo_cost_estimates}
     (refusal,) = tables.refusals
     assert refusal.identity == ("112-hr-3082", "22065") and "law_bills" in refusal.reason
+    refused = build_cbo_feed_cost_estimates(FEED_112, 112, law_bills={"112-public-8": "not a bill"}).refusals
+    assert [(r.identity, "not-a-bill-id" in r.reason) for r in refused] == [(("112", "22098"), True)]
 
 
 def test_title_bill_id_is_filled_on_billstatus_rows_too() -> None:

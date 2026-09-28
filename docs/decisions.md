@@ -3330,10 +3330,23 @@ law it does not map, NULL, and such rows are counted apart as "title names a
 public law" (6 BILLSTATUS and 7 feed rows over the 108th-119th). With a map
 built from the retained BILLSTATUS `<laws>`, all 13 resolve and three more
 rows differ: the 112th feed's P.L. 111-322, and P.L. 119-21's two estimates,
-which both routes file under H. Con. Res. 14. A blank-`Bill_Number` item titled
-by a law names no bill, since its only bill would come from the host's table:
-the 110th's P.L. 110-50 and the 112th's P.L. 112-8 are counted as `public_law`
-and have no row.
+which both routes file under H. Con. Res. 14.
+
+**A blank item titled by a law is a row through the host's `laws` table, and
+`found_by` says so** (owner decision 2026-09-28: title-found bills get rows,
+and these are found through a law). The 110th's P.L. 110-50 and the 112th's
+P.L. 112-8 have an empty `Bill_Number` and a title that leads with the law.
+With `law_bills`, `cbo_feed_bills` names the bill that enacted each (110 S. 966
+and 112 H.R. 1363, from the retained BILLSTATUS `<laws>`), and each is a row
+with `bill_id` that bill. Without the map, or for a law it lacks, the item is
+counted as `public_law` and has no row. A map value that is not a `bill_id`
+refuses by name (`law_bills`, `not-a-bill-id`). `cbo_cost_estimates` appends
+`found_by`, so a reader sees how each link was made: `billstatus` on every
+BILLSTATUS row, and on a feed row `bill_number`, `title` or `title_law`. With
+the map, the 110th feed gives 1,464 rows (1 `title_law`) and the 112th 914
+(852 `bill_number`, 61 `title`, 1 `title_law`); the 113th's 1,101 have no law
+title. `CboFeedBill.found_by` is now each item's way, in the order of its
+publication ids, and `found_by_bill` the strongest.
 
 **The report citations are the bill's own.** A `cbo_feed` row's
 `report_citation_count` and `report_citations_json` are those of the bill's
@@ -3540,4 +3553,9 @@ Collected from the four entries above.
   `roll_call_votes`, `member_votes.state`).
 - New helpers: `reading.xml.parse_xml_with_spans`, `sources.cbo.title_citation`
   (a bill or a `PublicLawCitation`), `title_bills`, `feed_item_pub_date`,
-  `CboFeedBillError`, and `interpretation.bill_family.LawBills`.
+  `CboFeedBillError`, and `sources.cbo.LawBills`, `law_bill`.
+- `cbo_cost_estimates.found_by` is appended after `title_bill_id`: a
+  sealed, additions-only vocabulary (`billstatus`, `bill_number`, `title`,
+  `title_law`). A host rebuilds or backfills its prior rows with it
+  (`billstatus` on every `billstatus_bulk` row). With `law_bills`, the 110th's
+  and 112th's law-titled items become rows (`title_law`).

@@ -942,6 +942,10 @@ is a new table rather than columns appended to `congress_bills`.
   through the host's `laws` map (`law_bills`); with it 3 more rows differ, the
   112th feed's P.L. 111-322 filed under the wrong Congress's H.R. 3082 among
   them, and without it the column is NULL.
+- **`found_by` says how the row reached its bill:** `billstatus` (the bill's
+  own record), or on a feed row `bill_number`, `title` or `title_law`, the
+  last a blank item titled by a law whose bill the host's `laws` map names
+  (the 110th's P.L. 110-50, the 112th's P.L. 112-8).
 - **`report_citation_count` is the text route's reachability, per row.** 883 of
   the 1,368 scored bills (64.5%) have a committee report at all; the Senate
   shortfall is structural, since 155 of 395 scored Senate bills were reported

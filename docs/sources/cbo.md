@@ -101,9 +101,14 @@ enacting `bill_id`; with it `title_bill_id` is the law's bill, without it NULL,
 counted apart. With a map built from the retained BILLSTATUS `<laws>`, three
 more rows differ: the 112th feed files P.L. 111-322 under H.R. 3082, whose
 bill was the 111th Congress's H.R. 3082, and both routes file two estimates of
-P.L. 119-21 (H.R. 1) under H. Con. Res. 14. A blank-`Bill_Number` item titled by
-a law (the 110th's P.L. 110-50 and the 112th's P.L. 112-8) names no bill:
-`cbo_feed_bills` counts it as `public_law`, and it has no row.
+P.L. 119-21 (H.R. 1) under H. Con. Res. 14.
+
+A blank-`Bill_Number` item titled by a law is found through the map too: the
+110th's P.L. 110-50 is a row of 110 S. 966 and the 112th's P.L. 112-8 one of
+112 H.R. 1363, the bills that enacted them. Without the map, `cbo_feed_bills`
+counts such an item as `public_law`, and it has no row. Every row's `found_by`
+says how its bill was reached: `billstatus` on the BILLSTATUS route, and on a
+feed row `bill_number`, `title` or `title_law`.
 
 Receipts, with the feeds' bytes and every script:
 `~/Work/corpora/fork-execution-2026-09-21/cbo-112-113/` (`feeds/`,
