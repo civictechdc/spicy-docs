@@ -37,7 +37,10 @@ SECTION_CLASSIFICATIONS = table_contract(
         "confidence": "The model's own confidence, checked to be between 0 and 1 before it was stored.",
         "model": "The model id the call was made against.",
         "prompt_version": "The prompt version the label was produced under.",
-        "prompt_hash": "Digest of the exact prompt sent, so a prompt edit is visible per row.",
+        "prompt_hash": (
+            "Digest of the exact prompt sent, spelled sha256: plus the hex digest, so a prompt edit is visible per "
+            "row; rows written before that spelling carry the bare hex of the same digest."
+        ),
         "batch_index": "Which batch of the run this section belonged to.",
         "requested_at": "When the call was made.",
         "completed_at": "When the answer came back; the merge prefers the larger value.",
@@ -60,7 +63,10 @@ BILL_SUMMARIES = table_contract(
         "top_provisions_json": "Up to three notable provisions, as a JSON array in the model's order.",
         "model": "The model id the call was made against.",
         "prompt_version": "The prompt version this summary was produced under.",
-        "content_hash": "Digest of the version text the summary was written from; what a cached summary is keyed on.",
+        "content_hash": (
+            "Digest of the version text the summary was written from, spelled sha256: plus the hex digest; what a "
+            "cached summary is keyed on, and a cached bare-hex spelling of the same digest still matches."
+        ),
         "input_tokens": "Input tokens the provider reported, where it reported any.",
         "output_tokens": "Output tokens the provider reported.",
         "requested_at": "When the call was made.",
@@ -102,7 +108,10 @@ DIFF_SUMMARIES = table_contract(
         "dollar_changes_json": "Notable dollar-amount changes in prose, as a JSON array.",
         "model": "The model id the call was made against.",
         "prompt_version": "The prompt version this summary was produced under.",
-        "content_hash": "Digest of the diff text the summary was written from.",
+        "content_hash": (
+            "Digest of the diff text the summary was written from, spelled sha256: plus the hex digest; rows "
+            "written before that spelling carry the bare hex of the same digest."
+        ),
         "input_tokens": "Input tokens the provider reported.",
         "output_tokens": "Output tokens the provider reported.",
         "requested_at": "When the call was made.",

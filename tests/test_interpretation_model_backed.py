@@ -103,14 +103,14 @@ def test_the_body_is_truncated_to_five_hundred_characters() -> None:
 
 
 def test_classification_carries_the_provenance_billtrax_never_stored() -> None:
-    """A classification row carries model, prompt version, 64-char prompt hash and requested/completed times."""
+    """A classification row carries model, prompt version, the prompt's sha256: digest and requested/completed times."""
     results = classify_sections(sections(1), answering({"sec-0": "directive"}), model="test-model-1", clock=clock())
     assert len(results) == 1
     result = results[0]
     assert (result.section_id, result.label, result.confidence) == ("sec-0", "directive", 0.9)
     assert result.model == "test-model-1"
     assert result.prompt_version == section_classification.PROMPT_VERSION
-    assert len(result.prompt_hash) == 64
+    assert result.prompt_hash.startswith("sha256:") and len(result.prompt_hash) == 71
     assert result.requested_at == "2026-09-19T12:00:00+00:00"
     assert result.completed_at == "2026-09-19T12:00:03+00:00"
 
@@ -228,6 +228,12 @@ def test_regeneration_is_decided_by_content_hash_and_prompt_version() -> None:
     # A summary stored under the prompt that never named its keys is regenerated.
     assert needs_regeneration(cached_content_hash=digest, cached_prompt_version="v1", digest=digest)
     assert needs_regeneration(cached_content_hash=None, cached_prompt_version=current, digest=digest)
+    # The digest is spelled sha256:; a hash cached as bare hex before that is the same digest, not a changed text.
+    assert digest.startswith("sha256:")
+    assert not needs_regeneration(
+        cached_content_hash=digest.removeprefix("sha256:"), cached_prompt_version=current, digest=digest
+    )
+    assert needs_regeneration(cached_content_hash="0" * 64, cached_prompt_version=current, digest=digest)
 
 
 def test_a_summary_outside_the_declared_length_is_refused() -> None:

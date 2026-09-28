@@ -24,6 +24,7 @@ from spicy_docs.schemas.tables import (
     TableContractError,
     joined,
     json_column,
+    same_digest,
     table_contract,
     text,
 )
@@ -171,7 +172,8 @@ def activity_events(
 
     for key, row in current.bill_summaries.items():
         before = prior.bill_summaries.get(key)
-        if before is not None and before["content_hash"] == row["content_hash"]:
+        # A hash stored bare before every digest took the sha256: prefix is the same text, not a regeneration.
+        if before is not None and same_digest(before["content_hash"], row["content_hash"]):
             continue
         events.append(
             _event(

@@ -31,6 +31,15 @@ RIN_LABEL = re.compile(r"RIN:?\s*\Z")
 #: the shared ``rin`` rule; rows read by 0.50.0 and earlier name ``report_nature_rin_label``.
 RIN_LABEL_RULE = "report_nature_rin_label/2"
 RIN_RULES: tuple[str, ...] = (RIN_LABEL_RULE, "unmatched")
+#: The rule each occurrence names. ``/2`` since ``field_sha256`` is spelled ``sha256:`` plus the hex digest, the
+#: spelling every other published digest uses; occurrences read before it name ``report_nature/shared_rin`` and carry
+#: the bare hex.
+RIN_OCCURRENCE_RULE = "report_nature/shared_rin/2"
+
+
+def field_digest(report_nature: str) -> str:
+    """The digest an occurrence carries of the field it was read from: ``sha256:`` and the UTF-8 bytes' hex digest."""
+    return "sha256:" + hashlib.sha256(report_nature.encode()).hexdigest()
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,7 +80,7 @@ def rin_occurrences_from_report_nature(report_nature: str | None) -> tuple[RinOc
         return ()
     if not isinstance(report_nature, str):
         raise TypeError(f"report_nature must be a string or None, not {type(report_nature).__name__}")
-    digest = hashlib.sha256(report_nature.encode()).hexdigest()
+    digest = field_digest(report_nature)
     return tuple(
         RinOccurrence(
             finding.target_key,
@@ -80,7 +89,7 @@ def rin_occurrences_from_report_nature(report_nature: str | None) -> tuple[RinOc
             finding.span_start,
             finding.span_end,
             digest,
-            "report_nature/shared_rin",
+            RIN_OCCURRENCE_RULE,
             finding.rule_version,
         )
         for ordinal, finding in enumerate(find_citations(report_nature, kinds=("rin",)))
@@ -120,9 +129,9 @@ def rin_from_report_nature(
     elif report_nature is not None and not isinstance(report_nature, str):
         raise TypeError(f"report_nature must be a string or None, not {type(report_nature).__name__}")
     elif occurrences:
-        digest = None if report_nature is None else hashlib.sha256(report_nature.encode()).hexdigest()
+        digest = None if report_nature is None else field_digest(report_nature)
         if any(occurrence.field_sha256 != digest for occurrence in occurrences):
-            raise ValueError("RIN occurrences were read from another report nature")
+            raise ValueError("RIN occurrences were read from another report nature, or under an earlier rule")
     text = report_nature or ""
     for occurrence in occurrences:
         label = RIN_LABEL.search(text, 0, occurrence.span_start)

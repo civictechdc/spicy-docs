@@ -35,7 +35,7 @@ def review_pages(body: bytes, *, pages: Sequence[int], source_page_offset: int =
         or source_page_offset < 0
     ):
         raise ValueError("review needs distinct positive pages and a nonnegative source offset")
-    result: dict[str, Any] = {"input_sha256": sha256(body).hexdigest(), "pages": {}}
+    result: dict[str, Any] = {"input_sha256": "sha256:" + sha256(body).hexdigest(), "pages": {}}
     with pymupdf.open(stream=body, filetype="pdf") as document:
         if max(pages) > len(document):
             raise ValueError("review page is outside the retained PDF")

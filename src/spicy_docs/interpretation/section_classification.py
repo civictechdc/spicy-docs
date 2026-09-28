@@ -148,7 +148,8 @@ def build_prompt(sections: Sequence[ClassifiableSection]) -> str:
 
 
 def prompt_hash(prompt: str) -> str:
-    return hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+    """``sha256:`` and the hex digest of the exact prompt, the spelling every published digest uses."""
+    return "sha256:" + hashlib.sha256(prompt.encode("utf-8")).hexdigest()
 
 
 #: A wrapping the reader accepts and the prompt does not ask for. Not a guess

@@ -147,6 +147,12 @@ def test_a_changed_content_hash_marks_the_summary_regenerated() -> None:
         if row["event_type"] == "summary_generated"
     ] == []
 
+    # A hash stored as bare hex before every digest took the sha256: prefix is the same text: no event either.
+    bare = [{**row, "content_hash": row["content_hash"].removeprefix("sha256:")} for row in first.bill_summaries]
+    assert all(row["content_hash"] != old["content_hash"] for row, old in zip(bare, first.bill_summaries, strict=True))
+    prior = snapshot_from_rows(bills=first.bills, bill_versions=first.bill_versions, bill_summaries=bare)
+    assert [row for row in _events(prior, _snapshot(first)) if row["event_type"] == "summary_generated"] == []
+
 
 @needs_engine
 def test_an_event_falls_back_to_the_run_instant_only_when_the_publisher_states_none() -> None:

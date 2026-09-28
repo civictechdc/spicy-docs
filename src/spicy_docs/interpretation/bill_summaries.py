@@ -33,6 +33,7 @@ from spicy_docs.interpretation.model_call import (
     answer_shape_block,
     require_fields,
 )
+from spicy_docs.schemas.tables import same_digest
 from spicy_docs.sources.congress.bill_status import BillIdentity
 
 #: v2 (2026-09-19): the prompt names the keys the reader requires. See the
@@ -268,8 +269,9 @@ def display_number(identity: BillIdentity) -> str:
 
 
 def content_hash(text: str) -> str:
-    """Hash of the version text, which is what a cached summary is keyed on."""
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+    """Hash of the version text, which is what a cached summary is keyed on, in :func:`schemas.tables.digest`'s
+    ``sha256:`` spelling."""
+    return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 def build_prompt(version: BillVersionText) -> str:
@@ -285,8 +287,12 @@ def build_prompt(version: BillVersionText) -> str:
 
 
 def needs_regeneration(*, cached_content_hash: str | None, cached_prompt_version: str | None, digest: str) -> bool:
-    """A cached summary stands only when both its content hash and its prompt version still hold."""
-    return cached_content_hash != digest or cached_prompt_version != PROMPT_VERSION
+    """A cached summary stands only when both its content hash and its prompt version still hold.
+
+    A hash cached before it was spelled ``sha256:`` (bare hex) is the same digest, so the spelling change alone
+    regenerates nothing.
+    """
+    return not same_digest(cached_content_hash, digest) or cached_prompt_version != PROMPT_VERSION
 
 
 def _read_answer(data: object) -> tuple[str, str, tuple[str, ...]]:
