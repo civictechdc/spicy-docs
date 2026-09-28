@@ -306,8 +306,9 @@ class CitationContext:
 
     ``congress_basis`` names where ``congress`` came from, and left unset it
     follows ``congress``: ``document_fallback`` with one, ``unstated`` without.
-    A basis that contradicts ``congress`` refuses, because it is published in
-    ``target_rule`` (``bill_number:<basis>``): a Congress needs
+    A basis outside that vocabulary, or one that contradicts ``congress``,
+    refuses, because it is published in ``target_rule``
+    (``bill_number:<basis>``): a Congress needs
     ``inline_congress``, ``congress_subheading`` or ``document_fallback``, and
     no Congress ``unstated`` or ``document_fallback_refused``. The field keeps
     its place so positional construction still means what it did.
@@ -320,9 +321,13 @@ class CitationContext:
     def __post_init__(self) -> None:
         if self.congress_basis is None:
             object.__setattr__(self, "congress_basis", "unstated" if self.congress is None else "document_fallback")
-        elif self.congress_basis not in (_UNSTATED_BASES if self.congress is None else _STATED_BASES):
-            state = "no Congress" if self.congress is None else "a Congress"
-            raise CitationError(f"congress_basis {self.congress_basis!r} contradicts {state}")
+        else:
+            allowed = _UNSTATED_BASES if self.congress is None else _STATED_BASES
+            if self.congress_basis not in allowed:
+                state = "no Congress" if self.congress is None else "a Congress"
+                raise CitationError(
+                    f"congress_basis {self.congress_basis!r} with {state} must be one of {sorted(allowed)}"
+                )
 
 
 #: Where a stated Congress came from, and why none is stated; ``bill_number``'s ``target_rule`` is ``bill_number:``

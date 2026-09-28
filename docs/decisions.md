@@ -2829,7 +2829,8 @@ spelling. The Senate payment review and candidate readers spell
 
 The occurrences come from the shared `rin` citation rule (version `004`). That
 rule does not require the `RIN` label the scalar `report_nature_rin_label` rule
-does, so the list can name a RIN where `rin` is NULL.
+does, so the list can name a RIN where `rin` is NULL. (0.50.1 builds the scalar
+from the list: [below](#the-scalar-rin-is-the-first-labelled-occurrence-of-the-list).)
 
 ### Native legal-reference rows have no table contract
 
@@ -2883,36 +2884,59 @@ identities.
 
 ## 0.50.1 fixes what the PR #4 review found and reads the older CBO urls
 
-2026-09-28. The fixes the independent review of PR #4 listed for 0.50.1, and
-one from the 108th-112th bill-text backfill. Receipts, under `~/Work/corpora`:
-the review in `fork-execution-2026-09-21/codex-pr-review-2026-09-27/spicy-docs-pr4/`
-(its `FOLLOWUPS-0.50.1.md` numbers the items), the measurements here in
-`fork-execution-2026-09-21/spicy-docs-0501/`. The owner's two 0.50.0 rulings
-stand: the inserted column order is the contract, and branch builds may take
-release numbers. Items 8-10 (a native legal-reference contract, a
-current-observation column, one digest spelling) are not in this release.
+2026-09-28. The fixes the independent review of PR #4 listed for 0.50.1, one
+from the 108th-112th bill-text backfill, and the fixes and owner decisions from
+the independent review of this release. Receipts, under `~/Work/corpora`: the
+PR #4 review in `fork-execution-2026-09-21/codex-pr-review-2026-09-27/spicy-docs-pr4/`
+(its `FOLLOWUPS-0.50.1.md` numbers the items), the measurements here and this
+release's review in `fork-execution-2026-09-21/spicy-docs-0501/` (`review/`).
+The owner's two 0.50.0 rulings stand: the inserted column order is the
+contract, and branch builds may take release numbers. Items 8-10 (a native
+legal-reference contract, a current-observation column, one digest spelling)
+are not in this release.
 
 ### Published values that change
+
+A host's rows change **on the next rebuild of each bill or communication**,
+not on adoption: spicy-regs skips a bill whose publisher timestamp has not
+moved, whatever the SpicyDocs version (the review read `build_bill_family.py`
+there). Until a forced rebuild, `bill_cosponsors.source_xml` is mixed and the
+108th-111th CBO rows keep their 0.50.0 values. The bills lane forces the
+rebuild when it adopts 0.50.1.
 
 | Table | Columns | Rows | Change |
 | --- | --- | --- | --- |
 | `bill_cosponsors` | `source_xml` | every row | loses the whitespace that followed `</item>` in the list |
-| `house_communications` | `rin`, `rin_rule`, `rin_matched_text` | a RIN longer than the shape; 3 of the 5,006 retained rows | a cut-short RIN becomes `unmatched` with NULLs |
-| `cbo_cost_estimates` | `url`, `description`, `estimate_index`, `stated_count`, `restatements_json`; `pub_date`, `title` where the twins differ | 108th-111th rows | the http statement joins its https twin's row |
+| `house_communications` | `rin_rule` | every row with a scalar RIN (2,042 of the 5,006 retained) | `report_nature_rin_label` becomes `report_nature_rin_label/2` |
+| `house_communications` | `rin`, `rin_rule`, `rin_matched_text` | 5 of the 5,006 retained | three NOAA RINs read cut short become `unmatched` with NULLs; two `RIN: 2120-Aa64` rows gain `2120-AA64` |
+| `cbo_cost_estimates` | `stated_count`, `restatements_json` | every 108th-111th row (4,762) | 1 becomes 2, and the http twin joins `[]` |
 
-No identity, key spelling, row digest or rule version depends on a changed value:
+Nothing else a row publishes moves: in `cbo_cost_estimates` the `url`,
+`description`, `title`, `pub_date` and `estimate_index` of every 108th-111th
+row are the ones 0.50.0 published, and the 113th-119th rows measured (3,079)
+are identical (`cbo-shape/compare-*.json`).
+
+**Rule and identity names.** `rin_rule` moves, because values change under it.
+`cbo_cost_estimates` keeps its identity `(bill_id, publication_id)` and
+`publication_id_rule` `cbo_publication_url`: every `publication_id` is the one
+0.50.0 published, the rule yields the same id for every url it read before,
+and the two columns that change record the fold, not the estimate. No other key
+spelling, row digest or rule version depends on a changed value:
 `bill_cosponsors` is keyed on the input document's digest, not `source_xml`,
-and `cbo_cost_estimates` keeps `(bill_id, publication_id)` and
-`publication_id_rule`. `document_citations.target_rule` does not move.
+and `document_citations.target_rule` does not move. spicy-regs labels its GAO
+page read `gao-qualified-page-heading-publication-block/1`; the read's
+`pdf_url` is unchanged on every retained page, but it now refuses a page
+without exactly one Full Report asset link, so the adopter decides whether that
+label moves. spicy-regs is not edited here.
 
 ### The bill family refuses an unshapeable cosponsor instead of aborting
 
 `shape_bill_cosponsor` raised `ValueError` without an input digest, and let
 `AttributeError` escape for an entry that is not a `BillCosponsor` (0.47.0
-typed the list as `BillSponsor`). Neither is in `SHAPER_REFUSALS`, so either
-lost every table of the bill's pass. Every refusal is now a
-`TableContractError`, including an index outside the list, and the family
-files one refusal per occurrence.
+typed the list as `BillSponsor`) and `IndexError` for an index outside the
+list. None is in `SHAPER_REFUSALS`, so each lost every table of the bill's
+pass. Every refusal is now a `TableContractError`, and the family files one
+refusal per occurrence.
 
 ### `schemas` is a stdlib-only leaf again
 
@@ -2921,43 +2945,55 @@ every call, and `schemas.fec_committee_history` imported the committee master's
 header for an import-time check. `DOCUMENT.extract` now takes the
 already-validated `attachment_records_json` string as a keyword, and
 `sources.regulations_gov.attachment_records.attachment_records_json(document,
-relationship)` stays the one validator. The FEC check is a test. A test imports
-every `schemas` module and runs each record type's extract under a finder that
-refuses any other `spicy_docs` module and any non-stdlib module.
+relationship)` stays the one validator. The FEC check is a test. Two tests hold
+the rule: one imports every `schemas` module and runs each record type's
+extract under a finder that refuses anything but the stdlib and `schemas`; the
+other reads every `import` statement in `schemas/`, inside functions too.
 
 ### `source_xml` stops at `</item>`
 
 `tostring` serializes an element's tail, so every `BillCosponsor.source_xml`
 ended in the whitespace before the next item or `</cosponsors>`: all 506,301
-entries in the review's 39,147 documents, where its sample of first and last
-rows had counted 55,723. The tail is set aside for the serialization.
+entries in the PR #4 review's 39,147 documents, where its sample of first and
+last rows had counted 55,723. The tail is set aside for the serialization.
 
 Parse time does not move with it (`billstatus-timing/`): `parse_bill_status`
 over those documents takes 15.5 s at 0.47.0, 22.0-23.2 s at 0.50.0 and 22.4 s
-at 0.50.1 on 2026-09-28's machine, where the review measured 18.9 s and
+at 0.50.1 on 2026-09-28's machine, where the PR #4 review measured 18.9 s and
 32.5 s. The reserialization is about 5.6 s of it, 11 microseconds an entry and
 linear in entries; the six more fields and the input digest are about 1.3 s.
+This release's review measured the same shape (8.7 microseconds an entry) and
+found no stdlib call that serializes without the tail; slicing the publisher's
+bytes by expat's offsets during the one parse is the cheaper route left open.
 
-### The scalar RIN ends where the shape does, and the list differs from it by design
+### The scalar RIN is the first labelled occurrence of the list
 
-`REPORT_NATURE_RIN` had no right edge, so it published the first eight
-characters of NOAA's five-character-suffix RINs: `RIN: 0648-XE368` gave `rin`
-`0648-XE36`. It now requires the edge the shared identifier reader requires.
-The occurrence reader's `target_resolved` filter removed nothing, because the
-`rin` rule keys every hit through `published_rin`, and is gone.
+Before 0.50.1 `rin` came from its own pattern, `REPORT_NATURE_RIN`: the `RIN`
+label, then a RIN in ASCII hyphen and capitals, with no right edge. So it
+published the first eight characters of NOAA's five-character-suffix RINs
+(`RIN: 0648-XE368` gave `0648-XE36`), missed the RIN the list reads from
+`RIN: 2120-Aa64`, and on three inputs this release's review constructed
+(`RIN2060-AV12`, `RIN: 2060-AV12–A`, `RIN: 2060-AV12/2060-AV13`) read a RIN
+the list does not.
 
-The two still differ, and the docstring states how. The scalar reads the first
-RIN that the exact label `RIN` (optional colon) immediately precedes, spelled
-with an ASCII hyphen and capitals, which is the rule the data map measured. The
-list reads every RIN the shared `rin` rule reads: later members of a labelled
-list, later labelled RINs, RINs under a plural, spelled-out or misspelled
-label, and the Unicode dashes and letter case folded to the key. Over the
-fork's `house_communications` retained 2026-09-27 (5,006 rows,
-`rin-agreement/`), every scalar RIN has an occurrence at the same span with the
-same value (2,040 of 2,040, always the first), and the list holds 36
-occurrences the scalar does not read: 8 on the 6 rows whose `rin` is NULL, 28
-on 20 rows that have one. Making the scalar fold dashes and case too would
-change `rin` on the two rows spelled `2120-Aa64`; that is left to the owner.
+The owner chose to build it from the list. `rin_from_report_nature` returns the
+first occurrence of the shared `rin` rule that the `RIN` label (the word, an
+optional colon, optional whitespace) directly precedes: `rin` is that
+occurrence's folded key and `rin_matched_text` the label and the RIN as
+printed. Every scalar RIN is therefore in `rin_occurrences_json` at the same
+span, and the three constructed inputs give neither. The rule is
+`report_nature_rin_label/2`; `unmatched` keeps the name every matcher here
+shares, so an `unmatched` row does not say which version ran until it is
+rebuilt. `REPORT_NATURE_RIN` is removed, and the legislative data map tool
+reads `rin_from_report_nature`. The occurrence reader's `target_resolved`
+filter removed nothing, because the `rin` rule keys every hit through
+`published_rin`, and is gone.
+
+The list still holds more than the scalar, by design: later members of a
+labelled list, later labelled RINs, and RINs under a plural, spelled-out or
+misspelled label. Over the fork's `house_communications` retained 2026-09-27
+(5,006 rows, `rin-agreement/`), 2,042 rows have a scalar RIN, every one in the
+list at its span, and the list holds 34 more.
 
 ### CBO urls on http fold with their https twin
 
@@ -2966,18 +3002,19 @@ outside the publication-page shape. Over all 40 BILLSTATUS zips of those
 Congresses (`cbo-shape/`): the 112th states no estimate, and each of the
 108th-111th's 9,524 items is one of a pair naming one publication in one bill,
 `http://www.cbo.gov/publication/{id}` and `https://www.cbo.gov/publication/{id}`.
-There are 4,762 pairs and no other shape. The http statement is first in
-4,673 pairs and carries the description wrapped in `<p>`. CBO's sitemap lists
-4,761 of the ids, every one on https and none on http, and a plain GET of
-either scheme for six sampled ids gets the same 403 challenge. So the http url
-names the page CBO serves on https.
+There are 4,762 pairs and no other shape. CBO's sitemap lists 4,761 of the ids,
+every one on https and none on http, and a plain GET of either scheme for six
+sampled ids gets the same 403 challenge. So the http url names the page CBO
+serves on https.
 
 `publication_id` now accepts exactly `http` or `https`, `www.cbo.gov` and
-`/publication/{positive integer}`. The two statements fold onto one row like
-any restatement: the first-stated item is the row and `restatements_json` keeps
-the other's differing fields. Every refused statement had its twin published,
-so no publication is added; the rows the fork holds from the twin change as the
-table above says.
+`/publication/{positive integer}`. The two statements fold onto one row, and
+the owner chose the https statement as the row, else the first statement: the
+http twin comes first in 4,673 pairs and wraps its description in `<p>` (and
+once misspells a title, 108 S. 1978), where the https statement is plain and
+is the row 0.50.0 already published. The http twin is a restatement in
+`restatements_json`, which is why every such row's `stated_count` and
+`restatements_json` change and nothing else does.
 
 ### The published-row fixture holds the column order again
 
@@ -2988,31 +3025,40 @@ them as published, so moving a column in either contract fails it.
 
 ### Smaller fixes
 
-- `GaoTargetMetadata.pdf_url` is the page's own `Full Report` link resolved
-  against the product page, `https://www.gao.gov/assets/{id}.pdf`, rather than
-  a `files.gao.gov` locator derived from the id. All 47 product pages retained
-  on 2026-08-22 label exactly one link so; a page with none or two different
-  refuses.
+- `GaoTargetMetadata.pdf_url` is the path of the page's own `Full Report` link
+  on `files.gao.gov`, the host that serves it without a browser, so it matches
+  `GaoReportIndex.pdf_url` for the same product. A link off `www.gao.gov` or
+  `files.gao.gov`, outside `/assets/`, or a page with no such link or two
+  different ones refuses. All 47 product pages retained on 2026-08-22 link
+  `/assets/{product-id}.pdf`, so the value equals 0.50.0's locator on each.
 - `CitationContext.congress_basis` left unset follows `congress`:
-  `document_fallback` with one, `unstated` without. A basis that contradicts
-  `congress` refuses. Fields keep their order.
+  `document_fallback` with one, `unstated` without. A basis outside the
+  vocabulary, or one that contradicts `congress`, refuses. Fields keep their
+  order.
 - The withdrawal-date claim in `BillCosponsor` and the bills guide is corrected:
   positive dates are retained as stated; the 119 S 1224 fixture carries one and
-  the review's sweep found 243.
+  the PR #4 review's sweep found 243.
 - `sources/public_comments/native.py` states its scope: upstream's tree at
   `data.spicy-regs.dev`, 15 columns per partition file. The fork's mirror (20
   columns) is refused by design; the `comments` contract describes it (S4).
+  This release's review read upstream's footer live and confirmed both.
 
 ### What an importer must change
 
 - `DOCUMENT.extract(payload, attachment_relationship=...)` is now
   `DOCUMENT.extract(payload, attachment_records_json=attachment_records_json(payload, relationship))`.
   No repository in the stack calls the old form; spicy-regs has its own extract.
-- `CitationContext` refuses a basis that contradicts its Congress, and
-  `CitationContext()` names `unstated`.
+- `communication_rin.REPORT_NATURE_RIN` is removed; `RIN_LABEL` is the label
+  pattern and `RIN_LABEL_RULE` the rule name. A filter on
+  `rin_rule = 'report_nature_rin_label'` matches only rows read before 0.50.1.
+- `shape_bill_cosponsor` raises `TableContractError` where it raised
+  `ValueError`, `IndexError` or `AttributeError`.
+- `CitationContext.congress_basis` is typed `str | None`; the instance always
+  holds a string. `CitationContext()` names `unstated`, and a basis outside
+  the vocabulary or contradicting the Congress refuses.
 - `product_page_metadata` refuses a page without exactly one `Full Report`
-  link, and `pdf_url` is on `www.gao.gov`.
+  asset link.
 - `schemas.fec_committee_history` no longer imports `COMMITTEE_MASTER_FIELDS`;
   import it from `sources.fec.committee_master`.
-- `REPORT_NATURE_RIN.pattern` gains a lookahead, and `publication_id` accepts
-  http.
+- `publication_id` accepts http, and `fold_cbo_cost_estimates` rows the https
+  statement.

@@ -308,13 +308,14 @@ invented for either.
   `"True"`/`"False"` strings folded, any other spelling refused), the cited
   `legal_authority`, the matching requirement number, and the RIN as three
   columns (`rin`, `rin_rule`, `rin_matched_text`) from
-  `interpretation/communication_rin.py`, whose rule is the data map's own
-  measured `RIN: nnnn-XXnn` pattern, ending where that shape ends since 0.50.1.
-  `rin_occurrences_json`, after `rin`, holds every occurrence the shared `rin`
-  citation rule reads in the same field, as the host supplies it
-  ([decision](decisions.md#a-rin-occurrences-field-digest-is-bare-hex)). It can
-  list a RIN the scalar does not read, never the reverse
-  ([how they differ](decisions.md#the-scalar-rin-ends-where-the-shape-does-and-the-list-differs-from-it-by-design)). Re-measured 2026-09-19 on 18 of the 25
+  `interpretation/communication_rin.py`. `rin_occurrences_json`, after `rin`,
+  holds every occurrence the shared `rin` citation rule reads in the same
+  field, as the host supplies it
+  ([decision](decisions.md#a-rin-occurrences-field-digest-is-bare-hex)), and
+  since 0.50.1 `rin` is the first of them that the data map's measured `RIN`
+  label directly precedes, under rule `report_nature_rin_label/2`. So the list
+  holds every scalar RIN, and can hold more
+  ([decision](decisions.md#the-scalar-rin-is-the-first-labelled-occurrence-of-the-list)). Re-measured 2026-09-19 on 18 of the 25
   newest communications inside the day's request budget: 18 carry a dated
   referral, 12 are rulemakings and the same 12 carry a RIN under the measured
   rule and under a relaxed one shaped like the Federal Register validator, 15

@@ -464,9 +464,10 @@ def _cosponsor(item: Element) -> BillCosponsor:
     """One ``<cosponsors>`` item, with the item's own markup as ``source_xml``.
 
     ``tostring`` also serializes an element's ``tail``, the whitespace between
-    this item and the next, so 0.50.0 published that whitespace at the end of
-    most rows' ``source_xml``. The tail is not part of the item: it is set
-    aside for the serialization and put back.
+    this item and the next (or ``</cosponsors>``), so 0.50.0 published that
+    whitespace at the end of every row's ``source_xml``: 506,301 of 506,301
+    entries in the PR #4 review's corpus. The tail is not part of the item: it
+    is set aside for the serialization and put back.
     """
     tail, item.tail = item.tail, None
     try:

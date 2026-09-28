@@ -78,7 +78,8 @@ def test_same_native_key_and_occurrence_in_different_source_kinds_remain_distinc
 
 
 def test_a_context_names_no_document_fallback_without_a_congress():
-    """An unset basis follows the Congress; one that contradicts it refuses, since target_rule publishes it."""
+    """An unset basis follows the Congress; one outside the vocabulary or contradicting it refuses (target_rule
+    publishes it)."""
     from spicy_docs.interpretation.citations import CITATION_RULES_BY_NAME, CitationContext
 
     bill = CITATION_RULES_BY_NAME["bill_number"]
@@ -93,5 +94,5 @@ def test_a_context_names_no_document_fallback_without_a_congress():
         (118, "document_fallback_refused"),
         (118, "caller"),
     ]:
-        with pytest.raises(CitationError, match="contradicts"):
+        with pytest.raises(CitationError, match="must be one of"):
             CitationContext(congress=congress, congress_basis=basis)
