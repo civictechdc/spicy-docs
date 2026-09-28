@@ -15,7 +15,9 @@ month before, so no date is checked against the scope.
 hard Zyte budget, and resumes from its own receipts.
 
 B-numbered legal decisions are listed beside the products. Their numbers are not product-page slugs, and one teaser
-can name several (``B-423916.2,B-423916.3``), so they are kept apart as decisions, with each number separate.
+can name several (``B-423916.2,B-423916.3``), so they are kept apart as decisions, with each number separate. A
+teaser GAO gives no product number at all (2011's index lists an Antideficiency Act report as ``/products/p00459``
+with an empty number field) is kept apart too, identified by its link.
 """
 
 from __future__ import annotations
@@ -139,11 +141,12 @@ class GaoListingScope:
 
 @dataclass(frozen=True, slots=True)
 class GaoListingEntry:
-    """One teaser as GAO spelled it. Exactly one of ``product_id`` and ``decision_numbers`` is set."""
+    """One teaser as GAO spelled it: a product (``product_id``), a decision (``decision_numbers``), or neither when
+    GAO states no product number (``product_number`` None)."""
 
     position: int
     topic: str
-    product_number: str
+    product_number: str | None
     link: str
     label: str
     heading: str
@@ -302,20 +305,27 @@ def _date(parts: list[str] | None, name: str) -> str | None:
 def _entry(position: int, teaser: dict) -> GaoListingEntry:
     fields, links = teaser["fields"], teaser["links"]
     label, heading = _spelled(fields.get("label"), "label"), _spelled(fields.get("heading"), "heading")
-    number = _text(fields.get("number"), "number")
-    if not (label and heading and number):
-        raise GaoListingSourceError(f"{_LABEL} teaser {position} lacks a label, heading or product number")
+    number = _text(fields.get("number"), "number") or None
+    if not (label and heading):
+        raise GaoListingSourceError(f"{_LABEL} teaser {position} lacks a label or heading")
     if not teaser["topic"]:
         raise GaoListingSourceError(f"{_LABEL} lists a teaser before any heading")
     link = links.get("label", "")
     if link != links.get("heading") or not link.startswith("/products/"):
         raise GaoListingSourceError(f"{_LABEL} teaser {position} does not link one product page")
     slug = unquote(link.removeprefix("/products/"))
-    if slug != number.lower():
+    if number is not None and slug != number.lower():
         raise GaoListingSourceError(f"{_LABEL} teaser {position} links a page other than its product number")
     product_id: str | None = None
     decisions: tuple[str, ...] = ()
-    if number.startswith("B-"):
+    if number is None:
+        try:
+            gao_product_url(slug)
+        except GaoProductSourceError as error:
+            raise GaoListingSourceError(
+                f"{_LABEL} teaser {position} states no number and links no product page"
+            ) from error
+    elif number.startswith("B-"):
         decisions = tuple(number.split(","))
         if not all(_DECISION_NUMBER.fullmatch(item) for item in decisions):
             raise GaoListingSourceError(f"{_LABEL} teaser {position} names a malformed B-number")
@@ -788,6 +798,19 @@ class GaoListedDecision:
 
 
 @dataclass(frozen=True, slots=True)
+class GaoListedUnnumbered:
+    """One teaser GAO gives no product number, identified by its link; outside the product listing."""
+
+    link: str
+    label: str
+    heading: str
+    published: str | None
+    released: str | None
+    topics: tuple[str, ...]
+    scopes: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class RetainedListingPage:
     page: GaoListingPage
     capture: CapturedBodyResponse
@@ -802,44 +825,55 @@ class GaoListingRun:
     pages: tuple[RetainedListingPage, ...]
     products: tuple[GaoListedProduct, ...]
     decisions: tuple[GaoListedDecision, ...]
+    unnumbered: tuple[GaoListedUnnumbered, ...]
     complete_scopes: tuple[str, ...]
     incomplete_scopes: tuple[str, ...]
 
 
 def collect_listing(
     pages: Iterable[GaoListingPage],
-) -> tuple[tuple[GaoListedProduct, ...], tuple[GaoListedDecision, ...]]:
-    """Each product and decision once, in first-listed order; one listed with differing fields refuses."""
-    found: dict[str, tuple[tuple, list[str], list[str]]] = {}
+) -> tuple[tuple[GaoListedProduct, ...], tuple[GaoListedDecision, ...], tuple[GaoListedUnnumbered, ...]]:
+    """Each product, decision and unnumbered teaser once, in first-listed order; one listed with differing fields refuses."""
+    found: dict[str, tuple[GaoListingEntry, list[str], list[str]]] = {}
     for page in pages:
         for entry in page.entries:
-            key = entry.product_id or entry.product_number
-            fixed = (
-                entry.product_id,
-                entry.product_number,
-                entry.decision_numbers,
-                entry.label,
-                entry.heading,
-                entry.published,
-                entry.released,
-            )
-            held = found.setdefault(key, (fixed, [], []))
-            if held[0] != fixed:
-                raise GaoListingSourceError(f"GAO listing states {entry.product_number} with differing fields")
+            key = entry.product_id or entry.product_number or entry.link
+            held = found.setdefault(key, (entry, [], []))
+            if _fixed(held[0]) != _fixed(entry):
+                raise GaoListingSourceError(
+                    f"GAO listing states {entry.product_number or entry.link} with differing fields"
+                )
             for values, value in ((held[1], entry.topic), (held[2], page.scope.key)):
                 if value not in values:
                     values.append(value)
-    products, decisions = [], []
-    for (product_id, number, numbers, label, heading, published, released), topics, scopes in found.values():
-        if product_id is None:
+    products, decisions, unnumbered = [], [], []
+    for entry, topics, scopes in found.values():
+        seen = (entry.published, entry.released, tuple(topics), tuple(scopes))
+        if entry.product_id is not None:
+            products.append(
+                GaoListedProduct(entry.product_id, entry.product_number or "", entry.label, entry.heading, *seen)
+            )
+        elif entry.product_number is not None:
             decisions.append(
-                GaoListedDecision(number, numbers, label, heading, published, released, tuple(topics), tuple(scopes))
+                GaoListedDecision(entry.product_number, entry.decision_numbers, entry.label, entry.heading, *seen)
             )
         else:
-            products.append(
-                GaoListedProduct(product_id, number, label, heading, published, released, tuple(topics), tuple(scopes))
-            )
-    return tuple(products), tuple(decisions)
+            unnumbered.append(GaoListedUnnumbered(entry.link, entry.label, entry.heading, *seen))
+    return tuple(products), tuple(decisions), tuple(unnumbered)
+
+
+def _fixed(entry: GaoListingEntry) -> tuple:
+    """What must agree wherever GAO lists the same teaser; the topic and position may differ."""
+    return (
+        entry.product_id,
+        entry.product_number,
+        entry.link,
+        entry.decision_numbers,
+        entry.label,
+        entry.heading,
+        entry.published,
+        entry.released,
+    )
 
 
 def read_listing_run(
@@ -892,8 +926,8 @@ def read_listing_run(
             )
             pages.append(RetainedListingPage(page, capture, row["blob_path"], row.get("zyte_request_id")))
         complete.append(key)
-    products, decisions = collect_listing(retained.page for retained in pages)
-    return GaoListingRun(tuple(pages), products, decisions, tuple(complete), tuple(incomplete))
+    products, decisions, unnumbered = collect_listing(retained.page for retained in pages)
+    return GaoListingRun(tuple(pages), products, decisions, unnumbered, tuple(complete), tuple(incomplete))
 
 
 def _walk(args: argparse.Namespace) -> int:
@@ -939,8 +973,8 @@ def _walk(args: argparse.Namespace) -> int:
 def _read(args: argparse.Namespace) -> int:
     run = read_listing_run(args.receipts, args.store)
     with args.output.open("x", encoding="utf-8") if args.output else nullcontext(sys.stdout) as out:
-        for item in (*run.products, *run.decisions):
-            kind = "product" if isinstance(item, GaoListedProduct) else "decision"
+        for item in (*run.products, *run.decisions, *run.unnumbered):
+            kind = {GaoListedProduct: "product", GaoListedDecision: "decision"}.get(type(item), "unnumbered")
             value = {name: getattr(item, name) for name in item.__dataclass_fields__}
             out.write(json.dumps({"kind": kind, **value}, ensure_ascii=False) + "\n")
     print(
@@ -949,6 +983,7 @@ def _read(args: argparse.Namespace) -> int:
                 "pages": len(run.pages),
                 "products": len(run.products),
                 "decisions": len(run.decisions),
+                "unnumbered": len(run.unnumbered),
                 "complete_scopes": run.complete_scopes,
                 "incomplete_scopes": run.incomplete_scopes,
             }
@@ -997,6 +1032,7 @@ __all__ = [
     "MAX_PAGE_BYTES",
     "GaoListedDecision",
     "GaoListedProduct",
+    "GaoListedUnnumbered",
     "GaoListingAcquirer",
     "GaoListingBudget",
     "GaoListingEntry",

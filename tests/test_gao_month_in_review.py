@@ -167,6 +167,21 @@ def test_decisions_are_kept_apart_with_each_b_number_split():
     assert all((entry.product_id is None) == entry.product_number.startswith("B-") for entry in entries)
 
 
+def test_a_teaser_gao_gives_no_product_number_is_kept_apart_by_its_link():
+    """2011's index lists an Antideficiency Act report with an empty number field: set apart, never a product."""
+    scope = GaoListingScope(2011)
+    body = (FIXTURES / "2011-page-64.html").read_bytes()
+    listed = page(body, scope=scope, index=64)
+    report = listed.entries[11]
+    assert (report.product_number, report.product_id, report.decision_numbers) == (None, None, ())
+    assert report.link == "/products/p00459" and report.topic == "Antideficiency Act Report"
+    assert report.heading == "Antideficiency Act Reports: Fiscal Year 2010" and report.released == "2011-01-19"
+    products, decisions, unnumbered = collect_listing([listed])
+    assert [item.link for item in unnumbered] == ["/products/p00459"]
+    assert "p00459" not in {product.product_id for product in products}
+    assert all(decision.decision_numbers for decision in decisions)
+
+
 def test_the_oldest_year_probed_keeps_its_older_number_forms():
     """2009's index reads with its own pager depth and GAO's older report, testimony and correspondence ids."""
     first = page((FIXTURES / "2009-page-0.html").read_bytes(), scope=GaoListingScope(2009))
@@ -179,8 +194,8 @@ def test_a_whole_month_lists_each_product_once_with_every_topic():
     """August's four pages hold 100 teasers: 33 products and 40 decisions, each once, topics in listed order."""
     pages = [page(body, index=index) for index, body in enumerate(AUGUST_PAGES)]
     assert sum(len(p.entries) for p in pages) == 100
-    products, decisions = collect_listing(pages)
-    assert (len(products), len(decisions)) == (33, 40)
+    products, decisions, unnumbered = collect_listing(pages)
+    assert (len(products), len(decisions), len(unnumbered)) == (33, 40, 0)
     college = next(product for product in products if product.product_id == "gao-26-108640")
     assert college.topics == ("Auditing and Financial Management", "Education") and college.scopes == ("2026-08",)
     assert college.title == "College Athletics: Most Programs Spend More Than They Generate in Revenue"
@@ -216,7 +231,7 @@ def _first_teaser(old: bytes, new: bytes) -> bytes:
         (AUGUST_PAGES[0].replace(b"<article", b"<section").replace(b"</article>", b"</section>"), {}, "no teaser"),
         (AUGUST_PAGES[0].replace(b"node--type-product", b"node--type-page", 1), {}, "not a product"),
         (AUGUST_PAGES[0].replace(b'<h2 id="auditing-and-financial-management">', b"<p>", 1), {}, "before any heading"),
-        (_first_teaser(b"field--name-field-product-number", b"field--name-field-other"), {}, "lacks"),
+        (_first_teaser(b'<h3 class="heading">', b'<h3 class="subheading">'), {}, "lacks"),
         (
             _first_teaser(
                 b"</header>", b'<div class="field--name-field-docdate">Publicly Released: Aug 05, 2026.</div></header>'

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+import http.client
 import json
 import re
 import urllib.error
@@ -239,7 +240,8 @@ class ZyteHttpFetcher:
                     response, max_bytes=max_bytes, provider=_PROVIDER, error_type=ZyteTransportError
                 )
                 request_id = _request_id_from_provider_headers(response.headers)
-        except OSError:
+        except (OSError, http.client.HTTPException):
+            # A connection dropped mid-body (``IncompleteRead``) is a transport failure like any other.
             raise ZyteTransportError("Zyte acquisition failed while reading the provider response") from None
 
         value = strict_provider_json(provider_payload, provider=_PROVIDER, error_type=ZyteTransportError)

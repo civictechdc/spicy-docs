@@ -82,6 +82,20 @@ def test_fetcher_representation_does_not_expose_the_credential() -> None:
     assert "secret-value" not in repr(zyte.ZyteHttpFetcher(token="secret-value"))
 
 
+def test_a_provider_response_cut_short_is_a_transport_failure_that_names_no_secret(monkeypatch) -> None:
+    """A connection that drops mid-body raises the adapter's own error, as every other transport failure does."""
+    import http.client
+
+    class _CutShort(_Response):
+        def read(self, limit: int) -> bytes:
+            raise http.client.IncompleteRead(b"x" * 100454)
+
+    monkeypatch.setattr(zyte.urllib.request, "urlopen", lambda *_args, **_kwargs: _CutShort(b""))
+    with pytest.raises(zyte.ZyteTransportError, match="while reading the provider response") as raised:
+        zyte.ZyteHttpFetcher(token="test-token").fetch(PRODUCT_URL, timeout_seconds=9.0, max_bytes=4096)
+    assert "test-token" not in str(raised.value) and raised.value.__cause__ is None
+
+
 def test_fetch_refuses_target_bytes_over_the_caller_bound(monkeypatch) -> None:
     provider = json.dumps(
         {

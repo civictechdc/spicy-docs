@@ -488,7 +488,9 @@ reads it.
 - **Decisions.** B-numbered legal decisions are listed beside products.
   They have no product-page slug, and one teaser can name several
   (`B-423916.2,B-423916.3`). They are kept apart as decisions, each number
-  separate.
+  separate. A teaser GAO gives no product number at all (2011 lists an
+  Antideficiency Act report as `/products/p00459` with an empty number field)
+  is kept apart as unnumbered, identified by its link.
 
 ```sh
 export ZYTE_TOKEN

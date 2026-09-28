@@ -15,13 +15,16 @@ they do not establish coverage or continuing live availability.
 | `2026-08-page-3.html` | [https://www.gao.gov/reports-testimonies/month-in-review/2026/August?page=3](https://www.gao.gov/reports-testimonies/month-in-review/2026/August?page=3) | 2026-09-28T17:02:13Z | 72,006 | `91c8ae7970a293a66eee0cad10f0539b168543280822350dc9125d32c9f346de` | `53f5eb0a05d234130eae6a7c4af95e47` |
 | `2025-page-49.html` | [https://www.gao.gov/reports-testimonies/month-in-review/2025?page=49](https://www.gao.gov/reports-testimonies/month-in-review/2025?page=49) | 2026-09-28T17:03:22Z | 45,014 | `a3ff94f28285e5dd4302aeae7785ee128aeaf64ed0a907ff82b0ee36f8302fde` | `f4fb6270434bbc467a0273f4764239b5` |
 | `2009-page-0.html` | [https://www.gao.gov/reports-testimonies/month-in-review/2009](https://www.gao.gov/reports-testimonies/month-in-review/2009) | 2026-09-28T17:03:55Z | 75,400 | `b23887c36bebc81b9ac2e70a0b27d1b771e6393c3cb55c1809e6c376c6ad135f` | `b308e80e4509bdb0cf750e98f49a6cb9` |
+| `2011-page-64.html` | [https://www.gao.gov/reports-testimonies/month-in-review/2011?page=64](https://www.gao.gov/reports-testimonies/month-in-review/2011?page=64) | 2026-09-28T21:06:53Z | 73,669 | `bade6e45b51777f820dd0d8fdcb62176465ca8e3894d3999f083322d820de85a` | (retained as refused evidence by the parallel backfill walk; no request id is kept for a refusal) |
 
 The four August pages are one whole month: 100 teasers naming 73 distinct
 numbers, 33 `GAO-26-` products and 40 B-numbered legal decisions, several
 decisions naming more than one B-number in one teaser. `2025-page-49.html` is a
 year's last page (two teasers, an overflow pager with no "Last" link);
 `2009-page-0.html` is the oldest year probed, with the older product-number
-forms (`GAO-09-NNN`, `-NNNT`, `-NNNR`, `-NNSP`).
+forms (`GAO-09-NNN`, `-NNNT`, `-NNNR`, `-NNSP`). `2011-page-64.html` holds the first
+teaser seen with an empty product-number field: an Antideficiency Act report,
+linked as `/products/p00459`, which the backfill walk first refused.
 
 The request ledger, `robots.txt`, and the other probes of that day are in
 `corpora/mcp-chaos-2026-09-28/gao-sitemap/` (`requests.jsonl`, `raw/`).
