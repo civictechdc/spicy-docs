@@ -27,11 +27,14 @@ import locale
 import re
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
+from functools import cache
+from importlib import metadata
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import MappingProxyType
 from typing import Any
 
+from spicy_docs.reading.direct_url import recorded_commit
 from spicy_docs.sources.govinfo.bodies import (
     GovInfoBodySourceError,
     PackageIdentity,
@@ -78,8 +81,8 @@ class RecordSpeechesError(ValueError):
     """A granule and its MODS cannot be read into speech turns as given."""
 
 
-def _parser_module() -> Any:
-    """Upstream's ``cr_parser``, or a refusal naming the extra that supplies it."""
+def _imported_parser() -> Any:
+    """Upstream's ``cr_parser`` as installed, or a refusal naming the extra that supplies it."""
     try:
         from congressionalrecord.govinfo import cr_parser
     except ModuleNotFoundError as error:
@@ -87,10 +90,39 @@ def _parser_module() -> Any:
     return cr_parser
 
 
-def parser_available() -> bool:
-    """Whether the ``record-speeches`` extra is installed. Tests skip on this rather than fail."""
+@cache
+def _installed_commit() -> str | None:
+    """The commit the installed ``congressionalrecord`` records, read once: ``None`` for a wheel or registry install."""
     try:
-        _parser_module()
+        return recorded_commit(metadata.distribution("congressionalrecord"))
+    except metadata.PackageNotFoundError:
+        return None
+
+
+def _parser_module() -> Any:
+    """Upstream's ``cr_parser``, refused unless it is the pinned fork's build.
+
+    Every revision of the fork installs as ``congressionalrecord==2.3.0``, so
+    the version says nothing. A git install records its commit, which must be
+    ``PARSER_PIN``. A vendored wheel records none, so the fork's own surface is
+    required of every install: ``CRParseError`` here, and per document
+    ``parse_status`` and its own line-kind table (``_document``).
+    """
+    cr_parser = _imported_parser()
+    commit = _installed_commit()
+    if commit is not None and commit != PARSER_PIN:
+        raise RecordSpeechesError(
+            f"the installed congressionalrecord is commit {commit}, not the pinned {PARSER_PIN}; {EXTRA_REQUIRED}"
+        )
+    if not hasattr(cr_parser, "CRParseError"):
+        raise RecordSpeechesError(f"the installed congressionalrecord has no CRParseError; {EXTRA_REQUIRED}")
+    return cr_parser
+
+
+def parser_available() -> bool:
+    """Whether the ``record-speeches`` extra is importable. Tests skip on this; a wrong build fails them."""
+    try:
+        _imported_parser()
     except RecordSpeechesError:
         return False
     return True
@@ -447,6 +479,12 @@ class RecordIssue:
         if status not in ("complete", "partial"):
             raise RecordSpeechesError(
                 f"the installed parser does not report parse completion for {granule}; {EXTRA_REQUIRED}"
+            )
+        # The fork gives each document its own copy; a build that writes the
+        # speaker pattern into the class's table lets one read change another's.
+        if "item_types" not in vars(parser):
+            raise RecordSpeechesError(
+                f"the installed parser shares one line-kind table across documents; {EXTRA_REQUIRED}"
             )
         if (status == "partial") != isinstance(error, Mapping):
             raise RecordSpeechesError(f"the parser reports {status} for {granule} with parse_error {error!r}")

@@ -260,6 +260,17 @@ The reasons for a fork are recorded under
 `PARSER_PIN` in the module, the `[tool.uv.sources]` revision and the commit
 `uv.lock` resolves are held equal by a test.
 
+**What `parser_pin` on a document guarantees.** Every revision of the fork
+installs as `congressionalrecord==2.3.0`, so the version cannot tell them
+apart. A git install records the commit it resolved (`direct_url.json`), and a
+read refuses unless that commit is `PARSER_PIN`, naming both. A vendored wheel
+records none, so every install is also held to the fork's surface:
+`CRParseError`, `parse_status` on the document and a line-kind table of the
+document's own; a build lacking any of them refuses. So on a git install
+`parser_pin` is the commit that read the document; on a wheel it is the commit
+the host built the wheel from, which that surface and the wheel digest in the
+host's lock stand behind.
+
 **A vendored wheel is built by one rule, all four parts of it:**
 
 1. `git archive` the pinned fork commit into an empty directory;

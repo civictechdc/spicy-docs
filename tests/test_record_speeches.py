@@ -14,10 +14,12 @@ rule or title, now ``None`` where it was the string ``"None"``.
 from __future__ import annotations
 
 import copy
+import json
 import socket
 import sys
 import tomllib
 from collections import Counter
+from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from pathlib import Path
@@ -766,3 +768,76 @@ def test_concurrent_reads_equal_sequential_reads() -> None:
     with ThreadPoolExecutor(max_workers=6) as pool:
         results = list(pool.map(lambda granule: (granule, _read(granule)), GRANULES * 8))
     assert all(document == expected[granule] for granule, document in results)
+
+
+class _SharedTable:
+    """``item_types`` as upstream kept it before #94: every document reads and writes one table."""
+
+    def __init__(self, table: dict) -> None:
+        self.table = table
+
+    def __get__(self, instance: object, owner: type | None = None) -> dict:
+        return self.table
+
+    def __set__(self, instance: object, value: object) -> None:
+        pass
+
+
+@pytest.fixture
+def install_record() -> Iterator[None]:
+    """The installed commit is read once per process; a test that fakes the install reads it afresh, and after."""
+    record_speeches._installed_commit.cache_clear()
+    yield
+    record_speeches._installed_commit.cache_clear()
+
+
+def _installed_as(monkeypatch: pytest.MonkeyPatch, root: Path, direct_url: dict) -> None:
+    """Put a ``congressionalrecord`` distribution recording ``direct_url`` first on the metadata path."""
+    info = root / "congressionalrecord-2.3.0.dist-info"
+    info.mkdir()
+    (info / "METADATA").write_text("Metadata-Version: 2.1\nName: congressionalrecord\nVersion: 2.3.0\n")
+    (info / "direct_url.json").write_text(json.dumps(direct_url))
+    monkeypatch.syspath_prepend(str(root))
+
+
+@needs_parser
+def test_a_git_install_of_another_fork_commit_refuses_naming_both(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, install_record: None
+) -> None:
+    """Every fork revision installs as 2.3.0, so the commit a git install records is what tells them apart."""
+    other = "6bb521b11b498f2e8dbac614a4394c703c6773ac"  # the previous pin, which still returned the string "None"
+    _installed_as(
+        monkeypatch,
+        tmp_path,
+        {"url": "https://github.com/mikewolfd/congressional-record", "vcs_info": {"vcs": "git", "commit_id": other}},
+    )
+    with pytest.raises(RecordSpeechesError, match=f"is commit {other}, not the pinned {PARSER_PIN}"):
+        _read(KIGGANS)
+
+
+@needs_parser
+def test_a_wheel_install_records_no_commit_and_is_held_to_the_forks_surface(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, install_record: None
+) -> None:
+    """A vendored wheel's install records an archive, not a commit: it reads, held to the fork's surface alone."""
+    _installed_as(
+        monkeypatch, tmp_path, {"url": "file:///vendor/congressionalrecord-2.3.0-py3-none-any.whl", "archive_info": {}}
+    )
+    assert record_speeches._installed_commit() is None
+    assert _read(KIGGANS).parse_status == "complete"
+    from congressionalrecord.govinfo import cr_parser
+
+    monkeypatch.delattr(cr_parser, "CRParseError")
+    with pytest.raises(RecordSpeechesError, match="has no CRParseError; .*'record-speeches' extra"):
+        _read(KIGGANS)
+
+
+@needs_parser
+def test_a_parser_that_shares_one_line_kind_table_refuses(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A build that writes each document's speaker pattern into the class's table is not the pin, and refuses."""
+    from congressionalrecord.govinfo import cr_parser
+
+    shared = _SharedTable(copy.deepcopy(cr_parser.ParseCRFile.item_types))
+    monkeypatch.setattr(cr_parser.ParseCRFile, "item_types", shared)
+    with pytest.raises(RecordSpeechesError, match=f"shares one line-kind table across documents; {EXTRA_REQUIRED}"):
+        _read(KIGGANS)

@@ -145,6 +145,7 @@ src/spicy_docs/public_tables/publish.py	Index, project, verify, and publish an i
 src/spicy_docs/public_tables/reader.py	Admitted public-table locations and exact Parquet member reading.	src
 src/spicy_docs/public_tables/verify.py	Public-table admission and the full bounded Parquet-row gate.	src
 src/spicy_docs/reading/__init__.py	Bounded reading mechanics shared by every publisher family.	src
+src/spicy_docs/reading/direct_url.py	The commit an installed distribution records in its PEP 610 ``direct_url.json``.	src
 src/spicy_docs/reading/evidence_zip.py	Shared deterministic ZIP-member metadata for source acquisition evidence.	src
 src/spicy_docs/reading/image_header.py	Read declared PNG/GIF/JPEG dimensions without decoding image data.	src
 src/spicy_docs/reading/json_input.py	Parse source JSON without accepting ambiguous keys or unsupported numbers.	src
