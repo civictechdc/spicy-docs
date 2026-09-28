@@ -1,9 +1,9 @@
 """The native legal-reference tables: literal U.S. Code and eCFR XML observations, and each complete read of an input.
 
-These shapers do not parse citations, resolve targets or assert legal effect. The caller supplies the retained input
-pin and source metadata, fills the host's three interpretation columns, and publishes callback rows only after the
-existing source scanner completes successfully. ``native_legal_reference_reads`` is shaped by the host; its
-``scope_id`` is :func:`native_reference_scope_id`, the one spelling both tables share.
+These shapers do not parse citations, resolve targets or assert legal effect: an observation row leaves them with its
+three interpretation columns NULL, and ``interpretation.native_legal_references.interpret_native_references`` fills
+them. The caller supplies the retained input pin and source metadata, and publishes callback rows only after the
+existing source scanner completes successfully. Both tables spell ``scope_id`` with :func:`native_reference_scope_id`.
 """
 
 from __future__ import annotations
@@ -26,6 +26,16 @@ from spicy_docs.schemas.tables import (
 
 #: The one digest spelling a published digest column takes (``tables.digest``'s).
 _SHA256 = re.compile(r"sha256:[0-9a-f]{64}")
+
+#: The rule both tables' ``rule_version`` names: the scanners' selected shapes and
+#: ``interpretation.native_legal_references``' reading. A change to either that moves a published value moves it.
+NATIVE_LEGAL_REFERENCE_RULE = "native-legal-reference/002"
+
+#: The shapes each family's scanner selects, and the ones it knowingly leaves out, in the order a read row lists them.
+_READ_SHAPES: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
+    "ecfr": (("AUTH", "SOURCE"), ("PARAUTH", "SECAUTH")),
+    "uscode": (("href", "sourceCredit"), ()),
+}
 
 
 def native_reference_scope_id(source_family: str, source_record_key: str, edition: str | None) -> str:
@@ -72,7 +82,7 @@ NATIVE_LEGAL_REFERENCE_READS = table_contract(
             "list of every form the scanner cannot read."
         ),
         "manifest_sha256": "`sha256:` digest of the selection manifest that named this input and any target pins.",
-        "rule_version": "The host's scanner-and-interpretation rule version, comparable for equality only.",
+        "rule_version": "The rule this read ran under, the same as its observation rows'; comparable for equality only.",
     },
 )
 
@@ -137,20 +147,39 @@ NATIVE_LEGAL_REFERENCES = table_contract(
             "Code rows."
         ),
         "interpretation_status": (
-            "The host's reading of this observation under rule_version, such as `native_section_href` or "
-            "`unsupported_href` for an href and `partial_text_findings` for text; it does not claim exhaustive "
-            "extraction, and is NULL until a host interprets the row."
+            "How the reading under rule_version read this observation: `native_section_href`, "
+            "`native_statute_href`, `native_public_law_href` or `unsupported_href` for an href, "
+            "`partial_text_findings` or `no_qualified_text_findings` for text; it does not claim exhaustive "
+            "extraction."
         ),
         "target_candidates_json": (
-            "The host's typed target candidates for this observation and their lookup outcomes, as a JSON array, so "
-            "several targets in one note stay one row; NULL until a host interprets the row."
+            "The typed targets the reading found, as a JSON array in reading order, each with the outcome of the "
+            "host's lookup in the target tables it selected; several targets in one note stay one row, and an "
+            "unsupported href has none."
         ),
         "rule_version": (
-            "The host's scanner-and-interpretation rule version, comparable for equality only; NULL until a host "
-            "interprets the row."
+            "`native-legal-reference/002`: the scanners' selected shapes and the reading this row was produced "
+            "under, comparable for equality only."
         ),
     },
 )
+
+
+def _check_input(
+    *, source_record_key: str, source_locator: str, input_sha256: str, edition: str | None, **counts: int
+) -> None:
+    """Refuse, as :class:`TableContractError`, what a row would publish wrongly: a blank record key or locator, an input
+    digest not spelled ``sha256:`` plus 64 lowercase hex, an edition that is neither ``None`` nor a non-empty string,
+    and a count or ordinal that is negative or not an int."""
+    if not source_record_key or not source_locator:
+        raise TableContractError("native reference projection requires a source record key and locator")
+    if not isinstance(input_sha256, str) or _SHA256.fullmatch(input_sha256) is None:
+        raise TableContractError(f"input_sha256 must be spelled sha256: plus 64 lowercase hex, not {input_sha256!r}")
+    if edition is not None and (not isinstance(edition, str) or not edition):
+        raise TableContractError("edition must be a non-empty string or None")
+    for name, value in counts.items():
+        if type(value) is not int or value < 0:
+            raise TableContractError(f"{name} must be a nonnegative integer")
 
 
 def _observation_row(
@@ -169,20 +198,17 @@ def _observation_row(
     cfr_title: str | None = None,
     cfr_part: str | None = None,
 ) -> Row:
-    """One ``native_legal_references`` row in contract order, the host's three columns NULL, checked and keyed.
+    """One ``native_legal_references`` row in contract order, checked and keyed, its interpretation columns NULL.
 
-    Refuses, as :class:`TableContractError`, a blank record key or locator, an input digest not spelled ``sha256:``
-    plus 64 lowercase hex, a negative or non-int ordinal, and an edition that is neither ``None`` nor a non-empty
-    string: each is an input the scope or the member key would publish wrongly.
+    Refuses every input :func:`_check_input` refuses.
     """
-    if not source_record_key or not source_locator:
-        raise TableContractError("native reference projection requires a source record key and locator")
-    if not isinstance(input_sha256, str) or _SHA256.fullmatch(input_sha256) is None:
-        raise TableContractError(f"input_sha256 must be spelled sha256: plus 64 lowercase hex, not {input_sha256!r}")
-    if type(occurrence_index) is not int or occurrence_index < 0:
-        raise TableContractError("occurrence_index must be a nonnegative integer")
-    if edition is not None and (not isinstance(edition, str) or not edition):
-        raise TableContractError("edition must be a non-empty string or None")
+    _check_input(
+        source_record_key=source_record_key,
+        source_locator=source_locator,
+        input_sha256=input_sha256,
+        edition=edition,
+        occurrence_index=occurrence_index,
+    )
     element = observation.element
     row: Row = {
         "scope_id": native_reference_scope_id(source_family, source_record_key, edition),
@@ -292,11 +318,64 @@ def shape_ecfr_note(
     )
 
 
+def shape_native_reference_read(
+    *,
+    source_family: str,
+    source_record_key: str,
+    edition: str | None,
+    input_sha256: str,
+    source_locator: str,
+    source_bytes: int,
+    occurrence_count: int,
+    manifest_sha256: str,
+) -> Row:
+    """The ``native_legal_reference_reads`` row of one input whose scan completed, zero observations included.
+
+    The family names the selected and unsupported shapes; ``source_bytes`` and ``occurrence_count`` are the input's
+    length and the observation rows its scan produced. Refuses an unknown family, a manifest digest not spelled
+    ``sha256:``, and every input :func:`_check_input` refuses.
+    """
+    if source_family not in _READ_SHAPES:
+        raise TableContractError(f"no native reference scanner reads the {source_family!r} family")
+    _check_input(
+        source_record_key=source_record_key,
+        source_locator=source_locator,
+        input_sha256=input_sha256,
+        edition=edition,
+        source_bytes=source_bytes,
+        occurrence_count=occurrence_count,
+    )
+    if not isinstance(manifest_sha256, str) or _SHA256.fullmatch(manifest_sha256) is None:
+        raise TableContractError(
+            f"manifest_sha256 must be spelled sha256: plus 64 lowercase hex, not {manifest_sha256!r}"
+        )
+    selected, unsupported = _READ_SHAPES[source_family]
+    row: Row = {
+        "scope_id": native_reference_scope_id(source_family, source_record_key, edition),
+        "source_family": source_family,
+        "source_record_key": source_record_key,
+        "edition": edition,
+        "input_sha256": input_sha256,
+        "source_locator": source_locator,
+        "source_bytes": text(source_bytes),
+        "occurrence_count": text(occurrence_count),
+        "read_status": "complete_selected_shapes",
+        "selected_shapes_json": json_column(list(selected)),
+        "unsupported_shapes_json": json_column(list(unsupported)),
+        "manifest_sha256": manifest_sha256,
+        "rule_version": NATIVE_LEGAL_REFERENCE_RULE,
+    }
+    NATIVE_LEGAL_REFERENCE_READS.spelled_key(row)
+    return NATIVE_LEGAL_REFERENCE_READS.checked(row)
+
+
 __all__ = [
     "NATIVE_LEGAL_REFERENCES",
     "NATIVE_LEGAL_REFERENCE_READS",
+    "NATIVE_LEGAL_REFERENCE_RULE",
     "native_reference_scope_id",
     "shape_ecfr_note",
+    "shape_native_reference_read",
     "shape_uscode_reference",
     "shape_uscode_source_credit",
 ]

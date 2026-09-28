@@ -2,8 +2,7 @@
 
 `spicy_docs.schemas` states every row shape this repository offers a host, and
 one pure `shape_*` function per table that turns a record into that row, except
-for the [host-shaped Regulations.gov tables](#the-regulationsgov-tables-are-keyed-on-the-publishers-id)
-and the [native legal-reference reads](#the-native-legal-reference-tables-are-a-scanners-observations-and-its-reads).
+for the [host-shaped Regulations.gov tables](#the-regulationsgov-tables-are-keyed-on-the-publishers-id).
 The build brief is
 [the table-contract design](research/table-contracts-2026-09-19.md); this page
 is what landed.
@@ -87,8 +86,8 @@ table's columns.
 | `comments` | One row per public comment posted on Regulations.gov. | `comment_id` | `modify_date` | the host, through its copy of `schemas.regulations`' extract |
 | `document_attributes` | One row per Regulations.gov document: the attributes the thin documents table does not carry. | `document_id` | none | `schemas.regulations_attribute_tables` (`project_document_attributes`) |
 | `docket_attributes` | One row per Regulations.gov docket: the attributes the thin dockets table does not carry. | `docket_id` | none | `schemas.regulations_attribute_tables` (`project_docket_attributes`) |
-| `native_legal_references` | One scanner observation in one pinned U.S. Code or eCFR XML input: a native href or source credit, or an AUTH or SOURCE note, with every target read from it nested rather than multiplied. | `scope_id`, `input_sha256`, `occurrence_index` | none | `schemas.native_reference_rows`; the host fills its three interpretation columns |
-| `native_legal_reference_reads` | One row per input scope: its latest complete read of the selected shapes, including a read that found none. | `scope_id` | none | the host, with `schemas.native_reference_rows.native_reference_scope_id` |
+| `native_legal_references` | One scanner observation in one pinned U.S. Code or eCFR XML input: a native href or source credit, or an AUTH or SOURCE note, with every target read from it nested rather than multiplied. | `scope_id`, `input_sha256`, `occurrence_index` | none | `schemas.native_reference_rows`, `interpretation.native_legal_references`, with the host's target lookup |
+| `native_legal_reference_reads` | One row per input scope: its latest complete read of the selected shapes, including a read that found none. | `scope_id` | none | `schemas.native_reference_rows` (`shape_native_reference_read`) |
 
 Every column carries its own sentence.
 
@@ -1057,16 +1056,28 @@ The contracts state the columns the fork already publishes, in its order, and
 the identities its host already merges on
 ([decision](decisions.md#the-native-legal-reference-tables-have-contracts-and-an-observation-is-spelled-at-joined1)).
 
-**What the shapers fill, and what the host does.** `shape_uscode_reference`,
-`shape_uscode_source_credit` and `shape_ecfr_note` return a whole row in
-contract order, checked and keyed. They fill every column but the last three:
-`interpretation_status`, `target_candidates_json` and `rule_version` are the
-host's reading of the observation, NULL in a shaped row until the host fills
-them. The shaper sets `source_family` itself and computes `scope_id` with
+**What is shaped and read here, and what the host does.**
+`shape_uscode_reference`, `shape_uscode_source_credit` and `shape_ecfr_note`
+return a whole row in contract order, checked and keyed. The shaper sets
+`source_family` itself and computes `scope_id` with
 `native_reference_scope_id`: `sha256:` over the compact JSON array of family,
 record key and edition, with non-ASCII characters left literal, because that
-is the preimage every published scope was minted from. The host shapes the
-read rows, spelling `scope_id` with the same function.
+is the preimage every published scope was minted from. A shaped row holds its
+last three columns NULL, and `interpretation.native_legal_references`'
+`interpret_native_references` fills them for a whole run:
+
+- `interpretation_status`: an exact native href is typed as a U.S. Code
+  section, a Statutes at Large page or a numbered public law, and anything
+  else is `unsupported_href`. A note or source credit is read with the shared
+  citation rules, and each finding is partial beside the complete text.
+- `target_candidates_json`: the typed targets, each with the outcome of the
+  host's lookup in the tables it selected, spelled by `json_column`.
+- `rule_version`: `NATIVE_LEGAL_REFERENCE_RULE`.
+
+The lookup is the one thing the host supplies. It reads the host's own tables,
+so it arrives as `resolve` and runs once per run. `shape_native_reference_read`
+shapes the read row, and the host keeps the manifest, the pins, the evidence,
+the scan loop and the choice of which scopes a run replaces.
 
 **Identity.** An observation is `(scope_id, input_sha256, occurrence_index)`,
 spelled `at-joined/1`: two `sha256:` digests and a decimal ordinal, none of
@@ -1077,24 +1088,30 @@ whole scope, including with nothing, so the scope, not a version, decides
 which rows are current.
 
 **What a shaper refuses.** Each refusal is a `TableContractError`: a blank
-record key or locator, an input digest not spelled `sha256:` plus 64
-lowercase hex, a negative or non-int ordinal, an empty-string edition, and an
-eCFR text observation other than AUTH or SOURCE. The CFR scanner's own
-`EcfrAuthorityScan.input_sha256` is bare hex, so a caller prefixes it; it is
-never a published column.
+record key or locator, an input or manifest digest not spelled `sha256:` plus
+64 lowercase hex, a negative or non-int ordinal or count, an empty-string
+edition, an unknown family, and an eCFR text observation other than AUTH or
+SOURCE. A target lookup that loses, adds or reorders a candidate refuses the
+run. The CFR scanner's own `EcfrAuthorityScan.input_sha256` is bare hex, so a
+caller prefixes it; it is never a published column.
 
 **Measured on the published generation.** On 2026-09-28 the fork's
 `native-legal-references` generation `sha256:53755e3e…` held 881 observations
 and 2 reads. Its footers and its publication index list exactly the contracts'
 columns, all VARCHAR. No identity component was NULL, empty or held `@`, and
-all 881 member keys were distinct and split back into their components. The two
-inputs it was read from are retained; re-shaped by these shapers in the host's
-callback order, all 881 rows equal the published rows on every column a shaper
-fills, `scope_id` and `source_family` included. The digest columns
-(`scope_id`, `input_sha256`, `manifest_sha256`) are all spelled `sha256:`. The
-host's own JSON columns keep non-ASCII characters literal, where
-`json_column` escapes them: 14 published `target_candidates_json` values hold
-one, and the contract does not change them. Receipts:
+all 881 member keys were distinct and split back into their components.
+
+The run was rebuilt from its retained manifest and inputs: shaped and read
+here, with the host's own resolver, copied unmodified, as the lookup.
+- 867 observations equal the published rows on all 20 columns.
+- The other 14 differ only in `target_candidates_json`'s spelling. The host
+  wrote a source credit's en dash literally, and `json_column` escapes it, with
+  the same JSON; the owner accepted that one-time change
+  ([decision](decisions.md#the-native-legal-reference-tables-have-contracts-and-an-observation-is-spelled-at-joined1)).
+- Both read rows equal the published ones on all 13 columns.
+
+The digest columns (`scope_id`, `input_sha256`, `manifest_sha256`) are all
+spelled `sha256:`. Receipts:
 `~/Work/corpora/fork-execution-2026-09-21/native-refs-contract/`.
 
 The published rows the tests hold both contracts to, and their selection, are

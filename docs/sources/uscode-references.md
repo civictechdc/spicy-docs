@@ -54,7 +54,8 @@ the rules that select an enacting law from a source credit.
 `shape_uscode_source_credit` accept scanner observations plus a source record
 key, exact `sha256:` input digest, locator, occurrence index and optional
 edition, and return a `native_legal_references` row
-([contract](../tables.md#the-native-legal-reference-tables-are-a-scanners-observations-and-its-reads)).
+([contract](../tables.md#the-native-legal-reference-tables-are-a-scanners-observations-and-its-reads))
+whose reading `interpretation.native_legal_references` completes.
 They retain expanded tags, all attributes, XML paths and complete ancestry.
 Unknown href forms remain literal; an unspecified release point remains NULL.
 Source credits stay separate historical assertions, not current legal effect.

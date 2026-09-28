@@ -16,6 +16,7 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from types import MappingProxyType
+from typing import overload
 
 #: One published row of an untyped contract: the contract's columns, each already a string or NULL.
 type Row = dict[str, str | None]
@@ -122,6 +123,12 @@ def joined(parts: Iterable[str]) -> str:
     return UNIT_SEPARATOR.join(parts)
 
 
+@overload
+def digest(value: str) -> str: ...
+@overload
+def digest(value: None) -> None: ...
+@overload
+def digest(value: str | None) -> str | None: ...
 def digest(value: str | None) -> str | None:
     """``sha256:`` plus the hex digest of ``value``'s UTF-8 bytes, or NULL.
 

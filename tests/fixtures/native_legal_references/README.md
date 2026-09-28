@@ -27,8 +27,9 @@ under `~/Work/corpora`).
 
 The U.S. Code rows were read from `usc01.xml` inside
 `../uscode/xml_usc01@119-103.zip`, the same bytes (`sha256:d3228083…`), so the
-tests re-shape those rows from the archive and compare every column a shaper
-fills. The eCFR rows were read from the complete eCFR Title 1 XML
+tests re-shape and re-read those rows from the archive and compare every
+column. The target lookup outcomes inside `target_candidates_json` are the
+host's; the tests replay them from these rows. The eCFR rows were read from the complete eCFR Title 1 XML
 (`sha256:fe18aad1…`, 477,387 bytes), which is not retained here;
 `../cfr/ecfr-authority-title1-part18.xml` is a fragment of it with its own digest
 and paths.
@@ -41,7 +42,11 @@ and paths.
   and edition;
 - that each value a contract names in backticks occurs in a published row or in
   the code that fills the table;
-- for the U.S. Code rows, that the shapers reproduce every column they fill.
+- for the U.S. Code rows, that shaping and the reading reproduce every column,
+  and that `json_column` re-spells only source credit 94's
+  `target_candidates_json`, whose en dash the host wrote literally;
+- for every row, that the reading reproduces its status, rule version and
+  typed candidates from the row's own observation columns.
 
 They do not establish that a key is unique or that every live row fits; those
 were checked over both whole objects (see

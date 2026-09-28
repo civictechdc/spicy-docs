@@ -1314,13 +1314,16 @@ def _published_native_reference_rows() -> dict[str, list[dict[str, str | None]]]
 
 
 def _native_reference_cases() -> list[ShapedCase]:
-    """Every observation of the two retained fragments through its shaper, then the rows the host published.
+    """Every observation of the two retained fragments shaped and read, each fragment's read row, then the published rows.
 
     A shaped row's scope is rebuilt from a preimage written here and its input digest from the fixture's bytes; a
-    published row keeps the footer's column order, so a column the contract moves fails the round-trip.
+    published row keeps the footer's column order, so a column the contract moves fails the round-trip. The fragments
+    are read with no target lookup, which no fixture here can stand in for.
     """
+    from spicy_docs.interpretation.native_legal_references import interpret_native_references
     from spicy_docs.schemas.native_reference_rows import (
         shape_ecfr_note,
+        shape_native_reference_read,
         shape_uscode_reference,
         shape_uscode_source_credit,
     )
@@ -1328,8 +1331,9 @@ def _native_reference_cases() -> list[ShapedCase]:
     from spicy_docs.sources.uscode.references import scan_uscode_references
 
     cases: list[ShapedCase] = []
-    for fixture, record, preimage, scan, callbacks in (
+    for source_family, fixture, record, preimage, scan, callbacks in (
         (
+            "uscode",
             "uscode/title-05-s423.xml",
             "/us/usc/t5/s423",
             b'["uscode","/us/usc/t5/s423",null]',
@@ -1337,6 +1341,7 @@ def _native_reference_cases() -> list[ShapedCase]:
             {"on_reference": shape_uscode_reference, "on_source_credit": shape_uscode_source_credit},
         ),
         (
+            "ecfr",
             "cfr/ecfr-authority-title1-part18.xml",
             "retained:part18-fragment",
             b'["ecfr","retained:part18-fragment",null]',
@@ -1354,7 +1359,19 @@ def _native_reference_cases() -> list[ShapedCase]:
             return lambda observation: rows.append(shaper(observation, occurrence_index=len(rows), **context))
 
         scan(body, **{name: admit(shaper) for name, shaper in callbacks.items()})
-        cases += [_case("native_legal_references", row, (scope, input_sha256, str(i))) for i, row in enumerate(rows)]
+        read = interpret_native_references(rows)
+        cases += [_case("native_legal_references", row, (scope, input_sha256, str(i))) for i, row in enumerate(read)]
+        row = shape_native_reference_read(
+            source_family=source_family,
+            source_record_key=record,
+            edition=None,
+            input_sha256=input_sha256,
+            source_locator=f"retained:{fixture}",
+            source_bytes=len(body),
+            occurrence_count=len(rows),
+            manifest_sha256="sha256:" + hashlib.sha256(b"retained fragments").hexdigest(),
+        )
+        cases.append(_case("native_legal_reference_reads", row, (scope,)))
     published = _published_native_reference_rows()
     assert set(published) == set(_PUBLISHED_NATIVE_IDS)
     return cases + [
@@ -1791,10 +1808,11 @@ FILLED_BY: dict[str, tuple[str, ...]] = {
     "docket_attributes": ("schemas/regulations_attribute_tables.py",),
     "fec_committee_history": ("schemas/fec_committee_history.py", "sources/fec/committee_master.py"),
     "comments": ("schemas/regulations.py",),
-    # The shapers fill every column but the host's interpretation; the host shapes the reads and fills those columns,
-    # so ``_evidence`` adds the rows it published and removes the contracts' own sentences.
+    # Shaped and read here, with the host's target lookup inside target_candidates_json; ``_evidence`` adds the rows
+    # the host published and removes the contracts' own sentences.
     "native_legal_references": (
         "schemas/native_reference_rows.py",
+        "interpretation/native_legal_references.py",
         "sources/uscode/references.py",
         "sources/cfr/authority.py",
         "reading/xml_observations.py",
@@ -1832,9 +1850,9 @@ def _without_contract_prose(source: str) -> str:
 def _evidence(contract: TableContract) -> str:
     """What a value a description names must appear in: the code that fills the table.
 
-    The host shapes the Regulations.gov tables and the native legal-reference reads, and fills the native references'
-    interpretation columns; the modules holding those contracts hold their sentences too, so for those tables the
-    sentences are removed and the rows the host published stand beside the code.
+    For a table whose published rows are retained -- the Regulations.gov tables, which the host shapes, and the native
+    legal-reference tables, whose lookup outcomes it supplies -- the contracts' own sentences are removed from the code,
+    and the published rows stand beside it.
     """
     sources = [(SOURCE / path).read_text() for path in FILLED_BY[contract.name]]
     published = {**_published_regulations_rows(), **_published_native_reference_rows()}

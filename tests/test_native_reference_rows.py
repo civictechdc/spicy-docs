@@ -1,4 +1,4 @@
-"""Native U.S. Code and eCFR observations shaped through their table contracts, held to the rows the host published."""
+"""Native U.S. Code and eCFR observations shaped and read through their table contracts, held to the published rows."""
 
 import hashlib
 import io
@@ -9,24 +9,30 @@ from typing import Any
 
 import pytest
 
+from spicy_docs.interpretation.native_legal_references import (
+    interpret_native_reference,
+    interpret_native_references,
+)
 from spicy_docs.schemas import TABLE_CONTRACTS, TableContractError
 from spicy_docs.schemas.native_reference_rows import (
     NATIVE_LEGAL_REFERENCE_READS,
     NATIVE_LEGAL_REFERENCES,
     native_reference_scope_id,
     shape_ecfr_note,
+    shape_native_reference_read,
     shape_uscode_reference,
     shape_uscode_source_credit,
 )
+from spicy_docs.schemas.tables import json_column
 from spicy_docs.sources.cfr.authority import scan_ecfr_authority_notes
 from spicy_docs.sources.uscode.references import scan_uscode_references
 
 FIXTURES = Path(__file__).parent / "fixtures"
-#: The columns the host fills after shaping: its interpretation of each observation, and the rule it ran.
-HOST_COLUMNS = ("interpretation_status", "target_candidates_json", "rule_version")
+#: The columns the reading fills after shaping: what it read, the targets it found, and the rule it ran under.
+READING_COLUMNS = ("interpretation_status", "target_candidates_json", "rule_version")
 
 
-def _published() -> dict[str, list[dict[str, str | None]]]:
+def _published() -> dict[str, list[dict[str, Any]]]:
     return json.loads((FIXTURES / "native_legal_references/published-rows.json").read_text(encoding="utf-8"))
 
 
@@ -101,20 +107,26 @@ def test_unknown_empty_and_absent_hrefs_are_preserved() -> None:
     assert [r["href"] for r in rows] == ["opaque:unknown#fragment", "", None]
 
 
+def _usc01() -> bytes:
+    with zipfile.ZipFile(io.BytesIO((FIXTURES / "uscode/xml_usc01@119-103.zip").read_bytes())) as archive:
+        return archive.read("usc01.xml")
+
+
+#: The context the host's manifest stated for the U.S. Code input it published, written here.
+_USC01_CONTEXT: dict[str, Any] = {
+    "source_record_key": "/us/usc/t1",
+    "edition": "119-103",
+    "source_locator": "https://uscode.house.gov/download/releasepoints/us/pl/119/103/xml_usc01@119-103.zip",
+}
+
+
 def _usc01_rows() -> list[dict[str, str | None]]:
     """Every observation of the U.S. Code Title 1 release point the host published, shaped in the host's order.
 
-    One ordinal per input over both kinds, in the order the scanner reports them: the host's callback counter. The
-    record key, edition and locator are the ones the host's manifest stated, written here.
+    One ordinal per input over both kinds, in the order the scanner reports them: the host's callback counter.
     """
-    with zipfile.ZipFile(io.BytesIO((FIXTURES / "uscode/xml_usc01@119-103.zip").read_bytes())) as archive:
-        body = archive.read("usc01.xml")
-    context = {
-        "source_record_key": "/us/usc/t1",
-        "edition": "119-103",
-        "input_sha256": _sha256(body),
-        "source_locator": "https://uscode.house.gov/download/releasepoints/us/pl/119/103/xml_usc01@119-103.zip",
-    }
+    body = _usc01()
+    context = {**_USC01_CONTEXT, "input_sha256": _sha256(body)}
     rows: list[dict[str, str | None]] = []
     scan_uscode_references(
         body,
@@ -124,27 +136,180 @@ def _usc01_rows() -> list[dict[str, str | None]]:
     return rows
 
 
-def test_the_shapers_reproduce_every_column_they_fill_of_the_published_us_code_rows() -> None:
-    """The published rows came from the archive's own ``usc01.xml``; adopting the contract moves none of their values.
+def _replayed_lookup(published: list[dict[str, str | None]]):
+    """A lookup that answers each candidate with the outcome the host published for it, after checking that the
+    candidate is the published one on every field the reading writes.
 
-    The host fills three columns after shaping, so a shaped row holds them NULL and the rest equal the published row.
+    It cannot check the lookup's own fields, which come from the published rows; the reading's fields, their order and
+    count, and the spelling of the column are what it holds.
+    """
+    outcomes = {
+        outcome["occurrence_key"]: outcome
+        for row in published
+        for outcome in json.loads(row["target_candidates_json"] or "[]")
+    }
+
+    def lookup(candidates, texts):
+        answered = []
+        for candidate in candidates:
+            outcome = outcomes[candidate["occurrence_key"]]
+            assert {field: outcome[field] for field in candidate} == candidate
+            if "text_sha256" in candidate:
+                assert texts[(candidate["document_kind"], candidate["document_key"])] == candidate["text_sha256"]
+            answered.append(outcome)
+        return answered
+
+    return lookup
+
+
+def test_the_shaped_and_read_us_code_rows_are_the_published_rows() -> None:
+    """The published rows came from the archive's own ``usc01.xml``: shaping and the reading reproduce every column.
+
+    A shaped row holds the reading's three columns NULL and every other column as published. Completed, it is the
+    published row on all of them, ``target_candidates_json`` spelled by ``json_column``: that re-spells only source
+    credit 94's, whose ``Pub. L. 104–199`` the host wrote with a literal en dash.
     """
     shaped = {row["occurrence_index"]: row for row in _usc01_rows()}
-    published = _published()
-    usc = [row for row in published["native_legal_references"] if row["source_family"] == "uscode"]
-    assert len(usc) == 8
-    for row in usc:
-        mine = shaped[row["occurrence_index"]]
-        assert list(mine) == list(row)
-        assert {c: mine[c] for c in row if c not in HOST_COLUMNS} == {c: row[c] for c in row if c not in HOST_COLUMNS}
-        assert [mine[c] for c in HOST_COLUMNS] == [None, None, None]
-        assert all(row[c] is not None for c in HOST_COLUMNS)
-    # The read row the host published for this input counts exactly these observations over exactly these bytes.
-    (read,) = [row for row in published["native_legal_reference_reads"] if row["source_family"] == "uscode"]
-    assert read["occurrence_count"] == str(len(shaped))
-    assert read["input_sha256"] == usc[0]["input_sha256"] == next(iter(shaped.values()))["input_sha256"]
-    with zipfile.ZipFile(io.BytesIO((FIXTURES / "uscode/xml_usc01@119-103.zip").read_bytes())) as archive:
-        assert read["source_bytes"] == str(archive.getinfo("usc01.xml").file_size)
+    published = [row for row in _published()["native_legal_references"] if row["source_family"] == "uscode"]
+    assert len(published) == 8
+    mine = [shaped[row["occurrence_index"]] for row in published]
+    for row, shaped_row in zip(published, mine, strict=True):
+        assert list(shaped_row) == list(row)
+        assert {c: shaped_row[c] for c in row if c not in READING_COLUMNS} == {
+            c: row[c] for c in row if c not in READING_COLUMNS
+        }
+        assert [shaped_row[c] for c in READING_COLUMNS] == [None, None, None]
+    completed = interpret_native_references(mine, resolve=_replayed_lookup(published))
+    respelled = []
+    for row, done in zip(published, completed, strict=True):
+        assert {c: done[c] for c in row if c != "target_candidates_json"} == {
+            c: row[c] for c in row if c != "target_candidates_json"
+        }
+        assert done["target_candidates_json"] == json_column(json.loads(row["target_candidates_json"] or ""))
+        if done["target_candidates_json"] != row["target_candidates_json"]:
+            respelled.append(row["occurrence_index"])
+    assert respelled == ["94"]
+
+
+def test_the_reading_reproduces_each_published_rows_reading() -> None:
+    """Every published row, eCFR notes included, read again from its own observation columns."""
+    published = _published()["native_legal_references"]
+    stripped = [{**row, **dict.fromkeys(READING_COLUMNS)} for row in published]
+    completed = interpret_native_references(stripped, resolve=_replayed_lookup(published))
+    for row, done in zip(published, completed, strict=True):
+        assert done["interpretation_status"] == row["interpretation_status"]
+        assert done["rule_version"] == row["rule_version"]
+        assert json.loads(done["target_candidates_json"] or "") == json.loads(row["target_candidates_json"] or "")
+    assert {row["interpretation_status"] for row in completed} == {
+        "unsupported_href",
+        "native_statute_href",
+        "native_section_href",
+        "native_public_law_href",
+        "partial_text_findings",
+    }
+
+
+def _reading(**row: str | None):
+    base = dict.fromkeys(NATIVE_LEGAL_REFERENCES.columns)
+    base.update(scope_id="sha256:" + "0" * 64, occurrence_index="7", source_family="uscode", source_record_key="r")
+    base.update(row)
+    return interpret_native_reference(base)
+
+
+@pytest.mark.parametrize(
+    ("tag", "href", "expected"),
+    [
+        ("{http://xml.house.gov/schemas/uslm/1.0}ref", "/us/usc/t26/s1400Z–1", ("usc_section", "26-1400z-1")),
+        ("ref", "/us/usc/t5a/s2", ("usc_section", "5A-2")),
+        ("{http://www.w3.org/1999/xhtml}a", "/us/stat/61/633", ("statutes_at_large", "61-633")),
+        ("ref", "/us/pl/57/1", ("public_law", "57-public-1")),
+        ("ref", "/us/pl/56/1", None),
+        ("ref", "/us/usc/t1/s1/a", None),
+        ("ref", "/us/usc/t1/s1#note", None),
+        ("ref", "/us/act/1947-07-30/ch388/s1", None),
+        ("{urn:unknown}ref", "/us/usc/t1/s1", None),
+        ("ref", None, None),
+    ],
+)
+def test_an_href_is_typed_only_in_its_exact_native_shapes(tag: str, href: str | None, expected) -> None:
+    reading = _reading(observation_kind="native_reference", element_tag=tag, href=href)
+    if expected is None:
+        assert (reading.status, reading.candidates) == ("unsupported_href", ())
+        return
+    (candidate,) = reading.candidates
+    assert (candidate["cite_kind"], candidate["target_key"]) == expected
+    assert candidate["occurrence_key"] == "sha256:" + "0" * 64 + ":7:href"
+    assert candidate["derivation_rule"] == "native-legal-exact-href/002"
+
+
+def test_a_note_is_read_for_its_citations_and_a_part_stays_a_part() -> None:
+    reading = _reading(observation_kind="authority", text="5 U.S.C. 301; 1 CFR part 18; 19 FR 2709.")
+    assert reading.status == "partial_text_findings"
+    kinds = [(c["cite_kind"], c["target_key"]) for c in reading.candidates]
+    assert ("usc_section", "5-301") in kinds and ("federal_register_cite", "19-2709") in kinds
+    assert ("cfr_part", "1-18") in kinds and not [k for k in kinds if k == ("cfr_section", "1-18")]
+    assert [c["occurrence_key"] for c in reading.candidates] == [
+        f"{'sha256:' + '0' * 64}:7:{i}" for i in range(len(kinds))
+    ]
+    assert {c["text_sha256"] for c in reading.candidates} == {_sha256(b"5 U.S.C. 301; 1 CFR part 18; 19 FR 2709.")}
+    assert _reading(observation_kind="source_note", text="Unrelated prose.").status == "no_qualified_text_findings"
+
+
+def test_a_lookup_that_loses_or_reorders_a_candidate_refuses() -> None:
+    rows = [row for row in _usc01_rows() if row["occurrence_index"] in {"1", "3"}]
+    assert [json.loads(row["target_candidates_json"] or "[]") for row in interpret_native_references(rows)] == [
+        list(interpret_native_reference(row).candidates) for row in rows
+    ]
+    for lookup in (lambda candidates, texts: candidates[:1], lambda candidates, texts: candidates[::-1]):
+        with pytest.raises(TableContractError, match="one outcome per candidate"):
+            interpret_native_references(rows, resolve=lookup)
+
+
+def test_the_read_rows_are_the_published_read_rows() -> None:
+    """The U.S. Code read from the archive's own bytes and count; the eCFR read from its published values."""
+    body = _usc01()
+    published = {row["source_family"]: row for row in _published()["native_legal_reference_reads"]}
+    manifest = published["uscode"]["manifest_sha256"]
+    usc = shape_native_reference_read(
+        source_family="uscode",
+        input_sha256=_sha256(body),
+        source_bytes=len(body),
+        occurrence_count=len(_usc01_rows()),
+        manifest_sha256=manifest,
+        **_USC01_CONTEXT,
+    )
+    assert list(usc.items()) == list(published["uscode"].items())
+    ecfr = published["ecfr"]
+    stated = ("source_family", "source_record_key", "edition", "input_sha256", "source_locator", "manifest_sha256")
+    counts = {"source_bytes": int(ecfr["source_bytes"] or ""), "occurrence_count": int(ecfr["occurrence_count"] or "")}
+    assert list(shape_native_reference_read(**{c: ecfr[c] for c in stated}, **counts).items()) == list(ecfr.items())
+
+
+@pytest.mark.parametrize(
+    ("change", "refusal"),
+    [
+        ({"source_family": "cfr"}, "no native reference scanner"),
+        ({"manifest_sha256": "0" * 64}, "manifest_sha256 must be spelled"),
+        ({"source_bytes": -1}, "source_bytes must be a nonnegative integer"),
+        ({"occurrence_count": "3"}, "occurrence_count must be a nonnegative integer"),
+        ({"input_sha256": "sha256:" + "0" * 63}, "input_sha256 must be spelled"),
+        ({"edition": ""}, "non-empty string or None"),
+    ],
+)
+def test_the_read_shaper_refuses_what_would_publish_a_wrong_read(change: dict, refusal: str) -> None:
+    good: dict[str, Any] = {
+        "source_family": "ecfr",
+        "source_record_key": "ecfr/title/1",
+        "edition": None,
+        "input_sha256": "sha256:" + "0" * 64,
+        "source_locator": "synthetic:test",
+        "source_bytes": 10,
+        "occurrence_count": 0,
+        "manifest_sha256": "sha256:" + "1" * 64,
+    }
+    assert shape_native_reference_read(**good)["unsupported_shapes_json"] == '["PARAUTH","SECAUTH"]'
+    with pytest.raises(TableContractError, match=refusal):
+        shape_native_reference_read(**{**good, **change})
 
 
 def test_every_shaped_row_spells_its_member_key_reversibly() -> None:

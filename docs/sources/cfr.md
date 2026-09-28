@@ -228,7 +228,8 @@ Pass `scan_ecfr_authority_notes` observations to
 `schemas.native_reference_rows.shape_ecfr_note` with the retained input digest
 spelled `sha256:` (the scan result's is bare hex), record key, locator and
 occurrence ordinal. It returns a `native_legal_references` row
-([contract](../tables.md#the-native-legal-reference-tables-are-a-scanners-observations-and-its-reads)).
+([contract](../tables.md#the-native-legal-reference-tables-are-a-scanners-observations-and-its-reads))
+whose reading `interpretation.native_legal_references` completes.
 The row keeps AUTH as `authority` and SOURCE as `source_note`, their complete
 decoded text/text runs, attributes, XML path and ancestry. Part scope comes
 from the nearest source part; title and edition remain NULL unless separately
