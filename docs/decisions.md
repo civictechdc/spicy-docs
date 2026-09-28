@@ -3282,7 +3282,11 @@ column, spelled `value/1`, and each observation's `scope_id` references it.
 
 **The rule version stays `native-legal-reference/002`.** The reading, the
 shapes and every value it types are unchanged. `NATIVE_LEGAL_REFERENCE_RULE`
-now names it, for both tables.
+now names it, for both tables. It versions this package's own reading: which
+hrefs it types, which citation kinds it reads, and how it states a status. The
+citation rules the reading calls version themselves on each text candidate
+(`derivation_rule`, `derivation_version`), as every citation here does, so a
+citation rule's change moves that field, not this one.
 
 **One published value changes, by spelling only: `target_candidates_json` is
 `json_column`'s.** The host wrote it with non-ASCII characters literal. The
@@ -3291,8 +3295,16 @@ live values change, each a U.S. Code Title 1 source credit whose
 `matched_text` holds an en dash (`Pub. L. 104–199`), now `\u2013`. They are
 occurrences 94, 294, 309, 355, 447, 459, 490, 546, 590, 634, 665, 776, 786
 and 798 of scope `sha256:d4bb5775…`. Each decodes to the same JSON as before.
-No other value moves, and the version does not either: a reader of the JSON sees
-no change.
+The re-spelling moves no other value, and a reader of the JSON sees no change.
+
+**0.51.0's citation rules move 51 candidates' versions.** 0.51.0 took
+`usc_section` and `cfr_section` to version 004. Read on it, 51 text candidates
+in 31 eCFR Title 1 notes name `derivation_version` `004` where the published
+rows name `003`: 49 `usc_section` and 2 `cfr_section`. They are occurrences 0,
+1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 29, 31, 33, 34, 35, 36, 38, 40,
+43, 44, 45, 47, 50, 52, 54, 56 and 58 of scope `sha256:ed5b5c65…`. No
+candidate is added or lost, and no key, span, status or other field moves. The
+U.S. Code source credits hold neither kind.
 
 **Digest spelling.** The owner unified digests on `sha256:`. Every published
 digest column here is already spelled that way: `scope_id`, `input_sha256`,
@@ -3307,9 +3319,12 @@ publication index list exactly the contracts' columns, all VARCHAR, and every
 member key spells, is distinct and splits back into its components. The run was
 then rebuilt from its retained manifest and inputs, with the host's own
 resolver copied unmodified as the lookup:
-- 867 observations equal the published rows on all 20 columns;
-- the other 14 differ only in the re-spelled `target_candidates_json` above;
+- 836 observations equal the published rows on all 20 columns;
+- 14 differ only in the re-spelled `target_candidates_json` above;
+- 31 differ only in the 51 candidate versions 0.51.0's citation rules move;
 - both read rows equal the published ones on all 13 columns.
+
+Before 0.51.0 the same rebuild gave 867 equal rows and the same 14.
 
 **What changes for an importer.**
 - The three observation shapers return every contract column in order: `scope_id`

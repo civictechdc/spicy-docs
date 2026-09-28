@@ -144,9 +144,33 @@ def _usc01_rows() -> list[dict[str, str | None]]:
     return rows
 
 
+#: The citation rules that moved after the fixture's rows were published, from the version they name to the one a
+#: re-read names: 0.51.0 took ``usc_section`` and ``cfr_section`` from 003 to 004. A text candidate carries its own
+#: rule's version, so re-read it names 004 and is otherwise the published candidate; over all 881 live rows that is 51
+#: candidates in 31 eCFR notes, and nothing else moved (``docs/decisions.md``).
+_MOVED_CITATION_RULES = {"usc_section": ("003", "004"), "cfr_section": ("003", "004")}
+
+
+def _as_read_now(candidate: dict[str, Any]) -> dict[str, Any]:
+    """A published candidate as the current citation rules name it: only a moved rule's version differs."""
+    moved = _MOVED_CITATION_RULES.get(candidate.get("derivation_rule") or "")
+    if moved is None or candidate.get("derivation_version") != moved[0]:
+        return candidate
+    return {**candidate, "derivation_version": moved[1]}
+
+
+def test_the_moved_citation_rules_are_the_current_ones() -> None:
+    """The statement above names the rules as they stand; a later version of either must restate it."""
+    from spicy_docs.interpretation.citations import CITATION_RULES_BY_NAME
+
+    assert {name: CITATION_RULES_BY_NAME[name].version for name in _MOVED_CITATION_RULES} == {
+        name: moved[1] for name, moved in _MOVED_CITATION_RULES.items()
+    }
+
+
 def _replayed_lookup(published: list[dict[str, str | None]]):
     """A lookup that answers each candidate with the outcome the host published for it, after checking that the
-    candidate is the published one on every field the reading writes.
+    candidate is the published one on every field the reading writes, a moved citation rule's version aside.
 
     It cannot check the lookup's own fields, which come from the published rows; the reading's fields, their order and
     count, and the spelling of the column are what it holds.
@@ -160,7 +184,7 @@ def _replayed_lookup(published: list[dict[str, str | None]]):
     def lookup(candidates, texts):
         answered = []
         for candidate in candidates:
-            outcome = outcomes[candidate["occurrence_key"]]
+            outcome = _as_read_now(outcomes[candidate["occurrence_key"]])
             assert {field: outcome[field] for field in candidate} == candidate
             if "text_sha256" in candidate:
                 assert texts[(candidate["document_kind"], candidate["document_key"])] == candidate["text_sha256"]
@@ -193,21 +217,29 @@ def test_the_shaped_and_read_us_code_rows_are_the_published_rows() -> None:
         assert {c: done[c] for c in row if c != "target_candidates_json"} == {
             c: row[c] for c in row if c != "target_candidates_json"
         }
-        assert done["target_candidates_json"] == json_column(json.loads(row["target_candidates_json"] or ""))
+        read_now = [_as_read_now(candidate) for candidate in json.loads(row["target_candidates_json"] or "")]
+        assert done["target_candidates_json"] == json_column(read_now)
         if done["target_candidates_json"] != row["target_candidates_json"]:
             respelled.append(row["occurrence_index"])
     assert respelled == ["94"]
 
 
 def test_the_reading_reproduces_each_published_rows_reading() -> None:
-    """Every published row, eCFR notes included, read again from its own observation columns."""
+    """Every published row, eCFR notes included, read again from its own observation columns.
+
+    Each candidate is the published one but for a moved citation rule's version, which moves on eCFR note 0 alone.
+    """
     published = _published()["native_legal_references"]
     stripped = [{**row, **dict.fromkeys(READING_COLUMNS)} for row in published]
     completed = interpret_native_references(stripped, resolve=_replayed_lookup(published))
+    moved = []
     for row, done in zip(published, completed, strict=True):
         assert done["interpretation_status"] == row["interpretation_status"]
         assert done["rule_version"] == row["rule_version"]
-        assert json.loads(done["target_candidates_json"] or "") == json.loads(row["target_candidates_json"] or "")
+        candidates = json.loads(row["target_candidates_json"] or "")
+        assert json.loads(done["target_candidates_json"] or "") == [_as_read_now(c) for c in candidates]
+        moved += [(row["source_family"], row["occurrence_index"]) for c in candidates if _as_read_now(c) != c]
+    assert moved == [("ecfr", "0")]
     assert {row["interpretation_status"] for row in completed} == {
         "unsupported_href",
         "native_statute_href",

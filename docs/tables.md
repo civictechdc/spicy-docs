@@ -1110,11 +1110,14 @@ all 881 member keys were distinct and split back into their components.
 
 The run was rebuilt from its retained manifest and inputs: shaped and read
 here, with the host's own resolver, copied unmodified, as the lookup.
-- 867 observations equal the published rows on all 20 columns.
-- The other 14 differ only in `target_candidates_json`'s spelling. The host
-  wrote a source credit's en dash literally, and `json_column` escapes it, with
-  the same JSON; the owner accepted that one-time change
+- 836 observations equal the published rows on all 20 columns.
+- 14 differ only in `target_candidates_json`'s spelling. The host wrote a
+  source credit's en dash literally, and `json_column` escapes it, with the
+  same JSON; the owner accepted that one-time change
   ([decision](decisions.md#the-native-legal-reference-tables-have-contracts-and-an-observation-is-spelled-at-joined1)).
+- 31 eCFR notes differ only in candidates' `derivation_version`: 0.51.0 moved
+  the `usc_section` and `cfr_section` citation rules from 003 to 004, and each
+  text candidate names its own rule's version. `rule_version` does not move.
 - Both read rows equal the published ones on all 13 columns.
 
 The digest columns (`scope_id`, `input_sha256`, `manifest_sha256`) are all
