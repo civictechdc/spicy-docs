@@ -151,8 +151,8 @@ class GaoListingScope:
 
 @dataclass(frozen=True, slots=True)
 class GaoListingEntry:
-    """One teaser as GAO spelled it: a product (``product_id``), a decision (``decision_numbers``), or neither when
-    GAO states no product number (``product_number`` None)."""
+    """One teaser as GAO spelled it: a product (``product_id``), a decision (``decision_numbers``), or neither, for a
+    number of another form or none (``product_number`` None)."""
 
     position: int
     topic: str
@@ -322,6 +322,12 @@ def _same_letters(slug: str, number: str) -> bool:
 
 
 def _entry(position: int, teaser: dict) -> GaoListingEntry:
+    """One teaser, classed by its number: ``GAO-`` a product, ``B-`` a decision, anything else set apart.
+
+    The number, not the heading, decides: 2012-2014 file major-rule reports numbered ``GAO-14-253R`` under a legal
+    heading, and every numbered teaser under a topic heading of the 2009-2026 walk is ``GAO-``. A number of neither
+    form is a Contract Appeals Board docket (``2020-02``) or a ``P`` number, listed as an Other Decision.
+    """
     fields, links = teaser["fields"], teaser["links"]
     label, heading = _spelled(fields.get("label"), "label"), _spelled(fields.get("heading"), "heading")
     number = _text(fields.get("number"), "number") or None
@@ -330,47 +336,38 @@ def _entry(position: int, teaser: dict) -> GaoListingEntry:
     if not teaser["topic"]:
         raise GaoListingSourceError(f"{_LABEL} lists a teaser before any heading")
     link = links.get("label", "")
+    product = number is not None and number.upper().startswith("GAO-")
     decision = number is not None and number.startswith("B-")
-    # 2020-2023 link some numbered products by their prerelease path (``/prerelease/3mpz``); the product's page is
-    # still ``/products/`` and its number lowercased, checked for GAO-21-584 on 2026-09-28.
-    prerelease = number is not None and not decision and _PRERELEASE.fullmatch(link) is not None
+    # 2020-2023 link some products by their prerelease path (``/prerelease/3mpz``); the product's page is still
+    # ``/products/`` and its number lowercased, checked for GAO-21-584 on 2026-09-28.
+    prerelease = product and _PRERELEASE.fullmatch(link) is not None
     if link != links.get("heading") or not (link.startswith("/products/") or prerelease):
         raise GaoListingSourceError(f"{_LABEL} teaser {position} does not link one product page")
     slug = number.lower() if prerelease and number is not None else unquote(link.removeprefix("/products/"))
-    # A product's link is its number lowercased, or that with Drupal's duplicate-path suffix; the product id is the
-    # page the listing links. A decision's link spells its number GAO's older ways (``b-402003-b-402003.2`` for
-    # ``B-402003; B-402003.2``), so only its letters and digits must agree.
-    if number is not None and (
-        not _same_letters(slug, number)
-        if decision
-        else not (
-            slug == number.lower()
-            or (slug.startswith(number.lower()) and _DUPLICATE_PATH.fullmatch(slug[len(number) :]))
-        )
+    # A product's link is its number lowercased, or that with Drupal's duplicate-path suffix, and the product id is
+    # the page it links. Any other number's link need only agree with it in letters and digits: older decisions
+    # link ``b-402003-b-402003.2`` for ``B-402003; B-402003.2``, and a docket's second page is ``2020-02-0``.
+    if number is not None and not (
+        slug == number.lower() or (slug.startswith(number.lower()) and _DUPLICATE_PATH.fullmatch(slug[len(number) :]))
+        if product
+        else _same_letters(slug, number)
     ):
         raise GaoListingSourceError(f"{_LABEL} teaser {position} links a page other than its product number")
     product_id: str | None = None
     decisions: tuple[str, ...] = ()
-    if number is None:
+    if product:
         try:
             gao_product_url(slug)
         except GaoProductSourceError as error:
-            raise GaoListingSourceError(
-                f"{_LABEL} teaser {position} states no number and links no product page"
-            ) from error
-    elif decision:
+            raise GaoListingSourceError(f"{_LABEL} teaser {position} names no product id") from error
+        product_id = slug
+    elif decision and number is not None:
         # The whole stated number keys a decision. Its parts are what of it reads as B-numbers: GAO cut one long
         # 2010 list mid-number ("...,B-403648,B"), and a fragment is not a number.
         parts = (part.strip() for part in _DECISION_SEPARATOR.split(number))
         decisions = tuple(part for part in parts if _DECISION_NUMBER.fullmatch(part))
         if not decisions:
             raise GaoListingSourceError(f"{_LABEL} teaser {position} names no B-number")
-    else:
-        try:
-            gao_product_url(slug)
-        except GaoProductSourceError as error:
-            raise GaoListingSourceError(f"{_LABEL} teaser {position} names no product id") from error
-        product_id = slug
     return GaoListingEntry(
         position,
         teaser["topic"],
@@ -839,9 +836,11 @@ class GaoListedDecision:
 
 
 @dataclass(frozen=True, slots=True)
-class GaoListedUnnumbered:
-    """One teaser GAO gives no product number, identified by its link; outside the product listing."""
+class GaoListedOther:
+    """One page listed with no product or B-number, by its link: a docket-numbered Contract Appeals Board decision,
+    a ``P`` number, or no number at all (an Antideficiency Act report, forum materials); outside the products."""
 
+    product_number: str | None
     link: str
     label: str
     heading: str
@@ -866,15 +865,15 @@ class GaoListingRun:
     pages: tuple[RetainedListingPage, ...]
     products: tuple[GaoListedProduct, ...]
     decisions: tuple[GaoListedDecision, ...]
-    unnumbered: tuple[GaoListedUnnumbered, ...]
+    others: tuple[GaoListedOther, ...]
     complete_scopes: tuple[str, ...]
     incomplete_scopes: tuple[str, ...]
 
 
 def collect_listing(
     pages: Iterable[GaoListingPage],
-) -> tuple[tuple[GaoListedProduct, ...], tuple[GaoListedDecision, ...], tuple[GaoListedUnnumbered, ...]]:
-    """Each product once by its id, each decision and unnumbered teaser once by its page, in first-listed order.
+) -> tuple[tuple[GaoListedProduct, ...], tuple[GaoListedDecision, ...], tuple[GaoListedOther, ...]]:
+    """Each product once by its id, each decision and other page once by its page, in first-listed order.
 
     One listed twice with differing fields refuses. A product's link is not among them: 2020-2023 link one product
     by its prerelease path in one place and its page in another.
@@ -891,22 +890,22 @@ def collect_listing(
             for values, value in ((held[1], entry.topic), (held[2], page.scope.key)):
                 if value not in values:
                     values.append(value)
-    products, decisions, unnumbered = [], [], []
+    products, decisions, others = [], [], []
     for entry, topics, scopes in found.values():
         seen = (entry.published, entry.released, tuple(topics), tuple(scopes))
         if entry.product_id is not None:
             products.append(
                 GaoListedProduct(entry.product_id, entry.product_number or "", entry.label, entry.heading, *seen)
             )
-        elif entry.product_number is not None:
+        elif entry.decision_numbers:
             decisions.append(
                 GaoListedDecision(
-                    entry.product_number, entry.decision_numbers, entry.link, entry.label, entry.heading, *seen
+                    entry.product_number or "", entry.decision_numbers, entry.link, entry.label, entry.heading, *seen
                 )
             )
         else:
-            unnumbered.append(GaoListedUnnumbered(entry.link, entry.label, entry.heading, *seen))
-    return tuple(products), tuple(decisions), tuple(unnumbered)
+            others.append(GaoListedOther(entry.product_number, entry.link, entry.label, entry.heading, *seen))
+    return tuple(products), tuple(decisions), tuple(others)
 
 
 def _fixed(entry: GaoListingEntry) -> tuple:
@@ -973,8 +972,8 @@ def read_listing_run(
             )
             pages.append(RetainedListingPage(page, capture, row["blob_path"], row.get("zyte_request_id")))
         complete.append(key)
-    products, decisions, unnumbered = collect_listing(retained.page for retained in pages)
-    return GaoListingRun(tuple(pages), products, decisions, unnumbered, tuple(complete), tuple(incomplete))
+    products, decisions, others = collect_listing(retained.page for retained in pages)
+    return GaoListingRun(tuple(pages), products, decisions, others, tuple(complete), tuple(incomplete))
 
 
 def _walk(args: argparse.Namespace) -> int:
@@ -1020,8 +1019,8 @@ def _walk(args: argparse.Namespace) -> int:
 def _read(args: argparse.Namespace) -> int:
     run = read_listing_run(args.receipts, args.store)
     with args.output.open("x", encoding="utf-8") if args.output else nullcontext(sys.stdout) as out:
-        for item in (*run.products, *run.decisions, *run.unnumbered):
-            kind = {GaoListedProduct: "product", GaoListedDecision: "decision"}.get(type(item), "unnumbered")
+        for item in (*run.products, *run.decisions, *run.others):
+            kind = {GaoListedProduct: "product", GaoListedDecision: "decision"}.get(type(item), "other")
             value = {name: getattr(item, name) for name in item.__dataclass_fields__}
             out.write(json.dumps({"kind": kind, **value}, ensure_ascii=False) + "\n")
     print(
@@ -1030,7 +1029,7 @@ def _read(args: argparse.Namespace) -> int:
                 "pages": len(run.pages),
                 "products": len(run.products),
                 "decisions": len(run.decisions),
-                "unnumbered": len(run.unnumbered),
+                "others": len(run.others),
                 "complete_scopes": run.complete_scopes,
                 "incomplete_scopes": run.incomplete_scopes,
             }
@@ -1078,8 +1077,8 @@ __all__ = [
     "LISTING_URL",
     "MAX_PAGE_BYTES",
     "GaoListedDecision",
+    "GaoListedOther",
     "GaoListedProduct",
-    "GaoListedUnnumbered",
     "GaoListingAcquirer",
     "GaoListingBudget",
     "GaoListingEntry",

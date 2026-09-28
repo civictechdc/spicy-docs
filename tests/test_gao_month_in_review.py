@@ -176,8 +176,8 @@ def test_a_teaser_gao_gives_no_product_number_is_kept_apart_by_its_link():
     assert (report.product_number, report.product_id, report.decision_numbers) == (None, None, ())
     assert report.link == "/products/p00459" and report.topic == "Antideficiency Act Report"
     assert report.heading == "Antideficiency Act Reports: Fiscal Year 2010" and report.released == "2011-01-19"
-    products, decisions, unnumbered = collect_listing([listed])
-    assert [item.link for item in unnumbered] == ["/products/p00459"]
+    products, decisions, others = collect_listing([listed])
+    assert [(item.link, item.product_number) for item in others] == [("/products/p00459", None)]
     assert "p00459" not in {product.product_id for product in products}
     assert all(decision.decision_numbers for decision in decisions)
 
@@ -265,6 +265,28 @@ def test_a_decision_linking_another_number_still_refuses():
         page(body, index=3)
 
 
+@pytest.mark.parametrize(("link", "number"), [("/products/2020-02", "2020-02"), ("/products/2020-02-0", "2020-02")])
+def test_a_number_neither_gao_nor_b_is_a_legal_product_kept_apart(link, number):
+    """GAO's Contract Appeals Board dockets (``2020-02``, some on a ``-0`` page) are listed as Other Decisions."""
+    body = _first_teaser(b'href="/products/gao-26-108640" rel="bookmark"', f'href="{link}" rel="bookmark"'.encode())
+    body = body.replace(
+        b'<h3 class="heading"><a href="/products/gao-26-108640">', f'<h3 class="heading"><a href="{link}">'.encode(), 1
+    )
+    body = body.replace(b">GAO-26-108640<", f">{number}<".encode(), 1)
+    entry = page(body).entries[0]
+    assert (entry.product_id, entry.decision_numbers, entry.product_number) == (None, (), number)
+    products, _, others = collect_listing([page(body)])
+    assert number not in {product.product_number for product in products}
+    assert [(item.link, item.product_number) for item in others] == [(link, number)]
+
+
+def test_a_gao_numbered_product_under_a_legal_heading_is_still_a_product():
+    """2012-2014 file major-rule reports numbered GAO-14-253R under a legal heading: GAO products all the same."""
+    body = AUGUST_PAGES[3].replace(b'href="/products/b-424129.2"', b'href="/products/gao-14-253r"', 2)
+    entry = page(body.replace(b">B-424129.2<", b">GAO-14-253R<", 1), index=3).entries[0]
+    assert entry.topic == "Bid Protest Decision" and entry.product_id == "gao-14-253r"
+
+
 def test_the_oldest_year_probed_keeps_its_older_number_forms():
     """2009's index reads with its own pager depth and GAO's older report, testimony and correspondence ids."""
     first = page((FIXTURES / "2009-page-0.html").read_bytes(), scope=GaoListingScope(2009))
@@ -277,8 +299,8 @@ def test_a_whole_month_lists_each_product_once_with_every_topic():
     """August's four pages hold 100 teasers: 33 products and 40 decisions, each once, topics in listed order."""
     pages = [page(body, index=index) for index, body in enumerate(AUGUST_PAGES)]
     assert sum(len(p.entries) for p in pages) == 100
-    products, decisions, unnumbered = collect_listing(pages)
-    assert (len(products), len(decisions), len(unnumbered)) == (33, 40, 0)
+    products, decisions, others = collect_listing(pages)
+    assert (len(products), len(decisions), len(others)) == (33, 40, 0)
     college = next(product for product in products if product.product_id == "gao-26-108640")
     assert college.topics == ("Auditing and Financial Management", "Education") and college.scopes == ("2026-08",)
     assert college.title == "College Athletics: Most Programs Spend More Than They Generate in Revenue"

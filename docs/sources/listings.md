@@ -490,7 +490,12 @@ reads it.
   (`B-423916.2,B-423916.3`). They are kept apart as decisions, each number
   separate. A teaser GAO gives no product number at all (2011 lists an
   Antideficiency Act report as `/products/p00459` with an empty number field)
-  is kept apart as unnumbered, identified by its link. Older indexes spell decisions
+  is kept apart, identified by its link. The number, not the heading, makes
+  a product: a `GAO-` number is a product wherever GAO files it (2012-2014
+  list major-rule reports numbered `GAO-14-253R` under a legal heading), and
+  a number of neither form, such as a Contract Appeals Board docket
+  (`2020-02`) or a `P` number, is kept apart with the numberless pages as
+  `others`. Older indexes spell decisions
   loosely (`B-402003; B-402003.2`, a trailing comma, `B-235577.2-O.M.`), so a
   decision's link need only agree with its number in letters and digits. A
   product's link is its number lowercased, or that with Drupal's
