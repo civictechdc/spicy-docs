@@ -3238,8 +3238,9 @@ Mirrulations comment objects (179 agencies, 2026-09-28) stated
 `duplicateComments` on every record: 0 on 5,281, 1 on 660, more on 4. Only EPA
 and a few others use it as a count; 0 is the default elsewhere. `subtype` was
 stated on 2,041 and NULL on 3,904; most agencies state a generic label, and
-only EPA classified submitters. The receipt is the spicy-regs lane's
-`comments-subtype-duplicates` report.
+only EPA classified submitters. The receipt is
+`supply-2026-09-02/receipts/comments-subtype-duplicates-2026-09-28/` under
+`~/Work/corpora`.
 
 The columns sit after `category`, mid-table, as the owner's 0.50.0 ruling kept
 for the comment reference columns
