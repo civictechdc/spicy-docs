@@ -20,6 +20,8 @@ def test_retained_product_page_heading_and_published_date():
         == "High-Risk Series: Progress on Many High-Risk Areas, While Substantial Efforts Needed on Others"
     )
     assert metadata.published_date == "2017-02-15"
+    # The page's own Full Report link, not a locator derived from the product id.
+    assert metadata.pdf_url == "https://www.gao.gov/assets/gao-17-317.pdf"
     with pytest.raises(ValueError, match="different product"):
         product_page_metadata(FIXTURE.read_bytes(), "gao-17-999")
 
@@ -52,3 +54,23 @@ def test_missing_heading_and_invalid_evidence_refuse():
         product_page_metadata(raw, PRODUCT)
     with pytest.raises(ValueError):
         product_page_metadata(b"<h1>Unqualified HTML</h1>", PRODUCT)
+
+
+def test_pdf_url_is_the_link_the_page_labels_full_report():
+    """Synthetic: the Full Report link moved to another asset path is read as the page states it."""
+    raw = changed_page(b'<a href="/assets/gao-17-317.pdf">', b'<a href="/assets/690/683460.pdf">')
+    assert product_page_metadata(raw, PRODUCT).pdf_url == "https://www.gao.gov/assets/690/683460.pdf"
+
+
+@pytest.mark.parametrize(
+    "old, new",
+    [
+        (b">Full Report</div>", b">Report</div>"),  # no link labelled Full Report
+        (b">Highlights Page</div>", b">Full Report</div>"),  # two different Full Report links
+    ],
+    ids=["none", "two"],
+)
+def test_a_page_without_exactly_one_full_report_link_refuses(old, new):
+    raw = changed_page(old, new)
+    with pytest.raises(ValueError, match="exactly one Full Report"):
+        product_page_metadata(raw, PRODUCT)
