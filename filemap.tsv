@@ -60,6 +60,7 @@ docs/sources/gao.md	GAO product pages	doc
 docs/sources/govinfo-bodies.md	GovInfo package bodies and acquisition	doc
 docs/sources/govinfo-metadata.md	Read GovInfo metadata	doc
 docs/sources/govinfo-premis.md	Read GovInfo preservation metadata	doc
+docs/sources/historical-statutes.md	Historical statute metadata	doc
 docs/sources/inspectors-general-archive.md	Read archived inspector-general report metadata	doc
 docs/sources/legislators.md	Community legislators crosswalk	doc
 docs/sources/listings.md	Walk publisher list pages	doc
@@ -348,6 +349,7 @@ src/spicy_docs/sources/govinfo/mods.py	Map MODS records without narrowing the pu
 src/spicy_docs/sources/govinfo/premis.py	Literal GovInfo PREMIS 2 preservation metadata, including files without fixity.	src
 src/spicy_docs/sources/govinfo/uslm.py	Explicit GovInfo USLM sources: public and private laws (PLAW) and statute compilations (COMPS).	src
 src/spicy_docs/sources/govinfo/uslm_acquisition.py	Acquire explicit GovInfo USLM sources with exact bytes and bounded HTTP evidence.	src
+src/spicy_docs/sources/historical_statutes.py	Literal community statute metadata from Legisworks and the Nabors table.	src
 src/spicy_docs/sources/lda.py	Senate Lobbying Disclosure Act filings from lda.gov, page by page with exact evidence.	src
 src/spicy_docs/sources/legislators.py	Community legislators crosswalk: bioguide, Senate LIS and FEC candidate ids.	src
 src/spicy_docs/sources/mirrulations.py	Reader connector for the Mirrulations S3 mirror of regulations.gov.	src
@@ -573,6 +575,7 @@ tests/test_govinfo_resolve_unmatched.py	The keyed diagnostic records evidence wi
 tests/test_govinfo_uslm.py	USLM requests and response checks prove native identity and keep publisher spellings.	test
 tests/test_hearing_bill_links.py	The two hearing-to-bill link rules, over the records the measurement retained.	test
 tests/test_hearing_dates_repair.py	Native date conservation and bounded historical package grammar.	test
+tests/test_historical_statutes.py	Historical source rows remain distinct when their page/bill keys collide.	test
 tests/test_identifier_shapes.py	Catalog identifier shapes, each rule pinned by the case that bought it.	test
 tests/test_image_header.py	Image-header parsing from the leading bytes: format and dimensions.	test
 tests/test_inspectors_general.py	Retained community IG metadata keeps source fields separate from archive paths.	test
@@ -587,6 +590,7 @@ tests/test_json_records.py	The shared JSON record reader: frozen-parser parity, 
 tests/test_law_tables.py	Enacted-law rows: the citation reaches the row only through a proved join.	test
 tests/test_lda_and_courtlistener_search.py	LDA and CourtListener list routes: URL builders, optional token credentials, and page continuations.	test
 tests/test_legislative_data_map_tool.py	The legislative data map tool: table rendering, evidence checks, and floor/requirement probes.	test
+tests/test_legislator_companions.py	Exact companion records, explicit dataset shape, and existing bounded acquisition.	test
 tests/test_legislators.py	Community legislators crosswalk: shape rules, indexes, bounds and mocked acquisition.	test
 tests/test_markup_events.py	Markup reading: source text, byte spans, callback independence and refusal bounds.	test
 tests/test_mirrulations_reader.py	MirrulationsReader over a fake in-memory S3 resource.	test
