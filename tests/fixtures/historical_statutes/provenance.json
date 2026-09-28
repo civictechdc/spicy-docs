@@ -1,0 +1,16 @@
+[
+  {
+    "file": "legisworks-volume16-head.yaml",
+    "url": "https://raw.githubusercontent.com/unitedstates/legisworks-historical-statutes/9aeafcf279afdcc137dd9a6ef0d6688ef072a99d/data/016.yaml",
+    "source_sha256": "371f4e39db57ac46eac589fc30c1c73d856f84c6c382d8ecf89d5350d1abe4be",
+    "fixture_sha256": "3a3fcda59905ceb5fcca4865886aa5eab86d090bf5db01894f75b06ce208c32a",
+    "selection": "first four complete YAML records"
+  },
+  {
+    "file": "nabors-head.csv",
+    "url": "https://raw.githubusercontent.com/unitedstates/nabors/406661269dcf691cc123daf294f4b5bed87dba1c/table.csv",
+    "source_sha256": "466c34509ab1e6833c674e81ca07018166050902cb83b33de8d20e8d30807826",
+    "fixture_sha256": "0a055abc08fa5b5eaac18fc8aa7e7cc0b663e5a2b17e82fdae836355c7feaab0",
+    "selection": "header and first eight CSV rows"
+  }
+]

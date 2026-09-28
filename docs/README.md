@@ -36,6 +36,7 @@
 - [Unified Agenda](sources/unified-agenda.md): one reginfo.gov edition file, proved from every record.
 - [U.S. Code](sources/uscode.md): OLRC release-point USLM titles, annual archives, the Popular Name Tool and Table III · [structure](sources/uscode-structure.md) · [references and source credits](sources/uscode-references.md).
 - [OLRC classification tables](sources/uscode-classification.md): the per-Congress table of which Code sections each new public law touched, proving the Congress and session its own caption states.
+- [Historical statute metadata](sources/historical-statutes.md): retained Legisworks and Nabors rows, preserving shared pages, unusual numbering and unmapped observations.
 - [Supreme Court](sources/supreme-court.md): slip-opinion term index and official opinion PDFs.
 - [CRS report files](sources/crs-files.md): report PDFs by the publisher's stated URL, beside the CRS listing.
 - [GAO report files](sources/gao-files.md): keyless report PDFs and online-report index behind product pages.
