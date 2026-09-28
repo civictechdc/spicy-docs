@@ -2907,8 +2907,8 @@ rebuild when it adopts 0.50.1.
 | Table | Columns | Rows | Change |
 | --- | --- | --- | --- |
 | `bill_cosponsors` | `source_xml` | every row | loses the whitespace that followed `</item>` in the list |
-| `house_communications` | `rin_rule` | every row with a scalar RIN (2,042 of the 5,006 retained) | `report_nature_rin_label` becomes `report_nature_rin_label/2` |
-| `house_communications` | `rin`, `rin_rule`, `rin_matched_text` | 5 of the 5,006 retained | three NOAA RINs read cut short become `unmatched` with NULLs; two `RIN: 2120-Aa64` rows gain `2120-AA64` |
+| `house_communications` | `rin_rule` | 2,045 of the 5,006 retained | 2,040 rows are renamed only, `report_nature_rin_label` to `report_nature_rin_label/2`; 2 go from `unmatched` to `report_nature_rin_label/2`; 3 go to `unmatched` |
+| `house_communications` | `rin`, `rin_matched_text` | 5 of the 5,006 retained | the three NOAA RINs read cut short become NULL; the two `RIN: 2120-Aa64` rows gain `2120-AA64` and that printed text |
 | `cbo_cost_estimates` | `stated_count`, `restatements_json` | every 108th-111th row (4,762) | 1 becomes 2, and the http twin joins `[]` |
 
 Nothing else a row publishes moves: in `cbo_cost_estimates` the `url`,
@@ -2985,7 +2985,9 @@ span, and the three constructed inputs give neither. The rule is
 `report_nature_rin_label/2`; `unmatched` keeps the name every matcher here
 shares, so an `unmatched` row does not say which version ran until it is
 rebuilt. `REPORT_NATURE_RIN` is removed, and the legislative data map tool
-reads `rin_from_report_nature`. The occurrence reader's `target_resolved`
+reads `rin_from_report_nature`. A host that publishes both columns passes the
+list it read as `rin_from_report_nature(field, occurrences=...)`, so the
+shared reader runs once per field; the list must carry the field's digest. The occurrence reader's `target_resolved`
 filter removed nothing, because the `rin` rule keys every hit through
 `published_rin`, and is gone.
 
@@ -3028,8 +3030,11 @@ them as published, so moving a column in either contract fails it.
 - `GaoTargetMetadata.pdf_url` is the path of the page's own `Full Report` link
   on `files.gao.gov`, the host that serves it without a browser, so it matches
   `GaoReportIndex.pdf_url` for the same product. A link off `www.gao.gov` or
-  `files.gao.gov`, outside `/assets/`, or a page with no such link or two
-  different ones refuses. All 47 product pages retained on 2026-08-22 link
+  `files.gao.gov`, outside `/assets/` or with a query refuses; a fragment
+  (`#page=2`) names a place in the same file and is dropped. Links are counted
+  by the asset path they resolve to, so one PDF linked relatively and
+  absolutely is one link, and a page with no Full Report path or two different
+  ones refuses. All 47 product pages retained on 2026-08-22 link
   `/assets/{product-id}.pdf`, so the value equals 0.50.0's locator on each.
 - `CitationContext.congress_basis` left unset follows `congress`:
   `document_fallback` with one, `unstated` without. A basis outside the
@@ -3051,6 +3056,7 @@ them as published, so moving a column in either contract fails it.
 - `communication_rin.REPORT_NATURE_RIN` is removed; `RIN_LABEL` is the label
   pattern and `RIN_LABEL_RULE` the rule name. A filter on
   `rin_rule = 'report_nature_rin_label'` matches only rows read before 0.50.1.
+  `rin_from_report_nature` takes an optional `occurrences=` keyword.
 - `shape_bill_cosponsor` raises `TableContractError` where it raised
   `ValueError`, `IndexError` or `AttributeError`.
 - `CitationContext.congress_basis` is typed `str | None`; the instance always
@@ -3062,3 +3068,23 @@ them as published, so moving a column in either contract fails it.
   import it from `sources.fec.committee_master`.
 - `publication_id` accepts http, and `fold_cbo_cost_estimates` rows the https
   statement.
+
+spicy-regs, when it adopts 0.50.1 (read there at its current checkout; not
+edited here):
+
+- `tests/test_congress_index.py:145` expects `rin_rule`
+  `report_nature_rin_label`; under 0.50.1 it is `report_nature_rin_label/2`.
+- Its data dictionary names the old rule (`data_dictionary/descriptions.yaml`
+  and the generated `table_metadata.json`), and the contract descriptions it
+  reads changed on three `house_communications` columns (`rin`, `rin_rule`,
+  `rin_matched_text`) and three `cbo_cost_estimates` columns
+  (`estimate_index`, `stated_count`, `restatements_json`), so its dictionary
+  generate and check steps move with them.
+- `transforms/build_congress_index.py:129-140` (`_repair_rin_occurrences`)
+  repairs rows it does not re-read by filling `rin_occurrences_json` from the
+  retained `report_nature`. `rin`, `rin_rule` and `rin_matched_text` need the
+  same repair, or those rows keep the 0.50.0 scalar under the old rule name;
+  `rin_from_report_nature(field, occurrences=...)` can reuse the list the
+  repair reads.
+- Its GAO target build labels the page read
+  `gao-qualified-page-heading-publication-block/1`; see above.
