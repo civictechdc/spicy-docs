@@ -88,20 +88,24 @@ def test_spans_slice_the_publisher_bytes_across_a_chunk_boundary_and_quoted_brac
 
 def test_a_quoted_value_hides_every_bracket_until_its_own_closing_quote():
     """A ``>`` inside a quoted attribute value is not the tag's end, however far into the value it falls, and a
-    quote of the other kind inside the value does not close it."""
-    body = b"<r><item a=\"x>y\" b='q\">' c=\"'>\">z</item><item d='>'/></r>"
+    quote of the other kind inside the value does not close it: a value ending ``/>`` does not make its element
+    self-closed, and a self-closed element's ``>``-bearing value does not end it early."""
+    body = b'<r><item a="x>y" b=\'q">\' c="\'>">z</item><item a="x/>">w</item><item d=\'a>b\'/></r>'
     root, spans = parse_xml_with_spans(body, path=("r", "item"), max_bytes=len(body), error_type=ValueError, label="t")
     assert [body[start:end] for start, end in (spans[e] for e in root.findall("item"))] == [
         b'<item a="x>y" b=\'q">\' c="\'>">z</item>',
-        b"<item d='>'/>",
+        b'<item a="x/>">w</item>',
+        b"<item d='a>b'/>",
     ]
 
 
 def test_a_path_prefix_off_the_path_gets_no_span():
     """Only elements reached through the whole path from the root are spanned: an item under an amendment's own
-    cosponsors, whose last two tags match, is not, and neither is one at the path's depth under another parent."""
+    cosponsors, whose last two tags match, is not; neither is one at the path's depth under another parent, even the
+    second of two there, nor one under another parent at the path's own depth."""
     body = (
-        b"<billStatus><bill><amendments><amendment><cosponsors><item>off</item></cosponsors></amendment></amendments>"
+        b"<billStatus><bill><amendments><amendment><cosponsors><item>off</item></cosponsors></amendment>"
+        b"<item>off</item><item>off</item></amendments>"
         b"<cosponsors><item>on</item></cosponsors><other><item>off</item></other></bill></billStatus>"
     )
     path = ("billStatus", "bill", "cosponsors", "item")
