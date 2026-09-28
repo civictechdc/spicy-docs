@@ -83,6 +83,7 @@ _DECISION_NUMBER = re.compile(r"B-\d+[A-Z0-9.\-]*")
 #: Older decisions list their numbers with commas or semicolons, with stray spaces and a trailing separator.
 _DECISION_SEPARATOR = re.compile(r"[,;]")
 _NOT_ALPHANUMERIC = re.compile(r"[^a-z0-9]")
+_PRERELEASE = re.compile(r"/prerelease/[a-z0-9]+")
 #: Drupal's suffix for a path alias already taken: 2015 links GAO-16-75SP as ``/products/gao-16-75sp-0``.
 _DUPLICATE_PATH = re.compile(r"-\d+")
 _FIELD_CLASSES: Final = {
@@ -319,13 +320,16 @@ def _entry(position: int, teaser: dict) -> GaoListingEntry:
     if not teaser["topic"]:
         raise GaoListingSourceError(f"{_LABEL} lists a teaser before any heading")
     link = links.get("label", "")
-    if link != links.get("heading") or not link.startswith("/products/"):
+    decision = number is not None and number.startswith("B-")
+    # 2020-2023 link some numbered products by their prerelease path (``/prerelease/3mpz``); the product's page is
+    # still ``/products/`` and its number lowercased, checked for GAO-21-584 on 2026-09-28.
+    prerelease = number is not None and not decision and _PRERELEASE.fullmatch(link) is not None
+    if link != links.get("heading") or not (link.startswith("/products/") or prerelease):
         raise GaoListingSourceError(f"{_LABEL} teaser {position} does not link one product page")
-    slug = unquote(link.removeprefix("/products/"))
+    slug = number.lower() if prerelease and number is not None else unquote(link.removeprefix("/products/"))
     # A product's link is its number lowercased, or that with Drupal's duplicate-path suffix; the product id is the
     # page the listing links. A decision's link spells its number GAO's older ways (``b-402003-b-402003.2`` for
     # ``B-402003; B-402003.2``), so only its letters and digits must agree.
-    decision = number is not None and number.startswith("B-")
     if number is not None and (
         _NOT_ALPHANUMERIC.sub("", slug) != _NOT_ALPHANUMERIC.sub("", number.lower())
         if decision

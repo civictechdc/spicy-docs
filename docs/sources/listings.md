@@ -495,7 +495,9 @@ reads it.
   decision's link need only agree with its number in letters and digits. A
   product's link is its number lowercased, or that with Drupal's
   duplicate-path suffix (`/products/gao-16-75sp-0` for `GAO-16-75SP`), and the
-  product id is the page the listing links.
+  product id is the page the listing links. 2020-2023 link some products by
+  their prerelease path (`/prerelease/3mpz` for GAO-21-584, whose page is
+  `/products/gao-21-584`); those key on their number lowercased.
 
 ```sh
 export ZYTE_TOKEN

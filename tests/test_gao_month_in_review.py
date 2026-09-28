@@ -233,6 +233,27 @@ def test_a_product_page_with_drupals_duplicate_path_suffix_keys_on_its_link(suff
     assert (entry.product_id, entry.product_number, entry.link) == (f"gao-26-108640{suffix}", "GAO-26-108640", link)
 
 
+def test_a_product_linked_by_its_prerelease_path_keys_on_its_number():
+    """2020-2023 link some products as ``/prerelease/3mpz``; ``/products/gao-21-584`` is still the product's page."""
+    body = AUGUST_PAGES[0].replace(b'href="/products/gao-26-108640"', b'href="/prerelease/3mpz"', 2)
+    entry = page(body).entries[0]
+    assert (entry.product_id, entry.product_number, entry.link) == (
+        "gao-26-108640",
+        "GAO-26-108640",
+        "/prerelease/3mpz",
+    )
+
+
+@pytest.mark.parametrize(
+    ("old", "link"),
+    [(b'href="/products/b-424129.2"', "/prerelease/3mpz"), (b'href="/products/b-424129.2"', "/about/x")],
+)
+def test_a_decision_or_any_other_path_off_the_product_pages_still_refuses(old, link):
+    """Only a numbered product may link its prerelease path; nothing may link outside the product pages."""
+    with pytest.raises(GaoListingSourceError, match="does not link one product page"):
+        page(AUGUST_PAGES[3].replace(old, f'href="{link}"'.encode(), 2), index=3)
+
+
 def test_a_decision_linking_another_number_still_refuses():
     """Letters and digits must agree: a decision teaser linking another decision's page is refused."""
     body = AUGUST_PAGES[3].replace(DECISION, b'href="/products/b-424130.2"', 2)
