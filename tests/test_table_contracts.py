@@ -1254,15 +1254,31 @@ def _federal_register_cases() -> list[ShapedCase]:
 
 def _regulations_attribute_cases() -> list[ShapedCase]:
     """Retained Regulations.gov API detail records, each through its projection; the identity is the record's ``id``."""
-    from spicy_docs.schemas.regulations_attribute_tables import project_docket_attributes, project_document_attributes
+    from spicy_docs.schemas.regulations_attribute_tables import (
+        project_comment_attributes,
+        project_docket_attributes,
+        project_document_attributes,
+    )
 
     folder = FIXTURES / "regulations_gov_attributes"
     documents = json.loads((folder / "documents.json").read_text(encoding="utf-8"))
     dockets = json.loads((folder / "dockets.json").read_text(encoding="utf-8"))
-    return [
-        _case("document_attributes", project_document_attributes(r["id"], r["attributes"]), (r["id"],))
-        for r in documents
-    ] + [_case("docket_attributes", project_docket_attributes(r["id"], r["attributes"]), (r["id"],)) for r in dockets]
+    # Comments: the retained Mirrulations comment objects, each read whole.
+    comments = [
+        json.loads(path.read_text(encoding="utf-8"))["data"]
+        for path in sorted((FIXTURES / "regulations_gov_comments").glob("*.source.json"))
+    ]
+    return (
+        [
+            _case("document_attributes", project_document_attributes(r["id"], r["attributes"]), (r["id"],))
+            for r in documents
+        ]
+        + [_case("docket_attributes", project_docket_attributes(r["id"], r["attributes"]), (r["id"],)) for r in dockets]
+        + [
+            _case("comment_attributes", project_comment_attributes(r["id"], r["attributes"]), (r["id"],))
+            for r in comments
+        ]
+    )
 
 
 def _fec_committee_history_cases() -> list[ShapedCase]:
@@ -1867,6 +1883,7 @@ FILLED_BY: dict[str, tuple[str, ...]] = {
     "federal_register": ("schemas/federal_register.py", "sources/federal_register/native.py"),
     "document_attributes": ("schemas/regulations_attribute_tables.py",),
     "docket_attributes": ("schemas/regulations_attribute_tables.py",),
+    "comment_attributes": ("schemas/regulations_attribute_tables.py",),
     "fec_committee_history": ("schemas/fec_committee_history.py", "sources/fec/committee_master.py"),
     "comments": ("schemas/regulations.py",),
     # Shaped and read here, with the host's target lookup inside target_candidates_json; ``_evidence`` adds the rows
@@ -2348,7 +2365,7 @@ def test_the_attribute_projections_type_what_the_publisher_states() -> None:
 def test_each_attribute_column_is_its_api_attribute_in_snake_case_in_attribute_order() -> None:
     from spicy_docs.schemas.regulations_attribute_tables import attribute_of
 
-    for name in ("document_attributes", "docket_attributes"):
+    for name in ("document_attributes", "docket_attributes", "comment_attributes"):
         columns = TABLE_CONTRACTS[name].columns[1:]
         attributes = [attribute_of(column) for column in columns]
         # DocSpec's exporter names a column from its attribute this way; the projection reads the attribute back.

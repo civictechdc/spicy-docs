@@ -221,7 +221,7 @@ src/spicy_docs/schemas/law_tables.py	The ``laws`` table (Congress.gov law list r
 src/spicy_docs/schemas/legislator_tables.py	The ``members`` and ``member_terms`` tables: one row per legislator in one capture of the community crosswalk, and one…	src
 src/spicy_docs/schemas/native_reference_rows.py	The native legal-reference tables: literal U.S. Code and eCFR XML observations, and each complete read of an input.	src
 src/spicy_docs/schemas/regulations.py	The regulations.gov docket, document and comment record types, and the contracts of the tables published from them.	src
-src/spicy_docs/schemas/regulations_attribute_tables.py	The Regulations.gov attribute tables: what a document's or docket's API detail record states beyond the thin…	src
+src/spicy_docs/schemas/regulations_attribute_tables.py	The Regulations.gov attribute tables: what a document's, docket's or comment's API detail record states beyond the…	src
 src/spicy_docs/schemas/roster_tables.py	The ``committees`` table (Congress.gov ``committee/{congress}`` list rows with the ``committee-detail`` record folded…	src
 src/spicy_docs/schemas/senate_expenditure_tables.py	``senate_expenditures``: one row per ruled row of one of the print's three ruled grids (``appropriation_summary``,…	src
 src/spicy_docs/schemas/source_native_release/2.0/acquisition-ledger.schema.json		config
@@ -486,6 +486,7 @@ tests/test_citation_context_qualification.py	Retained historical context and exp
 tests/test_citation_grammar.py	The single citation grammar, and the two defects the port fixed.	test
 tests/test_citations.py	The citation rules and the two activity reports they are pinned on.	test
 tests/test_cli_list_pages.py	One command walks any registered list route: exact page blobs, receipt rows, and refusals that exit non-zero.	test
+tests/test_comment_attributes.py	comment_attributes: document_attributes' rules applied to comments, less the owner's email and phone ruling.	test
 tests/test_comment_reference_projection.py	Native parent-document evidence stays distinct from docket and object IDs.	test
 tests/test_comment_submitter_projection.py	The agency's submitter class and campaign count reach the comments table as stated.	test
 tests/test_committee_rosters.py	House Clerk and Senate roster files prove what each states about itself.	test

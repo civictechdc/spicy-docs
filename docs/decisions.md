@@ -4180,3 +4180,48 @@ importer" and "What spicy-regs must change to adopt it"), the importer list for
 the CBO, `source_xml`, digest and Clerk entries, the two Congressional Record
 entries (the host's wheel declaration and the `record_issues` rebuild), and the
 comments entry.
+
+## Comments get an attribute table: `comment_attributes`
+
+Unreleased, 2026-09-28; the owner ruled it in, for the same 0.52.0 release as
+the comment columns above. `comment_attributes` is to `comments` what
+`document_attributes` is to `documents`: one row per comment, keyed
+`comment_id` spelled `value/1`, referencing `comments`, built by the same
+`_attribute_contract` and projected by `project_comment_attributes`, the one
+spelling spicy-regs' build and DocSpec share. Columns follow decision 66's
+naming and decision 67's typing: `withdrawn` BOOLEAN, `page_count` INTEGER,
+`postmark_date` TIMESTAMPTZ, `display_properties_json` in `json_column`
+spelling, everything else VARCHAR as stated.
+
+**Contact details follow decision 66, less `email` and `phone`** (owner,
+2026-09-28). `address1`, `address2`, `city`, `state_province_region`, `zip`,
+`country`, `fax` and `submitter_rep` are published. `email` and `phone` are
+left out on purpose: documents state neither, so decision 66 never ruled on
+them, and on comments they are private individuals' contact details,
+bulk-queryable once published, with little analytic value.
+
+Left out, as `COMMENT_ATTRIBUTES_LEFT_OUT` lists, and the thin table's own
+attributes (what `COMMENT.extract` reads; a test derives the set by changing
+each attribute and watching the extracted row):
+
+| Reason | Attributes |
+| --- | --- |
+| Private contact details (owner ruling) | `email`, `phone` |
+| Never stated | `field1`, `field2`, `submitterRepAddress`, `submitterRepCityState` |
+| Constant | `openForComment` (false) |
+
+Unlike documents, `withdrawn`, `reasonWithdrawn` and `fileFormats` are
+columns here: the thin `comments` table carries none of them (its
+`attachments_json` comes from the record's `included` attachments, while
+`fileFormats`, as `file_formats_json`, lists renditions of the comment's own
+content file).
+
+"Never stated" and "constant" are measured on the spicy-regs re-read of every
+comment: on the first 4,368,949 objects read, `restrictReason` (25),
+`restrictReasonType` (22) and `fileFormats` (4) are stated after all, so they
+are columns, which the 5,945-comment sample had missed; `openForComment` is
+false on all of them. Receipts under `~/Work/corpora/supply-2026-09-02/receipts/comments-full-reread-2026-09-28/comment-attributes/`:
+`sample_census.json`, `partial_census.json`, and `project_live_sample.json`,
+where `project_comment_attributes` projected every one of the 5,945 live
+sampled records with no refusal. The full read re-measures; an attribute
+stated there after all becomes an appended column.

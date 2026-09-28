@@ -71,7 +71,11 @@ from spicy_docs.schemas.regulations import (
     DOCUMENTS,
     RECORD_TYPES,
 )
-from spicy_docs.schemas.regulations_attribute_tables import DOCKET_ATTRIBUTES, DOCUMENT_ATTRIBUTES
+from spicy_docs.schemas.regulations_attribute_tables import (
+    COMMENT_ATTRIBUTES,
+    DOCKET_ATTRIBUTES,
+    DOCUMENT_ATTRIBUTES,
+)
 from spicy_docs.schemas.roster_tables import COMMITTEE_ASSIGNMENTS, COMMITTEES
 from spicy_docs.schemas.senate_expenditure_tables import SENATE_EXPENDITURES
 from spicy_docs.schemas.tables import COLUMN_TYPES, Reference, Row, TableContract, TableContractError
@@ -137,9 +141,10 @@ _REGISTERED: tuple[TableContract, ...] = (
     DOCKETS,
     DOCUMENTS,
     COMMENTS,
-    # What each document's and docket's detail record states beyond those thin tables, typed natively.
+    # What each document's, docket's and comment's detail record states beyond those thin tables, typed natively.
     DOCUMENT_ATTRIBUTES,
     DOCKET_ATTRIBUTES,
+    COMMENT_ATTRIBUTES,
     # The Federal Register's own table: the dated records the Regulations.gov tables cite by number.
     FEDERAL_REGISTER,
     # The FEC committee master, one row per committee per cycle, from the bulk files.
@@ -183,6 +188,7 @@ __all__ = [
     "COLUMN_TYPES",
     "COMMENT",
     "COMMENTS",
+    "COMMENT_ATTRIBUTES",
     "COMMITTEES",
     "COMMITTEE_ASSIGNMENTS",
     "COMMITTEE_MEETINGS",
