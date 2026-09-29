@@ -2,14 +2,39 @@
 
 Each :class:`RecordType` pairs an S3 path pattern, Parquet schema, dedup key and extract function; ``RECORD_TYPES`` keys
 them by name, and its order drives the default set of data types the pipeline processes.  ``DOCKETS``, ``DOCUMENTS``
-and ``COMMENTS`` state the tables the host publishes: the extract's columns in its order, then on documents and
-comments the host's ``pdf_extraction_results_json``, each keyed on its dedup key spelled ``value/1``.
+and ``COMMENTS`` state the tables the host publishes, each keyed on its dedup key spelled ``value/1``: the extract's
+columns in its order, then on documents and comments the host's ``pdf_extraction_results_json``; on comments the
+extract's ``subtype`` and ``duplicate_comments``, added later, are appended after that host column.
 """
 
 from json import dumps as json_dumps
 
 from spicy_docs.schemas.base import RecordType
-from spicy_docs.schemas.tables import VALUE_KEY, Reference, table_contract
+from spicy_docs.schemas.tables import INTEGER, VALUE_KEY, Reference, table_contract
+
+#: ``duplicateComments`` is published as INTEGER (32-bit); the count is never negative.
+_COUNT_BOUND = 2**31
+
+
+def is_count(value: object) -> bool:
+    """Whether ``value`` is a count a 32-bit INTEGER column publishes: an int that is not a bool, 0 <= n < 2**31.
+
+    The one spelling of the rule, for the extract and for the Regulations.gov comment validator.
+    """
+    return isinstance(value, int) and not isinstance(value, bool) and 0 <= value < _COUNT_BOUND
+
+
+def _stated_count(value: object) -> int | None:
+    """A stated ``duplicateComments`` as published: NULL, or a count (:func:`is_count`).
+
+    Anything else raises rather than reaching a host's integer column, which would coerce "5" to 5, True to 1 and 1.5
+    to 1; a reader turns the raise into an unreadable record.
+    """
+    if value is None:
+        return None
+    if not is_count(value):
+        raise ValueError(f"duplicateComments must be an integer from 0 to 2**31 - 1, not {value!r}")
+    return value
 
 
 def _extract_comment(d: dict) -> dict:
@@ -56,6 +81,9 @@ def _extract_comment(d: dict) -> dict:
         # extracted upstream.
         "text_content": None,
         "text_extraction_status": None,
+        # Appended (docs/tables.md): as stated, so NULL means the record did not state it and 0 a stated zero.
+        "subtype": attrs.get("subtype"),
+        "duplicate_comments": _stated_count(attrs.get("duplicateComments")),
     }
 
 
@@ -183,6 +211,8 @@ COMMENT = RecordType(
         # ("ok"/"empty"/"encrypted"/"error"/None if not yet run).
         "text_content": str,
         "text_extraction_status": str,
+        "subtype": str,
+        "duplicate_comments": int,
     },
     dedup_key="comment_id",
     extract=_extract_comment,
@@ -268,6 +298,7 @@ COMMENTS = table_contract(
     identity=(COMMENT.dedup_key,),
     version_column="modify_date",
     key_spelling=VALUE_KEY,
+    types={"duplicate_comments": INTEGER},
     columns={
         "comment_id": "The publisher's comment id, usually its docket id and a sequence (`APHIS-2004-0018-0031`).",
         "docket_id": "The docket the publisher files the comment under (`docketId`); NULL when it names none.",
@@ -306,6 +337,16 @@ COMMENTS = table_contract(
         "pdf_extraction_results_json": (
             "Provenance of `text_content` as JSON: for `derived` text the Mirrulations objects it was read from, else "
             "the host's latest PDF attempts; NULL when neither is recorded."
+        ),
+        "subtype": (
+            "The agency's own class for the submission (`subtype`), spelled as stated. It is agency-specific: a "
+            "submitter class such as a mass-mail campaign or an organization at EPA, a generic label at many agencies. "
+            "NULL when the record states none or the host has not read it."
+        ),
+        "duplicate_comments": (
+            "How many received submissions the agency says this posted record stands for (`duplicateComments`), as "
+            "stated. Agencies that do not count state 0; EPA states 1 for a single comment and the campaign's size on "
+            "a mass-mail record. NULL when the record states none or the host has not read it."
         ),
     },
 )

@@ -1210,20 +1210,32 @@ def _published_regulations_rows() -> dict[str, list[dict[str, str | None]]]:
     return json.loads((FIXTURES / "regulations_gov_tables" / "published-rows.json").read_text(encoding="utf-8"))
 
 
+#: Contract columns the host has not published yet, per table: until it rewrites the table and the rows are re-read,
+#: they are inserted as NULL (unread) at the contract's position, and nothing else is reordered or filled. Empty the
+#: entry when the fixture is re-read, so the round-trip holds the published footer again.
+_UNPUBLISHED_REGULATIONS_COLUMNS: dict[str, frozenset[str]] = {"comments": frozenset({"subtype", "duplicate_comments"})}
+
+
 def _regulations_cases() -> list[ShapedCase]:
-    """Retained published rows, each exactly as the host's Parquet footer ordered it.
+    """Retained published rows, each as the host's Parquet footer ordered it.
 
     The host shapes these rows, not a ``shape_*`` here, so the published row is the one under test: the round-trip
-    loop compares its column order with the contract's and retains the selected identity. Nothing here reorders or
-    fills a row, so a column the contract moves, adds or drops and the host does not fails there.
+    loop compares its column order with the contract's and retains the selected identity. Only the columns named in
+    ``_UNPUBLISHED_REGULATIONS_COLUMNS`` are inserted, as NULL; any other column the contract moves, adds or drops and
+    the host does not fails there.
     """
     published = _published_regulations_rows()
     assert set(published) == set(_PUBLISHED_REGULATIONS_IDS)
-    return [
-        _case(table, row, (identity,))
-        for table, identities in _PUBLISHED_REGULATIONS_IDS.items()
-        for row, identity in zip(published[table], identities, strict=True)
-    ]
+    cases = []
+    for table, identities in _PUBLISHED_REGULATIONS_IDS.items():
+        pending = _UNPUBLISHED_REGULATIONS_COLUMNS.get(table, frozenset())
+        columns = TABLE_CONTRACTS[table].columns
+        for row, identity in zip(published[table], identities, strict=True):
+            assert set(columns) - set(row) == pending and set(row) <= set(columns)
+            assert [c for c in columns if c not in pending] == list(row), f"{table}: published order moved"
+            assert columns[len(row) :] == tuple(c for c in columns if c in pending), f"{table}: pending not appended"
+            cases.append(_case(table, {c: row.get(c) for c in columns} if pending else row, (identity,)))
+    return cases
 
 
 def _federal_register_cases() -> list[ShapedCase]:
@@ -1638,11 +1650,25 @@ def test_a_multi_part_report_is_one_row_per_part_and_its_blocks_key_under_their_
     assert len(set(keys)) == 2
 
 
-def test_each_regulations_gov_table_publishes_its_extract_columns_first() -> None:
-    """The extract's columns lead each published table in the extract's order; only host columns may follow."""
+#: Columns the host adds to each Regulations.gov table, which the extract does not produce.
+_REGULATIONS_HOST_COLUMNS: dict[str, frozenset[str]] = {
+    "dockets": frozenset(),
+    "documents": frozenset({"pdf_extraction_results_json"}),
+    "comments": frozenset({"pdf_extraction_results_json"}),
+}
+
+
+def test_each_regulations_gov_table_publishes_its_extract_columns_in_the_extract_order() -> None:
+    """Each published table is the extract's columns in the extract's order plus the host's own.
+
+    A host column keeps the position it was appended at, so an extract column appended later (``comments.subtype``)
+    follows it; the host column's order is otherwise the extract's.
+    """
     for record_type in RECORD_TYPES.values():
         contract = TABLE_CONTRACTS[record_type.name]
-        assert contract.columns[: len(record_type.schema)] == tuple(record_type.schema)
+        host = _REGULATIONS_HOST_COLUMNS[record_type.name]
+        assert set(contract.columns) - set(record_type.schema) == host
+        assert tuple(c for c in contract.columns if c not in host) == tuple(record_type.schema)
 
 
 def test_the_published_document_row_is_the_extract_of_its_captured_record() -> None:

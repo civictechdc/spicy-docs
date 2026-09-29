@@ -3974,3 +3974,80 @@ read again or the table is rebuilt. **Host step:** rebuild `record_issues` once,
 or re-read the seven details above. Receipt:
 `~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/review-fixes/record-issues/`
 (`measure.py`, `measure.json`, `changed.csv`, the package summaries).
+
+## Comments carry the agency's submitter class and campaign count
+
+Unreleased, 2026-09-28; the owner approved carrying both fields in the fork's
+`comments` table. `schemas.regulations` extracts Regulations.gov `subtype` and
+`duplicateComments` into `comments.subtype` and `comments.duplicate_comments`,
+as stated, appended last in that order. The `comments` contract types
+`duplicate_comments` `INTEGER`; every other column stays VARCHAR. NULL means the
+record did not state the field, stated it null, or the host has not read it; a
+stated 0 stays 0. The extract never coerces a count: anything but an int (not a
+bool) from 0 to 2**31 - 1 raises, which a reader turns into an unreadable
+record, rather than reaching a host's integer column that would turn `"5"` into
+5 or `true` into 1. The comment validator admits the same range, and admits
+`pageCount` only as an int in that range; its JSON schema, sealed into
+released evidence, is unchanged.
+
+Why: `comments` counts posted records. An agency posts one record for a
+mass-mail campaign, and some classify submitters only in `subtype`. EPA's PFAS
+drinking-water docket (EPA-HQ-OW-2022-0114) has 1,629 posted records; their
+`duplicateComments` sum to 53,707, 52,086 of them on 23 `Mass Mail Campaign`
+records. EPA's response to comments counts about 122,200 received, so the sum
+is the agency's posted accounting, not its total. A stratified sample of 5,945
+Mirrulations comment objects (179 agencies, 2026-09-28) stated
+`duplicateComments` on every record: 0 on 5,281, 1 on 660, more on 4. Only EPA
+and a few others use it as a count; 0 is the default elsewhere. `subtype` was
+stated on 2,041 and NULL on 3,904; most agencies state a generic label. Submitter
+classes are mostly EPA's, but not only: the spicy-regs re-read of every comment
+finds `Company/Organization Comment` at AMS (188), COE (171), EEOC (11), DOD (4)
+and ATBCB (3), `Member of Congress` at AMS (20), and `Mass Mail Campaign` at
+BSEE (1,077) and CMS (14), among the agencies it had read (ACF to EPA,
+2026-09-28). The receipt is
+`supply-2026-09-02/receipts/comments-subtype-duplicates-2026-09-28/` under
+`~/Work/corpora`.
+
+**Both are appended, after the host's `pdf_extraction_results_json`.** Every
+new column is appended ([tables](tables.md)), as `bill_sections.congress` was.
+The 0.50.0 ruling ([above](#three-hosted-tables-take-new-columns-mid-table))
+kept an order that was already live; it is not a rule to insert. Appending
+keeps every live column at its position in the fork's mirror, and it matches
+the host's catalog, whose `ADD COLUMN` appends. A first draft placed them
+after `category`; the release owner's review moved them. The
+extract's columns therefore no longer all precede the host's: the test now
+holds each table to the extract's columns in the extract's order plus the named
+host columns (`_REGULATIONS_HOST_COLUMNS`).
+`tests/test_table_contracts.py` appends both as NULL to the retained published
+comment rows, which predate them (`_UNPUBLISHED_REGULATIONS_COLUMNS`), and
+refuses a pending column that is not last; empty that entry when the host has
+republished and the rows are re-read. The
+`public_tables` comment profile takes its columns from `COMMENT.schema`, so it
+gains both, as it gained the reference columns without moving its ids. Its shape
+changed, so both ids move: schema `public-comments:1.1` and projection `1.1`
+(the Federal Register precedent [above](#federal-register-public-tables-preserve-composite-identity)
+kept its schema id only because its columns did not change).
+
+### What an importer must change
+
+- The `comments` contract is now typed (`duplicate_comments` INTEGER), so
+  DocSpec's `_contract_types` check applies to it: a published comments member
+  must carry that column as INTEGER, or admission refuses. The fork's mirror
+  exports it typed.
+- A host adds `subtype` and `duplicate_comments` last, as nullable columns; rows
+  read before them stay NULL until re-read.
+- The comment extract raises on a malformed `duplicateComments`; a host that
+  calls it outside a reader must treat the raise as an unreadable record.
+- `KeyedPayload` carries `etag` and `size`; `_download_record` returns the GET's
+  `DownloadedObject` with the payload.
+- The public-comments profile ids moved to `public-comments:1.1`, projection
+  `1.1`; a reader requiring 1.0 refuses the new shape.
+
+## A keyed Mirrulations payload carries its GET's ETag and size
+
+Unreleased, 2026-09-28. `KeyedPayload` gains `etag` and `size`, from the same
+GET as `last_modified`, so a caller that keeps only fields of a record can still
+say which bytes it read without a listing or the body. The spicy-regs comment
+re-read (owner decision 2026-09-28, option a) keeps them per object. Both are
+optional fields with defaults; `_download_record` now returns the GET's
+`DownloadedObject` with the payload, and `download_and_parse` is unchanged.
