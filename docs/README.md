@@ -32,7 +32,7 @@
 - [eCFR authority notes and source metadata](sources/ecfr-authority.md)
 - [CFR agencies and subject index](sources/cfr-roster-index.md)
 - [Public laws and statute compilations](sources/uslm-laws.md): keyless GovInfo USLM XML with native identity checks.
-- [Publisher list pages](sources/listings.md): Congress.gov, GovInfo, GAO feed, LDA, CourtListener search, SAM.gov, USAspending and FCC ECFS on one traversal rule; `spicy-docs-list` walks any of them from the [command line](cli.md).
+- [Publisher list pages](sources/listings.md): Congress.gov, GovInfo, GAO feed and Month in Review listing, LDA, CourtListener search, SAM.gov, USAspending and FCC ECFS on one traversal rule; `spicy-docs-list` walks any of them from the [command line](cli.md).
 - [Unified Agenda](sources/unified-agenda.md): one reginfo.gov edition file, proved from every record.
 - [U.S. Code](sources/uscode.md): OLRC release-point USLM titles, annual archives, the Popular Name Tool and Table III · [structure](sources/uscode-structure.md) · [references and source credits](sources/uscode-references.md).
 - [OLRC classification tables](sources/uscode-classification.md): the per-Congress table of which Code sections each new public law touched, proving the Congress and session its own caption states.

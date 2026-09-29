@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+import http.client
 import json
 import re
 import urllib.error
@@ -113,7 +114,7 @@ def _provider_error_kind(error: urllib.error.HTTPError, secrets: tuple[str, ...]
     """The provider's own error slug, for a receipt; never its prose and never a credential."""
     try:
         payload = error.read(PROVIDER_ERROR_BYTES)
-    except (OSError, ValueError):
+    except (OSError, ValueError, http.client.HTTPException):
         return ""
     finally:
         error.close()
@@ -231,16 +232,13 @@ class ZyteHttpFetcher:
         except urllib.error.HTTPError as error:
             kind = _provider_error_kind(error, secrets)
             raise ZyteTransportError(f"Zyte acquisition failed with HTTP {error.code}{kind}") from None
-        except (OSError, urllib.error.URLError):
+        except (OSError, urllib.error.URLError, http.client.HTTPException):
             raise ZyteTransportError("Zyte acquisition failed before receiving a response") from None
-        try:
-            with response:
-                provider_payload = read_provider_payload(
-                    response, max_bytes=max_bytes, provider=_PROVIDER, error_type=ZyteTransportError
-                )
-                request_id = _request_id_from_provider_headers(response.headers)
-        except OSError:
-            raise ZyteTransportError("Zyte acquisition failed while reading the provider response") from None
+        with response:
+            provider_payload = read_provider_payload(
+                response, max_bytes=max_bytes, provider=_PROVIDER, error_type=ZyteTransportError
+            )
+            request_id = _request_id_from_provider_headers(response.headers)
 
         value = strict_provider_json(provider_payload, provider=_PROVIDER, error_type=ZyteTransportError)
         target_status = value.get("statusCode")

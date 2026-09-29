@@ -338,6 +338,7 @@ src/spicy_docs/sources/ferc/vocabulary.py	FERC's own docket-prefix and document 
 src/spicy_docs/sources/firecrawl.py	Bounded, secret-safe raw HTTP capture through Firecrawl's v2 scrape endpoint.	src
 src/spicy_docs/sources/gao/__init__.py	GAO product-page acquisition profile.	src
 src/spicy_docs/sources/gao/files.py	GAO report files on ``files.gao.gov``: the keyless route to a product's own bytes.	src
+src/spicy_docs/sources/gao/month_in_review.py	GAO's Month in Review and Annual Index: the publisher's own list of the products it issued, by month and year.	src
 src/spicy_docs/sources/gao/native.py	Exact GAO product-page evidence for one source-native release.	src
 src/spicy_docs/sources/gao/product_metadata.py	Metadata from an already-qualified GAO product page, without widening the raw profile.	src
 src/spicy_docs/sources/gao/profile.py	GAO product-page acquisition profile.	src
@@ -558,6 +559,7 @@ tests/test_firecrawl.py	The shared Firecrawl adapter bounds bytes, captures prov
 tests/test_fr_discarded_distinctness.py	Check discarded-observation analysis with synthetic Federal Register releases.	test
 tests/test_fr_doc_number_normalization.py	Cross-parity between the two public Federal Register document-number normalizers.	test
 tests/test_gao_files.py	GAO report files are selected by product ID and proved by their own bytes.	test
+tests/test_gao_month_in_review.py	GAO's Month in Review and Annual Index pages are read, walked and re-read as the publisher's own product listing.	test
 tests/test_gao_product_metadata.py	Qualified source heading/date reading does not infer days or accept wrong identities.	test
 tests/test_gao_product_pages_source_native.py	GAO product pages remain exact source evidence, not inferred topic tags.	test
 tests/test_gao_refused_responses.py	GAO refusals carry exact bounded target bytes without becoming valid pages.	test

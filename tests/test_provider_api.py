@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import http.client
 import traceback
 
 import pytest
 
-from spicy_docs.transport.provider_api import strict_provider_json, validate_provider_credential
+from spicy_docs.transport.provider_api import read_provider_payload, strict_provider_json, validate_provider_credential
 
 
 class _Refused(ValueError):
@@ -40,3 +41,24 @@ def test_an_unreadable_envelope_is_refused_without_the_parser_error_that_holds_t
     with pytest.raises(_Refused, match=message) as raised:
         strict_provider_json(payload, provider="Provider", error_type=_Refused)
     _detached(raised.value, "s3cr3t-token")
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        http.client.IncompleteRead(b"x" * 10),
+        http.client.BadStatusLine("x"),
+        http.client.LineTooLong("x"),
+        ConnectionResetError(),
+    ],
+)
+def test_a_provider_envelope_that_breaks_mid_read_is_the_callers_own_error(failure) -> None:
+    """A dropped or malformed read raises the client's own error, so no raw ``http.client`` error ends a fallback chain."""
+
+    class _Broken:
+        def read(self, _limit: int) -> bytes:
+            raise failure
+
+    with pytest.raises(ValueError, match="P acquisition failed while reading the provider response") as raised:
+        read_provider_payload(_Broken(), max_bytes=10, provider="P", error_type=ValueError)
+    assert raised.value.__cause__ is None and raised.value.__suppress_context__

@@ -6,6 +6,7 @@ credentials or short secrets are suppressed from evidence."""
 from __future__ import annotations
 
 import base64
+import http.client
 import io
 import json
 import traceback
@@ -80,6 +81,49 @@ def test_token_validation_errors_never_repeat_the_secret() -> None:
 
 def test_fetcher_representation_does_not_expose_the_credential() -> None:
     assert "secret-value" not in repr(zyte.ZyteHttpFetcher(token="secret-value"))
+
+
+def test_a_provider_response_cut_short_is_a_transport_failure_that_names_no_secret(monkeypatch) -> None:
+    """A connection that drops mid-body raises the adapter's own error, as every other transport failure does."""
+
+    class _CutShort(_Response):
+        def read(self, limit: int) -> bytes:
+            raise http.client.IncompleteRead(b"x" * 100454)
+
+    monkeypatch.setattr(zyte.urllib.request, "urlopen", lambda *_args, **_kwargs: _CutShort(b""))
+    with pytest.raises(zyte.ZyteTransportError, match="while reading the provider response") as raised:
+        zyte.ZyteHttpFetcher(token="test-token").fetch(PRODUCT_URL, timeout_seconds=9.0, max_bytes=4096)
+    assert "test-token" not in str(raised.value) and raised.value.__cause__ is None
+
+
+@pytest.mark.parametrize(
+    "failure", [__import__("http.client").client.BadStatusLine("x"), __import__("http.client").client.LineTooLong("x")]
+)
+def test_a_malformed_provider_status_line_is_a_transport_failure(monkeypatch, failure) -> None:
+    """``urlopen`` raising an ``http.client`` error, not an ``OSError``, is still the adapter's own failure."""
+
+    def open_request(*_args, **_kwargs):
+        raise failure
+
+    monkeypatch.setattr(zyte.urllib.request, "urlopen", open_request)
+    with pytest.raises(zyte.ZyteTransportError, match="before receiving a response"):
+        zyte.ZyteHttpFetcher(token="test-token").fetch(PRODUCT_URL, timeout_seconds=9.0, max_bytes=4096)
+
+
+def test_a_provider_error_body_cut_short_still_names_the_status(monkeypatch) -> None:
+    """A 5xx whose body drops mid-read reports the status with no slug, never a raw ``IncompleteRead``."""
+    import urllib.error
+
+    class _CutShort(io.BytesIO):
+        def read(self, *_args) -> bytes:
+            raise http.client.IncompleteRead(b"x")
+
+    def open_request(*_args, **_kwargs):
+        raise urllib.error.HTTPError(zyte.ZYTE_API_URL, 503, "unavailable", {}, _CutShort())  # type: ignore[arg-type]
+
+    monkeypatch.setattr(zyte.urllib.request, "urlopen", open_request)
+    with pytest.raises(zyte.ZyteTransportError, match=r"failed with HTTP 503$"):
+        zyte.ZyteHttpFetcher(token="test-token").fetch(PRODUCT_URL, timeout_seconds=9.0, max_bytes=4096)
 
 
 def test_fetch_refuses_target_bytes_over_the_caller_bound(monkeypatch) -> None:

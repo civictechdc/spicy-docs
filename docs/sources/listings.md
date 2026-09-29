@@ -15,6 +15,7 @@ zero never establishes absence.
 | GovInfo collection changes | Collection code and `lastModified` start, optional end | `packages` | api.data.gov key |
 | GovInfo package granules | Package identifier | `granules` | api.data.gov key |
 | GAO reports feed | None; about 25 recent products | RSS items | none |
+| GAO Month in Review and Annual Index | A year (probed back to 2009; earlier years untested) or a month; every page of it | Teasers: products once each with their topic headings, B-numbered decisions kept apart | Zyte token (`ZYTE_TOKEN`) |
 | LDA lobbying filings | Optional filing year and posted-date window, ordered by `dt_posted` | `results` | optional LDA token |
 | CourtListener search | `type=r` dockets or `type=o` opinion clusters; optional filed window, court, nature of suit, query | `results` | optional CourtListener token |
 | SAM.gov entities | Optional registration status and registration-date window narrow enough for 10,000 records | `entityData` | SAM.gov-issued key |
@@ -451,6 +452,115 @@ docket never existed. Attachment bytes remain the separate
 The lower-level `filings(url)` iterator keeps its page interface and does not
 acquire these checks merely by using a larger `limit`. The attachment-capture
 backfill tool enumerates each date window through `iter_filings`.
+
+## GAO's own listing: Month in Review and Annual Index
+
+GAO publishes "monthly and annual lists of our reports, grouped by topic" at
+`/reports-testimonies/month-in-review`: a month page such as `.../2026/August`
+and a year page such as `.../2025`. It is the one GAO route that lists
+everything it issued; the RSS feed is a recent-items window.
+[`sources/gao/month_in_review.py`](../../src/spicy_docs/sources/gao/month_in_review.py)
+reads it. The access ruling, the class rule and its exception, and the keys
+are recorded in [decisions](../decisions.md#gaos-own-listing-the-robots-ruling-the-class-rule-and-the-major-rule-exception).
+
+- **Access.** `www.gao.gov` refuses plain clients, so pages come through Zyte
+  (`httpResponseBody`, the publisher's own bytes). `robots.txt` disallows
+  `/reports-testimonies` by prefix and asks for `Crawl-delay: 420`. The
+  default walk honours the delay: one worker, 420 seconds apart, under a hard
+  Zyte budget. The spacing counts from the last contact the receipts record,
+  so stopping and resuming never shortens it.
+- **Scopes.** A year page is a calendar year of releases, although its title
+  says "(FY2025)". The walk probed back to 2009; earlier years are untested.
+  The backfill covered 2009-2025 as years plus January-August 2026 as months.
+- **Shape.** A scope is one Drupal view of 25 teasers per page, paged with
+  `?page=N`. Every page must match its scope's first page: title, canonical
+  URL, a pager marking the page requested as current, the same last page, and
+  the first page's teaser count on every page before the last. A pager or
+  count that differs means the listing moved while it was read. The walk then
+  writes a `moved` row and restarts the scope from its first page, once. A
+  second move stops the scope by name, in this and every later run, until
+  someone looks.
+- **Products and their keys.** A product appears once under each topic it
+  carries. It is stated once, with its topic headings in listed order, GAO's
+  `label` and `heading` as written (only HTML whitespace collapses), both
+  dates, and every scope that listed it. The title is `label: heading`. It and
+  the "Publicly Released" date equal the feed's on all 33 August 2026
+  products both held. The key is the product page the teaser links:
+  - A GAO number's page is the number lowercased.
+  - 2020-2023 link some products by their prerelease path (`/prerelease/3mpz`
+    for GAO-21-584); those key on the number.
+  - A page listed with Drupal's `-N` suffix as well (`gao-16-75sp` and
+    `gao-16-75sp-0`) is one product when every other field agrees.
+  - A twin that differs is its own product: `gao-14-280r-0` is a VA
+    major-rule report beside Defense's `gao-14-280r`, both numbered
+    GAO-14-280R.
+  - The same product stated with different fields refuses. A month can list
+    a product released the month before, so no date is checked against the
+    scope.
+- **The number decides the class, with one exception.**
+  - A `GAO-` number is a product wherever GAO files it.
+  - A `B-` number is a legal decision, even under a topic heading. B-310950.2
+    (2009), B-318897 (2010) and B-333501 (2021) sit under topic headings.
+  - Any other number (a Contract Appeals Board docket such as `2020-02`, a
+    `P` number) or none (2011's Antideficiency Act report `/products/p00459`)
+    is kept apart as `others`.
+  - The exception is the owner's: every teaser labelled Federal Agency Major
+    Rule Report is a product whatever its number. GAO numbered them `GAO-`
+    from 2009 to February 2017 (707 pages) and `B-` from April 2017 (948
+    pages, 947 products once `b-333095-0` folds into `b-333095`). All 1,655
+    carry both the label and the heading.
+- **Decision spellings.** A decision's numbers split on commas and
+  semicolons, and one teaser can name several (`B-423916.2,B-423916.3`).
+  Older indexes spell them loosely (`B-402003; B-402003.2`, a trailing comma,
+  `B-235577.2-O.M.`, a list cut mid-number). So the link need only agree with
+  the stated number token for token: `B-4241292` does not name
+  `b-424129.2`. A decision is keyed on its page: 2019-2021 give one B-number
+  two pages released months apart.
+
+```sh
+export ZYTE_TOKEN
+uv run --frozen python -m spicy_docs.sources.gao.month_in_review walk \
+  --scope 2026-07 --scope 2025 --store /persistent/gao-listing/blobs \
+  --receipts /persistent/gao-listing/receipts.jsonl --max-zyte-requests 60
+uv run --frozen python -m spicy_docs.sources.gao.month_in_review read \
+  --store /persistent/gao-listing/blobs --receipts /persistent/gao-listing/receipts.jsonl
+```
+
+A walk appends one receipt row per page: requested and final URL, status,
+time, digest, blob path and the Zyte request id. It fetches each retained
+page at most once, walks a scope named twice once, and never starts more
+requests than `--max-zyte-requests`. By default it stops at the first failure,
+recording it. Run it again to resume; failed pages are retried. On Ctrl-C it
+stops the workers, joins them and writes a `stopped` row before exiting.
+
+Parallel walking is a run flag; the default stays polite. `--concurrency N`
+runs up to N workers (at most 8, and no more than there are scopes). Each
+worker takes whole scopes in turn, so every scope is still read page by page
+against its first page. `--delay-seconds` spaces each worker's own requests.
+With `--max-consecutive-failures`, a failure stops only its own scope, and the
+other scopes' pages are kept. Each failure pauses every worker for
+`--failure-backoff-seconds`, doubling with each failure in a row up to 15
+minutes. That many failures in a row stop the whole walk.
+
+For the backfill of 2026-09-28 the owner overrode the delay. The first passes
+used six workers and the 180-second timeout. Requests hung in bursts until the
+timeout, and the doubling backoff then stalled the walk: 385 pages in 426 Zyte
+requests over about 45 minutes. The run that finished used
+`--concurrency 3 --delay-seconds 0 --timeout-seconds 60
+--failure-backoff-seconds 60 --max-consecutive-failures 4`, with resume passes
+until complete: 811 pages in 826 requests over about 35 minutes. The whole
+campaign made 1,252 requests over about 80 minutes. With 16 pages from two
+earlier sample runs, 1,212 pages are retained (receipts in
+`corpora/gao-listing-walk-2026-09-28/`). The lesson: a short timeout and few
+workers finish sooner than many workers waiting out long timeouts.
+
+`read_listing_run` re-reads only scopes whose every page is retained. A scope
+a walk was asked for but has not finished, started or not, is named
+unfinished. It checks each digest, re-parses each page against its scope's
+first page, and returns the pages with their captures beside the products,
+decisions and others. Offline regressions are in
+[`test_gao_month_in_review.py`](../../tests/test_gao_month_in_review.py), on
+[complete retained pages](../../tests/fixtures/listings/gao-month-in-review/README.md).
 
 ## Use the routes
 
