@@ -60,10 +60,15 @@ was not examined yields NULL.
 party, state and district. `None` means an absent XML element; `""` means
 present empty. Date-status properties report invalid calendar spellings without
 changing them or losing the record. Other entry fields remain in `source_xml`:
-the item's own markup, reserialized, not the original bytes. Since 0.50.1 it
-stops at `</item>`; 0.50.0 also kept the whitespace that follows the item in
-the list. `BillStatus.input_sha256` pins the original bytes; retain them with
-the acquisition capture.
+the item's own markup, the publisher's bytes from its `<item>` to its
+`</item>`, cut out of the input during the one parse
+(`reading.xml.parse_xml_with_spans`, which refuses a document in any encoding
+but UTF-8) rather than reserialized
+([decision](../decisions.md#a-cosponsors-source_xml-is-the-publishers-bytes)).
+0.50.0 also kept the whitespace that follows the item in the list, and through
+0.51.0 a self-closed element was re-spelled with a space.
+`BillStatus.input_sha256` pins the original bytes; retain them with the
+acquisition capture.
 
 `cosponsors_outcome` distinguishes absent, empty and populated source lists;
 NULL means the caller has not read the list. `shape_bill_cosponsor(status,
@@ -83,8 +88,9 @@ and local shaping do not publish these rows or rebuild an application dataset.
 
 `<cboCostEstimates>` is the keyless route to CBO's cost-estimate index, whose
 own site is walled ([routes](../research/cbo-cost-estimate-routes-2026-09-20.md)).
-Read it as **requested-empty, never absence**: the publisher never emits the
-element empty — zero of the 16,213 bills in the 118th's two bulk zips does — so
+Read it as **requested-empty, never absence**: the publisher almost never emits
+the element empty — zero of the 16,213 bills in the 118th's two bulk zips does,
+and one of the 113th's 10,637 — so
 a bill without it is either never scored or not yet linked and nothing in this
 route tells the two apart. The publisher's own user guide is stale on this
 element, documenting `rptPubDate`/`rptTitle`/`rptUrl` and no description; the
@@ -94,6 +100,11 @@ Congress.gov API serves. Both spellings are read, the live one first. The
 and then `https://`, and the 112th states none; since 0.50.1 both schemes key
 one publication and fold into one `cbo_cost_estimates` row
 ([decision](../decisions.md#cbo-urls-on-http-fold-with-their-https-twin)).
+The 113th states none either: no estimate item in any of its 10,637
+documents, and one empty element (H.R. 4200). Those two Congresses'
+estimates come from CBO's own per-Congress feed instead, `source` `cbo_feed`,
+which a host reads for every Congress and merges, BILLSTATUS winning where both
+state one estimate ([decision](../decisions.md#cbos-own-feed-is-read-for-every-congress)).
 
 ## Supported input and visible failures
 

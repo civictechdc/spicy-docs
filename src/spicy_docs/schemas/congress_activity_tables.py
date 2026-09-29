@@ -170,6 +170,25 @@ ROLL_CALL_VOTES = table_contract(
             "captured Clerk file states none; NULL on Senate rows, linkage-only rows and House rows captured before "
             "this column."
         ),
+        "clerk_body_element": (
+            "Which element of the Clerk's file names the voting body, `committee` or `chamber`; both read "
+            "'U.S. House of Representatives', so the element is the fact.  The Clerk files 3,830 of its 22,512 "
+            "roll calls of 1990-2026 under <committee>, all from 2007 on: 3,791 amendment votes, 29 motions for "
+            "the committee to rise or calls in committee, 5 rulings of the chair, 3 vacated votes and 2 House "
+            "questions (a passage, a recommittal).  It calls none a Committee of the Whole vote; that is the "
+            "inference.  NULL on Senate rows, linkage-only rows and rows captured before this column."
+        ),
+        "vote_desc": (
+            "The Clerk's own vote-desc as the House vote file states it, most often the measure's title (\"PRECIP "
+            "Act\"); 13,780 of the Clerk's 22,512 files of 1990-2026 state one.  On the five roll calls the House "
+            "vacated by unanimous consent before recording a position (112-1-484, 112-2-327, 113-2-275, "
+            "114-1-300, 114-2-44) it is the file's statement of what happened (\"This vote was vacated by "
+            'unanimous consent on 4-Jun-2015."), and the row has zero tallies, member_vote_count 0 and no '
+            "member_votes rows.  A vote vacated after its positions were recorded publishes as any other: 110-2-640 "
+            '(2008) lists 433 members and says "Proceedings on Roll Call 640 were vacated by unanimous consent."  '
+            "Empty when a captured Clerk file states none; NULL on Senate rows, linkage-only rows and House rows "
+            "captured before this column."
+        ),
     },
 )
 
@@ -187,16 +206,32 @@ MEMBER_VOTES = table_contract(
         "roll_number": "The roll-call number within that session.",
         "member_key": (
             "The file-stated id: `lis:` plus the LIS id on a Senate record, the bare bioguide id on a House "
-            "one, and `name:` plus the publisher's name where the file states neither. A Senate bioguide "
-            "comes from the crosswalk and does not always resolve, so keying on it would split one member's "
-            "votes across two rows; an identity column also cannot be null, which the design's bioguide key "
-            "would have been."
+            "one, and `name:` plus the publisher's name where the file states neither (every Clerk file of "
+            "1990-2002). A Senate bioguide comes from the crosswalk and does not always resolve, so keying on it "
+            "would split one member's votes across two rows; an identity column also cannot be null, which the "
+            "design's bioguide key would have been. A `name:` key identifies the row within its roll call, not a "
+            "person: across 1990-2002 at least 21 of the Clerk's labels name two different members (Jones (NC), "
+            "Allen, Schiff, Wilson, McHugh, Smith (WA)...), so a person is the host's crosswalk, never this key. "
+            "Congress, member_name, party and state do not identify one either: one Congress can seat a successor "
+            "of the same surname, party and state (where the Clerk states bioguide ids, 5 such keys name two: 109th "
+            "Matsui D-CA, 110th Carson D-IN, 112th Payne D-NJ, 117th Letlow R-LA, 119th Grijalva D-AZ; in 1990-2002 "
+            "the 105th's Capps and Bono (CA) and the 107th's Shuster (PA) show it as a gap inside the Congress), so "
+            "the crosswalk adds vote_date, checked against each member's service dates."
         ),
         "bioguide_id": "The voting member's bioguide id, where the publisher or the crosswalk supplies one.",
         "lis_id": "The voting member's Senate LIS id, which only the Senate file carries.",
         "member_name": "The member's name exactly as the roll-call source spells it.",
         "party": "The member's party as the roll-call source states it.",
-        "state": "The member's state as the roll-call source states it.",
+        "state": (
+            "The member's state as the roll-call source states it. On a House row `XX` is the Clerk's marking for "
+            "the non-voting delegates and the Resident Commissioner, on the roll calls they voted in: 2,169 of the "
+            "Clerk's 22,512 of 1990-2026 (1993-1994, 2007-2010, 2019-2020 and from 2022; none in 2021), every one "
+            "an amendment vote or a "
+            "motion in committee (to rise, to strike or limit debate, a call in committee, a ruling of the chair), "
+            "filed under <committee> "
+            "(clerk_body_element on roll_call_votes) from 2007 and under <chamber> in 1993-1994.  Kept as "
+            "stated, not mapped to a territory."
+        ),
         "position": "The member's position exactly as the publisher spelled it (Yea, Aye, Not Voting...).",
         "position_normalized": "That position folded onto yea, nay, present or not_voting; NULL for a named candidate choice.",
         "vote_date": "The chamber's literal date; sorts as text, not by time (see roll_call_votes `vote_day`).",
@@ -427,7 +462,19 @@ def shape_roll_call_vote(
         "amendments_json": amendments_json,
         "vote_day": getattr(vote, "day", None) if vote_date in (None, getattr(vote, "date", None)) else None,
         "legis_num": (getattr(vote, "legis_num", None) or "") if getattr(vote, "publisher", None) == "clerk" else None,
+        "clerk_body_element": _clerk_body_element(vote),
+        "vote_desc": (getattr(vote, "vote_desc", None) or "") if getattr(vote, "publisher", None) == "clerk" else None,
     }
+
+
+def _clerk_body_element(vote: object) -> str | None:
+    """``committee`` where the Clerk file names its voting body in ``<committee>``, ``chamber`` where in ``<chamber>``.
+
+    Only a Clerk record carries either, so a Senate or linkage-only row reads ``None``.
+    """
+    if getattr(vote, "committee_raw", None) is not None:
+        return "committee"
+    return "chamber" if getattr(vote, "chamber_raw", None) is not None else None
 
 
 def member_key(member: object) -> str:
@@ -437,6 +484,14 @@ def member_key(member: object) -> str:
     The file-stated id wins over the best id available because preferring a crosswalk bioguide would give a member who
     does not resolve (roughly four of ninety-nine voters on any one roll call) ``name:...`` on one run and a bioguide on
     the next, turning one vote into two permanent rows.
+
+    ``name:`` identifies the row within one roll call, which names a member once, and never a person: the Clerk's
+    labels of 1990-2002 are last names disambiguated only within a Congress, and at least 21 name two different
+    members over those years (``Jones (NC)``, ``McHugh`` and ``Smith (WA)`` in one state, ``Allen``, ``Schiff`` and
+    ``Wilson`` across two). Nor does (congress, name, party, state): a successor of the same surname, party and state
+    can sit in the same Congress (109th Matsui, 110th Carson, 112th Payne, 117th Letlow, 119th Grijalva, each two
+    bioguide ids; the 105th's Capps and Bono and the 107th's Shuster before 2003). A host crosswalks persons on
+    those four and the vote date, checked against each member's service dates; the key does not move.
     """
     lis = member.lis_id
     if lis:

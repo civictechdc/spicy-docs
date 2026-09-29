@@ -19,7 +19,9 @@ from typing import Any
 from spicy_docs.reading.senate_payment_review import review_pages
 from spicy_docs.schemas.senate_expenditure_tables import parse_amount
 
-RULE = "senate-b-payment-candidates/2"
+#: ``/3`` since ``input_sha256`` is spelled ``sha256:`` plus the hex digest, the spelling every other published
+#: digest uses; candidates of ``/2`` carry the bare hex.
+RULE = "senate-b-payment-candidates/3"
 MAX_BYTES = 16 * 1024 * 1024
 MAX_PAGES = 8
 MAX_WORDS_PER_PAGE = 5_000

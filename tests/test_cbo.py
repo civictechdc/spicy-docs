@@ -17,13 +17,21 @@ from spicy_docs.sources.cbo import (
     CboAcquirer,
     CboBudget,
     CboChallengeError,
+    CboFeedBillError,
     CboSourceError,
     CboUnavailableError,
+    PublicLawCitation,
+    bare_number_bill,
     cbo_cost_estimates_feed_locator,
     cbo_estimate_document_locator,
+    cbo_feed_bills,
     cbo_per_congress_feed_locator,
+    feed_item_bills,
+    law_bill,
     parse_cbo_cost_estimates_feed,
+    title_citation,
 )
+from spicy_docs.sources.congress.bill_status import BillIdentity
 from spicy_docs.transport import retry
 
 FIXTURES = Path(__file__).parent / "fixtures" / "cbo"
@@ -408,3 +416,254 @@ def test_budget_and_client_configuration_are_explicit():
             )
     with pytest.raises(TypeError):
         CboAcquirer(budget=(3, 4096, 7, 0), transport=Transport())
+
+
+# --- which bills a feed item names ------------------------------------------------
+
+#: Every ``Bill_Number`` form in the 112th and 113th feeds (2026-09-28) and the
+#: 116th-119th (2026-09-14), one real spelling each, with the bill it names.
+#: Receipt: ``~/Work/corpora/fork-execution-2026-09-21/cbo-112-113/`` (``feed-shapes.json``,
+#: ``other-feed-shapes.json``).
+MAPPED_FORMS = (
+    ("H.R. 8", ("hr", 8)),
+    ("S. 2241", ("s", 2241)),
+    ("H.J. Res. 118", ("hjres", 118)),
+    ("H. J. Res. 48", ("hjres", 48)),
+    ("H.J.Res. 124", ("hjres", 124)),
+    ("H.J. Res 45", ("hjres", 45)),
+    ("S.J.Res. 44", ("sjres", 44)),
+    ("S.J. Res. 20", ("sjres", 20)),
+    ("H. Con. Res. 92", ("hconres", 92)),
+    ("H.Con.Res. 103", ("hconres", 103)),
+    ("H.Con.Res 14", ("hconres", 14)),
+    ("H. Con. Res 14", ("hconres", 14)),
+    ("S. Con. Res. 33", ("sconres", 33)),
+    ("H.R 260", ("hr", 260)),
+    ("H.R.681", ("hr", 681)),
+    ("H. R. 3350", ("hr", 3350)),
+    ("H.r. 4679", ("hr", 4679)),
+    ("S.559", ("s", 559)),
+    ("S.  1591", ("s", 1591)),
+)
+
+
+@pytest.mark.parametrize(("bill_number", "expected"), MAPPED_FORMS)
+def test_every_measured_bill_number_form_names_its_one_bill(bill_number, expected):
+    """Each measured spelling maps to the one bill it names, in the feed's own Congress."""
+    assert feed_item_bills(113, bill_number) == (BillIdentity(113, *expected),)
+
+
+def test_a_simple_resolution_is_its_own_type_not_a_concurrent_one():
+    """The 108th feed states ``H. Res. 745``; no feed states a Senate simple resolution, so ``S. Res. 7`` is
+    synthetic. Each maps to its own type, never to the concurrent resolution its words also begin."""
+    assert feed_item_bills(108, "H. Res. 745") == (BillIdentity(108, "hres", 745),)
+    assert feed_item_bills(108, "S. Res. 7") == (BillIdentity(108, "sres", 7),)
+    assert title_citation(108, "H. Res. 745, a resolution") == BillIdentity(108, "hres", 745)
+
+
+def test_an_empty_bill_number_names_no_bill_rather_than_refusing():
+    """CBO's empty Bill_Number (a suspension-calendar notice, a reconciliation title) is a value, not a refusal."""
+    assert feed_item_bills(112, None) == ()
+
+
+@pytest.mark.parametrize(
+    ("bill_number", "shape"),
+    [
+        ("700", "N"),  # 117th: no type to read
+        ("S.A. 948", "S.A. N"),  # 116th: a Senate amendment, not a bill
+        ("H.R. 7529,", "H.R. N,"),  # 119th: trailing text
+        ("H.R. 1, H.R. 2", "H.R. N, H.R. N"),  # a list no feed has stated
+        ("HR 5", "HR N"),
+        ("S1591", "SN"),  # a type needs a period or a space before its number
+        ("H.R. 0", "H.R. N"),
+        ("H.Res.Con. 4", "H.Res.Con. N"),
+    ],
+)
+def test_a_bill_number_no_rule_maps_is_refused_with_its_shape(bill_number, shape):
+    """A form outside the measured grammar refuses and names its shape, never guessing a type or splitting a list."""
+    with pytest.raises(CboFeedBillError) as raised:
+        feed_item_bills(113, bill_number)
+    assert (raised.value.field, raised.value.shape) == ("bill_number", shape)
+    assert isinstance(raised.value, CboSourceError)
+
+
+#: Titles of 112th-113th items whose ``Bill_Number`` is empty, verbatim and cut at 60 characters where longer, and
+#: the bill each leads with (receipt ``title-bill-set.json``).
+TITLE_FORMS = (
+    ("H.R. 4402, Critical Minerals Policy Act of 2012", ("hr", 4402)),
+    ("S. 3326, a bill to amend the African Growth and Opportunity", ("s", 3326)),
+    ("H. Con. Res. 44, a concurrent resolution authorizing the use", ("hconres", 44)),
+    ("H.R. 6082, Congressional Replacement of President Obama’s En", ("hr", 6082)),
+)
+
+
+@pytest.mark.parametrize(("title", "expected"), TITLE_FORMS)
+def test_a_title_that_leads_with_a_citation_names_that_bill(title, expected):
+    """An item with an empty Bill_Number names the bill its title leads with, read by the Bill_Number grammar."""
+    assert title_citation(113, title) == BillIdentity(113, *expected)
+
+
+@pytest.mark.parametrize(
+    "title",
+    [
+        "Sequester Replacement Reconciliation Act",
+        "The President&#039;s Supplemental Request for FY 2014 for the Southwest Border",
+        "Agriculture Reform, Food, and Jobs Act of 2012",
+        "Letter to the Honorable Chris Van Hollen Regarding a Proposed Amendment",
+        # Synthetic: prose that holds a type letter before a number is not a citation, nor is a type run into it.
+        "Obama's 2013 budget, as U.S. 1 of the series",
+        "S1591 budget",
+    ],
+)
+def test_a_title_without_a_citation_names_no_bill(title):
+    """A title that leads with prose names no bill; it is counted, not refused."""
+    assert title_citation(112, title) is None
+
+
+@pytest.mark.parametrize(
+    ("title", "shape"),
+    [
+        # 119th, 2026-09-14: the estimate is of provisions in a bill, not of the bill.
+        ("Information Concerning Medicaid-Related Provisions in Title IV of H.R. 1", "not-at-start"),
+        # Synthetic: no measured title cites two bills or leads with a non-bill abbreviation.
+        ("H.R. 1 and S. 2, the Tax Relief Acts", "two-citations"),
+        ("H.R. 5, as amended by H. Res. 6", "two-citations"),
+        ("S.A. 948, an amendment to S. 1", "not-at-start"),
+        ("H. Amdt. 5, an amendment", "unknown-form"),
+        ("S. 2nd Session Report on Appropriations", "unknown-form"),
+    ],
+)
+def test_an_ambiguous_title_is_refused_by_shape(title, shape):
+    """A second bill, a citation after the start, or an abbreviation that is no bill type refuses rather than guess."""
+    with pytest.raises(CboFeedBillError) as raised:
+        title_citation(113, title)
+    assert (raised.value.field, raised.value.shape) == ("title", shape)
+
+
+@pytest.mark.parametrize(
+    ("title", "law"),
+    [
+        # 112th feed, item 22065 (Bill_Number H.R. 3082): a law of the 111th Congress.
+        ("P.L. 111-322, the Continuing Appropriations and Surface Transportation Extensions Act, 2011", (111, 322)),
+        ("Public Law 112-8, Further Additional Continuing Appropriations Amendments, 2011", (112, 8)),  # 112th
+        ("Public Law 110-50 Passport Backlog Reduction Act of 2007", (110, 50)),  # 110th, no comma
+    ],
+)
+def test_a_title_leading_with_a_public_law_names_that_law_in_its_own_congress(title, law):
+    """A leading public-law citation reads as that law, whose Congress the citation states; it names no bill here."""
+    assert title_citation(112, title) == PublicLawCitation(*law)
+
+
+def test_a_law_a_bill_title_cites_later_is_what_it_amends_not_a_second_citation():
+    """108th H.R. 4596: the leading bill stands; a law cited after it is the bill's subject."""
+    title = "H.R. 4596, A bill to amend Public Law 97-435 to extend the authorization for the"
+    assert title_citation(108, title) == BillIdentity(108, "hr", 4596)
+
+
+def test_a_leading_public_law_with_a_second_law_is_ambiguous_but_a_later_bill_is_its_subject():
+    """119th: two items title P.L. 119-21 and cite the budget resolution it followed, the law is still what they
+    lead with. A second law (synthetic: none is measured) would be a guess to rank, and refuses."""
+    title = (
+        "Public Law 119-21, to Provide for Reconciliation Pursuant to Title II of H. Con. Res. 14 Title VII, Finance"
+    )
+    assert title_citation(119, title) == PublicLawCitation(119, 21)
+    with pytest.raises(CboFeedBillError) as raised:
+        title_citation(112, "P.L. 112-4 and P.L. 112-6, the Continuing Appropriations Amendments")
+    assert (raised.value.field, raised.value.shape) == ("title", "two-citations")
+
+
+def test_a_title_citing_its_own_bill_twice_is_not_ambiguous():
+    """Synthetic: a repeat of the leading citation names the same bill, so it maps."""
+    assert title_citation(113, "H.R. 3409, Stop the War on Coal Act (H.R. 3409)") == BillIdentity(113, "hr", 3409)
+
+
+def test_a_feed_maps_to_a_sorted_bill_set_marked_by_how_each_was_found():
+    """Two spellings of one bill fold onto it and every item's publication is kept. A title is read only where the
+    Bill_Number is empty, a bill any Bill_Number names is marked so, and an item naming none or refused is counted."""
+    items = [
+        ("62001", "H.J. Res. 59", "T"),
+        ("62002", "S. 12", "H.R. 9, a title the Bill_Number overrides"),
+        ("62003", "", "Sequester Replacement Reconciliation Act"),
+        ("62004", "H.J.Res. 59", "T"),
+        ("62005", "S.A. 948", "T"),
+        ("62006", "", "H.R. 9, a bill to name a post office"),
+        ("62007", "", "S. 12, a second statement by title"),
+        ("62008", "", "Information Concerning Provisions in Title IV of H.R. 1"),
+        ("62009", "", "Public Law 112-8, Further Additional Continuing Appropriations Amendments, 2011"),
+    ]
+    body = (
+        b'<?xml version="1.0"?>\n<response>'
+        + b"".join(
+            f'<item key="{index}"><Title>{title}</Title><Date>Fri, 11 Sep 2026 17:00:00 -0400</Date>'
+            f"<Link>https://www.cbo.gov/publication/{pub}</Link><Description></Description>"
+            f"<Bill_Number>{number}</Bill_Number></item>".encode()
+            for index, (pub, number, title) in enumerate(items)
+        )
+        + b"</response>"
+    )
+    feed = parse_cbo_cost_estimates_feed(body)
+    named = cbo_feed_bills(feed, 113)
+    assert [(b.identity, b.publication_ids, b.found_by) for b in named.bills] == [
+        (BillIdentity(113, "hjres", 59), ("62001", "62004"), ("bill_number", "bill_number")),
+        (BillIdentity(113, "hr", 9), ("62006",), ("title",)),
+        (BillIdentity(113, "s", 12), ("62002", "62007"), ("bill_number", "title")),
+    ]
+    assert (named.congress, named.unnamed, named.public_law) == (113, 1, 1)
+    assert named.refused == (("62005", "bill_number", "S.A. N"), ("62008", "title", "not-at-start"))
+    # With the host's laws map the law-titled item names its bill, found as title_law; a law the map lacks does not.
+    mapped = cbo_feed_bills(feed, 113, law_bills={"112-public-8": "112-hr-1363"})
+    assert [(b.identity, b.found_by) for b in mapped.bills if "title_law" in b.found_by] == [
+        (BillIdentity(112, "hr", 1363), ("title_law",))
+    ]
+    assert (mapped.unnamed, mapped.public_law) == (1, 0)
+    assert cbo_feed_bills(feed, 113, law_bills={}).public_law == 1
+    for wrong in ("H.R. 1363", "112-house-1363"):  # a citation, and a bill_id's shape with no bill type
+        assert cbo_feed_bills(feed, 113, law_bills={"112-public-8": wrong}).refused[-1] == (
+            "62009",
+            "law_bills",
+            "not-a-bill-id",
+        )
+
+
+def test_the_hosts_law_map_names_a_bill_of_the_laws_own_congress_or_refuses_by_name():
+    """A law is enacted from a bill of its own Congress: the 111th's H.R. 3082 enacted P.L. 111-322 (retained 111th
+    BILLSTATUS), and the 112th's H.R. 3082, CBO's own wrong number for it, refuses as the law's bill. Any bill type
+    reads, a joint resolution included; a value that is no bill_id refuses as that."""
+    law = PublicLawCitation(111, 322)
+    assert law_bill({"111-public-322": "111-hr-3082"}, law) == BillIdentity(111, "hr", 3082)
+    assert law_bill({"111-public-322": "111-hjres-48"}, law) == BillIdentity(111, "hjres", 48)
+    assert law_bill({}, law) is None
+    for stated, shape in (("112-hr-3082", "other-congress"), ("hr-3082", "not-a-bill-id"), (3082, "not-a-bill-id")):
+        with pytest.raises(CboFeedBillError) as raised:
+            law_bill({"111-public-322": stated}, law)
+        assert (raised.value.field, raised.value.shape) == ("law_bills", shape)
+
+
+def test_a_bare_number_reads_only_through_a_title_leading_with_that_same_number():
+    """The 117th's item 58395 states Bill_Number 700 and a title leading with H.R. 700: the two agree, so it names
+    H.R. 700 (found_by bill_number_title). The same item with the title's number changed disagrees and refuses as
+    such; with a title leading with no single bill, the number has no type and refuses as a bare number did."""
+    body = (FIXTURES / "cbo-117congress-cost-estimates.excerpt.xml").read_bytes()
+    named = cbo_feed_bills(parse_cbo_cost_estimates_feed(body), 117)
+    assert [(b.identity, b.publication_ids, b.found_by) for b in named.bills] == [
+        (BillIdentity(117, "hr", 700), ("58395",), ("bill_number_title",))
+    ]
+    assert named.refused == ()
+    for title, shape in (
+        (b"<Title>H.R. 701, an act", "title-disagrees"),
+        (b"<Title>An act", "N"),  # no citation
+        (b"<Title>H.R. 700 and S. 700, acts", "N"),  # two bills: no single type
+        (b"<Title>Public Law 117-700, an act", "N"),  # a law is not a type for the number
+    ):
+        mutant = body.replace(b"<Title>H.R. 700, an act", title, 1)
+        assert mutant != body
+        refused = cbo_feed_bills(parse_cbo_cost_estimates_feed(mutant), 117)
+        assert (refused.bills, refused.refused) == ((), (("58395", "bill_number", shape),))
+    # A number with a leading zero is no number CBO writes, and names no bill even where the title's would agree.
+    zero = body.replace(b"<Bill_Number>700</Bill_Number>", b"<Bill_Number>0700</Bill_Number>", 1)
+    assert zero != body
+    refused = cbo_feed_bills(parse_cbo_cost_estimates_feed(zero), 117)
+    assert (refused.bills, refused.refused) == ((), (("58395", "bill_number", "N"),))
+    assert bare_number_bill(118, "106", "S. 106, Commitment to Veteran Support and Outreach Act") == BillIdentity(
+        118, "s", 106
+    )

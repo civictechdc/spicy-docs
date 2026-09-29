@@ -111,7 +111,7 @@ iteration cancels queued work; running calls finish under their transport limits
   is refused. `strict=False` returns the readable comments and the rest as
   `unrecognized_keys`; a caller that passes it must check that field before
   treating a missing comment as one without text.
-- `fetch_derived_text(resource, comment)` adds each attachment's `sha256` and
+- `fetch_derived_text(resource, comment)` adds each attachment's `sha256` (spelled `sha256:` plus the hex digest) and
   UTF-8 `text`, with GETs pinned to the listed ETags and capped at
   `DEFAULT_MAX_OBJECT_BYTES` (16 MiB) unless `max_bytes=` says otherwise. The
   measured sample held three larger `pdfminer` objects, up to 57.5 MB.

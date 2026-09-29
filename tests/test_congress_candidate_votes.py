@@ -19,7 +19,7 @@ LOCATOR = VoteLocator("house", 119, 1, 2)
 
 def candidate_xml(choice: str = "Named candidate", count: str = "1") -> bytes:
     return f"""<rollcall-vote><vote-metadata><congress>119</congress><session>1st</session>
-<rollcall-num>2</rollcall-num><vote-totals><totals-by-candidate><candidate>{choice}</candidate>
+<chamber>U.S. House of Representatives</chamber><rollcall-num>2</rollcall-num><vote-totals><totals-by-candidate><candidate>{choice}</candidate>
 <candidate-total>{count}</candidate-total></totals-by-candidate></vote-totals></vote-metadata>
 <vote-data><recorded-vote><legislator name-id="A000001" party="D" state="CA">First member</legislator>
 <vote>{choice}</vote></recorded-vote></vote-data></rollcall-vote>""".encode()

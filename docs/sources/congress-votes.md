@@ -88,6 +88,7 @@ totals blocks, and every `recorded-vote`:
 | `majority` | `vote-metadata/majority` | `RollCallVote.majority` |
 | `congress`, `session` (shared identity) | `.../congress`, `.../session` (ordinal, e.g. `1st`) | `RollCallVote.congress` (int), `.session` (int, parsed from the ordinal) |
 | `session_raw`, `chamber_raw` | `.../session`, `.../chamber` verbatim | kept beside the normalized `session`/`chamber` |
+| `committee_raw` | `.../committee` verbatim, where the file names its voting body there instead of in `<chamber>` | `RollCallVote.committee_raw`; published as `roll_call_votes.clerk_body_element` |
 | `chamber` (shared identity) | `.../chamber` (`U.S. House of Representatives`) | normalized to `RollCallVote.chamber = "house"` |
 | `rollcall-num` (shared identity) | `.../rollcall-num` | `RollCallVote.roll_number` |
 | `legis-num` | `.../legis-num` | `RollCallVote.legis_num` |
@@ -96,14 +97,66 @@ totals blocks, and every `recorded-vote`:
 | `vote-result` | `.../vote-result` | `RollCallVote.result` |
 | `action-date` | `.../action-date` | `RollCallVote.date` (literal), `.day` (ISO day; see "Vote day") |
 | `action-time` (text and `time-etz`) | `.../action-time` | `RollCallVote.action_time`, `.action_time_etz` |
-| `vote-desc` | `.../vote-desc` | `RollCallVote.vote_desc` |
+| `vote-desc` | `.../vote-desc` | `RollCallVote.vote_desc`; published as `roll_call_votes.vote_desc` |
 | Totals by party | `vote-totals/totals-by-party` (repeated) | `RollCallVote.party_totals: tuple[PartyTotal, ...]`, each `{party, counts}` with the publisher's own count names |
 | Overall totals | `vote-totals/totals-by-vote` | `RollCallVote.tallies`, the publisher's own count names (`yea-total`, `nay-total`, `present-total`, `not-voting-total`) |
-| `recorded-vote/legislator/@name-id` | bioguide | `MemberVote.bioguide_id` |
+| `recorded-vote/legislator/@name-id` | bioguide; absent from every file before 2003, present on every legislator from 2003 on | `MemberVote.bioguide_id`, `None` there, and `member_votes.member_key` is `name:` plus the name |
 | `.../@sort-field`, `@unaccented-name`, `@role` | | `MemberVote.sort_field`, `.unaccented_name`, `.role` |
 | `.../@party`, `@state` | | `MemberVote.party`, `.state` |
 | legislator element text | display name | `MemberVote.name` |
 | `recorded-vote/vote` | spelled vote | `MemberVote.vote` (raw), `.vote_normalized` (see below) |
+
+**The voting body is one of two elements.** A file names it in `<chamber>`
+or, instead, in `<committee>`; both read `U.S. House of Representatives`, so
+the element is the fact, and `parse_clerk_vote` refuses a file naming neither
+or both. Over all 22,512 roll calls of 1990-2026 (fetched keyless from the
+Clerk 2026-09-28; receipt
+`~/Work/corpora/fork-execution-2026-09-21/cbo-112-113/clerk-all/body-element.json`),
+3,830 use `<committee>`, all from 2007 on: 3,791 amendment votes, 29 motions for
+the committee to rise or calls in committee, 5 rulings of the chair, 3 vacated
+votes and 2 House questions. The Clerk calls none of them a Committee of the
+Whole vote; that is the inference. `roll_call_votes.clerk_body_element`
+publishes which element it was.
+
+**`XX` marks the delegates and the Resident Commissioner.** On 2,169 of those
+roll calls (1993-1994, 2007-2010, 2019-2020 and from 2022, none in 2021) the
+file lists them with `@state` `XX`, every one an
+amendment vote or a motion in committee, under `<committee>` from 2007 and
+under `<chamber>` in 1993-1994. `MemberVote.state` and `member_votes.state`
+keep it as stated. No other member is ever marked `XX`.
+
+**Files before 2003 carry no `name-id`.** Every one of the 7,327 files of
+1990-2002 names its legislators without a bioguide id, and every file from 2003
+(the 108th Congress) on names each one. Such a file reads with `bioguide_id`
+`None`, its `member_votes` rows keyed `name:` plus the Clerk's name; a file
+mixing the two forms, a file from the 108th on without them, or a file naming
+one member twice (by name, or by bioguide id) refuses. A `name:` key
+identifies the row within its roll call, not a person: the Clerk's labels are
+last names disambiguated within a Congress, and over 1990-2002 at least 21
+name two different members (18 whose state changes, such as `Allen`, `Schiff`
+and `Wilson`, and three in one state, `Jones (NC)`, `McHugh` and `Smith (WA)`;
+independent review, 2026-09-28). (congress, name, party, state) does not
+identify a person either: one Congress can seat a successor of the same
+surname, party and state. Where the Clerk states bioguide ids, 5 such keys name
+two (109th Matsui D-CA, 110th Carson D-IN, 112th Payne D-NJ, 117th Letlow R-LA,
+119th Grijalva D-AZ), and in 1990-2002 the same shows as a gap inside one
+Congress (the 105th's Capps and Bono, CA, and the 107th's Shuster, PA; second
+review, `review-2/round2/clerk/`). A host crosswalks persons on those four and
+the vote date, checked against each member's service dates.
+
+**Five votes were vacated before any position was recorded.** The House
+vacated 112-1-484, 112-2-327, 113-2-275, 114-1-300 and 114-2-44 by unanimous
+consent; each file lists no recorded vote, totals zero and says so in
+`<vote-desc>` ("This vote was vacated by unanimous consent on 4-Jun-2015.").
+`parse_clerk_vote` reads such a file with no member votes, and it publishes a
+`roll_call_votes` row whose `vote_desc` states the Clerk's words and which has
+no `member_votes` rows (owner decision, 2026-09-28). Any other file listing no
+recorded vote refuses. A vote vacated after its positions were recorded reads
+as any other: 110-2-640 (2008) lists 433 members and says "Proceedings on Roll
+Call 640 were vacated by unanimous consent.", which its `vote_desc` carries. The archive's one remaining refusal is the publisher's
+own contradiction: 2003's Speaker election, whose candidate totals disagree
+with its member choices (Hastert 228 against 227 votes cast for him). A byte
+count, a plain XML walk and `parse_clerk_vote` agree on every file.
 
 **Senate LIS** (`parse_senate_vote`) -- every top-level field, `count`,
 `tie_breaker`, `document`, `amendment`, and every `member`:
@@ -165,6 +218,8 @@ is the one owner of that rule; `RollCallVote.day` exposes it, and
 
 - A file that prints no date gives `None`, not a refusal: the Clerk file has
   always been accepted without `action-date`.
+- The Clerk prints the month in capitals (`3-JAN-1991`) on nine files of
+  1991-2003, seven of them a Speaker election; that spelling is read too.
 - A printed date in any other spelling refuses (`VoteSourceError`), so the
   record is never built with a guessed day.
 - Rows published before `vote_day` existed carry NULL until a host backfills

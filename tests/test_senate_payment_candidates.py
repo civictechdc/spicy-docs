@@ -71,7 +71,7 @@ def test_bounds_and_other_grid_refuse():
 
 
 SECTION = reader.ReviewedOfficeSection(
-    input_sha256="32834f1078045ef2d298cfbe664db9527d0eb39e1557fe9eb656e2ba38e1f7b6",
+    input_sha256="sha256:32834f1078045ef2d298cfbe664db9527d0eb39e1557fe9eb656e2ba38e1f7b6",
     first_page=7,
     last_page=9,
     boundary_page=10,
@@ -101,6 +101,11 @@ def test_native_reviewed_section_carries_office_origin_and_stops_before_intern()
     assert result["pages"][-1]["status"] == "section_boundary"
     assert not any(row["page"] == 10 for row in result["candidates"])
     assert result["publication_qualified"] is False and result["completion_status"] == "partial_not_reconciled"
+    # /3 spells the input digest sha256:, as every other published digest is spelled.
+    assert result["rule"] == "senate-b-payment-candidates/3" and result["input_sha256"] == SECTION.input_sha256
+    assert all(
+        row["rule"] == result["rule"] and row["input_sha256"] == SECTION.input_sha256 for row in result["candidates"]
+    )
 
 
 @pytest.mark.parametrize("change", ["digest", "gap", "boundary", "office"])

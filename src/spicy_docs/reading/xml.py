@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import codecs
+import re
 from collections.abc import Callable
 from typing import Any, NoReturn
 from xml.etree.ElementTree import Element, TreeBuilder
@@ -20,12 +22,15 @@ def scan_xml(
     allow_external_doctype: bool = False,
     max_depth: int = 256,
     namespace: Callable[[str, str], object] | None = None,
+    byte_index: Callable[[Callable[[], int]], object] | None = None,
 ) -> None:
     """Visit XML without retaining a tree; callbacks choose which facts to keep.
 
     Names use ElementTree's expanded namespace spelling. No external resource is
     loaded. Internal declarations and unresolved entities refuse before they can
     change source text. The supplied body remains the caller's original bytes.
+    ``byte_index`` is handed, once, a function returning the offset in ``body``
+    of the event a callback is running for: a start or end tag's ``<``.
     """
     _validate_xml_input(body, max_bytes=max_bytes, error_type=error_type, label=label)
     parser = expat.ParserCreate(namespace_separator="}")
@@ -45,6 +50,8 @@ def scan_xml(
     )
     if namespace is not None:
         parser.StartNamespaceDeclHandler = lambda prefix, uri: namespace(prefix or "", uri or "")
+    if byte_index is not None:
+        byte_index(lambda: parser.CurrentByteIndex)
     _feed_xml(body, parser, error_type=error_type, label=label)
 
 
@@ -147,6 +154,114 @@ def parse_xml(
         max_depth=max_depth,
     )
     return builder.close()
+
+
+#: An XML declaration's encoding, which must be the document's first bytes (after a UTF-8 byte-order mark).
+_DECLARED_ENCODING = re.compile(rb"<\?xml\s[^>]*?\bencoding\s*=\s*([\"'])([A-Za-z][A-Za-z0-9._-]*)\1")
+
+
+def _require_utf8(body: bytes, *, error_type: type[ValueError], label: str) -> None:
+    """Refuse, by name, input expat would read as anything but UTF-8.
+
+    A span is cut from the input bytes at a tag's ``<`` and just past its
+    ``>``, and the caller decodes it as UTF-8, which is only right where the
+    document is UTF-8: a UTF-16 document parses, and its spans come back full
+    of NULs. A UTF-16 or UTF-32 XML document holds a NUL in its first four
+    bytes, byte-order mark or not, because it opens with ``<`` or ASCII
+    whitespace; another encoding is declared, after a UTF-8 byte-order mark if
+    there is one. With neither, the document is UTF-8, which expat validates.
+    """
+    declared = _DECLARED_ENCODING.match(body.removeprefix(codecs.BOM_UTF8))
+    if b"\x00" in body[:4] or (declared is not None and declared[2].lower() != b"utf-8"):
+        raise error_type(f"{label} is not UTF-8, the only encoding its byte spans are read in")
+
+
+def _tag_end(body: bytes, start: int) -> int:
+    """The offset just past the tag that opens at ``start``, a ``>`` inside a quoted attribute value skipped."""
+    quote = 0
+    for index in range(start + 1, len(body)):
+        byte = body[index]
+        if quote:
+            quote = 0 if byte == quote else quote
+        elif byte in (0x22, 0x27):
+            quote = byte
+        elif byte == 0x3E:
+            return index + 1
+    raise ValueError("XML tag does not close")
+
+
+def parse_xml_with_spans(
+    body: bytes,
+    *,
+    path: tuple[str, ...],
+    max_bytes: int,
+    error_type: type[ValueError],
+    label: str,
+    allow_external_doctype: bool = False,
+    max_depth: int = 256,
+) -> tuple[Element, dict[Element, tuple[int, int]]]:
+    """``parse_xml``'s tree, plus the exact byte span in ``body`` of every element at ``path`` from the root.
+
+    A span runs from the element's ``<`` to just past its own end tag (or its
+    ``/>``), so ``body[start:end]`` is the publisher's markup for it,
+    unreserialized: expat reports each tag's offset during the one parse the
+    tree already needs. Only how many leading ``path`` elements are open is
+    tracked, two integer comparisons an event, because this runs on every
+    element of the document. Input in any encoding but UTF-8 refuses by name
+    (``_require_utf8``), so every span decodes as UTF-8.
+    """
+    if not path or not all(isinstance(tag, str) and tag for tag in path):
+        raise ValueError("path must name at least one element")
+    _validate_xml_input(body, max_bytes=max_bytes, error_type=error_type, label=label)
+    _require_utf8(body, error_type=error_type, label=label)
+    builder = TreeBuilder()
+    target = len(path)
+    depth = matched = 0
+    opened: list[tuple[Element, int, int | None]] = []
+    spans: dict[Element, tuple[int, int]] = {}
+    position: list[Callable[[], int]] = []
+
+    def start(tag: str, attributes: dict[str, str]) -> None:
+        nonlocal depth, matched
+        element = builder.start(tag, attributes)
+        if matched == depth < target and tag == path[depth]:
+            matched += 1
+            if matched == target:
+                begin = position[0]()
+                tag_end = _tag_end(body, begin)
+                # Expat reports a self-closed element's end at the next token, so its span ends with its own tag.
+                opened.append((element, begin, tag_end if body[tag_end - 2] == 0x2F else None))
+        depth += 1
+
+    def end(tag: str) -> None:
+        nonlocal depth, matched
+        builder.end(tag)
+        depth -= 1
+        if matched == depth + 1:
+            if matched == target:
+                element, begin, closed = opened.pop()
+                spans[element] = (begin, closed if closed is not None else _tag_end(body, position[0]()))
+            matched -= 1
+
+    try:
+        scan_xml(
+            body,
+            start=start,
+            end=end,
+            data=builder.data,
+            max_bytes=max_bytes,
+            error_type=error_type,
+            label=label,
+            allow_external_doctype=allow_external_doctype,
+            max_depth=max_depth,
+            byte_index=position.append,
+        )
+    finally:
+        # The offset function holds the parser, whose handlers hold these closures and so the tree: a cycle that
+        # would keep every parsed document alive until the cyclic collector ran (measured: 31 s against 25 s over
+        # the 39,147-document corpus while the caller kept its results).
+        position.clear()
+    return builder.close(), spans
 
 
 class IdentityXmlScan:

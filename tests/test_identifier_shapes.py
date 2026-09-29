@@ -19,7 +19,6 @@ from __future__ import annotations
 import itertools
 import random
 import re
-import time
 
 import pytest
 
@@ -45,6 +44,7 @@ from spicy_docs.interpretation.identifier_shapes import (
     published_rin,
     unpadded_federal_register_document_number,
 )
+from tests.scaling import assert_scales
 
 #: The dash spellings the module folds, restated here so the property tests
 #: check the rule against an independent copy rather than against the
@@ -1893,15 +1893,6 @@ def test_a_counter_word_ends_at_a_word_boundary_or_its_period() -> None:
     assert numbering_system("File No. SR-Amex-2003-102") is NumberingSystem.FILE_NUMBER
 
 
-def _best_of_three(read, text: str) -> float:
-    times = []
-    for _ in range(3):
-        started = time.perf_counter()
-        read(text)
-        times.append(time.perf_counter() - started)
-    return min(times)
-
-
 @pytest.mark.parametrize(
     "make",
     [
@@ -1917,15 +1908,16 @@ def _best_of_three(read, text: str) -> float:
     ],
 )
 def test_the_reader_is_linear_in_its_value(make) -> None:
-    """Doubling a pathological value does not quadruple the time.
+    """Quadrupling a pathological value does not multiply the reader's work by more than eight.
 
-    Best of three, so a scheduler hiccup does not fail it, and never held to
-    less than 3 ms, which timer noise can reach; every superlinear spelling
-    these replaced takes longer than that at this size.
+    A linear reader does about four times the work (3.53-4.13 times in retired instructions over these nine values,
+    2026-09-28), a quadratic one sixteen, a cubic one sixty-four; eight leaves a factor of two on each side. The
+    superlinear work these values once caused was backtracking inside the regular expression engine, which no
+    Python-level counter sees, so the measure is the CPU's own count, or CPU time where there is none
+    (``tests/scaling.py``). Mutants restoring the cubic label whitespace and the quadratic list joint each fail it
+    (receipt ``fork-execution-2026-09-21/cbo-112-113/linearity/``).
     """
-    small = _best_of_three(normalize_docket_references, make(1000))
-    large = _best_of_three(normalize_docket_references, make(2000))
-    assert large < 3 * max(small, 1e-3), (small, large)
+    assert_scales(normalize_docket_references, make(1000), make(4000), bound=8)
 
 
 #: The docket shape as one regular expression, until 2026-09-26: the oracle

@@ -91,7 +91,12 @@ HOUSE_COMMUNICATIONS = table_contract(
             "The Regulation Identifier Number read from report_nature, where the rule found one: the first "
             "occurrence in rin_occurrences_json that a RIN label directly precedes, as its published key."
         ),
-        "rin_occurrences_json": "All interpreted RIN occurrences supplied by the consumer, with exact field spans and digest. NULL means unread; [] means the supplied field was read and contained no RIN.",
+        "rin_occurrences_json": (
+            "All interpreted RIN occurrences supplied by the consumer, with exact field spans and digest. NULL means "
+            "unread; [] means the supplied field was read and contained no RIN. Each occurrence's field_sha256 is "
+            "spelled sha256: plus the hex digest under the rule report_nature/shared_rin/2; one stored under the "
+            "earlier report_nature/shared_rin carries the bare hex and is re-read, not reused."
+        ),
         "rin_rule": (
             "Which RIN rule fired (`report_nature_rin_label/2`), or `unmatched`; NULL where the rule was not run. "
             "Rows read before 0.50.1 name `report_nature_rin_label`, the older pattern."

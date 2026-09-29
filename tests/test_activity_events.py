@@ -147,6 +147,12 @@ def test_a_changed_content_hash_marks_the_summary_regenerated() -> None:
         if row["event_type"] == "summary_generated"
     ] == []
 
+    # Hashes compare strictly: a prior hash left bare is a different value, so a host re-spells prior rows at merge.
+    bare = [{**row, "content_hash": row["content_hash"].removeprefix("sha256:")} for row in first.bill_summaries]
+    prior = snapshot_from_rows(bills=first.bills, bill_versions=first.bill_versions, bill_summaries=bare)
+    regenerated = [row for row in _events(prior, _snapshot(first)) if row["event_type"] == "summary_generated"]
+    assert len(regenerated) == len(first.bill_summaries)
+
 
 @needs_engine
 def test_an_event_falls_back_to_the_run_instant_only_when_the_publisher_states_none() -> None:

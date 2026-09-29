@@ -187,9 +187,15 @@ _MONTH_NAMES = (
 )  # fmt: skip
 _DAY_SPELLINGS: Mapping[str, tuple[re.Pattern[str], Mapping[str, int]]] = MappingProxyType(
     {
+        # Nine Clerk files of 1991-2003, seven of them a Speaker election, print the month in capitals (3-JAN-1991):
+        # the same month, so both spellings are read and no other.
         "house": (
-            re.compile(r"(?P<day>[0-9]{1,2})-(?P<month>[A-Z][a-z]{2})-(?P<year>[0-9]{4})"),
-            {name[:3]: number for number, name in enumerate(_MONTH_NAMES, start=1)},
+            re.compile(r"(?P<day>[0-9]{1,2})-(?P<month>[A-Z](?:[a-z]{2}|[A-Z]{2}))-(?P<year>[0-9]{4})"),
+            {
+                spelled: number
+                for number, name in enumerate(_MONTH_NAMES, start=1)
+                for spelled in (name[:3], name[:3].upper())
+            },
         ),
         "senate": (
             re.compile(
@@ -199,6 +205,14 @@ _DAY_SPELLINGS: Mapping[str, tuple[re.Pattern[str], Mapping[str, int]]] = Mappin
         ),
     }
 )
+
+
+#: The Clerk's own words on the five roll calls the House vacated by unanimous consent before any position was
+#: recorded (2011-2016: 112-1-484, 112-2-327, 113-2-275, 114-1-300, 114-2-44), in ``vote-desc``: "This vote was
+#: vacated by unanimous consent on 4-Jun-2015."  Each file lists no recorded vote and totals zero.
+CLERK_VACATED = "vacated by unanimous consent"
+#: The first Congress whose Clerk files name every legislator by bioguide ``name-id`` (2003 on); none before does.
+FIRST_NAME_ID_CONGRESS = 108
 
 
 class VoteSourceError(ValueError):
@@ -533,6 +547,9 @@ class RollCallVote:
     normalized position. ``date`` is the publisher's literal and ``day`` its
     ISO reading (``vote_day``); a record whose ``date`` cannot be read refuses
     at construction, so every parsed vote either states a day or states none.
+    ``member_votes`` is empty only on a Clerk roll call the House vacated by
+    unanimous consent before any position was recorded, which ``vote_desc``
+    states in the Clerk's words (:data:`CLERK_VACATED`).
     """
 
     publisher: Publisher
@@ -576,6 +593,9 @@ class RollCallVote:
     # ``document`` remains populated only for an unambiguous single document.
     documents: tuple[VoteDocument, ...] = ()
     amendments: tuple[VoteAmendment, ...] = ()
+    # Clerk-only: the voting body as <committee> states it where the file uses that element instead of <chamber>
+    # (then chamber_raw is None). Appended last so positional construction keeps its meaning.
+    committee_raw: str | None = None
 
     def __post_init__(self) -> None:
         vote_day(self.chamber, self.date)
@@ -709,8 +729,9 @@ def _read_clerk_member(element: Element, label: str, *, candidate_labels: frozen
         raise VoteSourceError(f"{label} recorded-vote requires <legislator> and <vote>")
     bioguide_id, party, state = legislator.get("name-id"), legislator.get("party"), legislator.get("state")
     name = (legislator.text or "").strip()
-    if not bioguide_id or not party or not state or not name:
-        raise VoteSourceError(f"{label} recorded-vote legislator is missing name-id, party, state or its name text")
+    # No file before 2003 states name-id at all (parse_clerk_vote checks the file is one form or the other).
+    if bioguide_id == "" or not party or not state or not name:
+        raise VoteSourceError(f"{label} recorded-vote legislator is missing party, state or its name text")
     vote_text = (vote_element.text or "").strip()
     if not vote_text:
         raise VoteSourceError(f"{label} recorded-vote <vote> is empty")
@@ -759,6 +780,12 @@ def parse_clerk_vote(body: bytes, locator: VoteLocator) -> RollCallVote:
         return value
 
     session_raw = meta("session")
+    # The voting body is <chamber>, or <committee> on 3,830 of the Clerk's 22,512 files of 1990-2026, all from 2007 on
+    # (amendment votes and motions in committee, which the Clerk never calls Committee of the Whole votes); both say
+    # "U.S. House of Representatives", so the element is the fact, and a file names exactly one.
+    chamber_raw, committee_raw = meta("chamber", required=False), meta("committee", required=False)
+    if (chamber_raw is None) == (committee_raw is None):
+        raise VoteSourceError(f"{label} names its voting body in neither or both of <chamber> and <committee>")
     congress = _required_int(meta("congress"), label, "congress")
     session = _parse_ordinal_session(session_raw, label)
     roll_number = _required_int(meta("rollcall-num"), label, "rollcall-num")
@@ -803,17 +830,30 @@ def parse_clerk_vote(body: bytes, locator: VoteLocator) -> RollCallVote:
     member_votes = tuple(
         _read_clerk_member(el, label, candidate_labels=candidate_labels) for el in data.findall("recorded-vote")
     )
-    if not member_votes:
+    vote_desc = meta("vote-desc", required=False)
+    # A roll call the House vacated before recording a position is a fact, in the Clerk's words and zero totals; any
+    # other file without a recorded vote refuses.
+    if not member_votes and (CLERK_VACATED not in (vote_desc or "") or any(tallies.values())):
         raise VoteSourceError(
             f"{label} for congress={congress} session={session} roll={roll_number} lists no recorded votes"
         )
+    # Every file from 2003 on names each legislator by bioguide id and none before 2003 does (measured over the
+    # Clerk's 1990-2026 archive, 2026-09-28); a member_votes row then keys on the name, which must be unique.
+    named = {member.bioguide_id is None for member in member_votes}
+    if len(named) > 1:
+        raise VoteSourceError(f"{label} states name-id for some legislators and not others")
+    if True in named and congress >= FIRST_NAME_ID_CONGRESS:
+        raise VoteSourceError(
+            f"{label} states no name-id, which every file from the {FIRST_NAME_ID_CONGRESS}th on does"
+        )
+    identities = {member.bioguide_id or member.name for member in member_votes}
+    if len(identities) != len(member_votes):
+        raise VoteSourceError(f"{label} names one member twice")
 
     if candidate_labels is not None:
         observed = Counter(member.vote for member in member_votes)
         if any(observed[candidate] != count for candidate, count in tallies.items()):
             raise VoteSourceError(f"{label} candidate totals disagree with recorded member choices")
-        if len({member.bioguide_id for member in member_votes}) != len(member_votes):
-            raise VoteSourceError(f"{label} candidate election repeats a member identity")
 
     return RollCallVote(
         publisher="clerk",
@@ -830,13 +870,14 @@ def parse_clerk_vote(body: bytes, locator: VoteLocator) -> RollCallVote:
         majority=meta("majority", required=False),
         legis_num=meta("legis-num", required=False),
         vote_type=meta("vote-type", required=False),
-        vote_desc=meta("vote-desc", required=False),
+        vote_desc=vote_desc,
         action_time=action_time,
         action_time_etz=action_time_etz,
-        chamber_raw=meta("chamber", required=False),
+        chamber_raw=chamber_raw,
         session_raw=session_raw,
         party_totals=party_totals,
         tally_kind=tally_kind,
+        committee_raw=committee_raw,
     )
 
 
@@ -1488,8 +1529,10 @@ class VoteAcquirer(SourceAcquirer):
 __all__ = [
     "CLERK_INDEX_MEDIA_TYPES",
     "CLERK_URL_RE",
+    "CLERK_VACATED",
     "DEFAULT_MAX_BYTES",
     "DEFAULT_MENU_MAX_BYTES",
+    "FIRST_NAME_ID_CONGRESS",
     "MAX_VOTE_BYTES",
     "MEDIA_TYPES",
     "SENATE_URL_RE",

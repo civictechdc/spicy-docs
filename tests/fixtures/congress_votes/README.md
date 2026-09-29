@@ -151,3 +151,17 @@ plus 100 native member observations. The first document numbers are
 carry empty identifiers and the literal purpose “No Statement of Purpose
 on File.” They remain separate observations; equal array lengths do not
 establish an association between documents and amendments.
+
+## `<committee>`, pre-2003 and vacated Clerk fixtures
+
+Clerk files fetched keyless on 2026-09-28 (receipt
+`~/Work/corpora/fork-execution-2026-09-21/cbo-112-113/clerk-all/`). The two
+excerpts are reduced cuts: every byte before and after `<vote-data>` is kept,
+and inside it only the recorded votes named below, each verbatim. The totals
+are the whole file's. The vacated file is whole.
+
+| Fixture | Source | Bytes | SHA-256 | Kept |
+| --- | --- | --- | --- | --- |
+| `clerk-2023-roll037-committee.excerpt.xml` | [`evs/2023/roll037.xml`](https://clerk.house.gov/evs/2023/roll037.xml), 84,209 bytes, `37d98a9a9ed374035b67cb7978570ad01536922df188057ef4ac571744145b0a` | 3,435 | `704272d38dfa4315cd603ec21ac63163cd8d601d196a544b0006309bea7b6339` | The first two and the six `state="XX"` of 440 recorded votes. The file names its body in `<committee>`, not `<chamber>`: a 118th-Congress amendment vote. The Clerk names no Committee of the Whole; that is the inference. |
+| `clerk-1990-roll001-no-name-id.excerpt.xml` | [`evs/1990/roll001.xml`](https://clerk.house.gov/evs/1990/roll001.xml), 55,383 bytes, `8bf10afa1a92c5fb913ec07872b2423ceb47fd135c8371940099f8ea8f9282f6` | 2,155 | `91e8f3320b872d004ff4b7a7335ba885873db6052924770df9efde8e9f3637d9` | The first three of 430 recorded votes. No legislator carries a `name-id`, as in every file before 2003. |
+| `clerk-2015-roll300-vacated.xml` | [`evs/2015/roll300.xml`](https://clerk.house.gov/evs/2015/roll300.xml) | 1,938 | `ba44f7befa0c90d61794aa9ca62a7a16c506b902468bb879067f28fa86563797` | The whole file: no recorded vote, zero totals and `<vote-desc>This vote was vacated by unanimous consent on 4-Jun-2015.</vote-desc>`, one of five such files of 2011-2016. |

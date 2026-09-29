@@ -3,6 +3,7 @@
 import hashlib
 import json
 import re
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -27,8 +28,8 @@ def test_every_rin_in_retained_native_communication_field_has_its_span():
     assert rin_from_report_nature(text).rin == "3235-AK79"
     for finding in occurrences:
         assert text[finding.span_start : finding.span_end] == finding.matched_text == finding.rin
-        assert finding.field_sha256 == hashlib.sha256(text.encode()).hexdigest()
-        assert finding.rule_version == "004"
+        assert finding.field_sha256 == "sha256:" + hashlib.sha256(text.encode()).hexdigest()
+        assert (finding.rule, finding.rule_version) == ("report_nature/shared_rin/2", "004")
 
 
 def test_retained_authority_subject_and_referral_remain_independent_fields():
@@ -136,3 +137,12 @@ def test_a_host_passes_the_list_it_read_and_gets_the_same_scalar():
         rin_from_report_nature(None, occurrences=other)
     with pytest.raises(TypeError):
         rin_from_report_nature(3133, occurrences=())  # type: ignore[arg-type]
+    # Occurrences stored under the earlier rule carry bare hex; they are re-read, not trusted.
+    same = rin_occurrences_from_report_nature("(RIN: 1004-AF39)")
+    legacy = [replace(item, field_sha256=item.field_sha256.removeprefix("sha256:")) for item in same]
+    with pytest.raises(ValueError, match="another rule"):
+        rin_from_report_nature("(RIN: 1004-AF39)", occurrences=legacy)
+    # The rule is checked too, not only the spelling it changed: a list naming the earlier rule is refused as such.
+    earlier = [replace(item, rule="report_nature/shared_rin") for item in same]
+    with pytest.raises(ValueError, match="another rule"):
+        rin_from_report_nature("(RIN: 1004-AF39)", occurrences=earlier)
