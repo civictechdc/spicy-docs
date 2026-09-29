@@ -2,13 +2,15 @@
 
 One property per loop, asserted in one place: internal consistency, round-trip through the column tuple, identity
 uniqueness, and a description for every column. Rows come from real captures wherever one exists -- for the
-host-shaped Regulations.gov tables, rows read back from the host's publication -- except two named borrowings (the
+host-shaped Regulations.gov tables and native legal-reference reads, rows read back from the host's publication, which
+the native references also carry beside their shaped rows -- except two named borrowings (the
 three-printing diff and a captured CRPT body under a CHRG identity), and the diff-dependent cases skip without the
 ``bill-diff`` extra."""
 
 from __future__ import annotations
 
 import ast
+import hashlib
 import json
 import re
 import tempfile
@@ -1253,8 +1255,6 @@ def _regulations_attribute_cases() -> list[ShapedCase]:
 
 def _fec_committee_history_cases() -> list[ShapedCase]:
     """The retained cm24 sample's principal campaign committee, read and projected; its identity written here."""
-    import hashlib
-
     from rulespec_artifacts import LocalBlobSource
 
     from spicy_docs.schemas.fec_committee_history import project_committee_master_row
@@ -1285,6 +1285,101 @@ def _fec_committee_history_cases() -> list[ShapedCase]:
         )
     )
     return [_case("fec_committee_history", project_committee_master_row(rows[2]), ("C00002592", "2024"))]
+
+
+# ---------------------------------------------------------------------------
+# The native legal-reference tables: shaped from retained fragments, and as the host published them.
+# ---------------------------------------------------------------------------
+
+_USC_T1_SCOPE = "sha256:d4bb5775a933a894f457eca4fea165ccc9b1c39ec4b50c190833f4508611d8cd"
+_USC_T1_INPUT = "sha256:d3228083661e8ad960658907809da6788939a2ebbe3ed48997484bf069004173"
+_ECFR_T1_SCOPE = "sha256:ed5b5c65463fa70e2dd026a74046092befaf1b0f546417d3ad8ab0f9e320fd3f"
+_ECFR_T1_INPUT = "sha256:fe18aad18e3b6e8fde18478d1f64d946bb9963bb74f1c164183627663c695c72"
+
+#: The identity each row of ``native_legal_references/published-rows.json`` was selected at, in file order, written
+#: here by hand rather than read back out of the row (the fixture's README states each selection).
+_PUBLISHED_NATIVE_IDS: dict[str, tuple[tuple[str, ...], ...]] = {
+    "native_legal_references": (
+        *((_USC_T1_SCOPE, _USC_T1_INPUT, index) for index in ("0", "1", "3", "14", "15", "80", "94")),
+        (_ECFR_T1_SCOPE, _ECFR_T1_INPUT, "0"),
+        (_ECFR_T1_SCOPE, _ECFR_T1_INPUT, "2"),
+        (_USC_T1_SCOPE, _USC_T1_INPUT, "71"),
+    ),
+    "native_legal_reference_reads": ((_USC_T1_SCOPE,), (_ECFR_T1_SCOPE,)),
+}
+
+
+def _published_native_reference_rows() -> dict[str, list[dict[str, str | None]]]:
+    return json.loads((FIXTURES / "native_legal_references" / "published-rows.json").read_text(encoding="utf-8"))
+
+
+def _native_reference_cases() -> list[ShapedCase]:
+    """Every observation of the two retained fragments shaped and read, each fragment's read row, then the published rows.
+
+    A shaped row's scope is rebuilt from a preimage written here and its input digest from the fixture's bytes; a
+    published row keeps the footer's column order, so a column the contract moves fails the round-trip. The fragments'
+    targets are looked up by a stub, since no fixture here holds a target table.
+    """
+    from spicy_docs.interpretation.native_legal_references import interpret_native_references
+    from spicy_docs.schemas.native_reference_rows import (
+        shape_ecfr_note,
+        shape_native_reference_read,
+        shape_uscode_reference,
+        shape_uscode_source_credit,
+    )
+    from spicy_docs.sources.cfr.authority import scan_ecfr_authority_notes
+    from spicy_docs.sources.uscode.references import scan_uscode_references
+    from tests.test_native_reference_rows import no_target_tables
+
+    cases: list[ShapedCase] = []
+    for source_family, fixture, record, preimage, scan, callbacks in (
+        (
+            "uscode",
+            "uscode/title-05-s423.xml",
+            "/us/usc/t5/s423",
+            b'["uscode","/us/usc/t5/s423",null]',
+            scan_uscode_references,
+            {"on_reference": shape_uscode_reference, "on_source_credit": shape_uscode_source_credit},
+        ),
+        (
+            "ecfr",
+            "cfr/ecfr-authority-title1-part18.xml",
+            "retained:part18-fragment",
+            b'["ecfr","retained:part18-fragment",null]',
+            scan_ecfr_authority_notes,
+            {"on_authority": shape_ecfr_note, "on_source": shape_ecfr_note},
+        ),
+    ):
+        body = (FIXTURES / fixture).read_bytes()
+        scope = "sha256:" + hashlib.sha256(preimage).hexdigest()
+        input_sha256 = "sha256:" + hashlib.sha256(body).hexdigest()
+        context = {"source_record_key": record, "input_sha256": input_sha256, "source_locator": f"retained:{fixture}"}
+        rows: list[dict[str, Any]] = []
+
+        def admit(shaper, rows=rows, context=context):
+            return lambda observation: rows.append(shaper(observation, occurrence_index=len(rows), **context))
+
+        scan(body, **{name: admit(shaper) for name, shaper in callbacks.items()})
+        read = interpret_native_references(rows, resolve=no_target_tables)
+        cases += [_case("native_legal_references", row, (scope, input_sha256, str(i))) for i, row in enumerate(read)]
+        row = shape_native_reference_read(
+            source_family=source_family,
+            source_record_key=record,
+            edition=None,
+            input_sha256=input_sha256,
+            source_locator=f"retained:{fixture}",
+            source_bytes=len(body),
+            occurrence_count=len(rows),
+            manifest_sha256="sha256:" + hashlib.sha256(b"retained fragments").hexdigest(),
+        )
+        cases.append(_case("native_legal_reference_reads", row, (scope,)))
+    published = _published_native_reference_rows()
+    assert set(published) == set(_PUBLISHED_NATIVE_IDS)
+    return cases + [
+        _case(table, row, identity)
+        for table, identities in _PUBLISHED_NATIVE_IDS.items()
+        for row, identity in zip(published[table], identities, strict=True)
+    ]
 
 
 def _source_occurrence_cases() -> list[ShapedCase]:
@@ -1330,6 +1425,7 @@ def all_cases() -> list[ShapedCase]:
         + _federal_register_cases()
         + _regulations_attribute_cases()
         + _fec_committee_history_cases()
+        + _native_reference_cases()
     )
     if engine_available():
         cases = _family_cases() + cases
@@ -1432,6 +1528,7 @@ def test_a_single_column_identity_declares_value_1_and_a_composite_declares_none
         "federal_register": FEDERAL_REGISTER_RECORD_KEY,
         "bill_sections": AT_JOINED_KEY,
         "fec_committee_history": AT_JOINED_KEY,
+        "native_legal_references": AT_JOINED_KEY,
     }
     expected = VALUE_KEY if len(contract.identity) == 1 else declared.get(contract.name)
     assert contract.key_spelling == expected
@@ -1611,6 +1708,35 @@ def test_every_column_is_described_in_one_sentence(contract: TableContract) -> N
         assert sentence.rstrip().endswith("."), column
 
 
+#: The page that lists every contract: one table row each, stating its grain, identity and version column.
+TABLES_PAGE = Path(__file__).parent.parent / "docs" / "tables.md"
+
+
+def _tables_page_rows() -> dict[str, list[str]]:
+    """Each row of the page's ``## The tables`` list, by the table it names, as its stripped cells."""
+    section = TABLES_PAGE.read_text(encoding="utf-8").split("\n## The tables\n", 1)[1].split("\n## ", 1)[0]
+    rows: dict[str, list[str]] = {}
+    for line in section.splitlines():
+        if line.startswith("| `"):
+            cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+            name = cells[0].strip("`")
+            assert name not in rows, f"docs/tables.md lists {name} twice"
+            rows[name] = cells
+    return rows
+
+
+def test_every_contract_has_its_row_on_the_tables_page() -> None:
+    """A registered table missing from the page, or a row whose grain, identity or version column is not its
+    contract's, fails here instead of going stale (``federal_register`` and ``fec_committee_history`` did)."""
+    rows = _tables_page_rows()
+    assert set(rows) == set(TABLE_CONTRACTS)
+    for name, cells in rows.items():
+        contract = TABLE_CONTRACTS[name]
+        identity = ", ".join(f"`{column}`" for column in contract.identity)
+        version = "none" if contract.version_column is None else f"`{contract.version_column}`"
+        assert cells[1:4] == [contract.grain, identity, version], name
+
+
 #: Where each table's values are produced, so a description naming one can be
 #: held to it.  Every registered contract needs an entry: a new table has to say
 #: which code fills it before its prose can be checked at all.
@@ -1712,6 +1838,16 @@ FILLED_BY: dict[str, tuple[str, ...]] = {
     "docket_attributes": ("schemas/regulations_attribute_tables.py",),
     "fec_committee_history": ("schemas/fec_committee_history.py", "sources/fec/committee_master.py"),
     "comments": ("schemas/regulations.py",),
+    # Shaped and read here, with the host's target lookup inside target_candidates_json; ``_evidence`` adds the rows
+    # the host published and removes the contracts' own sentences.
+    "native_legal_references": (
+        "schemas/native_reference_rows.py",
+        "interpretation/native_legal_references.py",
+        "sources/uscode/references.py",
+        "sources/cfr/authority.py",
+        "reading/xml_observations.py",
+    ),
+    "native_legal_reference_reads": ("schemas/native_reference_rows.py",),
 }
 
 #: A value a description names in backticks.  Prose that says a column carries
@@ -1744,13 +1880,15 @@ def _without_contract_prose(source: str) -> str:
 def _evidence(contract: TableContract) -> str:
     """What a value a description names must appear in: the code that fills the table.
 
-    The host shapes the Regulations.gov tables, and the module holding their extract holds their sentences too, so for
-    those the sentences are removed and the rows the host published stand beside the code.
+    For a table whose published rows are retained -- the Regulations.gov tables, which the host shapes, and the native
+    legal-reference tables, whose lookup outcomes it supplies -- the contracts' own sentences are removed from the code,
+    and the published rows stand beside it.
     """
     sources = [(SOURCE / path).read_text() for path in FILLED_BY[contract.name]]
-    if contract.name not in _PUBLISHED_REGULATIONS_IDS:
+    published = {**_published_regulations_rows(), **_published_native_reference_rows()}
+    if contract.name not in published:
         return "\n".join(sources)
-    rows = json.dumps(_published_regulations_rows()[contract.name], ensure_ascii=False)
+    rows = json.dumps(published[contract.name], ensure_ascii=False)
     return "\n".join([*map(_without_contract_prose, sources), rows])
 
 

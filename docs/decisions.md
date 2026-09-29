@@ -2840,6 +2840,8 @@ observations and eCFR `AUTH`/`SOURCE` notes into rows. It has no entry in
 descriptions, and the three shapers return different column sets.
 spicy-regs' `transforms/native_legal_references.py` states the
 `native_legal_references` columns itself, and the fork publishes that table.
+(Both tables have contracts now:
+[below](#the-native-legal-reference-tables-have-contracts-and-an-observation-is-spelled-at-joined1).)
 
 ### Branch builds before 0.50.0 resolve to these commits
 
@@ -3218,3 +3220,184 @@ Replayed over the parsing survey's 60,000 Federal Register texts
   digest is `5609cfaab8bb`.
 - The `yaml` extra (`PyYAML>=6,<7`) exists; the administration-policy reader
   needs it with `acquisition`.
+
+## The native legal-reference tables have contracts, and an observation is spelled `at-joined/1`
+
+2026-09-28. The owner decided that this package owns the table contracts of
+the fork's published native legal-reference tables, item 8 of the
+[0.50.1 follow-ups](#0501-fixes-what-the-pr-4-review-found-and-reads-the-older-cbo-urls),
+and that row shaping and the reading of each observation move here with them.
+spicy-regs' `transforms/native_legal_references.py` stated their columns and
+identities and read each observation itself (`_interpret`), so DocSpec could
+not admit the tables and Search could not serve them. Behavior and
+measurements:
+[Table contracts](tables.md#the-native-legal-reference-tables-are-a-scanners-observations-and-its-reads).
+Receipts: `~/Work/corpora/fork-execution-2026-09-21/native-refs-contract/`.
+
+**The identities and columns do not move.** `native_legal_references` and
+`native_legal_reference_reads` are the published tables as they stand: their
+columns in the fork's footer order, and the identities its host merges on,
+`(scope_id, input_sha256, occurrence_index)` and `scope_id`. The rows are live,
+and moving an identity would re-key every one downstream; nothing here needed
+it. Neither declares a version column. `rule_version` supports equality only,
+and a complete read replacing its whole scope, not a version, decides which
+rows are current.
+
+**Why `at-joined/1`.** The observation identity is composite, and DocSpec
+admits a table only on a declared spelling. Its components are two `sha256:`
+digests and a decimal ordinal, so none can hold `@` by its grammar, and the
+shapers refuse an input digest spelled any other way. None of the 881 live rows
+had an empty or `@`-holding component on 2026-09-28. The read identity is one
+column, spelled `value/1`, and each observation's `scope_id` references it.
+
+**Shaping and the reading live here; the host looks targets up.**
+- `shape_uscode_reference`, `shape_uscode_source_credit` and `shape_ecfr_note`
+  return whole contract rows, checked and keyed. They set `source_family` and
+  compute `scope_id` through `native_reference_scope_id`, as the host did. The
+  scope's preimage keeps non-ASCII characters literal, the host's spelling
+  rather than `json_column`'s escapes, so a record key or edition outside ASCII
+  keeps the scope the host already minted; none published has one.
+- `interpretation.native_legal_references` is the host's `_interpret`, moved
+  unchanged (read at its `fork/main` `63a18d7`). It types an exact native href
+  and reads a note's text with the shared citation rules.
+  `interpret_native_references` fills a run's three remaining columns:
+  `interpretation_status`, `target_candidates_json` and `rule_version`.
+- `shape_native_reference_read` shapes the read row. The selected and
+  unsupported shapes it lists are the scanners', so they are stated beside them.
+- Whether a typed target is held is the host's lookup in the tables it selected.
+  That lookup runs DuckDB over the host's own Parquet (spicy-regs
+  `citation_resolution.resolve_citations`), which a stdlib leaf and a pure
+  reading cannot do. So `interpret_native_references` requires it as
+  `resolve`: one call for the whole run, as before, so each distinct key is
+  read once and the host's bounds apply per run. Every row therefore carries
+  a lookup outcome.
+- The lookup is given a deep copy of the candidates, and each outcome must keep
+  every field of its candidate, type included (`true` is not `1`, nor `125`
+  `125.0`), in candidate order, or the run refuses. No more than one outcome
+  past the candidates is read, so an endless lookup refuses rather than runs. So a
+  lookup that sorts, pops or rekeys the list it was given, or returns a
+  candidate with another `target_key` or `document_key`, cannot move a
+  candidate into another row or change what it names. Two rows naming one
+  observation (one `scope_id` and `occurrence_index`, differing only in
+  `input_sha256`) refuse before the lookup, since their candidates would share
+  keys.
+
+**The rule version moves to `native-legal-reference/003`, because published
+values move.** `NATIVE_LEGAL_REFERENCE_RULE` names it for both tables. It
+versions the scanners' selected shapes and the reading, including the citation
+rules the reading calls, so any change among them that moves a published value
+moves it. Two such changes land in this republish, which the owner accepted as
+one (2026-09-28): `json_column` re-spells 14 `target_candidates_json` values,
+and citation rules 004 re-version 51 text candidates in 31 eCFR notes, both
+below. The href typing, the kinds read, the shapes and the status vocabulary
+did not change. `/002` names the rows spicy-regs read before the reading moved
+here. The review of the rebased branch found the version move owed after a
+first draft of this entry had kept `/002` on the ground that each candidate
+names its own citation rule's version. That still holds, but a row-level
+version that stays put while the row's value moves would tell a reader that
+nothing changed.
+
+**One published value changes, by spelling only: `target_candidates_json` is
+`json_column`'s.** The host wrote it with non-ASCII characters literal. The
+owner accepted the change once, with no outside users (2026-09-28). Fourteen
+live values change, each a U.S. Code Title 1 source credit whose
+`matched_text` holds an en dash (`Pub. L. 104–199`), now `\u2013`. They are
+occurrences 94, 294, 309, 355, 447, 459, 490, 546, 590, 634, 665, 776, 786
+and 798 of scope `sha256:d4bb5775…`. Each decodes to the same JSON as before.
+The re-spelling moves no other value, and a reader of the JSON sees no change.
+
+**0.51.0's citation rules move 51 candidates' versions.** 0.51.0 took
+`usc_section` and `cfr_section` to version 004. Read on it, 51 text candidates
+in 31 eCFR Title 1 notes name `derivation_version` `004` where the published
+rows name `003`: 49 `usc_section` and 2 `cfr_section`. They are occurrences 0,
+1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 29, 31, 33, 34, 35, 36, 38, 40,
+43, 44, 45, 47, 50, 52, 54, 56 and 58 of scope `sha256:ed5b5c65…`. No
+candidate is added or lost, and no key, span, status or other field moves. The
+U.S. Code source credits hold neither kind.
+
+**Digest spelling.** The owner unified digests on `sha256:`. Every published
+digest column here is already spelled that way: `scope_id`, `input_sha256`,
+`manifest_sha256`, and the digests nested in `target_candidates_json`. So the
+spelling changes no value. The shapers refuse a bare-hex input or manifest
+digest. The CFR scanner's `EcfrAuthorityScan.input_sha256` is bare hex, and a
+caller prefixes it; it is never published.
+
+**What was measured.** The fork's generation `sha256:53755e3e…` (881
+observations, 2 reads) was measured on 2026-09-28. Both footers and the
+publication index list exactly the contracts' columns, all VARCHAR, and every
+member key spells, is distinct and splits back into its components. The run was
+then rebuilt on 0.51.0 from its retained manifest and inputs, with the host's
+own resolver copied unmodified as the lookup:
+- every row of both tables names `native-legal-reference/003` where the
+  published row names `/002`;
+- besides that, 836 observations equal the published rows on the other 19
+  columns;
+- 14 differ also in the re-spelled `target_candidates_json` above;
+- 31 differ also in the 51 candidate versions citation rules 004 move;
+- both read rows equal the published ones on the other 12 columns.
+
+No row differs in any other way.
+
+**What changes for an importer.**
+- The three observation shapers return every contract column in order: `scope_id`
+  and `source_family` filled, the three reading columns NULL until
+  `interpret_native_references` fills them.
+- They refuse with `TableContractError`, still a `ValueError`. They also refuse
+  three inputs they accepted: an input digest not spelled `sha256:` plus 64
+  lowercase hex, an empty-string edition, and an empty-string eCFR title.
+- Their `observation` parameters are typed by `Protocol`s naming the fields
+  each reads (`UsCodeReferenceObservation`, `TextObservation`,
+  `EcfrNoteObservation`); the scanners' observations satisfy them unchanged.
+- New: `interpretation.native_legal_references`, `shape_native_reference_read`
+  and `NATIVE_LEGAL_REFERENCE_RULE`. `TABLE_CONTRACTS` holds two more
+  contracts. `schemas.tables.digest` is typed by overload, so a `str` argument
+  types as `str`; its behavior is unchanged.
+
+**What the first republish changes.** Every row of both tables, in
+`rule_version`; 14 `target_candidates_json` values by spelling; and 51
+candidates' `derivation_version` in 31 of them. Nothing else, by the rebuild
+above.
+
+**What spicy-regs must change to adopt it.** Read at its `fork/main`
+(`c2cd4a5`, whose native files equal `63a18d7`'s); nothing there is changed
+here.
+- Pin the release that carries this: both `spicy-docs[...]` requirements
+  (`pyproject.toml:25` and `:39`, `==0.50.1` today), the vendored wheel path
+  (`pyproject.toml:128`, `vendor/spicy_docs-0.50.1-py3-none-any.whl`), the wheel
+  itself in `vendor/`, and the lock.
+- In `transforms/native_legal_references.py`, delete `_interpret`, `RULE`,
+  `REFERENCE_COLUMNS`, `READ_COLUMNS`, `SCHEMAS`, the literal identities and
+  the hand-built read row. Keep the manifest, pins, evidence, qualification
+  and scan loop. `OUTPUTS` becomes the two contracts' names plus `.parquet`;
+  `pipelines/rollups/native_legal_references.py:10` imports it.
+- Pass the run's rows to `interpret_native_references`, with its lookup as
+  `resolve`: `resolve_citations(cursor, candidates, snapshots,
+  source_digests=texts)["occurrences"]`, recording its `coverage` as it does
+  now. Build each read row with `shape_native_reference_read`, and merge both
+  tables through their contracts with its existing scope replacement.
+- Host both contracts in `CONTRACT_TABLES` and move `ADOPTED_CONTRACT_COUNT` by
+  two. `TABLES` already names both tables before it appends `CONTRACT_TABLES`,
+  so it must drop those two entries or list them twice. Their prose then comes
+  from the contract (`columns_from: spicy_docs`), not `descriptions.yaml`, and
+  `expected_schemas` from the contract, not its `SCHEMAS`.
+- Declare the join `native_legal_references.scope_id` to
+  `native_legal_reference_reads.scope_id` in `table_joins`, whose test requires
+  a declared join for every contract reference.
+- Run `spicy-regs-dict generate` and commit what it rebuilds from the new
+  prose, descriptions and join: `src/spicy_regs/table_joins.json`,
+  `table_metadata.json` and `table_qualification.json` beside it,
+  `data_dictionary/catalog.json` with its `.sha256`, and
+  `docs/tables/native_legal_reference*.md`.
+- Rewrite `docs/native-legal-references.md`, which says spicy-regs reads each
+  observation, to point at this reading and its contracts.
+- Update the tests that use the removed names:
+  - `tests/test_native_legal_inputs.py:77` imports `_interpret`; it should call
+    `interpret_native_reference`;
+  - `tests/test_native_legal_references.py:14` imports `SCHEMAS`;
+  - `tests/test_join_delivery_registration.py` iterates `SCHEMAS`;
+  - any assertion on the shapers' old partial rows.
+- After the first republish under `/003`, re-qualify the native entry in
+  `docs/research/fork-output-ledger-2026-09-21.md`: its T12/T13 row
+  (`run-rollup-native-legal-references`) and its qualification section both pin
+  `53755e3e…`, as does `table_qualification.json` (`pin` `53755e3e`), which
+  `spicy-regs-dict generate` rebuilds from the ledger.

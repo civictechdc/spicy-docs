@@ -130,6 +130,7 @@ src/spicy_docs/interpretation/iri_minting.py	The minting layer: shapes in, one c
 src/spicy_docs/interpretation/member_matching.py	Resolve a sponsor or voter reference to one member of Congress.	src
 src/spicy_docs/interpretation/model_call.py	The one injected model seam the two model-backed interpretation modules share.	src
 src/spicy_docs/interpretation/money_bills.py	Money-bill classification from a bill's title and its committee referrals.	src
+src/spicy_docs/interpretation/native_legal_references.py	Read the legal targets a native U.S. Code or eCFR observation names, and complete its published row.	src
 src/spicy_docs/interpretation/release_matching.py	Join a committee press release to the bill it names.	src
 src/spicy_docs/interpretation/report_sections.py	Two aggregates over parsed report sections, ported from BillTrax's SQL as pure Python.	src
 src/spicy_docs/interpretation/section_classification.py	Label each bill section with one of five sealed classifications.	src
@@ -216,7 +217,7 @@ src/spicy_docs/schemas/federal_register.py	Stable public Federal Register source
 src/spicy_docs/schemas/hearing_bill_link_tables.py	One row per (hearing, bill, source) stating a hearing was held on or noticed for a bill.	src
 src/spicy_docs/schemas/law_tables.py	The ``laws`` table (Congress.gov law list rows joined to their PLAW USLM citation), ``law_code_sections`` (OLRC…	src
 src/spicy_docs/schemas/legislator_tables.py	The ``members`` and ``member_terms`` tables: one row per legislator in one capture of the community crosswalk, and one…	src
-src/spicy_docs/schemas/native_reference_rows.py	Literal native XML observations for downstream relationship tables.	src
+src/spicy_docs/schemas/native_reference_rows.py	The native legal-reference tables: literal U.S. Code and eCFR XML observations, and each complete read of an input.	src
 src/spicy_docs/schemas/regulations.py	The regulations.gov docket, document and comment record types, and the contracts of the tables published from them.	src
 src/spicy_docs/schemas/regulations_attribute_tables.py	The Regulations.gov attribute tables: what a document's or docket's API detail record states beyond the thin…	src
 src/spicy_docs/schemas/roster_tables.py	The ``committees`` table (Congress.gov ``committee/{congress}`` list rows with the ``committee-detail`` record folded…	src
@@ -591,7 +592,7 @@ tests/test_legislators.py	Community legislators crosswalk: shape rules, indexes,
 tests/test_markup_events.py	Markup reading: source text, byte spans, callback independence and refusal bounds.	test
 tests/test_mirrulations_reader.py	MirrulationsReader over a fake in-memory S3 resource.	test
 tests/test_native_diff_navigation.py	Retained printings qualify navigation of additions, removals and renumbered moves.	test
-tests/test_native_reference_rows.py	Retained XML fragments projected without inventing edition or target identity.	test
+tests/test_native_reference_rows.py	Native U.S. Code and eCFR observations shaped and read through their table contracts, held to the published rows.	test
 tests/test_native_vote_relationships.py	Native positive amendment/treaty blocks stay independent and publisher-spelled.	test
 tests/test_observation_census.py	Fixture coverage for the ``tools/analysis/observation_census.py`` receipt helper.	test
 tests/test_optional_dependencies.py	Core operations and setup failures with optional imports unavailable.	test
