@@ -618,6 +618,7 @@ tests/test_report_sections.py	Parametrized ports of BillTrax's two committee-rep
 tests/test_retained_refusals.py	Retained refusals keep response evidence safe and recoverable.	test
 tests/test_sam_and_usaspending.py	SAM.gov and USAspending list routes: placeholder credentials dropped, POST pages recorded.	test
 tests/test_sam_extract.py	Hermetic tests for the SAM.gov bulk-extract path (no network).	test
+tests/test_scaling.py	The scaling helper itself: a linear reader passes, a quadratic one fails, a runaway one is stopped after two overruns…	test
 tests/test_sec_comments.py	SEC comment pages keep the publisher's spellings, prove their identity from their own statements, and never read an…	test
 tests/test_sec_comments_join.py	The SEC comments join connects rulemakings, retained mirror SEC documents, and comment files.	test
 tests/test_sec_comments_join_coverage_tool.py	SEC coverage receipts count actual mirror documents and retain the Federal Register chain independently.	test
