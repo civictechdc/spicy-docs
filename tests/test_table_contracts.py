@@ -1266,7 +1266,7 @@ def _regulations_attribute_cases() -> list[ShapedCase]:
 
 
 def _gao_recommendation_cases() -> list[ShapedCase]:
-    """The retained export excerpt's first record; its key digest written here from the record's own fields."""
+    """The retained export excerpt's first record; its key digest written here from the number its text states."""
     import hashlib
 
     from spicy_docs.schemas.gao_recommendation_tables import shape_gao_recommendation
@@ -1276,7 +1276,8 @@ def _gao_recommendation_cases() -> list[ShapedCase]:
     export = parse_recommendations_export(body)
     first = export.recommendations[0]
     row = shape_gao_recommendation(first, status_as_of=export.status_as_of, as_of=export.as_of)
-    parts = ("gao-26-108061", "Department of State", " ".join(first.recommendation.split()))
+    assert first.recommendation.endswith("(Recommendation 4)")
+    parts = ("number", "gao-26-108061", "recommendation", "4", "department of state")
     identity = "sha256:" + hashlib.sha256("\x1f".join(parts).encode()).hexdigest()
     return [_case("gao_recommendations", row, (identity,))]
 

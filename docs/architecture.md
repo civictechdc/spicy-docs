@@ -40,6 +40,7 @@ Paths below are relative to `src/spicy_docs/`.
 | House executive communications the Congressional Record printed | `sources/congress/record_communications.py` reads one CREC `EXECUTIVE COMMUNICATIONS, ETC.` granule's text into one record per printed entry, with the publisher's three normalizations, a versioned rule identity and the per-issue contiguity witness |
 | Speech turns in a Congressional Record granule | `sources/congress/record_speeches.py` adapts the pinned `congressionalrecord` parser behind the `record-speeches` extra: a granule's own MODS or an issue's package MODS read once, each granule body against it into items with MODS-stated bioguide ids, line spans and upstream's completion status |
 | GAO pages | `sources/gao/native.py`; `product_metadata.py` reads the heading, the stated publication date and the Full Report link from a retained page |
+| GAO open recommendations | `sources/gao/recommendations.py` reads the recommendations database's CSV export through Zyte, strictly, and redacts its director phones for publication; `schemas/gao_recommendation_tables.py` keys each row on the number GAO states |
 | Captured public comments | `sources/public_comments/native.py` |
 | Raw streams | `sources/mirrulations.py`, `sources/courtlistener/bulk.py` |
 | Shared S3 listing grammar | `reading/s3_listing.py`; `sources/courtlistener/listing.py` adds source facts |

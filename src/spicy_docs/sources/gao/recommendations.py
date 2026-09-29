@@ -6,11 +6,18 @@ GAO publishes no recommendations API. Its recommendations database exports the o
 records. A five-line CRLF preamble names the export and states "status as of <time> EST"; then comes the eleven-column
 header (``Publication  Number`` has two spaces), then one LF-terminated record per recommendation per agency, the last
 with no terminator. Five publication names hold a line break inside their quotes. Two captures twenty minutes apart were
-byte-identical, so the stamp says when GAO generated the export, not when it was read.
+byte-identical, as was a third six hours later, so the stamp says when GAO generated the export, not when it was read.
 
-Fields are HTML-escaped: each of the export's 637 ampersands is spelled ``&amp;`` and none is bare, so every field is
-unescaped as it is read ("Centers for Medicare & Medicaid Services", the spelling ``gao_reports`` titles use). The
-retained bytes keep GAO's spelling.
+Ampersands are escaped: each of the export's 637 is spelled ``&amp;``, and it holds no other entity and no bare
+ampersand. So exactly ``&amp;`` is read as ``&`` ("Centers for Medicare & Medicaid Services", the spelling ``gao_reports``
+titles use); any other ampersand, or an ``&amp;`` left after that (a doubled escape), refuses. The retained bytes keep
+GAO's spelling.
+
+GAO numbers each recommendation within its product and states the number at the end of the text: "(Recommendation 4)",
+"(Matter for Consideration 1)", "(Matter for Congressional Consideration 2)", and on about twenty records a variant such
+as "(Matter 1)", "[Recommendation 1]", "(Recommendations 5)", "(recommendation 1)", "(Recommendation 1.)",
+"(Recommendation 19-01)" or an unclosed "(Recommendation 9". :func:`stated_number` reads it; 4,892 of the 5,379 records
+state one, and the key is built on it (``schemas/gao_recommendation_tables.py``).
 
 GAO labels the stamp EST year round, but it is Eastern local time: the export captured at 19:05:49 EDT states 7:05 PM,
 which as EST would be an hour after the capture. Only the stamp's date is read; the stamp itself is kept verbatim.
@@ -18,6 +25,14 @@ which as EST would be an hour after the capture. Only the stamp's date is read; 
 Only open recommendations are listed, so an export is a snapshot and a closed recommendation drops out of it. A header,
 preamble, status or priority this reader does not know refuses the whole export, because each would change what a
 record means; so does a repeated key (:func:`~spicy_docs.schemas.gao_recommendation_tables.gao_recommendation_id`).
+A cut export refuses where its bytes can show it: GAO writes no final terminator, so a body ending in CR or LF was cut
+at a record boundary; a cut inside a quoted field leaves the CSV unterminated; and an export of no records refuses. A
+cut exactly before a record's terminator is only visible against a stated Content-Length, which the Zyte transport
+forwards when a target sends one; GAO sent none for this export on 2026-09-29, so that one cut stays unseen here.
+
+The director's phone is a GAO staff number and is never read into a record (owner decision, 2026-09-28: the name
+only). The retained bytes keep it as GAO prints it, so anything published from them goes through
+:func:`redact_director_phone` first.
 
 ``www.gao.gov`` refuses plain clients, so the export comes through Zyte, as product and listing pages do. ``robots.txt``
 does not disallow this path (it disallows the database's search page), and one read a day is far inside its 420-second
@@ -28,13 +43,12 @@ from __future__ import annotations
 
 import argparse
 import csv
-import html
 import io
 import json
 import re
 import sys
 from collections import Counter
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from contextlib import nullcontext
 from dataclasses import asdict, dataclass
 from datetime import date, datetime
@@ -42,7 +56,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Final
 from uuid import uuid4
 
-from spicy_docs.schemas.gao_recommendation_tables import gao_recommendation_id
+from spicy_docs.schemas.gao_recommendation_tables import NUMBER_KINDS, gao_recommendation_id
 from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.source_acquirer import SourceAcquirer, check_byte_bound, check_payload, check_timing, utc_now
 
@@ -67,6 +81,7 @@ HEADER: Final = (
     "Comments",
     "Topics",
 )
+PHONE_COLUMN: Final = "Director Phone"
 #: The statuses an open recommendation carries; a closed one leaves the export rather than taking a closed status.
 STATUSES: Final = ("Open", "Open--Partially Addressed")
 _PRIORITIES: Final = {"Yes": True, "No": False}
@@ -85,6 +100,17 @@ _PREAMBLE = re.compile(
     r'"Source: GAO recommendations database, status as of (?P<stamp>[^"\r\n]*)" ?,*\r?\n'
     r"(?:,*\r?\n){2}"
 )
+#: The number GAO states at the end of a recommendation's text, every spelling the 2026-09-28 export uses.
+_STATED_NUMBER = re.compile(
+    r"[(\[]\s*(?P<kind>recommendations?|matters?(?: for (?:congressional )?consideration)?)\s*"
+    r"(?P<number>\d+(?:-\d+)?)\.?\s*[)\]]?\s*\.?\s*\Z",
+    re.IGNORECASE,
+)
+#: An ampersand that does not open ``&amp;``: another entity, or a bare one the export has never held.
+_OTHER_AMPERSAND = re.compile(r"&(?!amp;)")
+#: One CSV field and what ends it, over the raw bytes: a quoted field (with anything GAO leaves after its closing
+#: quote, as the preamble's ``"Source: ..." ,`` does) or an unquoted one; then a comma, a line end or the end.
+_RAW_FIELD = re.compile(rb'("(?:[^"]|"")*"[^,\r\n"]*|[^,\r\n"]*)(,|\r?\n|\Z)')
 
 
 class GaoRecommendationsSourceError(ValueError):
@@ -110,6 +136,9 @@ class GaoRecommendation:
     director_name: str | None
     agency: str
     recommendation: str
+    #: ``recommendation`` or ``matter`` and the number, where the text states one (:func:`stated_number`).
+    number_kind: str | None
+    number: str | None
     status: str
     priority: bool
     comments: str | None
@@ -134,13 +163,36 @@ def _date(match: re.Match[str]) -> date:
     return date(int(match["year"]), _MONTHS.index(match["month"]) + 1, int(match["day"]))
 
 
+def stated_number(text: str) -> tuple[str, str] | None:
+    """The kind (``recommendation`` or ``matter``) and number GAO states at the end of ``text``, or None.
+
+    Every matter spelling is one kind, since a product numbers its matters in one series, and the number is kept as
+    GAO writes it ("19-01"), less a stray period.
+    """
+    match = _STATED_NUMBER.search(text)
+    if match is None:
+        return None
+    kind = NUMBER_KINDS[0] if match["kind"].lower().startswith("rec") else NUMBER_KINDS[1]
+    return kind, match["number"]
+
+
+def _unescaped(value: str, where: str) -> str:
+    """``value`` with each ``&amp;`` read as ``&``; any other ampersand, or one still escaped after, refuses."""
+    if _OTHER_AMPERSAND.search(value):
+        raise GaoRecommendationsSourceError(f"{where} holds an ampersand not spelled &amp;")
+    unescaped = value.replace("&amp;", "&")
+    if "&amp;" in unescaped:
+        raise GaoRecommendationsSourceError(f"{where} holds a doubled &amp; escape")
+    return unescaped
+
+
 def _record(position: int, cells: list[str]) -> GaoRecommendation:
     where = f"{_LABEL} record {position}"
     if len(cells) != len(HEADER):
         raise GaoRecommendationsSourceError(f"{where} has {len(cells)} fields, not {len(HEADER)}")
     # The director's phone is a staff work number; by owner decision (2026-09-28) it is not read into a record.
-    title, number, issued, director, _phone, agency, text, status, priority, comments, topics = map(
-        html.unescape, cells
+    title, number, issued, director, _phone, agency, text, status, priority, comments, topics = (
+        _unescaped(cell, where) for cell in cells
     )
     if re.fullmatch(r"\S+", number) is None:
         raise GaoRecommendationsSourceError(f"{where}: publication number {number!r} is not one unspaced word")
@@ -158,6 +210,7 @@ def _record(position: int, cells: list[str]) -> GaoRecommendation:
         raise GaoRecommendationsSourceError(f"{where}: status {status!r} is not one of {STATUSES}")
     if priority not in _PRIORITIES:
         raise GaoRecommendationsSourceError(f"{where}: priority {priority!r} is not Yes or No")
+    kind, stated = stated_number(text) or (None, None)
     return GaoRecommendation(
         position=position,
         publication_title=title,
@@ -166,6 +219,8 @@ def _record(position: int, cells: list[str]) -> GaoRecommendation:
         director_name=director or None,
         agency=agency,
         recommendation=text,
+        number_kind=kind,
+        number=stated,
         status=status,
         priority=_PRIORITIES[priority],
         comments=comments or None,
@@ -176,6 +231,8 @@ def _record(position: int, cells: list[str]) -> GaoRecommendation:
 def parse_recommendations_export(body: bytes, *, max_bytes: int = DEFAULT_MAX_BYTES) -> GaoRecommendationsExport:
     """Read one export whole, or refuse it whole: no record is dropped and no partial export returned."""
     payload = check_payload(body, max_bytes, label=_LABEL, error_type=GaoRecommendationsSourceError, allow_empty=False)
+    if payload.endswith((b"\r", b"\n")):
+        raise GaoRecommendationsSourceError(f"{_LABEL} ends in a line break GAO never writes: it was cut")
     try:
         text = payload.decode("utf-8")
     except UnicodeDecodeError:
@@ -193,12 +250,51 @@ def parse_recommendations_export(body: bytes, *, max_bytes: int = DEFAULT_MAX_BY
     if not rows or tuple(rows[0]) != HEADER:
         raise GaoRecommendationsSourceError(f"{_LABEL} header differs from the one measured: {rows[:1]!r}")
     recommendations = tuple(_record(position, cells) for position, cells in enumerate(rows[1:]))
+    if not recommendations:
+        raise GaoRecommendationsSourceError(f"{_LABEL} holds no record; GAO lists thousands open")
     keys: dict[str, int] = {}
     for item in recommendations:
-        key = gao_recommendation_id(item.report_id, item.agency, item.recommendation)
+        key = gao_recommendation_id(
+            item.report_id, item.agency, item.recommendation, kind=item.number_kind, number=item.number
+        )
         if (first := keys.setdefault(key, item.position)) != item.position:
             raise GaoRecommendationsSourceError(f"{_LABEL} record {item.position} repeats the key of record {first}")
     return GaoRecommendationsExport(preamble["stamp"], _date(stamp), recommendations)
+
+
+def redact_director_phone(body: bytes) -> tuple[bytes, int]:
+    """``body`` with every Director Phone field emptied and every other byte kept, and how many held a value.
+
+    The header is the first record naming :data:`PHONE_COLUMN`, found by name so that a refused export whose header
+    moved can still be redacted; the preamble before it is kept whole. An emptied field is spelled as GAO spells an
+    empty one, nothing between its commas. Bytes that are not CSV, or name no such column, refuse, since then no field
+    can be proved to be the phone.
+    """
+    pieces: list[bytes] = []
+    kept_from = position = index = emptied = 0
+    column: int | None = None
+    names: list[bytes] = []
+    while position < len(body):
+        match = _RAW_FIELD.match(body, position)
+        if match is None:
+            raise GaoRecommendationsSourceError(f"{_LABEL} is not CSV at byte {position}; no phone can be found")
+        field, separator = match.group(1), match.group(2)
+        if column is None:
+            names.append(field.strip(b'"'))
+        elif index == column and field:
+            pieces.append(body[kept_from : match.start(1)])
+            kept_from = match.end(1)
+            emptied += field != b'""'
+        index += 1
+        if separator != b",":
+            if column is None and PHONE_COLUMN.encode() in names:
+                column = names.index(PHONE_COLUMN.encode())
+            names, index = [], 0
+        position = match.end()
+    if column is None:
+        raise GaoRecommendationsSourceError(f"{_LABEL} names no {PHONE_COLUMN!r} column; no phone can be found")
+    pieces.append(body[kept_from:])
+    return b"".join(pieces), emptied
 
 
 @dataclass(frozen=True, slots=True)
@@ -260,14 +356,15 @@ def fetch_export(
     receipts: Path,
     budget: GaoRecommendationsBudget,
     transport: httpx.BaseTransport,
-    proxy_records: Callable[[], Sequence[ZyteProxyRecord]] = tuple,
+    proxy_record: Callable[[str], ZyteProxyRecord | None] = lambda _url: None,
     credential: str = "",
     clock: Callable[[], datetime] = utc_now,
 ) -> int:
     """Capture the export into ``store`` and append one receipt row to ``receipts``; 0 when read, 1 when refused.
 
     A refusal is a ``failed`` row carrying any refused bytes, which ``store`` keeps too; ``credential`` is scrubbed
-    from every row.
+    from every row. ``proxy_record`` is the Zyte transport's ``record_for``, naming the provider request. The store
+    keeps GAO's bytes whole, director phones included: it is an operator's local evidence, not a publication.
     """
     from rulespec_artifacts import LocalBlobWriter
 
@@ -299,7 +396,7 @@ def fetch_export(
                 detail["refused_evidence"] = refused
             emit("failed", **detail)
             return 1
-        record = next((item for item in reversed(proxy_records()) if item.requested_url == capture.requested_url), None)
+        record = proxy_record(capture.requested_url)
         emit(
             "export",
             request_url=capture.requested_url,
@@ -323,7 +420,11 @@ def fetch_export(
 def read_export(
     *, receipts: Path, store: Path, max_bytes: int = MAX_BYTES
 ) -> tuple[GaoRecommendationsExport, CapturedBodyResponse]:
-    """Re-read the latest retained export offline: its bytes must equal its receipt, then they are parsed again."""
+    """Re-read the latest retained export offline: its bytes must equal its receipt, then they are parsed again.
+
+    The store refuses bytes that differ from their content address, so the receipt's digest is proved on open; its
+    size and request URL are checked here.
+    """
     from rulespec_artifacts import LocalBlobSource
 
     rows = [json.loads(line) for line in receipts.read_text(encoding="utf-8").splitlines() if line.strip()]
@@ -340,7 +441,7 @@ def read_export(
         observed_at=row["observed_at"],
         body=body,
     )
-    if capture.sha256 != row["sha256"] or capture.byte_size != row["bytes"]:
+    if capture.byte_size != row["bytes"]:
         raise GaoRecommendationsSourceError("retained export differs from its receipt")
     if capture.requested_url != EXPORT_URL:
         raise GaoRecommendationsSourceError("retained export was requested at another URL")
@@ -367,7 +468,7 @@ def _fetch(args: argparse.Namespace) -> int:
             receipts=args.receipts,
             budget=budget,
             transport=transport,
-            proxy_records=lambda: transport.records,
+            proxy_record=transport.record_for,
             credential=token,
         )
     except (ValueError, OSError) as error:
@@ -412,6 +513,7 @@ __all__ = [
     "EXPORT_URL",
     "HEADER",
     "MAX_BYTES",
+    "PHONE_COLUMN",
     "STATUSES",
     "GaoRecommendation",
     "GaoRecommendationsAcquirer",
@@ -422,6 +524,8 @@ __all__ = [
     "fetch_export",
     "parse_recommendations_export",
     "read_export",
+    "redact_director_phone",
+    "stated_number",
 ]
 
 
