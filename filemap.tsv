@@ -57,6 +57,7 @@ docs/sources/federal-register-topics.md		doc
 docs/sources/federal-register.md	Federal Register acquisition	doc
 docs/sources/ferc.md	FERC eLibrary: comments and docket documents from FERC's own systems	doc
 docs/sources/gao-files.md	GAO report files	doc
+docs/sources/gao-recommendations.md	GAO open recommendations	doc
 docs/sources/gao.md	GAO product pages	doc
 docs/sources/govinfo-bodies.md	GovInfo package bodies and acquisition	doc
 docs/sources/govinfo-metadata.md	Read GovInfo metadata	doc
@@ -216,6 +217,7 @@ src/spicy_docs/schemas/document_capture/xml.py	Version-1 capture XML: a reversib
 src/spicy_docs/schemas/document_citation_tables.py	The shared ``document_citations`` link table (one row per occurrence of one cited key, with the exact matched text and…	src
 src/spicy_docs/schemas/fec_committee_history.py	The FEC committee master as a table: one row per committee per two-year cycle, and its row projection.	src
 src/spicy_docs/schemas/federal_register.py	Stable public Federal Register source columns and their faithful projection.	src
+src/spicy_docs/schemas/gao_recommendation_tables.py	The ``gao_recommendations`` table: every recommendation GAO's open-recommendations export has listed, as last listed.	src
 src/spicy_docs/schemas/hearing_bill_link_tables.py	One row per (hearing, bill, source) stating a hearing was held on or noticed for a bill.	src
 src/spicy_docs/schemas/law_tables.py	The ``laws`` table (Congress.gov law list rows joined to their PLAW USLM citation), ``law_code_sections`` (OLRC…	src
 src/spicy_docs/schemas/legislator_tables.py	The ``members`` and ``member_terms`` tables: one row per legislator in one capture of the community crosswalk, and one…	src
@@ -342,6 +344,7 @@ src/spicy_docs/sources/gao/month_in_review.py	GAO's Month in Review and Annual I
 src/spicy_docs/sources/gao/native.py	Exact GAO product-page evidence for one source-native release.	src
 src/spicy_docs/sources/gao/product_metadata.py	Metadata from an already-qualified GAO product page, without widening the raw profile.	src
 src/spicy_docs/sources/gao/profile.py	GAO product-page acquisition profile.	src
+src/spicy_docs/sources/gao/recommendations.py	GAO's open-recommendations export: every recommendation GAO lists as open, in one CSV, read strictly.	src
 src/spicy_docs/sources/gao/rss.py	The GAO reports feed: the one keyless, machine-readable listing of recent products.	src
 src/spicy_docs/sources/govinfo/__init__.py	GovInfo source metadata and USLM identity checks, available without acquisition dependencies.	src
 src/spicy_docs/sources/govinfo/activity_reports.py	Which CRPT package is a committee activity report, and which Congress it says it reports on.	src
@@ -563,6 +566,7 @@ tests/test_gao_files.py	GAO report files are selected by product ID and proved b
 tests/test_gao_month_in_review.py	GAO's Month in Review and Annual Index pages are read, walked and re-read as the publisher's own product listing.	test
 tests/test_gao_product_metadata.py	Qualified source heading/date reading does not infer days or accept wrong identities.	test
 tests/test_gao_product_pages_source_native.py	GAO product pages remain exact source evidence, not inferred topic tags.	test
+tests/test_gao_recommendations.py	GAO's open-recommendations export is read strictly, keyed on the number GAO states, and retained with a receipt.	test
 tests/test_gao_refused_responses.py	GAO refusals carry exact bounded target bytes without becoming valid pages.	test
 tests/test_gao_rss.py	The GAO reports feed is read as a recent-items observation whose links name products.	test
 tests/test_gao_source_native_cli.py	GAO has a real source-native operator path with no sibling imports.	test

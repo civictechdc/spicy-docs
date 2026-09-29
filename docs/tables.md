@@ -93,6 +93,7 @@ column are the contract's.
 | `fec_committee_history` | One row per FEC committee per two-year cycle, as that cycle's bulk committee master states it. | `committee_id`, `cycle` | none | `schemas.fec_committee_history` (`project_committee_master_row`) over `sources.fec.committee_master` |
 | `native_legal_references` | One scanner observation in one pinned U.S. Code or eCFR XML input: a native href or source credit, or an AUTH or SOURCE note, with every target read from it nested rather than multiplied. | `scope_id`, `input_sha256`, `occurrence_index` | none | `schemas.native_reference_rows`, `interpretation.native_legal_references`, with the host's target lookup |
 | `native_legal_reference_reads` | One row per input scope: its latest complete read of the selected shapes, including a read that found none. | `scope_id` | none | `schemas.native_reference_rows` (`shape_native_reference_read`) |
+| `gao_recommendations` | One row per recommendation per agency that GAO's open-recommendations export has listed, with its status as last listed. | `recommendation_id` | `last_seen` | `schemas.gao_recommendation_tables` (`shape_gao_recommendation`) over `sources.gao.recommendations`; the host keeps a row once the export stops listing it |
 
 Every column carries its own sentence.
 

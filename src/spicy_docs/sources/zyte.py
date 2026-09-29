@@ -81,12 +81,20 @@ class ZyteHttpResponse:
     body: bytes
     mode: str = HTTP_RESPONSE_BODY
     request_id: str | None = None
+    #: The target's stated Content-Length, where it states one and no content coding, so a caller can hold the body
+    #: to it; a cut answer is otherwise invisible in the bytes.
+    content_length: int | None = None
 
 
-def _content_type_from_headers(value: object) -> str | None:
+def _target_headers(value: object) -> tuple[str | None, int | None]:
+    """The target's Content-Type, and its Content-Length where it states no content coding.
+
+    Zyte hands back the body its client decoded, so a length stated for an encoded body cannot be held against it and
+    is dropped. A repeated or unreadable length refuses rather than being guessed at.
+    """
     if not isinstance(value, list):
         raise ZyteTransportError("Zyte response omitted httpResponseHeaders")
-    content_types: list[str] = []
+    stated: dict[str, list[str]] = {"content-type": [], "content-length": [], "content-encoding": []}
     for ordinal, header in enumerate(value):
         if not isinstance(header, dict):
             raise ZyteTransportError(f"Zyte response header {ordinal} must be an object")
@@ -94,13 +102,18 @@ def _content_type_from_headers(value: object) -> str | None:
         item_value = header.get("value")
         if not isinstance(name, str) or not isinstance(item_value, str):
             raise ZyteTransportError(f"Zyte response header {ordinal} must contain string name and value")
-        if name.casefold() == "content-type":
-            content_types.append(item_value.strip())
+        if name.casefold() in stated:
+            stated[name.casefold()].append(item_value.strip())
+    content_types, lengths, encodings = stated.values()
     if len(content_types) > 1:
         raise ZyteTransportError("Zyte target response repeats Content-Type")
     if content_types and not content_types[0]:
         raise ZyteTransportError("Zyte target Content-Type must not be empty")
-    return content_types[0] if content_types else None
+    # ASCII digits only: str.isdigit also accepts digits that are not bytes of a count, such as "\u00b2" and "\u0661".
+    if len(lengths) > 1 or (lengths and not (lengths[0].isascii() and lengths[0].isdigit())):
+        raise ZyteTransportError("Zyte target Content-Length is repeated or not a byte count")
+    encoded = any(encoding.casefold() != "identity" for encoding in encodings)
+    return (content_types[0] if content_types else None), (int(lengths[0]) if lengths and not encoded else None)
 
 
 #: Zyte's own error slugs are a closed vocabulary (``/download/temporary-error``
@@ -245,7 +258,7 @@ class ZyteHttpFetcher:
         if not isinstance(target_status, int) or isinstance(target_status, bool):
             raise ZyteTransportError("Zyte response omitted target statusCode")
         try:
-            resolved_url, content_type, body = _target_answer(
+            resolved_url, content_type, content_length, body = _target_answer(
                 value, url=url, mode=mode, max_bytes=max_bytes, secrets=secrets, request_id=request_id
             )
         except ZyteTransportError as error:
@@ -259,6 +272,7 @@ class ZyteHttpFetcher:
             body=body,
             mode=mode,
             request_id=request_id,
+            content_length=content_length,
         )
 
 
@@ -270,8 +284,9 @@ def _target_answer(
     max_bytes: int,
     secrets: tuple[str, ...],
     request_id: str | None,
-) -> tuple[str, str | None, bytes]:
-    """The target's final URL, media type and exact bytes, refused when unproven, reflected or over bound."""
+) -> tuple[str, str | None, int | None, bytes]:
+    """The target's final URL, media type, stated length and exact bytes, refused when unproven, reflected or over
+    bound."""
     # A final URL the provider did not state is unproven; defaulting it to the
     # requested URL would make every caller's final-URL check agree with itself.
     resolved_url = value.get("url")
@@ -282,7 +297,7 @@ def _target_answer(
         encoded_body = value.get("httpResponseBody")
         if not isinstance(encoded_body, str):
             raise ZyteTransportError("Zyte response omitted httpResponseBody")
-        content_type = _content_type_from_headers(value.get("httpResponseHeaders"))
+        content_type, content_length = _target_headers(value.get("httpResponseHeaders"))
         try:
             body = base64.b64decode(encoded_body, validate=True)
         except (ValueError, binascii.Error):
@@ -293,7 +308,7 @@ def _target_answer(
             raise ZyteTransportError("Zyte response omitted browserHtml")
         # No Content-Type is stated, and inventing one would describe a
         # rendered DOM as a publisher's declared media type.
-        content_type = None
+        content_type = content_length = None
         body = rendered.encode("utf-8")
     refuse_reflected_credential(
         body,
@@ -303,7 +318,7 @@ def _target_answer(
         message="Zyte target response contains a reflected transport credential",
     )
     refuse_oversized_target(body, url=url, max_bytes=max_bytes, provider=_PROVIDER, error_type=ZyteTransportError)
-    return resolved_url, content_type, body
+    return resolved_url, content_type, content_length, body
 
 
 __all__ = [

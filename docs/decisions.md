@@ -4287,3 +4287,61 @@ attribute-order test now holds only `document_attributes` and
 - The columns differ from the review drafts (`35a57e3`, `b840194`): `fax` is
   out, and `field1`, `field2`, `submitter_rep_address` and
   `submitter_rep_city_state` are in. A table seeded from a draft is rebuilt.
+
+## GAO recommendations are keyed on the number GAO states, and accumulated by the host
+
+Unreleased, 2026-09-29. Adds the [GAO open-recommendations reader](sources/gao-recommendations.md) and the
+`gao_recommendations` contract. Receipts: the export, its capture receipts and every measurement below are in
+`~/Work/corpora/supply-2026-09-02/receipts/gao-recommendations-20260928/`; the independent review is
+`~/Work/corpora/fork-execution-2026-09-21/gao-recommendations-review/REVIEW.md`.
+
+**The owner's decisions (2026-09-28 and 2026-09-29):**
+
+- **The source is GAO's own CSV,** `/open-recs2-csv?q=`, the recommendations database's export of every open
+  recommendation, read daily through Zyte. GAO has no recommendations API.
+- **The director's name only, never the phone.** The reader does not read Director Phone into a record and the table
+  has no such column. The retained bytes and the test fixtures keep the phones as GAO prints them; anything published
+  from those bytes is redacted first (`redact_director_phone`).
+- **The key is GAO's own number** wherever the text states it: (publication, kind, number, agency), falling back to the
+  text only where no number is stated. The number is published (`recommendation_kind`, `recommendation_number`), and
+  the rule is named, `gao-recommendation-key/1`, in `recommendation_id`'s sentence.
+
+**Measured on the 2026-09-28 export** (6,771,912 bytes, 5,379 records, `sha256:0bca0a8d…`):
+
+- 4,892 records state a number: 4,714 recommendations and 178 matters for Congress. The common spelling
+  "(Recommendation N)" covers 4,705; the rest are "(Matter for Consideration N)", "(Matter for Congressional
+  Consideration N)" and about twenty variants, all in the fixture. 487 state none.
+- (publication, kind, number, agency) is unique on all 4,892, and the text key on all 487. Publication and number alone
+  are not: one numbered recommendation made to several agencies is a record per agency.
+- What moves a key: the text key moved on 737 records when one agency was renamed and on 183 when dashes were
+  normalised. Under `gao-recommendation-key/1` the rename still moves 737, since the agency is part of the key by
+  decision, but dash normalisation moves 4 and a recapitalised word none; rewording moves only the 487 unnumbered.
+- Two independent parsers agree with the reader on every field of every record, as measured at `caa8eac`, before
+  `fa90e2b` narrowed the unescape and added the stated-number columns (the review's `work/`); those later changes are
+  held by the reader's own tests.
+- The export's 637 ampersands are all `&amp;`, with no other entity, so only that spelling is read and any other
+  refuses. GAO writes no final line terminator, which is what lets a record-boundary cut be refused.
+
+**What an importer must change:**
+
+- **Accumulate, since the export is a snapshot of what is open.** Fold each day's export into the prior table by
+  `recommendation_id`: a listed row takes the export's values and keeps its prior `first_seen`; a prior row the export
+  no longer lists is kept with `listed_open = false` and its last `last_seen`, never deleted. `listed_open = false`
+  says only "not in the latest export": a closure usually, but an edit to the number, text or agency, or a defective
+  export, reads the same.
+- **Guard the fold.** Nothing is deleted, so a size-based shrink guard cannot see a bad export. Refuse a run that would
+  leave fewer than half the prior's open rows listed, and tighten that once daily churn is measured.
+- **`ZYTE_TOKEN`** for the daily run, forwarded to that one command.
+- **Redact phones from any published evidence.** Retain the export through `redact_director_phone`, beside the raw
+  file's digest and size, and never the raw bytes where they are public.
+- **Join on `report_id`.** It is the lowercased publication number, the id `gao_reports` is keyed on. Against the live
+  `gao_reports` of 2026-09-28 (GovInfo's 1989-2008 history and the feed's weeks), 89 of 1,802 publications resolve;
+  after the listing backfill of GAO's 2009-2026 products, 1,798, which is 5,374 of 5,379 records.
+- **A new key rule is a re-key.** Every prior row carries the old key, so a host re-keys its table explicitly rather
+  than letting the fold retire every row.
+
+**Also here:** the Zyte fetcher now reads the target's Content-Length where it states no content coding, and the Zyte
+transport forwards it, so the shared capture client holds every Zyte reader's body to the length the target stated.
+GAO states none for this export (a capture of 2026-09-29 through the new fetcher read `content_length` None), so a cut
+exactly before a record's terminator is the one cut this reader cannot see; the host's fold guard bounds what one
+could do.

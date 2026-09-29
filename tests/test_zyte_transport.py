@@ -420,3 +420,67 @@ def test_the_shared_budget_stops_provider_calls_at_its_ceiling(monkeypatch) -> N
 
     assert len(calls) == 1
     assert budget.spent == 1
+
+
+def _provider_with_headers(body: bytes, headers: list[tuple[str, str]]) -> bytes:
+    return json.dumps(
+        {
+            "httpResponseBody": base64.b64encode(body).decode(),
+            "httpResponseHeaders": [{"name": name, "value": value} for name, value in headers],
+            "statusCode": 200,
+            "url": PRODUCT_URL,
+        }
+    ).encode()
+
+
+@pytest.mark.parametrize(
+    ("headers", "stated"),
+    [
+        ([("Content-Type", "text/csv"), ("Content-Length", "11")], 11),
+        ([("Content-Type", "text/csv")], None),
+        # A decoded body cannot be held to an encoded length, so an encoded answer forwards none.
+        ([("Content-Type", "text/csv"), ("Content-Length", "7"), ("Content-Encoding", "gzip")], None),
+        ([("Content-Type", "text/csv"), ("Content-Length", "11"), ("Content-Encoding", "identity")], 11),
+    ],
+)
+def test_the_fetcher_reads_the_targets_stated_length(monkeypatch, headers, stated) -> None:
+    provider = _provider_with_headers(b"exact bytes", headers)
+    monkeypatch.setattr(zyte.urllib.request, "urlopen", lambda *_args, **_kwargs: _Response(provider))
+    response = zyte.ZyteHttpFetcher(token="test-token").fetch(PRODUCT_URL, timeout_seconds=9, max_bytes=1024)
+    assert response.content_length == stated
+
+
+@pytest.mark.parametrize(
+    "headers",
+    [
+        [("Content-Length", "11"), ("Content-Length", "11")],
+        [("Content-Length", "eleven")],
+        [("Content-Length", "-1")],
+        # A digit to str.isdigit that is not a byte: "\u00b2" would reach int() and refuse as a bare ValueError,
+        # "\u0661\u0661" would read as 11. Only ASCII digits are a byte count.
+        [("Content-Length", "\u00b2")],
+        [("Content-Length", "\u0661\u0661")],
+    ],
+)
+def test_an_unreadable_stated_length_refuses(monkeypatch, headers) -> None:
+    provider = _provider_with_headers(b"exact bytes", [("Content-Type", "text/csv"), *headers])
+    monkeypatch.setattr(zyte.urllib.request, "urlopen", lambda *_args, **_kwargs: _Response(provider))
+    with pytest.raises(zyte.ZyteTransportError, match="Content-Length"):
+        zyte.ZyteHttpFetcher(token="test-token").fetch(PRODUCT_URL, timeout_seconds=9, max_bytes=1024)
+
+
+@pytest.mark.parametrize(("stated", "refused"), [("11", False), ("12", True)])
+def test_the_transport_forwards_the_stated_length_so_a_capture_holds_the_body_to_it(monkeypatch, stated, refused):
+    """A body shorter than the target stated, as a cut answer would be, refuses in the shared capture client."""
+    provider = _provider_with_headers(b"exact bytes", [("Content-Type", "text/csv"), ("Content-Length", stated)])
+    monkeypatch.setattr(zyte.urllib.request, "urlopen", lambda *_args, **_kwargs: _Response(provider))
+    transport = ZyteTransport(zyte.ZyteHttpFetcher(token="test-token"), max_bytes=1024, timeout_seconds=9)
+    client = _capture_client(transport)
+    try:
+        if refused:
+            with pytest.raises(ValueError, match="Content-Length"):
+                client.capture(PRODUCT_URL, max_bytes=1024)
+        else:
+            assert client.capture(PRODUCT_URL, max_bytes=1024).body == b"exact bytes"
+    finally:
+        client.close()

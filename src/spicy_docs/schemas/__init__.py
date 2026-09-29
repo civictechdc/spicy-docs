@@ -58,6 +58,7 @@ from spicy_docs.schemas.document_citation_tables import (
 )
 from spicy_docs.schemas.fec_committee_history import FEC_COMMITTEE_HISTORY
 from spicy_docs.schemas.federal_register import FEDERAL_REGISTER
+from spicy_docs.schemas.gao_recommendation_tables import GAO_RECOMMENDATIONS
 from spicy_docs.schemas.hearing_bill_link_tables import HEARING_BILL_LINKS
 from spicy_docs.schemas.law_tables import LAW_CODE_SECTIONS, LAWS, TABLE3_RECORDS
 from spicy_docs.schemas.legislator_tables import MEMBER_PARTY_AFFILIATIONS, MEMBER_TERMS, MEMBERS
@@ -152,6 +153,8 @@ _REGISTERED: tuple[TableContract, ...] = (
     # Literal U.S. Code and eCFR reference observations, and each complete read of an input that produced them.
     NATIVE_LEGAL_REFERENCES,
     NATIVE_LEGAL_REFERENCE_READS,
+    # GAO's open recommendations, one row per recommendation per agency, kept once they close.
+    GAO_RECOMMENDATIONS,
 )
 
 if len({contract.name for contract in _REGISTERED}) != len(_REGISTERED):
@@ -205,6 +208,7 @@ __all__ = [
     "FEC_COMMITTEE_HISTORY",
     "FEDERAL_REGISTER",
     "FINANCIAL_CHANGES",
+    "GAO_RECOMMENDATIONS",
     "HEARING_BILL_LINKS",
     "HEARING_TRANSCRIPTS",
     "HOUSE_ACTIVITY_REPORTS",
