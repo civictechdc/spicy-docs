@@ -187,7 +187,12 @@ SECTION_CHAMBERS: Mapping[str, str] = MappingProxyType({"House Section": "house"
 CHAMBERS_RULE = "section_name"
 #: The map's ``record→package`` rule: the issue's own link names the GovInfo
 #: package by its file stem (``CREC-2026-09-18.pdf`` is ``CREC-2026-09-18``).
-PACKAGE_ID_RULE_RECORD = "entire_issue_url_stem"
+#: ``/2`` reads the link for ``part`` 1 rather than the first one listed: an
+#: issue printed in several books lists each book's PDF, a later book's stem
+#: is ``-bk{N}`` of the same package, and the list is not in part order, so the
+#: first link named a package GovInfo does not have (docs/decisions.md, "A
+#: Record issue's package id is its first book's stem").
+PACKAGE_ID_RULE_RECORD = "entire_issue_url_stem/2"
 #: The map's ``treaty→cdoc`` rule, resolved 2 of 2 on the 119th's treaties.
 PACKAGE_ID_RULE_TREATY = "cdoc_tdoc_number"
 
@@ -211,8 +216,11 @@ RECORD_ISSUES = table_contract(
         "section_names": "Every section name the detail lists, unit-separator joined, in publisher order.",
         "sections_json": "Every section the detail lists, as a JSON array of the publisher's objects.",
         "entire_issue_json": "Every whole-issue rendition the detail lists, as a JSON array of the publisher's objects.",
-        "package_id": "The GovInfo CREC package id read from the first whole-issue link's file stem.",
-        "package_id_rule": "How package_id was derived: `entire_issue_url_stem`.",
+        "package_id": (
+            "The GovInfo CREC package id read from the file stem of the whole-issue link for part 1. "
+            "NULL where the detail lists no part 1, or part 1 links under two stems."
+        ),
+        "package_id_rule": "How package_id was derived: `entire_issue_url_stem/2`.",
         "article_count": "How many articles the detail says the issue has.",
         "articles_url": "The publisher's URL for the issue's article list.",
         "update_date": "The publisher's updateDate; the merge prefers the larger value.",
@@ -528,6 +536,16 @@ def _package_stem(url: object) -> str | None:
     return stem or None
 
 
+def _record_package_id(entire: Sequence[Any]) -> str | None:
+    """The stem of the part-1 whole-issue link, where exactly one stem is stated for part 1; else NULL.
+
+    Later books are ``-bk{N}`` files of the same package and may be listed
+    first, so the part is read, not the position.
+    """
+    stems = {_package_stem(entry.get("url")) for entry in map(_mapping, entire) if text(entry.get("part")) == "1"}
+    return stems.pop() if len(stems) == 1 else None
+
+
 def shape_record_issue(listed: Mapping[str, Any], detail: Mapping[str, Any] | None) -> Row:
     """One ``record_issues`` row from a list row and its detail record (the ``issue`` object)."""
     read = _chain(listed, detail)
@@ -537,7 +555,7 @@ def shape_record_issue(listed: Mapping[str, Any], detail: Mapping[str, Any] | No
     articles = {} if full is None else _mapping(full.get("articles"))
     names = None if sections is None else [str(_mapping(section).get("name")) for section in sections]
     chambers = None if names is None else sorted({SECTION_CHAMBERS[name] for name in names if name in SECTION_CHAMBERS})
-    package_id = None if not entire else _package_stem(_first(entire).get("url"))
+    package_id = None if not entire else _record_package_id(entire)
     return {
         "volume": text(read.get("volumeNumber")),
         "issue": text(read.get("issueNumber")),

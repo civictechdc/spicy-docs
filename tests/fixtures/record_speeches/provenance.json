@@ -1,0 +1,181 @@
+{
+  "retrieval_receipt": "~/Work/corpora/supply-2026-09-02/receipts/unitedstates-legal-record-2026-09-28/record-inputs/",
+  "sources_list": "docs/unitedstates-review-2026-09-28/validation/legal-record/current-record-sources.json (spicy-stack workspace)",
+  "excerpt_receipt": "~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/excerpt/",
+  "excerpt_check": "Upstream at 7949151e, at 6bb521b1 and at 3715651a parsed each body against the full MODS and against the excerpt; the crdoc, speaker table and lines_remaining were equal for all three granules (excerpt/compare-full-vs-excerpt*.txt), and the adapter's documents differed only in mods_sha256 (compare-adapter-full-vs-excerpt.txt, granule-mods/compare-adapter-6bb521b.txt; at 3715651a, review-fixes/repin-3715651a/excerpt-check/excerpt-check.txt; at ee5ba237, rereview-fixes/repin-ee5ba237/excerpt-check/excerpt-check.txt).",
+  "fixtures": [
+    {
+      "fixture": "CREC-2026-09-16-pt1-PgH5835-8.htm",
+      "source_url": "https://www.govinfo.gov/content/pkg/CREC-2026-09-16/html/CREC-2026-09-16-pt1-PgH5835-8.htm",
+      "retrieved": "2026-09-28",
+      "bytes": 2304,
+      "sha256": "40bbfd5f1d964fe612d633cd44bb581d630cf72763ad2c8c28820bd7dc0c03b7",
+      "transformation": "None; the whole granule body as GovInfo served it.",
+      "pins": "House one-minute: an Unknown parenthetical, one speech by Mrs. KIGGANS of Virginia with the MODS-stated bioguide K000399, and a closing rule."
+    },
+    {
+      "fixture": "CREC-2026-09-17-pt1-PgH5987-5.htm",
+      "source_url": "https://www.govinfo.gov/content/pkg/CREC-2026-09-17/html/CREC-2026-09-17-pt1-PgH5987-5.htm",
+      "retrieved": "2026-09-28",
+      "bytes": 819,
+      "sha256": "b53d3466003082d3dd630ae12fac68b7db84a42f9dba2cdf994035c1c85a6feb",
+      "transformation": "None; the whole granule body as GovInfo served it.",
+      "pins": "Procedural House granule: the Speaker pro tempore leads the Pledge; the speech carries no person id."
+    },
+    {
+      "fixture": "CREC-2026-09-17-pt1-PgS4765-6.htm",
+      "source_url": "https://www.govinfo.gov/content/pkg/CREC-2026-09-17/html/CREC-2026-09-17-pt1-PgS4765-6.htm",
+      "retrieved": "2026-09-28",
+      "bytes": 71137,
+      "sha256": "c7040cde902db1d29034cd0a92908814275987f459c91b53ee3bd3568cb32ff1",
+      "transformation": "None; the whole granule body as GovInfo served it.",
+      "pins": "Senate granule of 66 items: 56 speech turns, five recorder lines, three titles and two rules; presiding-officer turns carry no id, and the spans step over nine [[Page]] markers and three whitespace-only lines."
+    },
+    {
+      "fixture": "CREC-2026-09-16-pt1-PgH5835-8.granule-mods.xml",
+      "source_url": "https://www.govinfo.gov/metadata/granule/CREC-2026-09-16/CREC-2026-09-16-pt1-PgH5835-8/mods.xml",
+      "retrieved": "2026-09-28T19:08:52.153155Z",
+      "route": "keyless metadata route, through BoundedHttpCapture configured as GovInfoBodyAcquirer's keyless client",
+      "bytes": 6432,
+      "sha256": "45e6c589a83247930c6f44828445c64798165a225ca287efbc757acdf4c3cbee",
+      "transformation": "None; the whole response body.",
+      "pins": "The granule's own MODS: its root names the granule and a host relatedItem names the package; the adapter's reading of the Kiggans granule against it equals the package-MODS reading apart from mods_sha256."
+    },
+    {
+      "fixture": "CREC-2026-09-16-pt1-PgH5835-8.granule-mods-api.xml",
+      "source_url": "https://api.govinfo.gov/packages/CREC-2026-09-16/granules/CREC-2026-09-16-pt1-PgH5835-8/mods",
+      "retrieved": "2026-09-28T19:08:53.435157Z",
+      "route": "GovInfoBodyAcquirer.acquire_granule's keyed MODS route; the credential travelled in the X-Api-Key header only",
+      "bytes": 7833,
+      "sha256": "9a087936f6459c9eb01ab9b2d6e01b61bbef95757a82fa1e04f06f0d1f978323",
+      "transformation": "None; the whole response body.",
+      "pins": "The granule's own MODS: its root names the granule and a host relatedItem names the package; the adapter's reading of the Kiggans granule against it equals the package-MODS reading apart from mods_sha256."
+    },
+    {
+      "fixture": "CREC-2026-09-16.mods.excerpt.xml",
+      "source_url": "https://www.govinfo.gov/metadata/pkg/CREC-2026-09-16/mods.xml",
+      "retrieved": "2026-09-28",
+      "bytes": 8042,
+      "sha256": "4e65bd8a4fcc343b6971c5b7962c03a755e244e60ef31c8a869dcf895ddb712f",
+      "original_bytes": 3645061,
+      "original_sha256": "1aea2f0cb5c237d15d58a80049cc07a185cd4776e79554af8fd56ecd065f1c5b",
+      "transformation": "Excerpt: original bytes [0, prefix_end) -- the <mods> start tag and every top-level metadata element, all of which precede the first top-level <relatedItem> -- then each kept top-level <relatedItem> whole, joined by the separator the original puts between two top-level relatedItems, then the original tail after the last top-level child. Nothing inside a kept span is edited.",
+      "prefix_end": 4439,
+      "tail_start": 3645053,
+      "separator": "\n    ",
+      "top_level_related_items": 277,
+      "kept": [
+        {
+          "access_id": "CREC-2026-09-16-pt1-PgH5835-8",
+          "original_byte_range": [
+            417794,
+            421389
+          ],
+          "sha256": "62f29040c605b34e91f111498ab312b5fa062786d8a53e0d27f98fe77aac4452"
+        }
+      ],
+      "pins": "The package accessId the adapter reads from the root, and the granule records upstream reads for the bodies above."
+    },
+    {
+      "fixture": "CREC-2026-09-17.mods.excerpt.xml",
+      "source_url": "https://www.govinfo.gov/metadata/pkg/CREC-2026-09-17/mods.xml",
+      "retrieved": "2026-09-28",
+      "bytes": 81676,
+      "sha256": "e2344e941ef1df3a5ed2f5805223f1899aa4c3a42ae16601f0230b92665393b3",
+      "original_bytes": 993858,
+      "original_sha256": "257ff37194a41f7f84416aee0e3a723e161eb0b52766b23a61026f75948d3ecb",
+      "transformation": "Excerpt: original bytes [0, prefix_end) -- the <mods> start tag and every top-level metadata element, all of which precede the first top-level <relatedItem> -- then each kept top-level <relatedItem> whole, joined by the separator the original puts between two top-level relatedItems, then the original tail after the last top-level child. Nothing inside a kept span is edited.",
+      "prefix_end": 4438,
+      "tail_start": 993850,
+      "separator": "\n    ",
+      "top_level_related_items": 139,
+      "kept": [
+        {
+          "access_id": "CREC-2026-09-17-pt1-PgH5987-5",
+          "original_byte_range": [
+            102550,
+            105115
+          ],
+          "sha256": "50228ba865060b018957033abee7e609af18863d12f73f3d7db8856eddc4137b"
+        },
+        {
+          "access_id": "CREC-2026-09-17-pt1-PgS4765-6",
+          "original_byte_range": [
+            295042,
+            369702
+          ],
+          "sha256": "ced1e26fee0db40439442eb6915d1c36fff566c1deacecdf2ed805a69b988085"
+        }
+      ],
+      "pins": "The package accessId the adapter reads from the root, and the granule records upstream reads for the bodies above."
+    },
+    {
+      "fixture": "CREC-2025-03-11-pt1-PgS1677-4.htm",
+      "source_url": "https://www.govinfo.gov/content/pkg/CREC-2025-03-11-i46/html/CREC-2025-03-11-pt1-PgS1677-4.htm",
+      "retrieved": "2026-09-28T20:16:52.939218Z",
+      "route": "GovInfoBodyAcquirer.acquire_granule's keyless HTML rendition",
+      "bytes": 632,
+      "sha256": "7f068d44fee1e07b47b516a665952410161277a68d71c50b17f6c5d9fbb008ab",
+      "transformation": "None; the whole response body.",
+      "pins": "A granule of the suffixed issue CREC-2025-03-11-i46, whose id GovInfo spells without the -i46: Mr. THUNE with the MODS-stated bioguide T000250, the Acting President pro tempore with none, and a closing rule."
+    },
+    {
+      "fixture": "CREC-2025-03-11-pt1-PgS1677-4.granule-mods-api.xml",
+      "source_url": "https://api.govinfo.gov/packages/CREC-2025-03-11-i46/granules/CREC-2025-03-11-pt1-PgS1677-4/mods",
+      "retrieved": "2026-09-28T20:16:52.827958Z",
+      "route": "GovInfoBodyAcquirer.acquire_granule's keyed MODS route; the credential travelled in the X-Api-Key header only",
+      "bytes": 7440,
+      "sha256": "05687877a608d7bc1c21c84c28959ddbb93bffd005990abcfbf9254602c48795",
+      "transformation": "None; the whole response body.",
+      "pins": "The granule's own MODS: its root names the granule and its host relatedItem names CREC-2025-03-11-i46, the package id the adapter reports."
+    },
+    {
+      "fixture": "CREC-1994-03-25-pt1-PgH10.htm",
+      "source_url": "https://www.govinfo.gov/content/pkg/CREC-1994-03-25/html/CREC-1994-03-25-pt1-PgH10.htm",
+      "retrieved": "2026-09-28T23:10:22.820110Z",
+      "route": "GovInfoBodyAcquirer.acquire_granule's keyless HTML rendition",
+      "bytes": 36431,
+      "sha256": "5f423341e9deee0be956009dd142b3b9d04d9ce8277759242e54f2b9bbb7d5d3",
+      "transformation": "None; the whole response body.",
+      "pins": "A 1994 granule: its header states [Page H], no page number, and its id's 10 orders the section's granules; Mr. NICKLES (N000102) and Mrs. KASSEBAUM (K000017) with their MODS-stated bioguide ids and a presiding-officer turn with none."
+    },
+    {
+      "fixture": "CREC-1994-03-25-pt1-PgH10.granule-mods-api.xml",
+      "source_url": "https://api.govinfo.gov/packages/CREC-1994-03-25/granules/CREC-1994-03-25-pt1-PgH10/mods",
+      "retrieved": "2026-09-28T23:10:22.645631Z",
+      "route": "GovInfoBodyAcquirer.acquire_granule's keyed MODS route; the credential travelled in the X-Api-Key header only",
+      "bytes": 7688,
+      "sha256": "3f5049b19223827100585b95924f589c0b65515a661773d060197f6358983a46",
+      "transformation": "None; the whole response body.",
+      "pins": "The granule's own MODS for a 1994 granule: <start>H</start> with no page number, and a searchTitle stating Vol. 140, No. 36."
+    },
+    {
+      "fixture": "CREC-1995-01-06-pt1-PgS572-2.htm",
+      "source_url": "https://www.govinfo.gov/content/pkg/CREC-1995-01-06/html/CREC-1995-01-06-pt1-PgS572-2.htm",
+      "retrieved": "2026-09-28T23:31:01.064125Z",
+      "route": "GovInfoBodyAcquirer.acquire_granule's keyless HTML rendition",
+      "bytes": 2043,
+      "sha256": "36aab96ada6df808446745699cf1766245384f9b9f1a365ce9f1e77f959a53c8",
+      "transformation": "None; the whole response body.",
+      "pins": "A 1995 granule whose line '[[Page S573]] not have, he said: ...' opens with a page marker: the prose after it is text of Mr. SIMON's speech (S000423), located on the marker's line, with nothing unaccounted; and a line-leading <bullet>."
+    },
+    {
+      "fixture": "CREC-1995-01-06-pt1-PgS572-2.granule-mods-api.xml",
+      "source_url": "https://api.govinfo.gov/packages/CREC-1995-01-06/granules/CREC-1995-01-06-pt1-PgS572-2/mods",
+      "retrieved": "2026-09-28T23:31:00.864782Z",
+      "route": "GovInfoBodyAcquirer.acquire_granule's keyed MODS route; the credential travelled in the X-Api-Key header only",
+      "bytes": 7647,
+      "sha256": "de8e296824c2fe5d28c1e03a264ff257a0922aef7f5edc9ab66d783dbeda1fc6",
+      "transformation": "None; the whole response body.",
+      "pins": "The granule's own MODS for the 1995 granule: Mr. SIMON with bioGuideId S000423, and a searchTitle stating Vol. 141, No. 3."
+    }
+  ],
+  "granule_mods_receipt": "~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/granule-mods/",
+  "granule_mods_check": "Retrieved 2026-09-28 by retrieve.py: the keyless response passes validate_granule_mods; the keyed acquire_granule MODS differs from it only in whitespace and namespace-declaration order; the body acquire_granule fetched is byte-identical to CREC-2026-09-16-pt1-PgH5835-8.htm. The adapter's documents from both granule MODS, the full package MODS and the excerpt differ only in mods_sha256 (compare-adapter.txt).",
+  "suffixed_receipt": "~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/review-fixes/suffixed-fixture/",
+  "suffixed_check": "Retrieved 2026-09-28 by retrieve.py through GovInfoBodyAcquirer.acquire_granule (keyed summary and MODS, keyless body; receipt.json). The body equals a separate keyless GET of the same URL. The adapter reads it complete with nothing unaccounted, and 535 real granules of six issues, twelve of them in CREC-2025-01-03-v171 and CREC-2025-03-11-i46, read complete against both MODS routes (real-replay/).",
+  "era_1994_receipt": "~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/rereview-fixes/fixture-1994/",
+  "era_1994_check": "Retrieved 2026-09-28 by retrieve.py through GovInfoBodyAcquirer.acquire_granule (keyed summary and MODS, keyless body; receipt.json). The body equals a separate keyless GET of the same URL (rereview-fixes/replay-1994/html/), and every granule of CREC-1994-03-25 reads against the package MODS (rereview-fixes/replay/).",
+  "era_1995_receipt": "~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/rereview-fixes/fixture-1995/",
+  "era_1995_check": "Retrieved 2026-09-28 by retrieve.py through GovInfoBodyAcquirer.acquire_granule (keyed summary and MODS, keyless body; receipt.json). The body equals the re-review's separate keyless GET (record-speeches-review/rereview/labelled/docs/). At ee5ba237 every item is located and nothing is unaccounted; at 3715651a the marker's line was unaccounted (rereview-fixes/repin-ee5ba237/fixture-compare/)."
+}

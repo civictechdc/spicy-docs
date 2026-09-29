@@ -12,6 +12,12 @@ from spicy_docs.reading.xml_tree import XmlTreeElement, read_xml_tree
 
 MODS_NAMESPACE = "http://www.loc.gov/mods/v3"
 DEFAULT_MAX_ELEMENTS = 100_000
+#: The element bound for a MODS a caller retained from GovInfo's routes: the
+#: body routes' validators and the Record speech adapter read under it. A
+#: daily Record issue's package MODS is the largest such record: of those the
+#: 2026-09-28 reviews retained, CREC-1995-01-04 holds the most elements (49,039
+#: in 5.0 MB), then CREC-1996-03-28 (46,003), measured 2026-09-28.
+RETAINED_MODS_MAX_ELEMENTS = 200_000
 
 
 class GovInfoModsError(ValueError):
@@ -80,6 +86,21 @@ class ModsRecord:
     @property
     def related_items(self) -> tuple[ModsRecord, ...]:
         return tuple(ModsRecord(element) for element in self.fields("relatedItem"))
+
+    @property
+    def access_ids(self) -> tuple[str, ...]:
+        """The accessIds this record states for itself, in its own ``extension`` children, trimmed."""
+        return tuple(element.text.strip() for element in self.fields("extension", "accessId"))
+
+    @property
+    def host_access_ids(self) -> tuple[str, ...]:
+        """The accessIds its ``relatedItem type="host"`` records state: a granule's package, trimmed."""
+        return tuple(
+            value
+            for record in self.related_items
+            if record.element.attribute("type") == "host"
+            for value in record.access_ids
+        )
 
     @property
     def parent_ids(self) -> tuple[XmlTreeElement, ...]:

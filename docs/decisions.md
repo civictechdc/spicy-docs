@@ -3857,3 +3857,120 @@ Collected from the four entries above; this is the one list.
   `sources.congress.bill_status` for `BillIdentity` and
   `schemas.cost_estimate_tables` for the `found_by` spellings, and
   `interpretation.bill_family` imports `sources.cbo`.
+
+## congressionalrecord is a pinned fork dependency, not a port
+
+Adopted 2026-09-28 with [Congressional Record speech
+turns](sources/congressional-record-speeches.md). The owner's decision that day:
+fork the @unitedstates parser in mikewolfd's organization, make the fix, pin it
+here, open the upstream pull request, and write the adapter.
+
+SpicyDocs depends on [`congressionalrecord`](https://github.com/unitedstates/congressional-record)
+behind the optional `record-speeches` extra, installed from
+[mikewolfd/congressional-record](https://github.com/mikewolfd/congressional-record)
+at the commit `PARSER_PIN` names, on its `spicy-docs-pin` branch, through
+`[tool.uv.sources]`.
+`sources/congress/record_speeches.py` is an adapter over it; nothing here
+reimplements its segmentation.
+
+**Why a fork rather than upstream.** Upstream cannot be installed and used as a
+library at `84a5af4`: nothing is published under the name on PyPI, and a wheel
+built from its main branch ships only the top-level package, without the
+`govinfo` subpackage the parser lives in. It also returned a partial parse as
+if it were complete, and it required dependencies the parser never imports:
+its PostgreSQL writer's stack, and `numpy` and others nothing imports. The pinned branch carries
+[unitedstates/congressional-record#92](https://github.com/unitedstates/congressional-record/pull/92),
+which fixes the packaging, admits a speaker line indented up to three spaces
+and adds `parse_status`/`parse_error`, and
+[#93](https://github.com/unitedstates/congressional-record/pull/93), which
+declares what the package's non-PostgreSQL modules import (the parser, the
+downloader and the schema) and moves the PostgreSQL writer's dependencies
+behind a `postgres` extra this repository does not install. After the
+adapter's review it also carries
+[#94](https://github.com/unitedstates/congressional-record/pull/94) -- a
+line-kind table per document, `None` for absent values, `CRParseError` for an
+unreadable header, an accessId index -- and merges
+[#90](https://github.com/unitedstates/congressional-record/pull/90)'s speaker
+pattern, so the adapter no longer serializes parses or maps `"None"` strings.
+Fork-only commits pin the build backend so a vendored wheel is reproducible
+and prune the tests from the sdist.
+The adapter refuses any build whose parser files are not the pin's, by the
+digests the installed `RECORD` states, so the pin cannot silently regress to
+one that hides a partial parse.
+
+**Why not a port.** The segmentation rules -- speaker, recorder, clerk, title
+and rule lines, the MODS speaker table -- are upstream's accumulated knowledge
+of how the Record prints, and a copy would stop receiving its fixes. The adapter
+adds only what a library consumer here needs: bounded inputs, the bounded MODS
+read before upstream's, refusals in this package's terms, completion status,
+and line spans.
+
+**Consequence for the gate.** `./scripts/check` syncs every extra, so a cold
+environment clones the fork the first time it resolves; uv caches the checkout
+and `--frozen` runs after that are offline. With #93 on the pin, the extra
+installs only what those modules import, with `beautifulsoup4` held at the
+version the `html` extra pins; the source page lists the clean-install set and
+what a host that vendors the wheels declares.
+
+**When to drop the source.** When upstream merges #92, #93, #94 and #90 and
+publishes a release, delete the `[tool.uv.sources]` entry and pin that release in the
+extra. Until then the git revision names a commit on a fork branch; move it
+only with `PARSER_PIN` and the lock, which a test holds together, and rebuild
+the vendored wheel by the rule on the source page.
+
+**Speech turns are parsing, not acquisition.** The adapter reads bytes a caller
+already retained -- the granule body and its own MODS or its issue's package
+MODS, from the [GovInfo body routes](sources/govinfo-bodies.md) -- and makes no
+request. Which granules to read, and where the turns are published, stay with
+the host.
+
+## A Record issue's package id is its first book's stem
+
+2026-09-28, from the independent review of the Congressional Record speech-turn
+adapter. `record_issues.package_id` is the GovInfo CREC package an issue is
+published as, the id the speech-turn adapter's `package_id` joins on. The rule
+came from the [legislative data map](research/legislative-data-map-2026-09-18.md)'s
+`record→package` edge and landed with the index tables (`c3b1d42`): the
+issue's own whole-issue link names the package by its file stem, so no package
+id is inferred from a date. That reason stands.
+
+What was wrong is which link. An issue printed in several books lists one PDF
+per book in `fullIssue.entireIssue`, each with its `part`; a later book's stem
+is `-bk{N}` of the same package, and the list is not in part order. The rule
+read the first link, so an issue whose later book was listed first published a
+package id GovInfo does not have. `entire_issue_url_stem/2` reads the link
+whose `part` is `1`, and is NULL where the detail lists no part 1 or lists it
+under two stems. The map's own sample showed it: its 18 of 20, with issues
+205 and 208 failing on HTTP 404, were two of the seven rows below.
+
+### Published values that change
+
+Measured on the live generation (`record-issues` family, artifact
+`sha256:7bb2005c62c489cff55f53a80f53e0b904703a70a92ff55ddd9c966c3022f81f`,
+`record_issues.parquet` `sha256:da41732c…c82f`), fetched and re-shaped from
+each row's own `entire_issue_json` on 2026-09-28. Every row has a detail, and
+every detail lists exactly one part-1 link. 361 rows keep their `package_id`.
+Seven change, and for each the keyed GovInfo package summary of the published
+id answers 404 while the new id's answers 200 with a title naming the same
+volume and issue:
+
+| Volume | Issue | Date | Published `package_id` | Becomes |
+| --- | --- | --- | --- | --- |
+| 171 | 45 | 2025-03-11 | `CREC-2025-03-11-bk2` | `CREC-2025-03-11` |
+| 171 | 57 | 2025-03-31 | `CREC-2025-03-31-bk2` | `CREC-2025-03-31` |
+| 171 | 86 | 2025-05-21 | `CREC-2025-05-21-bk2` | `CREC-2025-05-21` |
+| 171 | 174 | 2025-10-21 | `CREC-2025-10-21-bk2` | `CREC-2025-10-21` |
+| 171 | 205 | 2025-12-08 | `CREC-2025-12-08-bk2` | `CREC-2025-12-08` |
+| 171 | 208 | 2025-12-10 | `CREC-2025-12-10-bk2` | `CREC-2025-12-10` |
+| 172 | 5 | 2026-01-08 | `CREC-2026-01-08-bk3` | `CREC-2026-01-08` |
+
+`package_id_rule` moves from `entire_issue_url_stem` to
+`entire_issue_url_stem/2` on every row with a package id, because values changed
+under the rule. The identity `(volume, issue)` and every other column are
+unchanged. A host sees the new values when it re-shapes an issue: spicy-regs
+reads only the details its published table lacks and merges on `update_date`
+(`build_index_table`), so a held issue keeps its old row until its detail is
+read again or the table is rebuilt. **Host step:** rebuild `record_issues` once,
+or re-read the seven details above. Receipt:
+`~/Work/corpora/supply-2026-09-02/receipts/unitedstates-reuse-20260928/record-speeches/review-fixes/record-issues/`
+(`measure.py`, `measure.json`, `changed.csv`, the package summaries).

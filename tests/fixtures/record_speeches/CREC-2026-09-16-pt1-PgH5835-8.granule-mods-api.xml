@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?><mods xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.loc.gov/mods/v3" version="3.3" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-3.xsd" ID="id-CREC-2026-09-16-pt1-PgH5835-8">
+    <name type="corporate">
+        <namePart>United States Government Publishing Office</namePart>
+        <role>
+            <roleTerm authority="marcrelator" type="text">publisher</roleTerm>
+            <roleTerm authority="marcrelator" type="code">pbl</roleTerm>
+        </role>
+        <role>
+            <roleTerm authority="marcrelator" type="text">distributor</roleTerm>
+            <roleTerm authority="marcrelator" type="code">dst</roleTerm>
+        </role>
+    </name>
+    <name type="corporate">
+        <namePart>United States</namePart>
+        <namePart>Congress</namePart>
+        <role>
+            <roleTerm authority="marcrelator" type="text">author</roleTerm>
+            <roleTerm authority="marcrelator" type="code">aut</roleTerm>
+        </role>
+        <description>Government Organization</description>
+    </name>
+    <typeOfResource>text</typeOfResource>
+    <genre authority="marcgt">government publication</genre>
+    <language>
+        <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+    </language>
+    <extension>
+        <collectionCode>CREC</collectionCode>
+        <category>Proceedings of Congress and General Congressional Publications</category>
+        <waisDatabaseName>2026_record</waisDatabaseName>
+        <branch>legislative</branch>
+        <dateIngested>2026-09-22</dateIngested>
+    </extension>
+    <titleInfo>
+        <title>RECOGNIZING COMMANDER MICHELLE CAPONIGRO</title>
+        <partName>House</partName>
+    </titleInfo>
+    <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CREC-2026-09-16/html/CREC-2026-09-16-pt1-PgH5835-8.htm">
+        <identifier type="FDsys Unique ID">D09002ee1e86b86b3</identifier>
+    </relatedItem>
+    <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CREC-2026-09-16/pdf/CREC-2026-09-16-pt1-PgH5835-8.pdf">
+        <identifier type="FDsys Unique ID">D09002ee1e86b87d9</identifier>
+    </relatedItem>
+    <identifier type="congressional record citation">172 Cong. Rec. H5835</identifier>
+    <identifier type="uri">https://www.govinfo.gov/app/details/CREC-2026-09-16/CREC-2026-09-16-pt1-PgH5835-8</identifier>
+    <identifier type="former granule identifier">CR16SE26-91</identifier>
+    <location>
+        <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CREC-2026-09-16/CREC-2026-09-16-pt1-PgH5835-8</url>
+        <url access="raw object" displayLabel="PDF rendition">https://www.govinfo.gov/content/pkg/CREC-2026-09-16/pdf/CREC-2026-09-16-pt1-PgH5835-8.pdf</url>
+        <url access="raw object" displayLabel="HTML rendition">https://www.govinfo.gov/content/pkg/CREC-2026-09-16/html/CREC-2026-09-16-pt1-PgH5835-8.htm</url>
+    </location>
+    <physicalDescription>
+        <extent>1 p.</extent>
+    </physicalDescription>
+    <part type="article">
+        <extent unit="pages">
+            <start>H5835</start>
+            <end>H5835</end>
+        </extent>
+    </part>
+    <name type="personal">
+        <namePart>Jennifer A. Kiggans</namePart>
+        <affiliation>United States House of Representatives</affiliation>
+        <role>
+            <roleTerm type="text">speaking</roleTerm>
+        </role>
+        <description>United States Congress Member</description>
+    </name>
+    <identifier type="preferred citation">172 Cong. Rec. H5835</identifier>
+    <extension>
+        <searchTitle>RECOGNIZING COMMANDER MICHELLE CAPONIGRO; Congressional Record Vol. 172, No. 146</searchTitle>
+        <granuleClass>HOUSE</granuleClass>
+        <accessId>CREC-2026-09-16-pt1-PgH5835-8</accessId>
+        <subGranuleClass>RECOGNIZING</subGranuleClass>
+        <pagePrefix>H</pagePrefix>
+        <bookNumber>1</bookNumber>
+        <chamber>HOUSE</chamber>
+        <granuleDate>2026-09-16</granuleDate>
+        <time from="09:00:00" to="09:00:00"/>
+        <congMember bioGuideId="K000399" chamber="H" congress="119" party="R" role="SPEAKING" state="VA">
+                                    
+            <name type="parsed">Mrs. KIGGANS of Virginia</name>
+                                    
+            <name type="authority-fnf">Jennifer A. Kiggans</name>
+                                    
+            <name type="authority-lnf">Kiggans, Jennifer A.</name>
+                                    
+            <name type="authority-other">Jennifer Kiggans</name>
+                                
+        </congMember>
+    </extension>
+    <relatedItem type="host" ID="P0b002ee1e82e167a">
+        <titleInfo>
+            <title>Congressional Record</title>
+            <partNumber>Vol. 172, no. 146</partNumber>
+        </titleInfo>
+        <location>
+            <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CREC-2026-09-16</url>
+            <url displayLabel="PDF rendition" access="raw object">https://www.govinfo.gov/content/pkg/CREC-2026-09-16/pdf/CREC-2026-09-16.pdf</url>
+        </location>
+        <part type="issue">
+            <extent unit="pages">
+                <start>H5835</start>
+                <end>H5985</end>
+            </extent>
+            <extent unit="pages">
+                <start>S4743</start>
+                <end>S4763</end>
+            </extent>
+            <extent unit="pages">
+                <start>E935</start>
+                <end>E952</end>
+            </extent>
+            <extent unit="pages">
+                <start>D903</start>
+                <end>D912</end>
+            </extent>
+        </part>
+        <originInfo>
+            <publisher>U.S. Government Publishing Office</publisher>
+            <dateIssued encoding="w3cdtf">2026-09-16</dateIssued>
+            <issuance>continuing</issuance>
+            <frequency authority="marcfrequency">daily</frequency>
+        </originInfo>
+        <physicalDescription>
+            <note type="source content type">deposited</note>
+            <digitalOrigin>born digital</digitalOrigin>
+            <extent>200 digital object pages</extent>
+        </physicalDescription>
+        <classification authority="sudocs">X 1.1/A:</classification>
+        <classification authority="sudocs">X/A.</classification>
+        <identifier type="uri">https://www.govinfo.gov/app/details/CREC-2026-09-16</identifier>
+        <identifier type="local">P0b002ee1e82e167a</identifier>
+        <identifier type="stock number">752-002-00000-2</identifier>
+        <identifier type="ILS system id">000568013</identifier>
+        <identifier type="former package identifier">CR16SE26</identifier>
+        <recordInfo>
+            <recordContentSource authority="marcorg">DGPO</recordContentSource>
+            <recordCreationDate encoding="w3cdtf">2026-09-22</recordCreationDate>
+            <recordChangeDate encoding="w3cdtf">2026-09-22</recordChangeDate>
+            <recordIdentifier source="DGPO">CREC-2026-09-16</recordIdentifier>
+            <recordOrigin>machine generated</recordOrigin>
+            <languageOfCataloging>
+                <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+            </languageOfCataloging>
+        </recordInfo>
+        <accessCondition type="GPO scope determination">fdlp</accessCondition>
+        <extension>
+            <docClass>CREC</docClass>
+            <accessId>CREC-2026-09-16</accessId>
+            <volume>172</volume>
+            <issue>146</issue>
+            <congress>119</congress>
+            <session>2</session>
+            <bookCount>1</bookCount>
+        </extension>
+    </relatedItem>
+</mods>

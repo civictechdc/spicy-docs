@@ -33,6 +33,12 @@ pdf-gemini = ["httpx>=0.28,<1"]
 # copy of it. `sources/congress/bill_tree.py` and `interpretation/section_diff.py`
 # are adapters over it and import nothing when the extra is absent.
 bill-diff = ["deltatrack==0.1.0"]
+# Congressional Record speech turns, by the @unitedstates parser rather than a
+# copy of it. `sources/congress/record_speeches.py` is the adapter over it and
+# imports nothing when the extra is absent. beautifulsoup4 is the parser's own
+# reader, pinned as the html extra pins it so a host resolves the version the
+# gate tests rather than the newest.
+record-speeches = ["congressionalrecord==2.3.0", "beautifulsoup4==4.14.3"]
 # Schema validation of reconstructed XML against a profile's pinned DTD or XSD
 # bundle. `reconstruction/validate.py` is the only importer and imports it at
 # call time; the rest of `reconstruction/` is stdlib and needs no extra.
@@ -71,6 +77,27 @@ rulespec-artifacts = { path = "vendor/rulespec_artifacts-1.1.2-py3-none-any.whl"
 # against it and what is still open upstream. Move the pin when upstream
 # publishes a release, and drop this source entirely at that point.
 deltatrack = { git = "https://github.com/civictechdc/DeltaTrack", rev = "c636448ba08d55bba7cb8c884aad0f5ac1ccf2f6" }
+# A git pin on a fork, not a PyPI range, for two measured reasons (2026-09-28).
+# Nothing is published under `congressionalrecord` (the simple index answers
+# 404), so a version specifier alone would resolve to nothing at best and to
+# somebody else's package at worst. And a wheel built from upstream main
+# (`84a5af4`) ships only the top-level package: `congressionalrecord.govinfo`,
+# the parser the adapter imports, is not in it. The fork's `spicy-docs-pin`
+# branch carries the changes offered upstream in unitedstates/congressional-record
+# #92 (package discovery, a speaker line indented up to three spaces, and
+# `parse_status`/`parse_error` so a partial parse is not reported as complete),
+# #93 (the dependencies the non-PostgreSQL modules import, with the PostgreSQL
+# writer's behind a `postgres` extra this repository does not install) and #94
+# (per-document `item_types`, real `None` for absent values, `CRParseError` for
+# a header cut short or astray, an accessId index read once per MODS, and the
+# prose after a `[[Page]]` marker that opens a line kept as text), with
+# #90's speaker pattern (jutton1:fix-text-mislabeling) merged in; plus two
+# fork-only commits, one pinning the build backend so a vendored wheel is
+# reproducible and one pruning the tests from the sdist. The revision is a
+# full commit sha so the resolved tree is the one tested. When upstream merges
+# them and publishes a release, drop this source and pin it;
+# `docs/sources/congressional-record-speeches.md` says how.
+congressionalrecord = { git = "https://github.com/mikewolfd/congressional-record", rev = "ee5ba237b7db90bbf8a8fa438f2eb68a0077d973" }
 
 [tool.pytest.ini_options]
 # Default checks stay offline. Opt in to live services or httpfs explicitly.

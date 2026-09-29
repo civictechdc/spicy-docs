@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?><mods xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.loc.gov/mods/v3" version="3.3" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-3.xsd" ID="id-CREC-2025-03-11-pt1-PgS1677-4">
+    <name type="corporate">
+        <namePart>United States Government Publishing Office</namePart>
+        <role>
+            <roleTerm authority="marcrelator" type="text">publisher</roleTerm>
+            <roleTerm authority="marcrelator" type="code">pbl</roleTerm>
+        </role>
+        <role>
+            <roleTerm authority="marcrelator" type="text">distributor</roleTerm>
+            <roleTerm authority="marcrelator" type="code">dst</roleTerm>
+        </role>
+    </name>
+    <name type="corporate">
+        <namePart>United States</namePart>
+        <namePart>Congress</namePart>
+        <role>
+            <roleTerm authority="marcrelator" type="text">author</roleTerm>
+            <roleTerm authority="marcrelator" type="code">aut</roleTerm>
+        </role>
+        <description>Government Organization</description>
+    </name>
+    <typeOfResource>text</typeOfResource>
+    <genre authority="marcgt">government publication</genre>
+    <language>
+        <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+    </language>
+    <extension>
+        <collectionCode>CREC</collectionCode>
+        <category>Proceedings of Congress and General Congressional Publications</category>
+        <waisDatabaseName>2025_record</waisDatabaseName>
+        <branch>legislative</branch>
+        <dateIngested>2025-03-12</dateIngested>
+    </extension>
+    <titleInfo>
+        <title>CONCLUSION OF MORNING BUSINESS</title>
+        <partName>Senate</partName>
+    </titleInfo>
+    <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CREC-2025-03-11-i46/html/CREC-2025-03-11-pt1-PgS1677-4.htm">
+        <identifier type="FDsys Unique ID">D09002ee1d09e5584</identifier>
+    </relatedItem>
+    <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CREC-2025-03-11-i46/pdf/CREC-2025-03-11-pt1-PgS1677-4.pdf">
+        <identifier type="FDsys Unique ID">D09002ee1d09e55a3</identifier>
+    </relatedItem>
+    <identifier type="congressional record citation">171 Cong. Rec. S1677</identifier>
+    <identifier type="uri">https://www.govinfo.gov/app/details/CREC-2025-03-11-i46/CREC-2025-03-11-pt1-PgS1677-4</identifier>
+    <identifier type="former granule identifier">cr11mr25-13</identifier>
+    <location>
+        <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CREC-2025-03-11-i46/CREC-2025-03-11-pt1-PgS1677-4</url>
+        <url access="raw object" displayLabel="PDF rendition">https://www.govinfo.gov/content/pkg/CREC-2025-03-11-i46/pdf/CREC-2025-03-11-pt1-PgS1677-4.pdf</url>
+        <url access="raw object" displayLabel="HTML rendition">https://www.govinfo.gov/content/pkg/CREC-2025-03-11-i46/html/CREC-2025-03-11-pt1-PgS1677-4.htm</url>
+    </location>
+    <physicalDescription>
+        <extent>1 p.</extent>
+    </physicalDescription>
+    <part type="article">
+        <extent unit="pages">
+            <start>S1677</start>
+            <end>S1677</end>
+        </extent>
+    </part>
+    <name type="personal">
+        <namePart>John Thune</namePart>
+        <affiliation>United States Senate</affiliation>
+        <role>
+            <roleTerm type="text">speaking</roleTerm>
+        </role>
+        <description>United States Congress Member</description>
+    </name>
+    <identifier type="preferred citation">171 Cong. Rec. S1677</identifier>
+    <extension>
+        <searchTitle>CONCLUSION OF MORNING BUSINESS; Congressional Record Vol. 171, No. 46</searchTitle>
+        <granuleClass>SENATE</granuleClass>
+        <accessId>CREC-2025-03-11-pt1-PgS1677-4</accessId>
+        <subGranuleClass>SCONBUSINESS</subGranuleClass>
+        <pagePrefix>S</pagePrefix>
+        <bookNumber>1</bookNumber>
+        <chamber>SENATE</chamber>
+        <granuleDate>2025-03-11</granuleDate>
+        <congMember bioGuideId="T000250" chamber="S" congress="119" party="R" role="SPEAKING" state="SD">
+                                    
+            <name type="parsed">Mr. THUNE</name>
+                                    
+            <name type="authority-fnf">John Thune</name>
+                                    
+            <name type="authority-lnf">Thune, John</name>
+                                
+        </congMember>
+    </extension>
+    <relatedItem type="host" ID="P0b002ee1d09821f2">
+        <titleInfo>
+            <title>Congressional Record</title>
+            <partNumber>Vol. 171, no. 46</partNumber>
+        </titleInfo>
+        <location>
+            <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CREC-2025-03-11-i46</url>
+            <url displayLabel="PDF rendition" access="raw object">https://www.govinfo.gov/content/pkg/CREC-2025-03-11-i46/pdf/CREC-2025-03-11-i46.pdf</url>
+        </location>
+        <part type="issue">
+            <extent unit="pages">
+                <start>S1677</start>
+                <end>S1680</end>
+            </extent>
+            <extent unit="pages">
+                <start>D246</start>
+                <end>D254</end>
+            </extent>
+        </part>
+        <originInfo>
+            <publisher>U.S. Government Publishing Office</publisher>
+            <dateIssued encoding="w3cdtf">2025-03-11</dateIssued>
+            <issuance>continuing</issuance>
+            <frequency authority="marcfrequency">daily</frequency>
+        </originInfo>
+        <physicalDescription>
+            <note type="source content type">deposited</note>
+            <digitalOrigin>born digital</digitalOrigin>
+            <extent>13 digital object pages</extent>
+        </physicalDescription>
+        <classification authority="sudocs">X 1.1/A:</classification>
+        <classification authority="sudocs">X/A.</classification>
+        <identifier type="uri">https://www.govinfo.gov/app/details/CREC-2025-03-11-i46</identifier>
+        <identifier type="local">P0b002ee1d09821f2</identifier>
+        <identifier type="stock number">752-002-00000-2</identifier>
+        <identifier type="ILS system id">000568013</identifier>
+        <identifier type="former package identifier">cr11mr25</identifier>
+        <recordInfo>
+            <recordContentSource authority="marcorg">DGPO</recordContentSource>
+            <recordCreationDate encoding="w3cdtf">2025-03-12</recordCreationDate>
+            <recordChangeDate encoding="w3cdtf">2025-03-12</recordChangeDate>
+            <recordIdentifier source="DGPO">CREC-2025-03-11-i46</recordIdentifier>
+            <recordOrigin>machine generated</recordOrigin>
+            <languageOfCataloging>
+                <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+            </languageOfCataloging>
+        </recordInfo>
+        <accessCondition type="GPO scope determination">fdlp</accessCondition>
+        <extension>
+            <docClass>CREC</docClass>
+            <accessId>CREC-2025-03-11-i46</accessId>
+            <volume>171</volume>
+            <issue>46</issue>
+            <congress>119</congress>
+            <session>1</session>
+            <bookCount>1</bookCount>
+            <appendId>i46</appendId>
+        </extension>
+    </relatedItem>
+</mods>

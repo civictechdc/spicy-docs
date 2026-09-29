@@ -20,7 +20,6 @@ from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from functools import partial
 from importlib import metadata
-from json import JSONDecodeError, loads
 from typing import Any, Protocol
 from urllib.parse import urlsplit
 
@@ -31,6 +30,7 @@ from spicy_docs.interpretation.section_classification import (
     CLASSIFICATION_LABELS,
     ClassifiableSection,
 )
+from spicy_docs.reading.direct_url import recorded_commit
 from spicy_docs.schemas.bill_diff_tables import (
     FINANCIAL_CHANGES,
     SECTION_DIFF_ITEMS,
@@ -325,14 +325,7 @@ def installed_engine_stamp(name: str = "deltatrack") -> EngineStamp:
         distribution = metadata.distribution(name)
     except metadata.PackageNotFoundError as error:
         raise BillFamilyError(f"{name} is not installed; install the 'bill-diff' extra") from error
-    revision = ""
-    direct_url = distribution.read_text("direct_url.json")
-    if direct_url:
-        try:
-            revision = str(loads(direct_url).get("vcs_info", {}).get("commit_id", ""))
-        except (JSONDecodeError, AttributeError):
-            revision = ""
-    return EngineStamp(name=name, version=distribution.version, revision=revision)
+    return EngineStamp(name=name, version=distribution.version, revision=recorded_commit(distribution) or "")
 
 
 def section_reference(version_code: str, source: str, seq: int) -> str:

@@ -43,6 +43,7 @@ docs/sources/congress-bills.md	Fetch a bill and a specific text version	doc
 docs/sources/congress-bulk-bills.md	Read bill text in bulk, one Congress, session and bill type at a time	doc
 docs/sources/congress-bulk-status.md	Back-fill BILLSTATUS one Congress and one bill type at a time	doc
 docs/sources/congress-votes.md	House Clerk and Senate LIS roll-call votes	doc
+docs/sources/congressional-record-speeches.md	Read speech turns from a Congressional Record granule	doc
 docs/sources/crs-files.md	Capture a CRS report file	doc
 docs/sources/ecfr-authority.md	eCFR authority metadata	doc
 docs/sources/fcc-ecfs-attachments.md	Capture FCC ECFS filing documents, and backfill the filings that declare them	doc
@@ -145,6 +146,7 @@ src/spicy_docs/public_tables/publish.py	Index, project, verify, and publish an i
 src/spicy_docs/public_tables/reader.py	Admitted public-table locations and exact Parquet member reading.	src
 src/spicy_docs/public_tables/verify.py	Public-table admission and the full bounded Parquet-row gate.	src
 src/spicy_docs/reading/__init__.py	Bounded reading mechanics shared by every publisher family.	src
+src/spicy_docs/reading/direct_url.py	The commit an installed distribution records in its PEP 610 ``direct_url.json``.	src
 src/spicy_docs/reading/evidence_zip.py	Shared deterministic ZIP-member metadata for source acquisition evidence.	src
 src/spicy_docs/reading/image_header.py	Read declared PNG/GIF/JPEG dimensions without decoding image data.	src
 src/spicy_docs/reading/json_input.py	Parse source JSON without accepting ambiguous keys or unsupported numbers.	src
@@ -280,6 +282,7 @@ src/spicy_docs/sources/congress/house_committee_repository.py	One House committe
 src/spicy_docs/sources/congress/listing.py	Explicit Congress.gov v3 list operations, page by page with exact evidence.	src
 src/spicy_docs/sources/congress/press_releases.py	Appropriations committee press releases: two keyless RSS 2.0 feeds, one per chamber.	src
 src/spicy_docs/sources/congress/record_communications.py	Read the House executive communications one Congressional Record issue printed.	src
+src/spicy_docs/sources/congress/record_speeches.py	Read one Congressional Record granule's speech turns with the @unitedstates parser, offline.	src
 src/spicy_docs/sources/congress/votes.py	House Clerk and Senate LIS roll-call vote XML: the tally source `roll_call_votes` and `member_votes` need.	src
 src/spicy_docs/sources/courtlistener/__init__.py	CourtListener raw readers: bulk PostgreSQL/CSV streams, parallel local decoding, S3 listings and search.	src
 src/spicy_docs/sources/courtlistener/bulk.py	Stream CourtListener's published CSV dumps for keyless opinion text.	src
@@ -608,6 +611,7 @@ tests/test_reconstruction.py	Reconstruction: the profile registry, the evidence 
 tests/test_reconstruction_benchmark_tool.py	The CFR benchmark renders its report from the saved sidecar, and reads a granule the way the publisher spells it.	test
 tests/test_record_communications.py	The Record's executive-communications parse rule, against the publisher's own decomposition.	test
 tests/test_record_communications_overlap_tool.py	The overlap measurement's readings, its request bookkeeping, and its report block.	test
+tests/test_record_speeches.py	The congressionalrecord adapter: the seam, not the parser.	test
 tests/test_regulations_gov_api.py	The keyed regulations.gov v4 routes name explicit queries, walk page[number], and prove attachment bytes.	test
 tests/test_regulations_gov_comments_source_native.py	Retained Regulations.gov comment value in the source-native product.	test
 tests/test_release_matching_possessives.py	Distinguish a possessive year from a literal Senate bill citation.	test

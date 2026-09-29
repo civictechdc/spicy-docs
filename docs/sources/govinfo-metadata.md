@@ -46,7 +46,8 @@ for date in metadata.package.fields("originInfo", "dateIssued"):
 ```
 
 The pure parser defaults to 16 MiB, 100,000 elements and depth 64. Callers may
-set `max_bytes` and `max_elements`; acquisition uses its explicit byte allowance.
+set `max_bytes` and `max_elements`; acquisition uses its explicit byte allowance,
+and every reader of a retained route MODS uses `RETAINED_MODS_MAX_ELEMENTS`.
 
 ## Standard MODS field map
 
