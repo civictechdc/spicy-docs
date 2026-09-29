@@ -4345,3 +4345,33 @@ transport forwards it, so the shared capture client holds every Zyte reader's bo
 GAO states none for this export (a capture of 2026-09-29 through the new fetcher read `content_length` None), so a cut
 exactly before a record's terminator is the one cut this reader cannot see; the host's fold guard bounds what one
 could do.
+
+## 0.53.0: comment attributes from the census of every comment, and GAO recommendations keyed on the number GAO states
+
+2026-09-29. Two branches, each reviewed independently and re-reviewed after its
+fixes, merged without rebasing so each keeps the reviewed commits. Receipts
+under `~/Work/corpora/fork-execution-2026-09-21/`: the comment census and its
+review's probes are in `comments-fields-review/round2/`, the GAO review is
+`gao-recommendations-review/REVIEW.md` and its re-review's four findings are
+reported in `~/Work/corpora/opencode-lanes-20260929-fc2/e-rereview/REPORT.md`;
+the release's gate log and wheels are in
+`~/Work/corpora/opencode-lanes-20260929-fc2/release-0530-finish/`.
+
+What it carries, by entry above:
+
+- **Comments get an attribute table:** `comment_attributes` from the census of
+  every comment, contact details less `email`, `phone` and `fax` by attribute,
+  and the column order frozen as first published.
+- **GAO recommendations are keyed on the number GAO states:** the open
+  recommendations export read through Zyte, `gao-recommendation-key/1` with
+  `recommendation_kind` and `recommendation_number`, no director phone in any
+  published column, cut-export refusal, and the host accumulating the daily
+  snapshot.
+
+The owner's decisions of 2026-09-28 and 2026-09-29, each recorded in its
+entry: comment attributes published from the full census with `email`, `phone`
+and `fax` left out by attribute; and the recommendation key on the number GAO
+states, accumulated by the host.
+
+What an importer must change: each entry's own list, under the comment
+attributes entry and the GAO recommendations entry.
