@@ -1265,6 +1265,22 @@ def _regulations_attribute_cases() -> list[ShapedCase]:
     ] + [_case("docket_attributes", project_docket_attributes(r["id"], r["attributes"]), (r["id"],)) for r in dockets]
 
 
+def _gao_recommendation_cases() -> list[ShapedCase]:
+    """The retained export excerpt's first record; its key digest written here from the record's own fields."""
+    import hashlib
+
+    from spicy_docs.schemas.gao_recommendation_tables import shape_gao_recommendation
+    from spicy_docs.sources.gao.recommendations import parse_recommendations_export
+
+    body = (FIXTURES / "gao_recommendations" / "open-recs-2026-09-28-excerpt.csv").read_bytes()
+    export = parse_recommendations_export(body)
+    first = export.recommendations[0]
+    row = shape_gao_recommendation(first, status_as_of=export.status_as_of, as_of=export.as_of)
+    parts = ("gao-26-108061", "Department of State", " ".join(first.recommendation.split()))
+    identity = "sha256:" + hashlib.sha256("\x1f".join(parts).encode()).hexdigest()
+    return [_case("gao_recommendations", row, (identity,))]
+
+
 def _fec_committee_history_cases() -> list[ShapedCase]:
     """The retained cm24 sample's principal campaign committee, read and projected; its identity written here."""
     from rulespec_artifacts import LocalBlobSource
@@ -1438,6 +1454,7 @@ def all_cases() -> list[ShapedCase]:
         + _regulations_attribute_cases()
         + _fec_committee_history_cases()
         + _native_reference_cases()
+        + _gao_recommendation_cases()
     )
     if engine_available():
         cases = _family_cases() + cases
@@ -1879,6 +1896,7 @@ FILLED_BY: dict[str, tuple[str, ...]] = {
         "reading/xml_observations.py",
     ),
     "native_legal_reference_reads": ("schemas/native_reference_rows.py",),
+    "gao_recommendations": ("schemas/gao_recommendation_tables.py", "sources/gao/recommendations.py"),
 }
 
 #: A value a description names in backticks.  Prose that says a column carries
