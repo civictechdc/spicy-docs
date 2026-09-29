@@ -659,6 +659,11 @@ def test_a_bare_number_reads_only_through_a_title_leading_with_that_same_number(
         assert mutant != body
         refused = cbo_feed_bills(parse_cbo_cost_estimates_feed(mutant), 117)
         assert (refused.bills, refused.refused) == ((), (("58395", "bill_number", shape),))
+    # A number with a leading zero is no number CBO writes, and names no bill even where the title's would agree.
+    zero = body.replace(b"<Bill_Number>700</Bill_Number>", b"<Bill_Number>0700</Bill_Number>", 1)
+    assert zero != body
+    refused = cbo_feed_bills(parse_cbo_cost_estimates_feed(zero), 117)
+    assert (refused.bills, refused.refused) == ((), (("58395", "bill_number", "N"),))
     assert bare_number_bill(118, "106", "S. 106, Commitment to Veteran Support and Outreach Act") == BillIdentity(
         118, "s", 106
     )

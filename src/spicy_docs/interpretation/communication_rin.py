@@ -133,7 +133,7 @@ def rin_from_report_nature(
     elif occurrences:
         stated = None if report_nature is None else field_digest(report_nature)
         if any(o.field_sha256 != stated or o.rule != RIN_OCCURRENCE_RULE for o in occurrences):
-            raise ValueError("RIN occurrences were read from another report nature, or under an earlier rule")
+            raise ValueError("RIN occurrences were read from another report nature, or under another rule")
     text = report_nature or ""
     for occurrence in occurrences:
         label = RIN_LABEL.search(text, 0, occurrence.span_start)

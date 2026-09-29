@@ -3481,8 +3481,8 @@ summary cache (`needs_regeneration`) and the `summary_generated` activity event
 compare the values as stored. So a host re-spells its prior rows once, at
 merge, before it asks either (the importer list below names the columns); a
 compatibility layer that read both spellings forever was built and dropped.
-`rin_from_report_nature(occurrences=...)` refuses occurrences that name an
-earlier rule or carry another field's digest: they are re-read, which is cheap,
+`rin_from_report_nature(occurrences=...)` refuses occurrences that name
+another rule or carry another field's digest: they are re-read, which is cheap,
 not reused.
 
 Left bare on purpose, each for a reason:

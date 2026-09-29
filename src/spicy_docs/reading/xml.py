@@ -166,16 +166,13 @@ def _require_utf8(body: bytes, *, error_type: type[ValueError], label: str) -> N
     A span is cut from the input bytes at a tag's ``<`` and just past its
     ``>``, and the caller decodes it as UTF-8, which is only right where the
     document is UTF-8: a UTF-16 document parses, and its spans come back full
-    of NULs. Expat reads UTF-16 or UTF-32 from a byte-order mark or a NUL among
-    the first bytes, and another encoding from the declaration; with neither,
-    the document is UTF-8, which expat then validates.
+    of NULs. A UTF-16 or UTF-32 XML document holds a NUL in its first four
+    bytes, byte-order mark or not, because it opens with ``<`` or ASCII
+    whitespace; another encoding is declared, after a UTF-8 byte-order mark if
+    there is one. With neither, the document is UTF-8, which expat validates.
     """
     declared = _DECLARED_ENCODING.match(body.removeprefix(codecs.BOM_UTF8))
-    if (
-        body.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE))
-        or b"\x00" in body[:4]
-        or (declared is not None and declared[2].lower() != b"utf-8")
-    ):
+    if b"\x00" in body[:4] or (declared is not None and declared[2].lower() != b"utf-8"):
         raise error_type(f"{label} is not UTF-8, the only encoding its byte spans are read in")
 
 

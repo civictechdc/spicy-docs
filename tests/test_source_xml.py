@@ -119,6 +119,7 @@ def test_a_path_prefix_off_the_path_gets_no_span():
         '<?xml version="1.0" encoding="UTF-16"?><r><a>x</a></r>'.encode("utf-16"),  # a byte-order mark
         "<r><a>x</a></r>".encode("utf-16-be"),  # none: a NUL among the first bytes
         b'<?xml version="1.0" encoding="ISO-8859-1"?><r><a>N\xfa\xf1ez</a></r>',  # declared
+        b'\xef\xbb\xbf<?xml version="1.0" encoding="ISO-8859-1"?><r><a>N\xfa\xf1ez</a></r>',  # declared after a BOM
     ],
 )
 def test_spans_refuse_input_in_any_encoding_but_utf8_by_name(body):

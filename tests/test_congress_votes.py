@@ -21,8 +21,10 @@ import pytest
 
 from spicy_docs.sources.congress.votes import (
     CLERK_URL_RE,
+    CLERK_VACATED,
     DEFAULT_MAX_BYTES,
     DEFAULT_MENU_MAX_BYTES,
+    FIRST_NAME_ID_CONGRESS,
     MAX_VOTE_BYTES,
     SENATE_URL_RE,
     ClerkVoteIndex,
@@ -278,6 +280,19 @@ def test_a_file_from_2003_on_names_every_legislator_by_bioguide_id_once():
     locator = VoteLocator("house", 118, 1, 37)
     with pytest.raises(VoteSourceError, match="states no name-id, which every file from the 108th on does"):
         parse_clerk_vote(re.sub(rb' name-id="[^"]*"', b"", body), locator)
+    # The boundary itself: the 1990 file, which states no name-id, read as the 107th's reads and as the 108th's refuses.
+    assert FIRST_NAME_ID_CONGRESS == 108
+    early = (FIXTURES / "clerk-1990-roll001-no-name-id.excerpt.xml").read_bytes()
+    assert early.count(b"<congress>101</congress>") == 1
+    for congress, reads in ((107, True), (108, False)):
+        renumbered = early.replace(b"<congress>101</congress>", f"<congress>{congress}</congress>".encode())
+        if reads:
+            assert (
+                parse_clerk_vote(renumbered, VoteLocator("house", congress, 2, 1)).member_votes[0].bioguide_id is None
+            )
+        else:
+            with pytest.raises(VoteSourceError, match="states no name-id"):
+                parse_clerk_vote(renumbered, VoteLocator("house", congress, 2, 1))
     first, second = re.findall(rb'name-id="([^"]+)"', body)[:2]
     with pytest.raises(VoteSourceError, match="names one member twice"):
         parse_clerk_vote(body.replace(b'name-id="' + second + b'"', b'name-id="' + first + b'"', 1), locator)
@@ -303,10 +318,21 @@ def test_a_vote_vacated_by_unanimous_consent_is_a_roll_call_with_no_member_rows(
         "2015-06-04",
     )
     assert shape_roll_call_vote(parse_senate_vote(SENATE_FIXTURE, SENATE_LOCATOR))["vote_desc"] is None
+    # A Clerk file with an empty <vote-desc> states it empty, not unread (the 1990 file's, and 118th 1-37's).
+    for name, locator_ in (
+        ("clerk-1990-roll001-no-name-id.excerpt.xml", VoteLocator("house", 101, 2, 1)),
+        ("clerk-2023-roll037-committee.excerpt.xml", VoteLocator("house", 118, 1, 37)),
+    ):
+        stated = (FIXTURES / name).read_bytes()
+        assert b"<vote-desc></vote-desc>" in stated
+        assert shape_roll_call_vote(parse_clerk_vote(stated, locator_))["vote_desc"] == ""
     stub = b"<total-stub>Totals</total-stub>\r\n<yea-total>"
     counted = body.replace(stub + b"0", stub + b"1", 1)
     unstated = body.replace(b"vacated by unanimous consent", b"postponed", 1)
-    for other in (counted, unstated):
+    # The Clerk's whole phrase, not the word: a vote "vacated" some other way is unmeasured and refuses.
+    assert CLERK_VACATED == "vacated by unanimous consent"
+    otherwise = body.replace(b"vacated by unanimous consent", b"vacated", 1)
+    for other in (counted, unstated, otherwise):
         assert other != body
         with pytest.raises(VoteSourceError, match="lists no recorded votes"):
             parse_clerk_vote(other, locator)
