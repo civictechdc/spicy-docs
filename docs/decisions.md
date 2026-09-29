@@ -3759,8 +3759,6 @@ Left bare on purpose, each for a reason:
 - The sealed document-capture 1.0 schemas' `sha256` values
   (`schemas/document_capture/provenance.py`), which the sealed schemas define
   as bare hex; re-spelling them is a new schema version, not this change.
-- `schemas/native_reference_rows.py`: the branch that owns its contract spells
-  its digests.
 - Each attempt's `source_sha256` in `documents.pdf_extraction_results_json`
   and `comments.pdf_extraction_results_json`, which spicy-regs' `enrich_pdf.py`
   computes and writes; the prefix belongs there (a host change below). A
@@ -3852,9 +3850,10 @@ with its member choices (227).
 | `roll_call_votes` | every column | the five vacated votes | newly readable, with no `member_votes` rows |
 | `member_votes` | `state`, `member_key` | none | the descriptions only |
 
-## What an importer must change for the next release
+## What an importer must change for the CBO, `source_xml`, digest and Clerk entries
 
-Collected from the four entries above; this is the one list.
+Collected from the four entries above. The release's other entries carry their
+own lists; the 0.52.0 entry at the end points to each.
 
 - `cbo_cost_estimates`: **host builds feed rows for every Congress**, 108th-119th,
   with `interpretation.bill_family.build_cbo_feed_cost_estimates(feed,
@@ -4129,3 +4128,55 @@ say which bytes it read without a listing or the body. The spicy-regs comment
 re-read (owner decision 2026-09-28, option a) keeps them per object. Both are
 optional fields with defaults; `_download_record` now returns the GET's
 `DownloadedObject` with the payload, and `download_and_parse` is unchanged.
+
+## 0.52.0: CBO for every Congress, native legal references, the Congressional Record, comment fields and GAO's listing
+
+2026-09-28. Five branches, each reviewed independently and re-reviewed after
+its fixes, merged without rebasing so each keeps the reviewed commits. Receipts
+are under `~/Work/corpora/fork-execution-2026-09-21/`: each branch's review is
+its `REVIEW.md` (`native-refs-contract/`, `cbo-112-113/review-2/`,
+`record-speeches-review/rereview/`, `comments-fields-review/`,
+`gao-month-in-review-review/`), and the release's gate log and wheel are in
+`spicy-docs-0520/`.
+
+What it carries, by entry above:
+
+- **The native legal-reference tables have contracts:** both native tables
+  under contract, the interpretation moved here from RefSpec, `json_column`, and
+  observations spelled `at-joined/1`.
+- **CBO's own feed is read for every Congress:** feed rows for the 108th-119th
+  (the merge keeps BILLSTATUS), `title_bill_id` with `title_bill_id_rule`,
+  `found_by`, and a bare number read through its title when the two agree.
+- **A cosponsor's `source_xml` is the publisher's bytes.**
+- **Every published digest is spelled `sha256:`,** with rule bumps where a rule
+  names the spelling and a one-time re-spell of the host's prior rows.
+- **The Clerk's archive reads whole:** the voting-body element, files before
+  2003 with name-keyed members, capital months, and the five votes vacated by
+  unanimous consent as vote rows without members (`vote_desc`).
+- **congressionalrecord is a pinned fork dependency, not a port,** and **a
+  Record issue's package id is its first book's stem**
+  (`entire_issue_url_stem/2`).
+- **Comments carry the agency's submitter class and campaign count:**
+  `subtype` and `duplicate_comments`, appended, never coerced, and the
+  public-comments profile ids at 1.1. The `comment_attributes` contract is not
+  in this release: its column order is fixed only once the full census of
+  comment fields is folded in, and it ships in the next release.
+- **A keyed Mirrulations payload carries its GET's ETag and size.**
+- **GAO's own listing:** the Month in Review and Annual Index reader, the class
+  rule with every major-rule report 2009-2026 as a product, and
+  `ZyteTransportError` for a provider read that breaks.
+
+The owner's decisions of 2026-09-28, each recorded in its entry: CBO feed rows
+for every Congress; the five vacated votes as rows without members; a bare CBO
+number read through an agreeing title; the 1994 Record read by chamber section;
+the dropped marker-line prose fixed in the parser fork (upstream #94); email,
+phone and fax left out of the future `comment_attributes`, by attribute; and
+every GAO major-rule report in `gao_reports`, with the 1996-2008 reports a gap
+that a Congressional Review Act listing reader will fill after this release.
+
+What an importer must change: each entry's own list. They are under the GAO
+listing entry, the native legal-reference tables entry ("What changes for an
+importer" and "What spicy-regs must change to adopt it"), the importer list for
+the CBO, `source_xml`, digest and Clerk entries, the two Congressional Record
+entries (the host's wheel declaration and the `record_issues` rebuild), and the
+comments entry.
