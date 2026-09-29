@@ -159,7 +159,11 @@ every Federal Agency Major Rule Report, so a teaser with that label is a
 product whatever its number. GAO switched numbering in 2017: `GAO-` numbers up
 to 2017-02-17, `B-` numbers from 2017-04-20. Every one of the 1,655 carries
 both the label and the heading, checked before the rule was written. None
-had to be guessed.
+had to be guessed. Reports before 2009 are a gap: GovInfo's GAOREPORTS holds
+none, measured 2026-09-28 (no major-rule report among the 12,579 rows
+spicy-regs keeps from it, and none in a random 34 of the 3,743 B-numbered
+packages issued 1996-2008, all Comptroller General decisions; receipts in
+`corpora/fork-execution-2026-09-21/gao-month-in-review-review/finish/govinfo/`).
 
 **Keys.**
 - A product is keyed on the page the listing links. A GAO number's page is the
