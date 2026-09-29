@@ -268,11 +268,13 @@ def redact_director_phone(body: bytes) -> tuple[bytes, int]:
     The header is the first record naming :data:`PHONE_COLUMN`, found by name so that a refused export whose header
     moved can still be redacted; the preamble before it is kept whole. An emptied field is spelled as GAO spells an
     empty one, nothing between its commas. Bytes that are not CSV, or name no such column, refuse, since then no field
-    can be proved to be the phone.
+    can be proved to be the phone; so does a record whose field count differs from the header's, since the phone is
+    found by position and a wrong width would blank another field and keep it.
     """
     pieces: list[bytes] = []
-    kept_from = position = index = emptied = 0
+    kept_from = position = index = emptied = ordinal = 0
     column: int | None = None
+    width = 0
     names: list[bytes] = []
     while position < len(body):
         match = _RAW_FIELD.match(body, position)
@@ -288,7 +290,14 @@ def redact_director_phone(body: bytes) -> tuple[bytes, int]:
         index += 1
         if separator != b",":
             if column is None and PHONE_COLUMN.encode() in names:
-                column = names.index(PHONE_COLUMN.encode())
+                column, width = names.index(PHONE_COLUMN.encode()), len(names)
+            elif column is not None:
+                if index != width:
+                    raise GaoRecommendationsSourceError(
+                        f"{_LABEL} record {ordinal} holds {index} fields, not the header's {width}; "
+                        "no field can be proved to be the phone"
+                    )
+                ordinal += 1
             names, index = [], 0
         position = match.end()
     if column is None:

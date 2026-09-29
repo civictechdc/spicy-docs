@@ -361,6 +361,18 @@ def test_the_redactor_finds_a_moved_phone_column_and_refuses_bytes_without_one()
             redact_director_phone(body)
 
 
+@pytest.mark.parametrize(
+    ("old", "new"),
+    [(b',"International Affairs"\n', b',"International Affairs",""\n'), (b',"International Affairs"\n', b"\n")],
+    ids=["one-field-too-many", "one-field-too-few"],
+)
+def test_the_redactor_refuses_a_record_whose_width_differs_from_the_headers(old, new):
+    """It also runs on refused exports, where the reader's own width refusal never ran: a wrong-width record there
+    would blank another field and keep the phone, so it refuses and nothing is retained."""
+    with pytest.raises(GaoRecommendationsSourceError, match="the header's 11"):
+        redact_director_phone(mutate(old, new))
+
+
 def csv_response(body: bytes = EXCERPT, status: int = 200, content_type: str = "text/csv; charset=UTF-8"):
     return httpx.Response(status, stream=httpx.ByteStream(body), headers={"content-type": content_type})
 

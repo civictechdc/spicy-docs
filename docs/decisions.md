@@ -4209,7 +4209,9 @@ Unreleased, 2026-09-29. Adds the [GAO open-recommendations reader](sources/gao-r
 - What moves a key: the text key moved on 737 records when one agency was renamed and on 183 when dashes were
   normalised. Under `gao-recommendation-key/1` the rename still moves 737, since the agency is part of the key by
   decision, but dash normalisation moves 4 and a recapitalised word none; rewording moves only the 487 unnumbered.
-- Two independent parsers agree with the reader on every field of every record (the review's `work/`).
+- Two independent parsers agree with the reader on every field of every record, as measured at `caa8eac`, before
+  `fa90e2b` narrowed the unescape and added the stated-number columns (the review's `work/`); those later changes are
+  held by the reader's own tests.
 - The export's 637 ampersands are all `&amp;`, with no other entity, so only that spelling is read and any other
   refuses. GAO writes no final line terminator, which is what lets a record-boundary cut be refused.
 

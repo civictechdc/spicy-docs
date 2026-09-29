@@ -452,7 +452,15 @@ def test_the_fetcher_reads_the_targets_stated_length(monkeypatch, headers, state
 
 @pytest.mark.parametrize(
     "headers",
-    [[("Content-Length", "11"), ("Content-Length", "11")], [("Content-Length", "eleven")], [("Content-Length", "-1")]],
+    [
+        [("Content-Length", "11"), ("Content-Length", "11")],
+        [("Content-Length", "eleven")],
+        [("Content-Length", "-1")],
+        # A digit to str.isdigit that is not a byte: "\u00b2" would reach int() and refuse as a bare ValueError,
+        # "\u0661\u0661" would read as 11. Only ASCII digits are a byte count.
+        [("Content-Length", "\u00b2")],
+        [("Content-Length", "\u0661\u0661")],
+    ],
 )
 def test_an_unreadable_stated_length_refuses(monkeypatch, headers) -> None:
     provider = _provider_with_headers(b"exact bytes", [("Content-Type", "text/csv"), *headers])

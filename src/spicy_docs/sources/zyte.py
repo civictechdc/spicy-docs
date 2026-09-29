@@ -109,7 +109,8 @@ def _target_headers(value: object) -> tuple[str | None, int | None]:
         raise ZyteTransportError("Zyte target response repeats Content-Type")
     if content_types and not content_types[0]:
         raise ZyteTransportError("Zyte target Content-Type must not be empty")
-    if len(lengths) > 1 or (lengths and not lengths[0].isdigit()):
+    # ASCII digits only: str.isdigit also accepts digits that are not bytes of a count, such as "\u00b2" and "\u0661".
+    if len(lengths) > 1 or (lengths and not (lengths[0].isascii() and lengths[0].isdigit())):
         raise ZyteTransportError("Zyte target Content-Length is repeated or not a byte count")
     encoded = any(encoding.casefold() != "identity" for encoding in encodings)
     return (content_types[0] if content_types else None), (int(lengths[0]) if lengths and not encoded else None)

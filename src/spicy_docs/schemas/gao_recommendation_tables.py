@@ -34,8 +34,8 @@ GAO_RECOMMENDATIONS = table_contract(
     columns={
         "recommendation_id": (
             "The key, rule `gao-recommendation-key/1`: a digest of the lowercased publication number, the kind, the "
-            "number GAO states and the agency; where the text states no number, of the number, the agency and the "
-            "text, whitespace runs folded and case folded."
+            "number GAO states and the agency; where the text states no number, of the lowercased publication "
+            "number, the agency and the text, whitespace runs folded and case folded."
         ),
         "report_id": "The publication number lowercased: the GAO product id `gao_reports` is keyed on.",
         "publication_number": "The publication number exactly as GAO spells it, such as `GAO-26-108061`.",
