@@ -102,7 +102,9 @@ def walk(
     max_consecutive_failures: int = 1,
     backoff: float = 60,
     made: list | None = None,
+    real_wait: bool = False,
 ):
+    """One walk over ``zyte``; ``real_wait`` leaves the spacing to the walk's own interruptible wait."""
     clock = clock or Clock()
     budget = ZyteBudget(requests)
     transport = ZyteTransport(zyte, max_bytes=4 * 1024 * 1024, timeout_seconds=30, budget=budget)
@@ -128,7 +130,7 @@ def walk(
         max_consecutive_failures=max_consecutive_failures,
         failure_backoff_seconds=backoff,
         clock=clock,
-        sleep=clock.sleep,
+        sleep=None if real_wait else clock.sleep,
     )
     return code, [json.loads(line) for line in (tmp_path / "receipts.jsonl").read_text().splitlines()]
 
@@ -323,12 +325,18 @@ def _product_teaser(
 
 
 def test_a_product_listed_on_its_page_and_on_a_suffixed_twin_is_one_product():
-    """GAO-16-75SP is listed at ``gao-16-75sp`` and ``gao-16-75sp-0`` with the same fields: one product, the base page."""
+    """GAO-16-75SP is listed at ``gao-16-75sp`` and ``gao-16-75sp-0`` with the same fields: one product, the base page,
+    carrying the twin's topics and scopes too."""
     base = page(AUGUST_PAGES[0])
-    twin = page(_product_teaser(AUGUST_PAGES[0], link="/products/gao-26-108640-0", number="GAO-26-108640"))
-    products, _, _ = collect_listing([base, twin])
-    listed = [product for product in products if product.product_number == "GAO-26-108640"]
-    assert [product.product_id for product in listed] == ["gao-26-108640"]
+    twin = (
+        month_site(JULY)[JULY.page_url(0)]
+        .replace(b'href="/products/gao-26-108640"', b'href="/products/gao-26-108640-0"')
+        .replace(b">Auditing and Financial Management</h2>", b">Veterans</h2>", 1)
+    )
+    products, _, _ = collect_listing([base, page(twin, scope=JULY)])
+    (listed,) = [product for product in products if product.product_number == "GAO-26-108640"]
+    assert listed.product_id == "gao-26-108640" and listed.scopes == ("2026-08", "2026-07")
+    assert listed.topics == ("Auditing and Financial Management", "Education", "Veterans")
 
 
 def test_a_suffixed_page_with_its_own_fields_is_its_own_product():
@@ -359,6 +367,15 @@ def test_a_b_numbered_major_rule_report_is_a_product_keyed_on_its_page():
     assert reports and all(entry.product_id == unquote(entry.link.removeprefix("/products/")) for entry in reports)
     assert all(entry.decision_numbers == () and entry.product_number.startswith("B-") for entry in reports)
     assert all(entry.decision_numbers for entry in listed.entries if entry.label != "Federal Agency Major Rule Report")
+
+
+@pytest.mark.parametrize(("link", "number"), [("/products/p00459", ""), ("/products/2020-02", "2020-02")])
+def test_the_major_rule_label_makes_no_product_of_a_page_numbered_neither_gao_nor_b(link, number):
+    """The exception reaches GAO- and B-numbered teasers only: labelled so, a numberless or docket page stays apart."""
+    body = _product_teaser(AUGUST_PAGES[0], link=link, number=number, label="Federal Agency Major Rule Report")
+    listed = page(body)
+    assert listed.entries[0].product_id is None and listed.entries[0].decision_numbers == ()
+    assert [item.link for item in collect_listing([listed])[2]] == [link]
 
 
 def test_a_b_number_under_a_topic_heading_is_still_a_decision():
@@ -455,8 +472,9 @@ def test_a_repeated_scope_is_walked_once_by_no_more_workers_than_scopes(tmp_path
     assert code == 0 and zyte.calls == [AUGUST.page_url(index) for index in range(4)] and len(made) == 1
 
 
-def test_concurrency_is_capped():
-    """No walk runs more workers than the cap."""
+def test_concurrency_is_capped_at_eight():
+    """No walk runs more than eight workers, the cap the guide states."""
+    assert MAX_CONCURRENCY == 8
     with pytest.raises(ValueError, match="concurrency"):
         walk_listing(
             [AUGUST],
@@ -464,7 +482,7 @@ def test_concurrency_is_capped():
             store=Path("unused"),
             receipts=Path("unused"),
             zyte_budget=ZyteBudget(1),
-            concurrency=MAX_CONCURRENCY + 1,
+            concurrency=9,
         )
 
 
@@ -484,23 +502,44 @@ def test_the_backoff_doubles_up_to_its_ceiling(tmp_path):
 
 
 def test_an_interrupt_stops_the_workers_writes_a_stopped_row_and_propagates(tmp_path, monkeypatch):
-    """Ctrl-C while the workers run stops them, joins them, records the stop, then raises."""
+    """Ctrl-C while both workers wait out the spacing releases them at once: no request, a stopped row, then raised."""
+    # A contact recorded now makes each worker's first request wait out the whole spacing.
+    earlier = {"kind": "failed", "scope": "2026-06", "page_index": 0, "attempted_at": "2026-09-28T17:00:00Z"}
+    (tmp_path / "receipts.jsonl").write_text(json.dumps(earlier) + "\n")
+    asked = threading.Semaphore(0)
+
+    class Waiting(Clock):
+        """A worker asks the time once, after reserving its request and just before it waits out the spacing."""
+
+        def __call__(self) -> datetime:
+            asked.release()
+            return super().__call__()
+
     real_join = threading.Thread.join
     interrupted: list = []
 
     def join(thread, timeout=None):
         if not interrupted:
             interrupted.append(thread)
+            assert asked.acquire(timeout=10) and asked.acquire(timeout=10)
             raise KeyboardInterrupt
         return real_join(thread, timeout)
 
     monkeypatch.setattr(month_in_review.threading.Thread, "join", join)
+    zyte = FakeZyte(month_site(JUNE, JULY, AUGUST))
     with pytest.raises(KeyboardInterrupt):
         walk(
-            tmp_path, FakeZyte(month_site(JUNE, JULY, AUGUST)), requests=20, scopes=(JUNE, JULY, AUGUST), concurrency=2
+            tmp_path,
+            zyte,
+            requests=20,
+            clock=Waiting(),
+            spacing=30,
+            real_wait=True,
+            scopes=(JUNE, JULY, AUGUST),
+            concurrency=2,
         )
     rows = [json.loads(line) for line in (tmp_path / "receipts.jsonl").read_text().splitlines()]
-    assert rows[-1]["kind"] == "stopped" and "interrupted" in rows[-1]["reason"]
+    assert zyte.calls == [] and rows[-1]["kind"] == "stopped" and "interrupted" in rows[-1]["reason"]
     assert not [thread for thread in threading.enumerate() if thread.name.startswith("gao-listing-")]
 
 
@@ -688,7 +727,7 @@ def test_a_listing_that_moves_restarts_its_scope_once_then_stops_it_by_name(tmp_
 
     again = FakeZyte(august_site())
     code, rows = walk(tmp_path, again)
-    assert again.calls == [] and rows[-1]["unfinished"] == ["2026-08"] and "2026-08" in rows[-1]["reason"]
+    assert code == 1 and again.calls == [] and rows[-1]["unfinished"] == ["2026-08"] and "2026-08" in rows[-1]["reason"]
 
 
 def test_parallel_periods_fetch_each_page_once_and_one_periods_failure_spares_the_others(tmp_path):

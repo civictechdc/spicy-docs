@@ -650,7 +650,7 @@ def walk_listing(
     clock: Callable[[], datetime] = utc_now,
     sleep: Callable[[float], None] | None = None,
 ) -> int:
-    """Walk each scope's pages in order, resuming from ``receipts``; 0 when done or stopped at budget, 1 after a failure.
+    """Walk each scope's pages in order, resuming from ``receipts``; 0 when done or stopped at budget, else 1.
 
     Every page's exact bytes go to ``store`` and one row to ``receipts`` (appended). A retained page is never
     fetched again, and a scope named twice is walked once. Up to ``concurrency`` workers (no more than the scopes,
@@ -659,8 +659,8 @@ def walk_listing(
     next run retries; the other scopes' pages are kept. Each failure pauses every worker for
     ``failure_backoff_seconds``, doubling with each failure in a row up to :data:`MAX_BACKOFF_SECONDS`, and
     ``max_consecutive_failures`` in a row stop the walk. A listing that moves mid-scope writes a ``moved`` row and
-    restarts the scope from page 0, once; moving again stops it, named, for this and every later run. The Zyte
-    budget is an exact ceiling: a request is counted before it starts. Each worker spaces its own request starts by
+    restarts the scope from page 0, once; moving again stops it, named, and this and every later run over it exit 1
+    until someone looks. The Zyte budget is an exact ceiling: a request is counted before it starts. Each worker spaces its own request starts by
     ``spacing_seconds``, its first from the last contact the receipts record, so stopping and resuming never shortens
     the spacing; this is the only pacing, so a caller's acquirers carry none. The default, one worker 420 seconds
     apart stopping at the first failure, is the site's stated crawl delay. On an interrupt the workers are stopped
