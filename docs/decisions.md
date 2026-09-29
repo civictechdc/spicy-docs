@@ -4232,3 +4232,10 @@ false on all of them. Receipts under `~/Work/corpora/supply-2026-09-02/receipts/
 where `project_comment_attributes` projected every one of the 5,945 live
 sampled records with no refusal. The full read re-measures; an attribute
 stated there after all becomes an appended column.
+
+### What an importer must change
+
+- `comment_attributes` is a new contract to host, built with
+  `project_comment_attributes`. The comment validator already admits
+  `pageCount` only as an int from 0 to 2**31 - 1 (the comments entry above),
+  the type `page_count` publishes.

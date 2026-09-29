@@ -34,7 +34,10 @@ def _thin_attributes() -> set[str]:
         for key in data["attributes"]:
             changed = json.loads(json.dumps(raw))
             changed["data"]["attributes"][key] = "⁣probe"
-            if COMMENT.extract(changed) != base:
+            try:
+                if COMMENT.extract(changed) != base:
+                    read.add(key)
+            except ValueError:  # the extract reads it and refuses the probe's type (duplicateComments)
                 read.add(key)
     return read
 
