@@ -186,14 +186,24 @@ and ended the whole fallback chain.
   (`product_id`, `product_number`, `label`, `heading`, `released`,
   `published`, `topics`, `title`).
   - `products` now includes the B-numbered major-rule reports. Their
-    `product_id` is the page (`b-331093`) and their `product_number` the
+    `product_id` is the page (`b-333095`) and their `product_number` the
     B-number.
   - A `-N` twin that agrees with its base page is no longer a separate product.
+  - Its text still states the rule this one replaces. The data dictionary's
+    `gao_reports` coverage says "Only GAO-numbered products are taken". The
+    module docstring puts every B-numbered entry outside the table, and its
+    type comment counts 707 major-rule reports, the GAO-numbered ones. The
+    code takes `products` as it is.
 - `ZyteTransportError` callers: `sources/walled_fetch.py`,
   `sources/usitc_edis/credentialed.py`, `cli/fec.py` and
   `transport/acquisition.py`. Each now also receives the failures that used to
   escape as raw `http.client` errors, so the walled-fetch ladder moves on to
   its next rung rather than aborting. No call site changes.
+- RefSpec imports `ZyteHttpFetcher` and `ZyteTransportError` in
+  `registry/adapters/crs_zyte.py` and `icpsr_zyte.py`, and `ZyteHttpFetcher`
+  in `tools/fetch_registry_source_via_zyte.py`. The adapters' handlers now
+  also catch a dropped read, and the tool still lets it propagate. RefSpec
+  takes this at its next spicy-docs bump, with no code change.
 - `walk_listing` takes `proxy_record` (a URL to its latest `ZyteProxyRecord`,
   e.g. `ZyteTransport.record_for`) in place of `proxy_records`. `concurrency`
   is capped at 8, and `sleep` defaults to an interruptible wait.
