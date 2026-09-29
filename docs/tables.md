@@ -88,6 +88,7 @@ column are the contract's.
 | `comments` | One row per public comment posted on Regulations.gov. | `comment_id` | `modify_date` | the host, through its copy of `schemas.regulations`' extract |
 | `document_attributes` | One row per Regulations.gov document: the attributes the thin documents table does not carry. | `document_id` | none | `schemas.regulations_attribute_tables` (`project_document_attributes`) |
 | `docket_attributes` | One row per Regulations.gov docket: the attributes the thin dockets table does not carry. | `docket_id` | none | `schemas.regulations_attribute_tables` (`project_docket_attributes`) |
+| `comment_attributes` | One row per Regulations.gov comment: the attributes the thin comments table does not carry. | `comment_id` | none | `schemas.regulations_attribute_tables` (`project_comment_attributes`) |
 | `federal_register` | One row per dated Federal Register document: a rule, proposed rule, notice or presidential document. | `document_number`, `publication_date` | none | `schemas.federal_register` (`project_federal_register_document`), plus the host's `rin` |
 | `fec_committee_history` | One row per FEC committee per two-year cycle, as that cycle's bulk committee master states it. | `committee_id`, `cycle` | none | `schemas.fec_committee_history` (`project_committee_master_row`) over `sources.fec.committee_master` |
 | `native_legal_references` | One scanner observation in one pinned U.S. Code or eCFR XML input: a native href or source credit, or an AUTH or SOURCE note, with every target read from it nested rather than multiplied. | `scope_id`, `input_sha256`, `occurrence_index` | none | `schemas.native_reference_rows`, `interpretation.native_legal_references`, with the host's target lookup |
@@ -191,6 +192,12 @@ types here, and the `public_tables` and public-comment profiles built on them,
 lack `pdf_extraction_results_json`, the host's column; the contracts state what is published. The comment
 reference columns and `documents.attachment_records_json` sit mid-table, not
 appended ([decision](decisions.md#three-hosted-tables-take-new-columns-mid-table)).
+
+The attribute tables (`document_attributes`, `docket_attributes`,
+`comment_attributes`) name each column after the API attribute it carries.
+`comment_attributes` is first published in attribute order, and that order is
+frozen: a newly stated attribute is appended
+([decision](decisions.md#comments-get-an-attribute-table-comment_attributes)).
 
 Each identity is the publisher's own id, because a document filed under two
 agencies is still one document (DocSpec decision 0004).

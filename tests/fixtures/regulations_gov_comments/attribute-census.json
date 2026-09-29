@@ -1,0 +1,123 @@
+{
+ "agencies": 180,
+ "attributes": {
+  "address1": {
+   "distinct_values": 238384,
+   "stated": 306966
+  },
+  "address2": {
+   "distinct_values": 23492,
+   "stated": 45602
+  },
+  "city": {
+   "distinct_values": 102869,
+   "stated": 4852300
+  },
+  "country": {
+   "distinct_values": 451,
+   "stated": 5236305
+  },
+  "displayProperties": {
+   "distinct_values": 21,
+   "stated": 12189196
+  },
+  "docAbstract": {
+   "distinct_values": 95230,
+   "stated": 113116
+  },
+  "email": {
+   "distinct_values": 21921,
+   "stated": 25046
+  },
+  "fax": {
+   "distinct_values": 5878,
+   "stated": 7723
+  },
+  "field1": {
+   "distinct_values": 363,
+   "stated": 2209
+  },
+  "field2": {
+   "distinct_values": 78,
+   "stated": 107
+  },
+  "fileFormats": {
+   "distinct_values": 258,
+   "stated": 265
+  },
+  "govAgency": {
+   "distinct_values": 23514,
+   "stated": 108256
+  },
+  "govAgencyType": {
+   "distinct_values": 7,
+   "stated": 132075
+  },
+  "legacyId": {
+   "distinct_values": 183728,
+   "stated": 248695
+  },
+  "objectId": {
+   "distinct_values": 26312106,
+   "stated": 26629661
+  },
+  "openForComment": {
+   "distinct_values": 1,
+   "stated": 26629661
+  },
+  "pageCount": {
+   "distinct_values": 650,
+   "stated": 26629661
+  },
+  "phone": {
+   "distinct_values": 11606,
+   "stated": 13729
+  },
+  "postmarkDate": {
+   "distinct_values": 190022,
+   "stated": 1518530
+  },
+  "reasonWithdrawn": {
+   "distinct_values": 6690,
+   "stated": 42370
+  },
+  "restrictReason": {
+   "distinct_values": 76,
+   "stated": 28562
+  },
+  "restrictReasonType": {
+   "distinct_values": 3,
+   "stated": 28672
+  },
+  "stateProvinceRegion": {
+   "distinct_values": 15683,
+   "stated": 6493952
+  },
+  "submitterRep": {
+   "distinct_values": 87369,
+   "stated": 182426
+  },
+  "submitterRepAddress": {
+   "distinct_values": 2,
+   "stated": 2
+  },
+  "submitterRepCityState": {
+   "distinct_values": 2,
+   "stated": 2
+  },
+  "trackingNbr": {
+   "distinct_values": 26134596,
+   "stated": 26587292
+  },
+  "withdrawn": {
+   "distinct_values": 2,
+   "stated": 26629661
+  },
+  "zip": {
+   "distinct_values": 258854,
+   "stated": 1980337
+  }
+ },
+ "rows": 26629661,
+ "source": "spicy-regs comment re-read, every object the ETL manifest listed (2026-09-28)"
+}

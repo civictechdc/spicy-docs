@@ -1,16 +1,29 @@
-"""The Regulations.gov attribute tables: what a document's or docket's API detail record states beyond the thin
-``documents`` and ``dockets`` tables, one row per record, typed natively (spicy-regs owner decisions 66 and 67).
+"""The Regulations.gov attribute tables: what a document's, docket's or comment's API detail record states beyond the
+thin ``documents``, ``dockets`` and ``comments`` tables, one row per record, typed natively (spicy-regs owner decisions
+66 and 67).
 
-A column is the API attribute it carries in snake_case, ``_json`` after the one attribute published as JSON text
-(``displayProperties``, spelled by :func:`~spicy_docs.schemas.tables.json_column`). Lists of strings are
-``VARCHAR[]``, and the publisher's instants (always ``YYYY-MM-DDTHH:MM:SSZ``) are ``TIMESTAMPTZ``. Submitters' stated
-contact details are published (decision 66); attributes never stated, constant, derivable from the key, or already
-carried by the thin tables are left out, as the contract note lists them (DocSpec
-``docs/research/regulations-attributes-contract-2026-09-26.md``). A scalar VARCHAR attribute must be stated as a
-string and ``displayProperties`` as an array, as DocSpec's exporter requires; anything else refuses.
+A column is the API attribute it carries in snake_case, ``_json`` after an attribute published as JSON text
+(``displayProperties``, and on comments ``fileFormats``, spelled by :func:`~spicy_docs.schemas.tables.json_column`).
+Lists of strings are ``VARCHAR[]``, and the publisher's instants (always ``YYYY-MM-DDTHH:MM:SSZ``) are ``TIMESTAMPTZ``.
+Submitters' stated contact details are published (decision 66); attributes never stated, constant, derivable from the
+key, or already carried by the thin tables are left out, as the contract note lists them (DocSpec
+``docs/research/regulations-attributes-contract-2026-09-26.md``). A scalar VARCHAR attribute must be stated as a string
+and each ``_json`` attribute (``displayProperties``, and on comments ``fileFormats``) as an array, as DocSpec's exporter
+requires of ``displayProperties``; anything else refuses.
 
-:func:`project_document_attributes` and :func:`project_docket_attributes` are the one spelling of a row: spicy-regs'
-ETL calls them per record and DocSpec's exporter proves its native spelling against them.
+:func:`project_document_attributes`, :func:`project_docket_attributes` and :func:`project_comment_attributes` are the
+one spelling of a row: spicy-regs' ETL calls them per record. DocSpec's exporter proves its native spelling against the
+document and docket projections; it has no comment exporter, and its display-properties check would refuse
+``fileFormats``, so a comment exporter needs its own.
+
+``comment_attributes`` follows the same rules, with one difference the owner ruled on 2026-09-28: a comment's stated
+``email``, ``phone`` and ``fax`` are left out. Documents state neither email nor phone, so decision 66 never ruled on
+them; on comments they are private individuals' contact details, bulk-queryable once published, with little analytic
+value, and 6,873 of the 7,723 fax values stated across every comment read (89%) are phone-shaped. The exclusion is by
+attribute, not by value: a contact-shaped value typed into a published field (``address1``, ``docAbstract``, ...) is
+published as stated. :data:`COMMENT_ATTRIBUTES_LEFT_OUT` lists every comment attribute left out and why, and a census
+of every comment holds both lists to what is stated (``tests/fixtures/regulations_gov_comments/attribute-census.json``).
+Its column order is frozen as first published; a newly stated attribute appends.
 """
 
 from __future__ import annotations
@@ -244,8 +257,84 @@ DOCKET_ATTRIBUTES = _attribute_contract(
     ),
 )
 
+COMMENT_ATTRIBUTES = _attribute_contract(
+    "comment_attributes",
+    grain="One row per Regulations.gov comment: the attributes the thin comments table does not carry.",
+    key=("comment_id", "The comment's id; its API record is https://api.regulations.gov/v4/comments/{comment_id}."),
+    parent="comments",
+    columns=(
+        ("address1", VARCHAR, "The submitter's street address, first line, as stated."),
+        ("address2", VARCHAR, "The submitter's street address, second line, as stated."),
+        ("city", VARCHAR, "The submitter's city."),
+        ("country", VARCHAR, "The submitter's country, spelled as stated (United States, US, ...)."),
+        (
+            "display_properties_json",
+            VARCHAR,
+            "The agency's labels for this record's fields: a JSON array of {label, name, tooltip}, name being the attribute it labels; json_column spelling.",
+        ),
+        ("doc_abstract", VARCHAR, "A summary the agency recorded for the comment; rarely stated."),
+        (
+            "field1",
+            VARCHAR,
+            "An agency-defined field; its meaning is the record's display_properties_json label (“10-Digit HTSUS Item Number for Product of Concern”, “XRIN”, “RTID”, …).",
+        ),
+        (
+            "field2",
+            VARCHAR,
+            "An agency-defined field; its meaning is the record's display_properties_json label (“File Date”, “Verbal Description for Product of Concern”, …).",
+        ),
+        (
+            "file_formats_json",
+            VARCHAR,
+            "Renditions of the comment's own content file, rarely stated: a JSON array of {fileUrl, format, size}; json_column spelling. Attached files are in the thin table's attachments_json.",
+        ),
+        ("gov_agency", VARCHAR, "The government body that submitted the comment."),
+        ("gov_agency_type", VARCHAR, "That body's level: Federal, State, Local, Tribal and others."),
+        ("legacy_id", VARCHAR, "The comment's id in a predecessor system."),
+        ("object_id", VARCHAR, "The publisher's internal object handle."),
+        ("page_count", INTEGER, "Pages in the content file, as stated."),
+        ("postmark_date", TIMESTAMPTZ, "The postmark of a comment that arrived by mail, a UTC instant."),
+        ("reason_withdrawn", VARCHAR, "The publisher's reason for a withdrawal, spelled as stated."),
+        ("restrict_reason", VARCHAR, "Why access is restricted, free text."),
+        (
+            "restrict_reason_type",
+            VARCHAR,
+            "The restriction's kind: Copyrighted, Confidential Business Information, Personally Identifiable Information or Other.",
+        ),
+        ("state_province_region", VARCHAR, "The submitter's state, province or region."),
+        ("submitter_rep", VARCHAR, "The name of the submitter's representative."),
+        (
+            "submitter_rep_address",
+            VARCHAR,
+            "The street address of the submitter's representative, as stated; rarely stated.",
+        ),
+        (
+            "submitter_rep_city_state",
+            VARCHAR,
+            "The city, state and postal code of the submitter's representative, as stated; rarely stated.",
+        ),
+        ("tracking_nbr", VARCHAR, "The portal's tracking number."),
+        (
+            "withdrawn",
+            BOOLEAN,
+            "Whether the comment has been withdrawn, as the publisher stated it on the record's latest version.",
+        ),
+        ("zip", VARCHAR, "The submitter's postal code."),
+    ),
+)
+
+#: Every stated comment attribute ``comment_attributes`` does not carry, by reason. A reason other than the owner's
+#: ruling is measured on the spicy-regs re-read of every comment (2026-09-28), whose committed census summary the tests
+#: hold it to; every other attribute that census finds stated is a column. The thin ``comments`` table's attributes are
+#: what ``schemas.regulations.COMMENT.extract`` reads, which a test derives rather than lists.
+COMMENT_ATTRIBUTES_LEFT_OUT: Mapping[str, tuple[str, ...]] = {
+    "private contact details, left out by owner ruling (2026-09-28)": ("email", "fax", "phone"),
+    "constant (false)": ("openForComment",),
+}
+
 _DOCUMENT_PLAN = _plan(DOCUMENT_ATTRIBUTES)
 _DOCKET_PLAN = _plan(DOCKET_ATTRIBUTES)
+_COMMENT_PLAN = _plan(COMMENT_ATTRIBUTES)
 
 
 def project_document_attributes(document_id: str, attributes: Mapping[str, object]) -> dict[str, object]:
@@ -260,3 +349,12 @@ def project_document_attributes(document_id: str, attributes: Mapping[str, objec
 def project_docket_attributes(docket_id: str, attributes: Mapping[str, object]) -> dict[str, object]:
     """One ``docket_attributes`` row from a docket's API detail record: its ``data.id`` and ``data.attributes``."""
     return _projected(DOCKET_ATTRIBUTES, _DOCKET_PLAN, docket_id, attributes)
+
+
+def project_comment_attributes(comment_id: str, attributes: Mapping[str, object]) -> dict[str, object]:
+    """One ``comment_attributes`` row from a comment's API detail record: its ``data.id`` and ``data.attributes``.
+
+    The same rules as :func:`project_document_attributes`: a stated value of the wrong type refuses with
+    :class:`~spicy_docs.schemas.tables.TableContractError`.
+    """
+    return _projected(COMMENT_ATTRIBUTES, _COMMENT_PLAN, comment_id, attributes)

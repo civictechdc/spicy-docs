@@ -31,3 +31,15 @@ Federation Action Fund), a `Company/Organization Comment` whose `organization`
 is NULL, and a `Public Comment`; EPA states `duplicateComments` 1 for each
 single comment. The CMS record states `Public Comment` and
 `duplicateComments` 0, the value agencies that do not count leave.
+
+## Attribute census
+
+`attribute-census.json` is `full_census_summary.json` from
+`~/Work/corpora/supply-2026-09-02/receipts/comments-full-reread-2026-09-28/comment-attributes/`,
+copied byte-for-byte (SHA-256
+`239ee63e30d3ee1f0e76eb52988d6204edba922e56fcad8d5e710d037f7a6e23`). Its script,
+`full_census.py`, read every part of the spicy-regs re-read of every comment the
+ETL manifest listed (plan `2e9c995713c0f403-s2`, 2026-09-28). For each attribute
+the thin table does not map, it lists the rows that state it (non-null) and its
+exact number of distinct values. `test_comment_attributes` holds
+`comment_attributes`' columns and `COMMENT_ATTRIBUTES_LEFT_OUT` to it.
