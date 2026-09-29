@@ -3348,13 +3348,17 @@ another Congress: 115 H.R. 1422's BILLSTATUS lists 52538, CBO's 2013 estimate
 of the 113th's H.R. 1422, and `title_bill_id` reads `115-hr-1422`. The grammar
 moved twice in this round, so `title_bill_id_rule` is appended too, on every
 row, naming the rule that read it (`cbo_title_citation/1`), as
-`publication_id_rule` does for its column. Over the 108th-119th
-(`title-bill/title-bill.json`):
+`publication_id_rule` does for its column. On a feed row found by its title
+(`found_by` `title`, `title_law` or `bill_number_title`) the title chose
+`bill_id`, so the two agree by construction and agreement there proves
+nothing: 237 such rows with a law map, 235 without. Over the 108th-119th,
+re-measured at the head that added bare numbers (`title-bill/title-bill.json`,
+`title-bill-no-map.json`):
 
 | Route | Rows | Differs by a bill title | Title names a public law | Differs with a law map | NULL: cites after the start | NULL: no citation | NULL: other form |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | BILLSTATUS, 108th-111th and 114th-119th | 12,732 | 5 | 6 | 2 | 275 | 46 | 0 |
-| Feed, 108th-119th | 14,768 | 5 | 7 | 3 | 296 | 67 | 1 |
+| Feed, 108th-119th | 14,770; 14,772 with a law map | 5 | 7 | 3 | 296 | 67 | 1 |
 
 The feed's five are CBO's own numbers: 112 H.R. 1707 for S. 1707, 115 S. 2416
 for S. 2461, 117 S. 2671 for S. 2761, 119 H.R. 648 for H.R. 658 and 119 H.R.

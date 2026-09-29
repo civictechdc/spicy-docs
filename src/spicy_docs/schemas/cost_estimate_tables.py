@@ -215,7 +215,10 @@ CBO_COST_ESTIMATES = table_contract(
             "the feed (P.L. 111-322 filed under the 112th's H.R. 3082, its bill's number in the 111th).  A bill "
             "citation reads in the row's own Congress, so this cannot show a link to the same number in another "
             "Congress: 115 H.R. 1422's BILLSTATUS lists 52538, CBO's estimate of the 113th's H.R. 1422, and this "
-            "reads 115-hr-1422; that pub_date, 2013-04-22, precedes the 115th.  title_bill_id_rule names the rule."
+            "reads 115-hr-1422; that pub_date, 2013-04-22, precedes the 115th.  On a `cbo_feed` row whose found_by "
+            "is `title`, `title_law` or `bill_number_title` the title chose bill_id, so the two agree by "
+            "construction and the agreement proves nothing: 237 of the 108th-119th's feed rows with the host's law "
+            "map, 235 without (2026-09-28).  title_bill_id_rule names the rule."
         ),
         "found_by": (
             "How the source linked this estimate to bill_id: `billstatus` (the bill's own BILLSTATUS record lists "
