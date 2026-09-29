@@ -4183,15 +4183,16 @@ comments entry.
 
 ## Comments get an attribute table: `comment_attributes`
 
-Unreleased, 2026-09-28; the owner ruled it in, for the same release as the
-comment columns above. `comment_attributes` is to `comments` what
+Unreleased, 2026-09-28; the owner ruled it in. It was held out of 0.52.0 until
+the census of every comment had fixed its columns, because their order is
+frozen once published. `comment_attributes` is to `comments` what
 `document_attributes` is to `documents`: one row per comment, keyed
 `comment_id` spelled `value/1`, referencing `comments`, built by the same
 `_attribute_contract` and projected by `project_comment_attributes`, the one
-spelling spicy-regs' build and DocSpec share. Columns follow decision 66's
-naming and decision 67's typing: `withdrawn` BOOLEAN, `page_count` INTEGER,
-`postmark_date` TIMESTAMPTZ, `display_properties_json` in `json_column`
-spelling, everything else VARCHAR as stated.
+spelling spicy-regs' build uses. Columns follow decision 66's naming and
+decision 67's typing: `withdrawn` BOOLEAN, `page_count` INTEGER,
+`postmark_date` TIMESTAMPTZ, `display_properties_json` and `file_formats_json`
+in `json_column` spelling, everything else VARCHAR as stated.
 
 **Contact details follow decision 66, less `email`, `phone` and `fax`**
 (owner, 2026-09-28). `address1`, `address2`, `city`, `state_province_region`,
@@ -4199,7 +4200,10 @@ spelling, everything else VARCHAR as stated.
 left out on purpose: documents state neither, so decision 66 never ruled on
 them, and on comments they are private individuals' contact details,
 bulk-queryable once published, with little analytic value. `fax` is left out
-with them: 162 of its 170 stated values read were phone numbers.
+with them: 162 of the 170 fax values stated in the first 4,368,949 comments
+read were phone numbers. A representative's address, which the census finds
+stated on two DOI comments (`submitterRepAddress`, `submitterRepCityState`),
+is published like the submitter's own address.
 
 **The exclusion is by attribute, not by value** (owner, 2026-09-28). An email
 or phone number typed into a published field (`city`, `submitterRep`,
@@ -4213,25 +4217,48 @@ each attribute and watching the extracted row):
 | Reason | Attributes |
 | --- | --- |
 | Private contact details (owner ruling) | `email`, `phone`, `fax` |
-| Never stated | `field1`, `field2`, `submitterRepAddress`, `submitterRepCityState` |
 | Constant | `openForComment` (false) |
 
-Unlike documents, `withdrawn`, `reasonWithdrawn` and `fileFormats` are
-columns here: the thin `comments` table carries none of them (its
-`attachments_json` comes from the record's `included` attachments, while
-`fileFormats`, as `file_formats_json`, lists renditions of the comment's own
-content file).
+Every other attribute the thin table does not map is stated somewhere, so it is
+a column; none is left out as never stated. Unlike documents, `withdrawn`,
+`reasonWithdrawn` and `fileFormats` are columns here: the thin `comments` table
+carries none of them (its `attachments_json` comes from the record's `included`
+attachments, while `fileFormats`, as `file_formats_json`, lists renditions of
+the comment's own content file).
 
-"Never stated" and "constant" are measured on the spicy-regs re-read of every
-comment: on the first 4,368,949 objects read, agencies ACF to CFPB (the other
-agencies then rested on the 179-agency sample), `restrictReason` (25),
-`restrictReasonType` (22) and `fileFormats` (4) are stated after all, so they
-are columns, which the 5,945-comment sample had missed; `openForComment` is
-false on all of them. Receipts under `~/Work/corpora/supply-2026-09-02/receipts/comments-full-reread-2026-09-28/comment-attributes/`:
-`sample_census.json`, `partial_census.json`, and `project_live_sample.json`,
-where `project_comment_attributes` projected every one of the 5,945 live
-sampled records with no refusal. The full read re-measures; an attribute
-stated there after all becomes an appended column.
+**What is stated is measured on every comment.** The census reads the
+spicy-regs re-read of every Mirrulations comment object the ETL manifest listed
+(plan `2e9c995713c0f403-s2`: 26,629,661 objects, 26,314,480 comment ids, 180
+agencies; 2026-09-28). Against the partial census of the first 4,368,949
+objects (agencies ACF to CFPB), it finds six more attributes stated:
+`docAbstract` (113,116; EPA, DOS, FDA) and `legacyId` (248,695; OSHA, FDA, NRC,
+EERE), already columns because the 5,945-comment sample had found them, and
+`field1` (2,209; USTR, NOAA), `field2` (107; FDA, USTR), `submitterRepAddress`
+and `submitterRepCityState` (2 each; DOI), which were left out as never stated
+and are now columns. `openForComment` is still false on every object.
+`project_comment_attributes` projects every distinct stated value of every
+column in the full read without a refusal (`pageCount` 0 to 42,247;
+`postmarkDate` 1900-01-01 to 4018-04-11, published as stated).
+
+The census summary, stated rows and exact distinct values per attribute, is
+committed as `tests/fixtures/regulations_gov_comments/attribute-census.json`,
+and `test_comment_attributes` holds both lists to it. The test fails on a column
+the census never finds stated, a constant column, a stated attribute that is
+neither a column nor left out, and a reason the census contradicts (an
+attribute called never stated that is stated, or constant that is not).
+Receipts under
+`~/Work/corpora/supply-2026-09-02/receipts/comments-full-reread-2026-09-28/comment-attributes/`:
+`sample_census.json`, `partial_census.json`, `full_census.json` and
+`full_census_summary.json` (`full_census.py`), `project_live_sample.json`, and
+`project_full_read.json` (`project_full_read.py`).
+
+**The column order is frozen as first published.** The first publication takes
+attribute order, as `document_attributes` does. From then on, a newly stated
+attribute becomes an appended column and no published column moves, as with
+`congress_bills`' frozen prefix and the host's `ADD COLUMN`.
+`test_comment_attributes` pins the first-published columns as a prefix. The
+attribute-order test now holds only `document_attributes` and
+`docket_attributes`, whose order the DocSpec lane's column list pins.
 
 ### What an importer must change
 
@@ -4239,3 +4266,11 @@ stated there after all becomes an appended column.
   `project_comment_attributes`. The comment validator already admits
   `pageCount` only as an int from 0 to 2**31 - 1 (the comments entry above),
   the type `page_count` publishes.
+- The contract is typed (`withdrawn` BOOLEAN, `page_count` INTEGER,
+  `postmark_date` TIMESTAMPTZ), so DocSpec's `_contract_types` check applies to
+  a published member. DocSpec has no comment exporter, and its
+  display-properties check would refuse `fileFormats`, so a comment exporter
+  needs its own.
+- The columns differ from the review drafts (`35a57e3`, `b840194`): `fax` is
+  out, and `field1`, `field2`, `submitter_rep_address` and
+  `submitter_rep_city_state` are in. A table seeded from a draft is rebuilt.

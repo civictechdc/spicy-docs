@@ -2373,7 +2373,8 @@ def test_each_attribute_column_is_its_api_attribute_in_snake_case_in_attribute_o
             re.sub(r"(?<=[a-z0-9])([A-Z])", r"_\1", a).lower() + ("_json" if c.endswith("_json") else "")
             for a, c in zip(attributes, columns, strict=True)
         ] == list(columns)
-        assert attributes == sorted(attributes)
+        if name != "comment_attributes":  # frozen as first published, then appended (test_comment_attributes)
+            assert attributes == sorted(attributes)
 
 
 def test_the_attribute_contracts_are_the_lanes_column_list() -> None:

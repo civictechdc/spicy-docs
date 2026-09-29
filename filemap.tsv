@@ -486,7 +486,7 @@ tests/test_citation_context_qualification.py	Retained historical context and exp
 tests/test_citation_grammar.py	The single citation grammar, and the two defects the port fixed.	test
 tests/test_citations.py	The citation rules and the two activity reports they are pinned on.	test
 tests/test_cli_list_pages.py	One command walks any registered list route: exact page blobs, receipt rows, and refusals that exit non-zero.	test
-tests/test_comment_attributes.py	comment_attributes: document_attributes' rules applied to comments, less the owner's email and phone ruling.	test
+tests/test_comment_attributes.py	comment_attributes: document_attributes' rules applied to comments, less the owner's email, phone and fax ruling.	test
 tests/test_comment_reference_projection.py	Native parent-document evidence stays distinct from docket and object IDs.	test
 tests/test_comment_submitter_projection.py	The agency's submitter class and campaign count reach the comments table as stated.	test
 tests/test_committee_rosters.py	House Clerk and Senate roster files prove what each states about itself.	test

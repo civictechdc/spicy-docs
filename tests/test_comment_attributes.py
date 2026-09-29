@@ -1,4 +1,4 @@
-"""comment_attributes: document_attributes' rules applied to comments, less the owner's email and phone ruling."""
+"""comment_attributes: document_attributes' rules applied to comments, less the owner's email, phone and fax ruling."""
 
 import json
 from datetime import UTC, datetime
@@ -16,6 +16,54 @@ from spicy_docs.schemas.regulations_attribute_tables import (
 from spicy_docs.sources.regulations_gov.definitions import COMMENT_ATTRIBUTE_FIELDS
 
 FIXTURES = Path(__file__).parent / "fixtures/regulations_gov_comments"
+#: Stated rows and exact distinct values per attribute the thin table does not map, over the spicy-regs re-read of every
+#: comment (2026-09-28); the fixture README names its receipt.
+CENSUS = json.loads((FIXTURES / "attribute-census.json").read_text())
+
+#: comment_attributes as first published, in attribute order like document_attributes. Frozen: a newly stated attribute
+#: is appended after these, so no published column moves.
+FIRST_PUBLISHED = (
+    "comment_id",
+    "address1",
+    "address2",
+    "city",
+    "country",
+    "display_properties_json",
+    "doc_abstract",
+    "field1",
+    "field2",
+    "file_formats_json",
+    "gov_agency",
+    "gov_agency_type",
+    "legacy_id",
+    "object_id",
+    "page_count",
+    "postmark_date",
+    "reason_withdrawn",
+    "restrict_reason",
+    "restrict_reason_type",
+    "state_province_region",
+    "submitter_rep",
+    "submitter_rep_address",
+    "submitter_rep_city_state",
+    "tracking_nbr",
+    "withdrawn",
+    "zip",
+)
+
+
+def _constant(stated: dict | None) -> bool:
+    """Stated on every comment read, with one value."""
+    return stated is not None and stated["stated"] == CENSUS["rows"] and stated["distinct_values"] == 1
+
+
+#: What each reason for leaving an attribute out claims of the census; the owner's ruling is by attribute, whatever is
+#: stated.
+_REASON_HOLDS = {
+    "private contact details, left out by owner ruling (2026-09-28)": lambda stated: True,
+    "never stated": lambda stated: stated is None,
+    "constant (false)": _constant,
+}
 
 
 def _records() -> dict[str, dict]:
@@ -50,6 +98,22 @@ def test_every_comment_attribute_is_a_column_carried_by_comments_or_left_out_for
     parts = (columns, thin, set(left_out))
     assert set().union(*parts) == COMMENT_ATTRIBUTE_FIELDS
     assert sum(len(part) for part in parts) == len(COMMENT_ATTRIBUTE_FIELDS)  # disjoint
+
+
+def test_the_census_holds_every_column_and_every_reason_for_leaving_one_out():
+    """A published attribute the census never finds stated fails, as does a left-out one it contradicts (moving
+    ``fileFormats`` to "never stated", mutant M9) and an attribute it finds stated that is neither."""
+    census = CENSUS["attributes"]
+    columns = {attribute_of(column) for column in TABLE_CONTRACTS["comment_attributes"].columns[1:]}
+    left_out = {attribute: reason for reason, group in COMMENT_ATTRIBUTES_LEFT_OUT.items() for attribute in group}
+    assert set(census) <= columns | set(left_out)
+    assert columns <= set(census)
+    assert not [attribute for attribute in columns if _constant(census[attribute])]
+    assert not [(a, reason) for a, reason in left_out.items() if not _REASON_HOLDS[reason](census.get(a))]
+
+
+def test_the_first_published_column_order_is_frozen_and_a_later_attribute_appends():
+    assert TABLE_CONTRACTS["comment_attributes"].columns[: len(FIRST_PUBLISHED)] == FIRST_PUBLISHED
 
 
 def test_email_phone_and_fax_are_left_out_even_when_stated():

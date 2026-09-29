@@ -3,12 +3,12 @@ thin ``documents``, ``dockets`` and ``comments`` tables, one row per record, typ
 66 and 67).
 
 A column is the API attribute it carries in snake_case, ``_json`` after an attribute published as JSON text
-(``displayProperties``, and on comments ``fileFormats``, spelled by :func:`~spicy_docs.schemas.tables.json_column`). Lists of strings are
-``VARCHAR[]``, and the publisher's instants (always ``YYYY-MM-DDTHH:MM:SSZ``) are ``TIMESTAMPTZ``. Submitters' stated
-contact details are published (decision 66); attributes never stated, constant, derivable from the key, or already
-carried by the thin tables are left out, as the contract note lists them (DocSpec
-``docs/research/regulations-attributes-contract-2026-09-26.md``). A scalar VARCHAR attribute must be stated as a
-string and ``displayProperties`` as an array, as DocSpec's exporter requires; anything else refuses.
+(``displayProperties``, and on comments ``fileFormats``, spelled by :func:`~spicy_docs.schemas.tables.json_column`).
+Lists of strings are ``VARCHAR[]``, and the publisher's instants (always ``YYYY-MM-DDTHH:MM:SSZ``) are ``TIMESTAMPTZ``.
+Submitters' stated contact details are published (decision 66); attributes never stated, constant, derivable from the
+key, or already carried by the thin tables are left out, as the contract note lists them (DocSpec
+``docs/research/regulations-attributes-contract-2026-09-26.md``). A scalar VARCHAR attribute must be stated as a string
+and ``displayProperties`` as an array, as DocSpec's exporter requires; anything else refuses.
 
 :func:`project_document_attributes`, :func:`project_docket_attributes` and :func:`project_comment_attributes` are the
 one spelling of a row: spicy-regs' ETL calls them per record. DocSpec's exporter proves its native spelling against the
@@ -18,9 +18,11 @@ document and docket projections; it has no comment exporter, and its display-pro
 ``comment_attributes`` follows the same rules, with one difference the owner ruled on 2026-09-28: a comment's stated
 ``email``, ``phone`` and ``fax`` are left out. Documents state neither email nor phone, so decision 66 never ruled on
 them; on comments they are private individuals' contact details, bulk-queryable once published, with little analytic
-value, and 162 of the 170 stated fax values read so far are phone numbers. The exclusion is by attribute, not by value:
-a contact-shaped value typed into a published field (``city``, ``submitterRep``, ...) is published as stated.
-:data:`COMMENT_ATTRIBUTES_LEFT_OUT` lists every comment attribute left out and why.
+value, and 162 of the 170 fax values stated in the first 4,368,949 comments read are phone numbers. The exclusion is
+by attribute, not by value: a contact-shaped value typed into a published field (``city``, ``submitterRep``, ...) is
+published as stated. :data:`COMMENT_ATTRIBUTES_LEFT_OUT` lists every comment attribute left out and why, and a census
+of every comment holds both lists to what is stated (``tests/fixtures/regulations_gov_comments/attribute-census.json``).
+Its column order is frozen as first published; a newly stated attribute appends.
 """
 
 from __future__ import annotations
@@ -271,6 +273,16 @@ COMMENT_ATTRIBUTES = _attribute_contract(
         ),
         ("doc_abstract", VARCHAR, "A summary the agency recorded for the comment; rarely stated."),
         (
+            "field1",
+            VARCHAR,
+            "An agency-defined field; its meaning is the record's display_properties_json label (“10-Digit HTSUS Item Number for Product of Concern”, “XRIN”, “RTID”, …).",
+        ),
+        (
+            "field2",
+            VARCHAR,
+            "An agency-defined field; its meaning is the record's display_properties_json label (“File Date”, “Verbal Description for Product of Concern”, …).",
+        ),
+        (
             "file_formats_json",
             VARCHAR,
             "Renditions of the comment's own content file, rarely stated: a JSON array of {fileUrl, format, size}; json_column spelling. Attached files are in the thin table's attachments_json.",
@@ -290,6 +302,16 @@ COMMENT_ATTRIBUTES = _attribute_contract(
         ),
         ("state_province_region", VARCHAR, "The submitter's state, province or region."),
         ("submitter_rep", VARCHAR, "The name of the submitter's representative."),
+        (
+            "submitter_rep_address",
+            VARCHAR,
+            "The street address of the submitter's representative, as stated; rarely stated.",
+        ),
+        (
+            "submitter_rep_city_state",
+            VARCHAR,
+            "The city, state and postal code of the submitter's representative, as stated; rarely stated.",
+        ),
         ("tracking_nbr", VARCHAR, "The portal's tracking number."),
         (
             "withdrawn",
@@ -300,13 +322,12 @@ COMMENT_ATTRIBUTES = _attribute_contract(
     ),
 )
 
-#: Every stated comment attribute ``comment_attributes`` does not carry, by reason. "Never stated" and "constant" are
-#: measured on the spicy-regs re-read of every comment (4,368,949 objects when this was set, 2026-09-28; the full
-#: read re-measures them); the thin ``comments`` table's attributes are what ``schemas.regulations.COMMENT.extract``
-#: reads, which a test derives rather than lists.
+#: Every stated comment attribute ``comment_attributes`` does not carry, by reason. A reason other than the owner's
+#: ruling is measured on the spicy-regs re-read of every comment (2026-09-28), whose committed census summary the tests
+#: hold it to; every other attribute that census finds stated is a column. The thin ``comments`` table's attributes are
+#: what ``schemas.regulations.COMMENT.extract`` reads, which a test derives rather than lists.
 COMMENT_ATTRIBUTES_LEFT_OUT: Mapping[str, tuple[str, ...]] = {
     "private contact details, left out by owner ruling (2026-09-28)": ("email", "fax", "phone"),
-    "never stated": ("field1", "field2", "submitterRepAddress", "submitterRepCityState"),
     "constant (false)": ("openForComment",),
 }
 
