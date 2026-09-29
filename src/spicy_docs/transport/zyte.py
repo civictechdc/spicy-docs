@@ -148,6 +148,9 @@ class ZyteTransport(httpx.BaseTransport):
         with self._records_lock:
             record = self._record(url, response, digest)
         headers = [("content-type", response.content_type)] if response.content_type else []
+        if response.content_length is not None:
+            # The shared capture client holds the body to a stated length, so a cut answer refuses there.
+            headers.append(("content-length", str(response.content_length)))
         return httpx.Response(
             response.status_code,
             headers=headers,
