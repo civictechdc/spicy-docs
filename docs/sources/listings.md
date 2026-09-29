@@ -542,14 +542,17 @@ other scopes' pages are kept. Each failure pauses every worker for
 `--failure-backoff-seconds`, doubling with each failure in a row up to 15
 minutes. That many failures in a row stop the whole walk.
 
-For the backfill of 2026-09-28 the owner overrode the delay. The first run
+For the backfill of 2026-09-28 the owner overrode the delay. The first passes
 used six workers and the 180-second timeout. Requests hung in bursts until the
-timeout, and the doubling backoff then stalled the walk. The run that finished
-(1,212 pages, 1,252 Zyte requests, about 80 minutes) used
+timeout, and the doubling backoff then stalled the walk: 385 pages in 426 Zyte
+requests over about 45 minutes. The run that finished used
 `--concurrency 3 --delay-seconds 0 --timeout-seconds 60
 --failure-backoff-seconds 60 --max-consecutive-failures 4`, with resume passes
-until complete. The lesson: a short timeout and few workers finish sooner than
-many workers waiting out long timeouts.
+until complete: 811 pages in 826 requests over about 35 minutes. The whole
+campaign made 1,252 requests over about 80 minutes. With 16 pages from two
+earlier sample runs, 1,212 pages are retained (receipts in
+`corpora/gao-listing-walk-2026-09-28/`). The lesson: a short timeout and few
+workers finish sooner than many workers waiting out long timeouts.
 
 `read_listing_run` re-reads only scopes whose every page is retained. A scope
 a walk was asked for but has not finished, started or not, is named
