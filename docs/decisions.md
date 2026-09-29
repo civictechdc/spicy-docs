@@ -3546,10 +3546,16 @@ refuses. A `name:` key identifies the row within its roll call, not a person:
 the Clerk's labels are last names disambiguated within a Congress, and over
 1990-2002 at least 21 name two different members (18 whose state changes,
 such as `Allen`, `Schiff` and `Wilson`, and `Jones (NC)`, `McHugh` and `Smith
-(WA)` in one state; the second review's `review-2/clerk/names.py`). The
-`member_key` docstring, `member_votes`' contract text and the importer list
-say so: a host crosswalks persons on (congress, name, party, state), and the
-key does not move.
+(WA)` in one state; the second review's `review-2/clerk/names.py`). Nor does
+(congress, name, party, state) identify a person: one Congress can seat a
+successor of the same surname, party and state. Where the Clerk states
+bioguide ids, 5 such keys name two (109th Matsui D-CA, 110th Carson D-IN, 112th
+Payne D-NJ, 117th Letlow R-LA, 119th Grijalva D-AZ), and in 1990-2002 the same
+shows as a gap inside one Congress (the 105th's Capps and Bono, CA, and the
+107th's Shuster, PA; `review-2/round2/clerk/`). The `member_key` docstring,
+`member_votes`' contract text and the importer list say so: a host crosswalks
+persons on (congress, name, party, state) and the vote date, checked against
+each member's service dates, and the key does not move.
 
 **Nine files print the month in capitals.** `3-JAN-1991` on seven Speaker
 elections and two other votes of 1991-2003 refused as "not the chamber's own
@@ -3566,7 +3572,9 @@ the Clerk's `<vote-desc>` verbatim (13,780 of the 22,512 files state one,
 most often the measure's title), so the row states the file's own words; it
 has `member_vote_count` 0 and no `member_votes` rows. A file listing no
 recorded vote that does not say so, or whose totals are not zero, still
-refuses. What still refuses is the publisher's own contradiction, one of the
+refuses. A vote vacated after its positions were recorded reads as any other:
+110-2-640 (2008) lists 433 members and says "Proceedings on Roll Call 640 were
+vacated by unanimous consent.", which its `vote_desc` carries. What still refuses is the publisher's own contradiction, one of the
 22,512: 2003's Speaker election, whose candidate totals (Hastert 228) disagree
 with its member choices (227).
 
@@ -3639,9 +3647,12 @@ Collected from the four entries above; this is the one list.
   `member_votes`; their member rows key `name:` plus the Clerk's name
   (`Ackerman`) with `bioguide_id` NULL, as the contract's `member_key` already
   allows. That key identifies a row within its roll call, never a person: at
-  least 21 labels of 1990-2002 name two different members, so a host
-  crosswalks persons on (congress, name, party, state), and the key does not
-  move. The same backfill re-reads the nine capital-month files for
+  least 21 labels of 1990-2002 name two different members, and one Congress
+  can seat a same-surname, same-party, same-state successor (109th Matsui,
+  110th Carson, 112th Payne, 117th Letlow, 119th Grijalva; the 105th's Capps
+  and Bono, the 107th's Shuster), so a host crosswalks persons on (congress,
+  name, party, state) and the vote date, checked against each member's service
+  dates, and the key does not move. The same backfill re-reads the nine capital-month files for
   `vote_day`, and the five vacated votes of 2011-2016, which now publish a
   `roll_call_votes` row (`vote_desc` states it, `member_vote_count` 0) and no
   member rows. A Clerk file from the 108th Congress on without name-ids now

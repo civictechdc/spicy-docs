@@ -184,8 +184,10 @@ ROLL_CALL_VOTES = table_contract(
             "vacated by unanimous consent before recording a position (112-1-484, 112-2-327, 113-2-275, "
             "114-1-300, 114-2-44) it is the file's statement of what happened (\"This vote was vacated by "
             'unanimous consent on 4-Jun-2015."), and the row has zero tallies, member_vote_count 0 and no '
-            "member_votes rows.  Empty when a captured Clerk file states none; NULL on Senate rows, linkage-only "
-            "rows and House rows captured before this column."
+            "member_votes rows.  A vote vacated after its positions were recorded publishes as any other: 110-2-640 "
+            '(2008) lists 433 members and says "Proceedings on Roll Call 640 were vacated by unanimous consent."  '
+            "Empty when a captured Clerk file states none; NULL on Senate rows, linkage-only rows and House rows "
+            "captured before this column."
         ),
     },
 )
@@ -209,8 +211,12 @@ MEMBER_VOTES = table_contract(
             "would split one member's votes across two rows; an identity column also cannot be null, which the "
             "design's bioguide key would have been. A `name:` key identifies the row within its roll call, not a "
             "person: across 1990-2002 at least 21 of the Clerk's labels name two different members (Jones (NC), "
-            "Allen, Schiff, Wilson, McHugh, Smith (WA)...), so a person is the host's crosswalk on congress, "
-            "member_name, party and state, never this key."
+            "Allen, Schiff, Wilson, McHugh, Smith (WA)...), so a person is the host's crosswalk, never this key. "
+            "Congress, member_name, party and state do not identify one either: one Congress can seat a successor "
+            "of the same surname, party and state (where the Clerk states bioguide ids, 5 such keys name two: 109th "
+            "Matsui D-CA, 110th Carson D-IN, 112th Payne D-NJ, 117th Letlow R-LA, 119th Grijalva D-AZ; in 1990-2002 "
+            "the 105th's Capps and Bono (CA) and the 107th's Shuster (PA) show it as a gap inside the Congress), so "
+            "the crosswalk adds vote_date, checked against each member's service dates."
         ),
         "bioguide_id": "The voting member's bioguide id, where the publisher or the crosswalk supplies one.",
         "lis_id": "The voting member's Senate LIS id, which only the Senate file carries.",
@@ -482,7 +488,10 @@ def member_key(member: object) -> str:
     ``name:`` identifies the row within one roll call, which names a member once, and never a person: the Clerk's
     labels of 1990-2002 are last names disambiguated only within a Congress, and at least 21 name two different
     members over those years (``Jones (NC)``, ``McHugh`` and ``Smith (WA)`` in one state, ``Allen``, ``Schiff`` and
-    ``Wilson`` across two). A host crosswalks persons on (congress, name, party, state); the key does not move.
+    ``Wilson`` across two). Nor does (congress, name, party, state): a successor of the same surname, party and state
+    can sit in the same Congress (109th Matsui, 110th Carson, 112th Payne, 117th Letlow, 119th Grijalva, each two
+    bioguide ids; the 105th's Capps and Bono and the 107th's Shuster before 2003). A host crosswalks persons on
+    those four and the vote date, checked against each member's service dates; the key does not move.
     """
     lis = member.lis_id
     if lis:

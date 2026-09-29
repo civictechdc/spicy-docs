@@ -135,8 +135,14 @@ identifies the row within its roll call, not a person: the Clerk's labels are
 last names disambiguated within a Congress, and over 1990-2002 at least 21
 name two different members (18 whose state changes, such as `Allen`, `Schiff`
 and `Wilson`, and three in one state, `Jones (NC)`, `McHugh` and `Smith (WA)`;
-independent review, 2026-09-28). A host crosswalks persons on (congress, name,
-party, state).
+independent review, 2026-09-28). (congress, name, party, state) does not
+identify a person either: one Congress can seat a successor of the same
+surname, party and state. Where the Clerk states bioguide ids, 5 such keys name
+two (109th Matsui D-CA, 110th Carson D-IN, 112th Payne D-NJ, 117th Letlow R-LA,
+119th Grijalva D-AZ), and in 1990-2002 the same shows as a gap inside one
+Congress (the 105th's Capps and Bono, CA, and the 107th's Shuster, PA; second
+review, `review-2/round2/clerk/`). A host crosswalks persons on those four and
+the vote date, checked against each member's service dates.
 
 **Five votes were vacated before any position was recorded.** The House
 vacated 112-1-484, 112-2-327, 113-2-275, 114-1-300 and 114-2-44 by unanimous
@@ -145,7 +151,9 @@ consent; each file lists no recorded vote, totals zero and says so in
 `parse_clerk_vote` reads such a file with no member votes, and it publishes a
 `roll_call_votes` row whose `vote_desc` states the Clerk's words and which has
 no `member_votes` rows (owner decision, 2026-09-28). Any other file listing no
-recorded vote refuses. The archive's one remaining refusal is the publisher's
+recorded vote refuses. A vote vacated after its positions were recorded reads
+as any other: 110-2-640 (2008) lists 433 members and says "Proceedings on Roll
+Call 640 were vacated by unanimous consent.", which its `vote_desc` carries. The archive's one remaining refusal is the publisher's
 own contradiction: 2003's Speaker election, whose candidate totals disagree
 with its member choices (Hastert 228 against 227 votes cast for him). A byte
 count, a plain XML walk and `parse_clerk_vote` agree on every file.
