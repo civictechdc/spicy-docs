@@ -195,7 +195,7 @@ appended ([decision](decisions.md#three-hosted-tables-take-new-columns-mid-table
 
 The attribute tables (`document_attributes`, `docket_attributes`,
 `comment_attributes`) name each column after the API attribute it carries.
-`comment_attributes` was first published in attribute order, and that order is
+`comment_attributes` is first published in attribute order, and that order is
 frozen: a newly stated attribute is appended
 ([decision](decisions.md#comments-get-an-attribute-table-comment_attributes)).
 

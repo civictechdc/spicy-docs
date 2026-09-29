@@ -4200,15 +4200,24 @@ in `json_column` spelling, everything else VARCHAR as stated.
 left out on purpose: documents state neither, so decision 66 never ruled on
 them, and on comments they are private individuals' contact details,
 bulk-queryable once published, with little analytic value. `fax` is left out
-with them: 162 of the 170 fax values stated in the first 4,368,949 comments
-read were phone numbers. A representative's address, which the census finds
+with them: across the full read, 6,873 of the 7,723 stated fax values (89%) are
+phone-shaped, and 7,298 have at least 10 digits (`fax_share.json`). A
+representative's address, which the census finds
 stated on two DOI comments (`submitterRepAddress`, `submitterRepCityState`),
 is published like the submitter's own address.
 
-**The exclusion is by attribute, not by value** (owner, 2026-09-28). An email
-or phone number typed into a published field (`city`, `submitterRep`,
-`stateProvinceRegion`, `govAgency`; about 20 in 5.95M comments) is published as
-stated, like every other stated value.
+**The exclusion is by attribute, not by value** (owner, 2026-09-28). A
+contact detail typed into a published field is published as stated, like every
+other stated value. Across all 26,629,661 comments read, 2,322 email-shaped
+values sit in 9 published columns: `doc_abstract` 894, `address1` 862,
+`restrict_reason` 283, `address2` 107, `submitter_rep` 94, `city` 67,
+`gov_agency` 8, `reason_withdrawn` 4 and `state_province_region` 3. Some of the
+`doc_abstract` and `restrict_reason` ones are likely agency addresses. In 45
+records, the excluded `email`, `phone` or `fax` value also appears in a
+published column of the same record, mostly an email in `address1` (33). The
+owner re-confirmed publishing by attribute on these numbers on 2026-09-29
+(`full_pass.json`, `same_record.json`). The release review's probes cited here
+are under `~/Work/corpora/fork-execution-2026-09-21/comments-fields-review/round2/probes/`.
 
 Left out, as `COMMENT_ATTRIBUTES_LEFT_OUT` lists, and the thin table's own
 attributes (what `COMMENT.extract` reads; a test derives the set by changing
@@ -4235,7 +4244,11 @@ objects (agencies ACF to CFPB), it finds six more attributes stated:
 EERE), already columns because the 5,945-comment sample had found them, and
 `field1` (2,209; USTR, NOAA), `field2` (107; FDA, USTR), `submitterRepAddress`
 and `submitterRepCityState` (2 each; DOI), which were left out as never stated
-and are now columns. `openForComment` is still false on every object.
+and are now columns. `openForComment` is still false on every object. The
+committed summary shows only that it is constant (stated on every row, one
+distinct value); that the value is `false` comes from `full_census.json`
+(minimum and maximum `false`) and the review's `full_pass.json` (`false` on all
+26,629,661 rows).
 `project_comment_attributes` projects every distinct stated value of every
 column in the full read without a refusal (`pageCount` 0 to 42,247;
 `postmarkDate` 1900-01-01 to 4018-04-11, published as stated).

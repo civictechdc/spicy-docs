@@ -8,7 +8,8 @@ Lists of strings are ``VARCHAR[]``, and the publisher's instants (always ``YYYY-
 Submitters' stated contact details are published (decision 66); attributes never stated, constant, derivable from the
 key, or already carried by the thin tables are left out, as the contract note lists them (DocSpec
 ``docs/research/regulations-attributes-contract-2026-09-26.md``). A scalar VARCHAR attribute must be stated as a string
-and ``displayProperties`` as an array, as DocSpec's exporter requires; anything else refuses.
+and each ``_json`` attribute (``displayProperties``, and on comments ``fileFormats``) as an array, as DocSpec's exporter
+requires of ``displayProperties``; anything else refuses.
 
 :func:`project_document_attributes`, :func:`project_docket_attributes` and :func:`project_comment_attributes` are the
 one spelling of a row: spicy-regs' ETL calls them per record. DocSpec's exporter proves its native spelling against the
@@ -18,8 +19,8 @@ document and docket projections; it has no comment exporter, and its display-pro
 ``comment_attributes`` follows the same rules, with one difference the owner ruled on 2026-09-28: a comment's stated
 ``email``, ``phone`` and ``fax`` are left out. Documents state neither email nor phone, so decision 66 never ruled on
 them; on comments they are private individuals' contact details, bulk-queryable once published, with little analytic
-value, and 162 of the 170 fax values stated in the first 4,368,949 comments read are phone numbers. The exclusion is
-by attribute, not by value: a contact-shaped value typed into a published field (``city``, ``submitterRep``, ...) is
+value, and 6,873 of the 7,723 fax values stated across every comment read (89%) are phone-shaped. The exclusion is by
+attribute, not by value: a contact-shaped value typed into a published field (``address1``, ``docAbstract``, ...) is
 published as stated. :data:`COMMENT_ATTRIBUTES_LEFT_OUT` lists every comment attribute left out and why, and a census
 of every comment holds both lists to what is stated (``tests/fixtures/regulations_gov_comments/attribute-census.json``).
 Its column order is frozen as first published; a newly stated attribute appends.
