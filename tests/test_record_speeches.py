@@ -14,14 +14,20 @@ rule or title, now ``None`` where it was the string ``"None"``, and moving it to
 
 from __future__ import annotations
 
+import base64
 import copy
+import hashlib
 import json
+import re
+import shutil
 import socket
+import subprocess
 import sys
 import tomllib
 from collections import Counter
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from dataclasses import replace
+from importlib import metadata
 from pathlib import Path
 
 import pytest
@@ -30,6 +36,7 @@ from spicy_docs.sources.congress import record_speeches
 from spicy_docs.sources.congress.record_speeches import (
     EXTRA_REQUIRED,
     LOCATED,
+    PARSER_DIGESTS,
     PARSER_PIN,
     UNLOCATED,
     RecordSpeechDocument,
@@ -295,8 +302,6 @@ def test_one_issue_reads_each_of_its_granules() -> None:
 @pytest.mark.parametrize("name", GRANULE_MODS)
 def test_a_granules_own_mods_reads_as_the_package_mods_does(name: str) -> None:
     """The granule's own MODS gives the package-MODS reading of that granule, apart from the MODS digest."""
-    import hashlib
-
     mods = (FIXTURES / name).read_bytes()
     issue = read_record_issue(mods, max_mods_bytes=BOUND)
     assert (issue.package_id, issue.granule_id) == ("CREC-2026-09-16", KIGGANS)
@@ -318,8 +323,6 @@ def test_a_granules_own_mods_reads_no_other_granule() -> None:
 @needs_parser
 def test_provenance_fields_name_the_inputs_and_the_pin() -> None:
     """Digests are ``sha256:`` over the exact bytes given, and the pin is the fork commit."""
-    import hashlib
-
     document = _read(KIGGANS)
     assert document.html_sha256 == "sha256:" + hashlib.sha256(_body(KIGGANS)).hexdigest()
     assert document.mods_sha256 == "sha256:" + hashlib.sha256(_mods(KIGGANS)).hexdigest()
@@ -334,9 +337,6 @@ def test_fixtures_are_the_bytes_their_provenance_states() -> None:
     The kept elements' digests were taken from the original file, so a match
     shows each kept ``<relatedItem>`` is byte-identical to the publisher's.
     """
-    import hashlib
-    import json
-
     provenance = json.loads((FIXTURES / "provenance.json").read_text())
     for entry in provenance["fixtures"]:
         data = (FIXTURES / entry["fixture"]).read_bytes()
@@ -458,22 +458,6 @@ def test_the_first_item_is_never_moved_off_that_line(monkeypatch: pytest.MonkeyP
     first = _read(KIGGANS, _blank_before_first_item()).items[0]
     _altered(monkeypatch, 1, first.text.split("\n", 1)[1])
     assert _read(KIGGANS, _blank_before_first_item()).items[0].coordinates_status == UNLOCATED
-
-
-@needs_parser
-def test_a_parser_without_parse_status_refuses(monkeypatch: pytest.MonkeyPatch) -> None:
-    """An installed build lacking the fork's completion field cannot show a partial parse, so it is refused."""
-    from congressionalrecord.govinfo import cr_parser
-
-    original = cr_parser.ParseCRFile.write_page
-
-    def unreported(self: object) -> None:
-        original(self)
-        self.crdoc.pop("parse_status")
-
-    monkeypatch.setattr(cr_parser.ParseCRFile, "write_page", unreported)
-    with pytest.raises(RecordSpeechesError, match="does not report parse completion"):
-        _read(KIGGANS)
 
 
 # --- lines nothing accounts for, and the page the header states -------------
@@ -625,22 +609,6 @@ def test_a_header_upstream_cannot_read_refuses_through_its_named_error(body: obj
     ) as caught:
         _read(KIGGANS, body())
     assert isinstance(caught.value.__cause__, cr_parser.CRParseError)
-
-
-@needs_parser
-def test_a_parser_that_returns_no_header_refuses(monkeypatch: pytest.MonkeyPatch) -> None:
-    """The pin refuses an unreadable header itself, so a build that returns none is not this pin, and refuses."""
-    from congressionalrecord.govinfo import cr_parser
-
-    original = cr_parser.ParseCRFile.write_header
-
-    def headless(self: object) -> None:
-        original(self)
-        self.crdoc["header"] = False
-
-    monkeypatch.setattr(cr_parser.ParseCRFile, "write_header", headless)
-    with pytest.raises(RecordSpeechesError, match=f"read no header for {KIGGANS}"):
-        _read(KIGGANS)
 
 
 @needs_parser
@@ -863,74 +831,134 @@ def test_a_read_interrupted_by_another_keeps_the_speaker_only_its_mods_names(mon
     assert others and others[0] is not None and others[0].granule_id == SENATE
 
 
-class _SharedTable:
-    """``item_types`` as upstream kept it before #94: every document reads and writes one table."""
-
-    def __init__(self, table: dict) -> None:
-        self.table = table
-
-    def __get__(self, instance: object, owner: type | None = None) -> dict:
-        return self.table
-
-    def __set__(self, instance: object, value: object) -> None:
-        pass
-
-
 @pytest.fixture
 def install_record() -> Iterator[None]:
-    """The installed commit is read once per process; a test that fakes the install reads it afresh, and after."""
-    record_speeches._installed_commit.cache_clear()
+    """The installed build is checked once per process; a test that fakes the install checks it afresh, and after."""
+    record_speeches._installed_mismatch.cache_clear()
     yield
-    record_speeches._installed_commit.cache_clear()
+    record_speeches._installed_mismatch.cache_clear()
 
 
-def _installed_as(monkeypatch: pytest.MonkeyPatch, root: Path, direct_url: dict) -> None:
-    """Put a ``congressionalrecord`` distribution recording ``direct_url`` first on the metadata path."""
+WHEEL = {"url": "file:///vendor/congressionalrecord-2.3.0-py3-none-any.whl", "archive_info": {}}
+SUBCLASSES, CR_PARSER = "congressionalrecord/govinfo/subclasses.py", "congressionalrecord/govinfo/cr_parser.py"
+# The one row the previous pin's wheel (3715651a, sha256 abb9a47c…, receipt pin-3715651a/) states otherwise
+# than this pin's: subclasses.py, which there drops the prose a page marker opens. Its other rows are equal.
+PREVIOUS_PIN_ROW = f"{SUBCLASSES},sha256=Zfj7Zwi9FKAP0Mpt-frFW_wQj5m8gKEMeKmO_4xn12M,2650"
+
+
+def _installed_record() -> str:
+    """The ``RECORD`` of the installed ``congressionalrecord``: this pin's rows."""
+    return metadata.distribution("congressionalrecord").read_text("RECORD") or ""
+
+
+def _row(record: str, path: str) -> str:
+    (row,) = [line for line in record.splitlines() if line.startswith(f"{path},")]
+    return row
+
+
+def _installed_as(monkeypatch: pytest.MonkeyPatch, root: Path, direct_url: dict, record: str | None) -> None:
+    """Put a ``congressionalrecord`` distribution recording ``direct_url`` and ``record`` first on the metadata path.
+
+    ``importlib.metadata`` lists only the ``RECORD`` rows whose file is beside
+    the dist-info, so the installed package is copied there as it is.
+    """
+    import congressionalrecord
+
+    shutil.copytree(Path(congressionalrecord.__file__).parent, root / "congressionalrecord")
     info = root / "congressionalrecord-2.3.0.dist-info"
     info.mkdir()
     (info / "METADATA").write_text("Metadata-Version: 2.1\nName: congressionalrecord\nVersion: 2.3.0\n")
     (info / "direct_url.json").write_text(json.dumps(direct_url))
+    if record is not None:
+        (info / "RECORD").write_text(record)
     monkeypatch.syspath_prepend(str(root))
+
+
+def _refusal(named: str) -> str:
+    return re.escape(
+        f"the installed congressionalrecord's RECORD does not state the pinned sha256 of {named}; {EXTRA_REQUIRED}"
+    )
 
 
 @needs_parser
 def test_a_git_install_of_another_fork_commit_refuses_naming_both(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, install_record: None
 ) -> None:
-    """Every fork revision installs as 2.3.0, so the commit a git install records is what tells them apart."""
+    """Every fork revision installs as 2.3.0; a git install records its commit, which must be the pin's own."""
     other = "6bb521b11b498f2e8dbac614a4394c703c6773ac"  # an earlier pin, which still returned the string "None"
-    _installed_as(
-        monkeypatch,
-        tmp_path,
-        {"url": "https://github.com/mikewolfd/congressional-record", "vcs_info": {"vcs": "git", "commit_id": other}},
-    )
+    git = {"url": "https://github.com/mikewolfd/congressional-record", "vcs_info": {"vcs": "git", "commit_id": other}}
+    _installed_as(monkeypatch, tmp_path, git, _installed_record())
     with pytest.raises(RecordSpeechesError, match=f"is commit {other}, not the pinned {PARSER_PIN}"):
         _read(KIGGANS)
 
 
 @needs_parser
-def test_a_wheel_install_records_no_commit_and_is_held_to_the_forks_surface(
+def test_a_wheel_install_of_the_pin_records_no_commit_and_reads_by_its_record(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, install_record: None
 ) -> None:
-    """A vendored wheel's install records an archive, not a commit: it reads, held to the fork's surface alone."""
-    _installed_as(
-        monkeypatch, tmp_path, {"url": "file:///vendor/congressionalrecord-2.3.0-py3-none-any.whl", "archive_info": {}}
-    )
-    assert record_speeches._installed_commit() is None
-    assert _read(KIGGANS).parse_status == "complete"
-    from congressionalrecord.govinfo import cr_parser
-
-    monkeypatch.delattr(cr_parser, "CRParseError")
-    with pytest.raises(RecordSpeechesError, match="has no CRParseError; .*'record-speeches' extra"):
-        _read(KIGGANS)
+    """A vendored wheel's install records an archive, not a commit; the digests its RECORD states admit it."""
+    _installed_as(monkeypatch, tmp_path, WHEEL, _installed_record())
+    assert record_speeches._installed_mismatch() is None
+    assert _read(ERA_1995).parse_status == "complete"
 
 
 @needs_parser
-def test_a_parser_that_shares_one_line_kind_table_refuses(monkeypatch: pytest.MonkeyPatch) -> None:
-    """A build that writes each document's speaker pattern into the class's table is not the pin, and refuses."""
-    from congressionalrecord.govinfo import cr_parser
+@pytest.mark.parametrize(
+    ("rewrite", "named"),
+    [
+        (lambda record: record.replace(_row(record, SUBCLASSES), PREVIOUS_PIN_ROW), SUBCLASSES),
+        (lambda record: record.replace(_row(record, CR_PARSER) + "\n", ""), CR_PARSER),
+        (lambda record: None, ", ".join(PARSER_DIGESTS)),
+    ],
+    ids=["previous-pin-wheel", "unlisted", "no-record"],
+)
+def test_a_wheel_whose_record_states_other_parser_digests_refuses_naming_the_files(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    install_record: None,
+    rewrite: Callable[[str], str | None],
+    named: str,
+) -> None:
+    """The previous pin's wheel has the fork's whole surface and records no commit; only its RECORD tells it apart."""
+    _installed_as(monkeypatch, tmp_path, WHEEL, rewrite(_installed_record()))
+    with pytest.raises(RecordSpeechesError, match=_refusal(named)):
+        _read(ERA_1995)
 
-    shared = _SharedTable(copy.deepcopy(cr_parser.ParseCRFile.item_types))
-    monkeypatch.setattr(cr_parser.ParseCRFile, "item_types", shared)
-    with pytest.raises(RecordSpeechesError, match=f"shares one line-kind table across documents; {EXTRA_REQUIRED}"):
-        _read(KIGGANS)
+
+@needs_parser
+def test_a_parser_imported_with_no_installed_metadata_refuses(
+    monkeypatch: pytest.MonkeyPatch, install_record: None
+) -> None:
+    """A package no installer wrote, such as a checkout on ``PYTHONPATH``, states no digest, and refuses."""
+
+    def uninstalled(name: str) -> metadata.Distribution:
+        raise metadata.PackageNotFoundError(name)
+
+    monkeypatch.setattr(record_speeches.metadata, "distribution", uninstalled)
+    with pytest.raises(RecordSpeechesError, match=_refusal(", ".join(PARSER_DIGESTS))):
+        _read(ERA_1995)
+
+
+@needs_parser
+def test_the_held_digests_are_every_file_the_parser_import_runs_at_its_installed_bytes() -> None:
+    """``PARSER_DIGESTS`` is what importing ``cr_parser`` runs, each at the sha256 of its bytes as installed.
+
+    Neither side is read from ``RECORD``: the files are those a fresh
+    interpreter has loaded from the package after the import, and each digest
+    is taken from the bytes on disk. A re-pin fails here until the held
+    digests move with it, and so does an import that comes to run another file
+    of the package until that file is held.
+    """
+    script = (
+        "import sys, congressionalrecord.govinfo.cr_parser; "
+        "print(*(m.__file__ for n, m in sys.modules.items() if n.split('.')[0] == 'congressionalrecord'), sep='\\n')"
+    )
+    loaded = subprocess.run([sys.executable, "-c", script], check=True, capture_output=True, text=True).stdout
+    root = Path(metadata.distribution("congressionalrecord").locate_file("")).resolve()
+    ran = sorted(Path(file).resolve().relative_to(root).as_posix() for file in loaded.splitlines())
+    assert ran == sorted(PARSER_DIGESTS)
+    digests = {path: hashlib.sha256((root / path).read_bytes()).digest() for path in ran}
+    stated = {
+        path: "sha256=" + base64.urlsafe_b64encode(digest).decode().rstrip("=") for path, digest in digests.items()
+    }
+    assert stated == dict(PARSER_DIGESTS)

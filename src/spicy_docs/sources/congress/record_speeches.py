@@ -46,6 +46,16 @@ from spicy_docs.transport.source_acquirer import check_payload
 
 #: The fork commit ``pyproject.toml`` pins and ``uv.lock`` resolves; a test holds the three together.
 PARSER_PIN = "ee5ba237b7db90bbf8a8fa438f2eb68a0077d973"
+#: Every file ``import congressionalrecord.govinfo.cr_parser`` runs, with its digest at ``PARSER_PIN`` as a
+#: ``RECORD`` row states it; a test holds them to the installed bytes and to what that import runs.
+PARSER_DIGESTS = MappingProxyType(
+    {
+        "congressionalrecord/__init__.py": "sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU",
+        "congressionalrecord/govinfo/__init__.py": "sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU",
+        "congressionalrecord/govinfo/cr_parser.py": "sha256=Y3TouwajyBzAfp86JfhH5_g1OzeFP7U7jYZVBJfITo4",
+        "congressionalrecord/govinfo/subclasses.py": "sha256=23wOOUI4SAdGbbFR2HtPNJ_LK1-JalfQuHhFyDQfAzE",
+    }
+)
 EXTRA_REQUIRED = (
     "Congressional Record speech turns need the 'record-speeches' extra: uv sync --frozen --extra record-speeches"
 )
@@ -93,31 +103,39 @@ def _imported_parser() -> Any:
 
 
 @cache
-def _installed_commit() -> str | None:
-    """The commit the installed ``congressionalrecord`` records, read once: ``None`` for a wheel or registry install."""
+def _installed_mismatch() -> str | None:
+    """Why the installed ``congressionalrecord`` is not the pinned build, or ``None``; read once per process.
+
+    Every revision of the fork installs as ``congressionalrecord==2.3.0``, so
+    the version says nothing. The installer's ``RECORD`` does, on every route
+    (git, vendored wheel, index): the sha256 it states for each file the
+    parser's import runs must be ``PARSER_DIGESTS``'s. A file it lists with no
+    hash or not at all (``importlib.metadata`` also drops a row whose file is
+    absent), or an import no installer recorded, states none. A git install
+    also records its commit (``direct_url.json``), which must be
+    ``PARSER_PIN``; a wheel records none.
+    """
     try:
-        return recorded_commit(metadata.distribution("congressionalrecord"))
+        distribution = metadata.distribution("congressionalrecord")
     except metadata.PackageNotFoundError:
-        return None
+        commit, files = None, []
+    else:
+        commit, files = recorded_commit(distribution), distribution.files or []
+    if commit is not None and commit != PARSER_PIN:
+        return f"the installed congressionalrecord is commit {commit}, not the pinned {PARSER_PIN}"
+    stated = {str(file): f"{file.hash.mode}={file.hash.value}" for file in files if file.hash}
+    differing = [path for path, digest in PARSER_DIGESTS.items() if stated.get(path) != digest]
+    if differing:
+        return f"the installed congressionalrecord's RECORD does not state the pinned sha256 of {', '.join(differing)}"
+    return None
 
 
 def _parser_module() -> Any:
-    """Upstream's ``cr_parser``, refused unless it is the pinned fork's build.
-
-    Every revision of the fork installs as ``congressionalrecord==2.3.0``, so
-    the version says nothing. A git install records its commit, which must be
-    ``PARSER_PIN``. A vendored wheel records none, so the fork's own surface is
-    required of every install: ``CRParseError`` here, and per document
-    ``parse_status`` and its own line-kind table (``_document``).
-    """
+    """Upstream's ``cr_parser``, refused unless it is the pinned fork's build (``_installed_mismatch``)."""
     cr_parser = _imported_parser()
-    commit = _installed_commit()
-    if commit is not None and commit != PARSER_PIN:
-        raise RecordSpeechesError(
-            f"the installed congressionalrecord is commit {commit}, not the pinned {PARSER_PIN}; {EXTRA_REQUIRED}"
-        )
-    if not hasattr(cr_parser, "CRParseError"):
-        raise RecordSpeechesError(f"the installed congressionalrecord has no CRParseError; {EXTRA_REQUIRED}")
+    mismatch = _installed_mismatch()
+    if mismatch is not None:
+        raise RecordSpeechesError(f"{mismatch}; {EXTRA_REQUIRED}")
     return cr_parser
 
 
@@ -486,24 +504,12 @@ class RecordIssue:
         return self._document(parser, granule, page, body)
 
     def _document(self, parser: Any, granule: str, page: re.Match[str], body: bytes) -> RecordSpeechDocument:
+        # The build _parser_module holds by digest returns a document only with
+        # its header read and parse_status set, and parse_error when partial.
         crdoc = parser.crdoc
-        status = crdoc.get("parse_status")
+        status = crdoc["parse_status"]
         error = crdoc.get("parse_error")
-        # Without this field a partial parse looks complete; it is the fork's
-        # change, so its absence means some other build is installed.
-        if status not in ("complete", "partial"):
-            raise RecordSpeechesError(
-                f"the installed parser does not report parse completion for {granule}; {EXTRA_REQUIRED}"
-            )
-        # The fork gives each document its own copy; a build that writes the
-        # speaker pattern into the class's table lets one read change another's.
-        if "item_types" not in vars(parser):
-            raise RecordSpeechesError(
-                f"the installed parser shares one line-kind table across documents; {EXTRA_REQUIRED}"
-            )
-        if (status == "partial") != isinstance(error, Mapping):
-            raise RecordSpeechesError(f"the parser reports {status} for {granule} with parse_error {error!r}")
-        header = crdoc.get("header")
+        header = crdoc["header"]
         _check_header(granule, page, header, (parser.cr_vol, parser.cr_num))
         patterns = tuple(parser.skip_items)
 
@@ -556,7 +562,9 @@ class RecordIssue:
         )
 
 
-def _check_header(granule: str, page: re.Match[str], header: object, issue: tuple[object, object]) -> None:
+def _check_header(
+    granule: str, page: re.Match[str], header: Mapping[str, object], issue: tuple[object, object]
+) -> None:
     """Refuse a body whose header starts on another page than the id names, or is of another issue than its MODS.
 
     Upstream compares neither, so a body retained under the wrong id would
@@ -565,12 +573,8 @@ def _check_header(granule: str, page: re.Match[str], header: object, issue: tupl
     volume and number are compared with the ones upstream read from the
     granule's MODS record (``issue``), unless it states none: one granule id
     can be in two packages (CREC-2025-03-11-pt1-PgS-FrontMatter is in No. 45
-    and No. 46), and only the number tells their bodies apart. Upstream
-    refuses a header it cannot read, so a build that returns none is refused
-    here too.
+    and No. 46), and only the number tells their bodies apart.
     """
-    if not isinstance(header, Mapping):
-        raise RecordSpeechesError(f"the installed parser read no header for {granule}; {EXTRA_REQUIRED}")
     stated_issue = (header.get("vol"), header.get("num"))
     if issue != (None, None) and stated_issue != issue:
         raise RecordSpeechesError(
@@ -628,6 +632,7 @@ def parse_record_speeches(
 __all__ = [
     "EXTRA_REQUIRED",
     "LOCATED",
+    "PARSER_DIGESTS",
     "PARSER_PIN",
     "UNLOCATED",
     "RecordIssue",

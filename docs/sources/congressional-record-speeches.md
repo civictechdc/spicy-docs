@@ -175,7 +175,7 @@ marker opened.
   items before it; the document says `partial` and `parse_error` names the
   exception type, message and the line being read. `lines_exhausted` is
   `False`. A partial parse is never reported as complete, and a parser build
-  that does not report completion at all refuses.
+  other than the pin's refuses before it reads ([The pin](#the-pin)).
 - **Every upstream failure is a `RecordSpeechesError` naming the granule**:
   a granule absent from the MODS, a body with no `<pre>` block, and a header
   cut short or astray, which upstream raises as `CRParseError` and the refusal
@@ -290,14 +290,36 @@ The reasons for a fork are recorded under
 
 **What `parser_pin` on a document guarantees.** Every revision of the fork
 installs as `congressionalrecord==2.3.0`, so the version cannot tell them
-apart. A git install records the commit it resolved (`direct_url.json`), and a
-read refuses unless that commit is `PARSER_PIN`, naming both. A vendored wheel
-records none, so every install is also held to the fork's surface:
-`CRParseError`, `parse_status` on the document and a line-kind table of the
-document's own; a build lacking any of them refuses. So on a git install
-`parser_pin` is the commit that read the document; on a wheel it is the commit
-the host built the wheel from, which that surface and the wheel digest in the
-host's lock stand behind.
+apart, and a vendored wheel's install records no commit: its
+`direct_url.json` says only `archive_info: {}`. The installed distribution's
+`RECORD` tells them apart on every route. The installer writes each file's
+sha256 there, and a git install and the vendored wheel of one commit state the
+same ones. `PARSER_DIGESTS`, beside `PARSER_PIN` in the module, holds the pin's
+digest for every file that `import congressionalrecord.govinfo.cr_parser`
+runs: `cr_parser.py`, the `subclasses.py` that builds its items, and the two
+package `__init__.py` files, which are empty. The adapter imports nothing else
+of the package; the downloader, schema and PostgreSQL modules never run. A read
+refuses, naming the files, unless `RECORD` states each of those digests. A git
+install must also have resolved `PARSER_PIN`, and that refusal names both
+commits. So `parser_pin` on a document says that the files that read it are
+that commit's, as the installer recorded them; on a git install it is also the
+commit installed. A test holds `PARSER_DIGESTS` to the installed files' bytes
+and to what the import runs, so a re-pin cannot leave them behind.
+
+Before the digests, a wheel was held only to the fork's surface:
+`CRParseError`, `parse_status` and a line-kind table per document. 3715651a's
+wheel (`abb9a47c…`), the pin before this one, has all three. Its files differ
+from this pin's only in `subclasses.py`, which drops the prose that a page
+marker opens. A host that vendored it was accepted and stamped `ee5ba237`, and
+it read the 1995 fixture as `complete`, with 2 items unlocated and 32 lines
+unaccounted. With the digests, that host refuses and names `subclasses.py`.
+A host that vendors this pin's `67d5d355…` still reads
+(`finish/host-*/` under
+`~/Work/corpora/fork-execution-2026-09-21/record-speeches-review/`).
+`RECORD` is only the installer's account of what it wrote. A file edited after
+install is not compared, and neither is a package imported from another
+directory than the one its metadata describes. The wheel's sha256 in the
+host's lock pins what the host installs; nothing here reads it.
 
 **A vendored wheel is built by one rule, all four parts of it:**
 
@@ -321,11 +343,13 @@ its `b5fd9280…` (`review-fixes/wheel-umask/`), and without the variable the zi
 timestamps, and so the digest, change per checkout.
 
 **Move the pin** by changing the revision in `pyproject.toml` and `PARSER_PIN`
-together, running `uv lock`, rebuilding the wheel by the rule above, recording
-its digest here, and running this guide's tests.
+together, running `uv lock`, updating `PARSER_DIGESTS` to the new `RECORD`
+(the digest test prints both sides), rebuilding the wheel by the rule above,
+recording its digest here, and running this guide's tests.
 **When upstream merges #92, #93, #94 and #90 and publishes a release**, delete the
 `congressionalrecord` entry from `[tool.uv.sources]`, pin the release in the
-extra, and replace `PARSER_PIN` and its lockstep test with the release version.
+extra, replace `PARSER_PIN` and its lockstep test with the release version, and
+set `PARSER_DIGESTS` to the release's files.
 
 ### Hosts
 

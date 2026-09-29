@@ -3255,8 +3255,9 @@ unreadable header, an accessId index -- and merges
 pattern, so the adapter no longer serializes parses or maps `"None"` strings.
 Fork-only commits pin the build backend so a vendored wheel is reproducible
 and prune the tests from the sdist.
-The adapter refuses a build that does not report completion, so the pin cannot
-silently regress to one that hides a partial parse.
+The adapter refuses any build whose parser files are not the pin's, by the
+digests the installed `RECORD` states, so the pin cannot silently regress to
+one that hides a partial parse.
 
 **Why not a port.** The segmentation rules -- speaker, recorder, clerk, title
 and rule lines, the MODS speaker table -- are upstream's accumulated knowledge
